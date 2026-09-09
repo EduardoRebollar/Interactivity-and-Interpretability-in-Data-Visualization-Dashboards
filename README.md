@@ -1,0 +1,2 @@
+# Interactivity-and-Interpretability-in-Data-Visualization-Dashboards
+This project investigates whether interactive features improve users’ ability to interpret time-series data compared with static visualizations. The aim is to produce findings about interaction and interpretability that are more credible, more generalizable, and more relevant to the kinds of decisions dashboards are increasingly used to support.
