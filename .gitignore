@@ -1,0 +1,17 @@
+# Environment
+.venv/
+__pycache__/
+*.py[cod]
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# Data — never committed. download_data.py refetches raw from OWID;
+# processed/ is derived cache; study_logs/ is participant data.
+data/raw/*
+data/processed/*
+data/study_logs/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/study_logs/.gitkeep

@@ -1,0 +1,33 @@
+[project]
+name = "vaccine-dashboard"
+version = "0.1.0"
+description = "Study instrument comparing static vs. interactive dashboards for interpretability of childhood vaccination coverage time-series."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "dash>=4.4.1",
+    "plotly>=7.0.0",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.6",
+    "pytest>=9.1.1",
+]
+
+# Run as an application, not an installable library: uv sync provisions .venv
+# from uv.lock without building a distribution.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
