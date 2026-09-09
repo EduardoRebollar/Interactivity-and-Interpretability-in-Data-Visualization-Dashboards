@@ -31,3 +31,6 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The project is an application, not an installed package, so put the repo root on sys.path
+# to make `from src import ...` resolve under pytest.
+pythonpath = ["."]
