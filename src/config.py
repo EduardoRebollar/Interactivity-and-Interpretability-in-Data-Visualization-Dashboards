@@ -1,8 +1,8 @@
-"""Study configuration: the condition toggle and the locked data scope.
+"""Study configuration: the condition toggle, the locked data scope, and the locked visuals.
 
-Visual constants (palette, fonts, chart sizing) are deliberately NOT defined here yet. They are
-gated on `docs/visual-spec.md`, which does not exist, and every colour needs a WCAG 2.1 AA contrast
-check plus a matching change in the Tableau build. Add them here once that spec is written.
+`docs/visual-spec.md` is the source of truth for everything in the VISUAL section below; change the
+spec first, then these values. Every color here has a measured WCAG 2.1 contrast ratio recorded
+alongside it, and `tests/test_palette.py` fails the build if any of them drifts below its floor.
 """
 
 from pathlib import Path
@@ -42,8 +42,6 @@ VACCINES: dict[str, str] = {
 }
 
 # Names are exact OWID entity strings; verified present in the grapher export.
-# NOTE: CLAUDE.md specifies "~10" countries — these 8 are the named ones. The remaining 1-2 are an
-# open scope decision and must be chosen deliberately, not defaulted in.
 COUNTRIES: list[str] = [
     "United States",
     "United Kingdom",
@@ -53,6 +51,10 @@ COUNTRIES: list[str] = [
     "Ethiopia",
     "Indonesia",
     "Ukraine",
+    # Added 2026-09-09 to give tasks genuine contrast: Pakistan is one of the last
+    # polio-endemic countries, China the largest high-coverage system.
+    "Pakistan",
+    "China",
 ]
 
 # Aggregate reference series.
@@ -67,3 +69,62 @@ AGGREGATES: list[str] = [
 ]
 
 ENTITIES: list[str] = COUNTRIES + AGGREGATES
+
+# --- Visual (locked; see docs/visual-spec.md) --------------------------------------------------
+
+BACKGROUND = "#FFFFFF"
+
+# Derived from Okabe-Ito, which is built for color-vision deficiency. Four are unmodified, keeping
+# Okabe-Ito's validated separability intact; only orange is darkened, and to a level chosen for
+# luminance spread rather than to the bare floor.
+#
+# Three swatches were dropped, each for a measured reason:
+#   yellow    #F0E442  1.32:1 — the passing form (#9F972C) reads as olive and collides with green
+#   sky blue  #56B4E9  2.31:1 — any passing form lands at L~0.291, indistinguishable from purple
+#   black     #000000         — reserved for the World reference series
+#
+# Colors are separated in LUMINANCE as well as hue (min gap 0.025). Darkening several colors to the
+# same contrast target makes them luminance-identical, which defeats greyscale printing and severe
+# color-vision deficiency; ordering below is light-to-dark by luminance.
+SERIES_COLORS: list[str] = [
+    "#0072B2",  # blue            5.19:1   L 0.153
+    "#9C6C00",  # orange          4.61:1   L 0.178  (darkened from #E69F00, 2.25:1)
+    "#D55E00",  # vermillion      3.87:1   L 0.222
+    "#009E73",  # bluish green    3.42:1   L 0.257
+    "#CC79A7",  # reddish purple  3.06:1   L 0.293
+]
+
+# The aggregate reference series ("World") is black and dashed, so it reads as a baseline rather
+# than as one more country competing for attention.
+REFERENCE_COLOR = "#000000"  # 21.00:1
+REFERENCE_DASH = "dash"
+
+# Hard ceiling on simultaneous series, excluding the World reference. Five is not a style choice: it
+# is the largest set that is simultaneously >=3:1 on white, color-blind separable, and separated in
+# luminance. A sixth color collides with an existing one on at least one of those three axes. Beyond
+# this, reading the legend becomes the task instead of reading the data.
+MAX_SERIES = len(SERIES_COLORS)
+MIN_LUMINANCE_GAP = 0.02
+
+TEXT_PRIMARY = "#1A1A1A"  # 17.40:1
+TEXT_MUTED = "#595959"  # 7.00:1
+AXIS_COLOR = "#404040"  # 10.37:1
+
+# DELIBERATE EXEMPTION from the 3:1 floor. No grey reaches 3:1 against white while still reading as
+# a gridline rather than as data. This is darker than a typical default because the static condition
+# has no hover, so participants estimate values against the grid. The values themselves are carried
+# by the tick labels at 10.37:1, so no information depends on the gridline alone.
+GRIDLINE_COLOR = "#B3B3B3"  # 2.10:1
+GRIDLINE_EXEMPT = True
+
+FONT_FAMILY = "Helvetica, Arial, sans-serif"
+FONT_SIZE_BASE = 14
+FONT_SIZE_TITLE = 18
+FONT_SIZE_AXIS = 13
+
+# Y axis is pinned; never auto-scale. A y range that changes between tasks or conditions silently
+# changes how steep a trend looks, which would confound interpretation accuracy.
+Y_RANGE = (0, 100)
+LINE_WIDTH = 2.5
+MARKER_SIZE = 5
+CHART_HEIGHT = 520

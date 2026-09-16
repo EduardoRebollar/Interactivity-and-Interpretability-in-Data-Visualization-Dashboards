@@ -6,13 +6,20 @@ Context and constraints for this project. Read this before proposing changes or 
 
 Senior comprehensive project (Occidental College, CS). Empirically compares static vs. interactive
 data visualization dashboards for **interpretability** of time-series data, using WHO/UNICEF
-childhood vaccination coverage data (1980–2024). Both a Plotly Dash implementation (this repo) and a
-Tableau Public implementation exist; findings are cross-checked across platforms to test whether
-interactivity effects are platform-dependent.
+childhood vaccination coverage data (1980–2024). Single platform: a Plotly Dash implementation, this
+repo, fully instrumented.
 
 The study measures whether interactivity improves interpretation accuracy and reasoning depth, or
 primarily reduces perceived cognitive load. Participants (target n ≥ 25) complete the same tasks on
 both a static and an interactive version in a within-subjects design.
+
+**Cross-platform comparison was cut (2026-09-09.)** The project originally planned a second Tableau
+Public build so findings could be cross-checked for platform dependence. That was dropped: a
+hand-built second platform is a large amount of work whose visual parity with the Dash build could
+never be guaranteed, and the considered alternative — using Our World in Data's own published charts
+as the second platform — cannot be instrumented, because their charts run cross-origin and
+participant interactions inside them are invisible to this code. The study therefore answers the
+narrower question, on one platform. **Write-ups must not claim platform independence.**
 
 ## Hard constraints
 
@@ -22,26 +29,31 @@ These are methodological requirements, not preferences. Do not relax them withou
 
 - Chart types, color palette, axis scales, fonts, layout, and spacing must be identical between the
   static and interactive versions.
-- The Dash build must mirror the Tableau build on all of the above.
-- If you propose a visual change for one version, apply it to both, and flag that the Tableau version
-  also needs updating.
+- A visual change applies to both conditions or to neither. There is no version that is allowed to
+  look different.
 - Any deviation breaks the core methodological claim that observed differences are attributable to
   interactivity, not aesthetics.
+- `docs/visual-spec.md` is the source of truth. Change the spec first, then the code.
 
 ### Static vs. interactive is a single toggle
 
 - The two conditions differ only via an `INTERACTIVE: bool` flag in `src/config.py`.
 - Interactive-only features: filtering, sorting, line isolation, year-over-year directional change
   indicators.
+- **The static condition is fully inert:** `staticPlot: True`, so no hover, no zoom, no pan, no
+  modebar. Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition
+  hoverable and the manipulation would be invalid. This is deliberate, not an oversight.
 - Do not introduce any other divergence between the two conditions.
 
 ### Scope is locked
 
 - **Vaccines (4):** DTP3, MCV1, Polio3, HepB3.
-- **Entities (~10):** US, UK, Brazil, India, Nigeria, Ethiopia, Indonesia, Ukraine, plus 1–2 more,
-  plus "World" & continents as aggregate reference.
-- **Years:** 2000–2024.
+- **Countries (10):** US, UK, Brazil, India, Nigeria, Ethiopia, Indonesia, Ukraine, Pakistan, China.
+- **Aggregates (7):** World, Africa, Asia, Europe, North America, South America, Oceania.
+- **Years:** 2000–2024. 17 entities × 25 years × 4 vaccines = **1700 rows**.
 - Do not expand scope, add vaccines, or add countries without asking.
+- Note: the data scope is not the *display* scope. Far fewer entities can be shown on one chart at
+  once and still be legible — see `docs/visual-spec.md`.
 
 ### Reproducibility
 
@@ -85,6 +97,19 @@ These are methodological requirements, not preferences. Do not relax them withou
 - Missing data stays missing. Do not interpolate, forward-fill, or drop rows silently — gaps in
   coverage are meaningful to participants.
 - Raw data lives in `data/raw/` (gitignored). Cleaned data cached as parquet in `data/processed/`.
+- The frame is reindexed to the complete entity × year × vaccine grid, so an unreported value is an
+  explicit NaN row rather than an absent one. Nothing is filled; tests assert the observation count
+  and every individual value match the source.
+
+### Known gaps (measured, affects task design)
+
+- **UK HepB3 reports only 2019–2024** (19 of 25 years missing). The UK added HepB to the routine
+  infant schedule in 2017. Any task comparing HepB3 across countries shows the UK as a near-empty
+  line, and participants may read absence as zero coverage rather than "not reported".
+- Ethiopia HepB3 missing 2000–2006; Nigeria and India 2000–2003; Pakistan 2000–2002.
+- **Every continent aggregate is missing 2024** across all four vaccines, while World and the
+  individual countries have it. Charts mixing countries and continents show continent lines stopping
+  a year short — a trap for any task about the most recent year.
 
 ## Repo layout
 
@@ -101,6 +126,19 @@ data/
   raw/                  # downloaded CSVs (gitignored, .gitkeep only)
   processed/            # cleaned parquet (gitignored, .gitkeep only)
   study_logs/           # participant interaction logs (gitignored, .gitkeep only)
+docs/
+  visual-spec.md        # locked visual decisions (colors, chart types, layout)
+src/
+  config.py             # INTERACTIVE flag, palette, country/vaccine lists
+  data.py               # load + clean
+  logging.py            # event/timing logger
+scripts/
+  download_data.py      # fetches from Our World in Data
+  check_contrast.py     # WCAG contrast report for the palette
+tests/
+  test_data.py
+  test_logging.py
+  test_palette.py       # enforces the contrast floors
 ```
 
 Planned, not yet written:
@@ -108,17 +146,10 @@ Planned, not yet written:
 ```
 docs/
   study-design.md       # RQs, conditions, tasks, rubric
-  visual-spec.md        # locked visual decisions (colors, chart types, layout)
 src/
-  config.py             # INTERACTIVE flag, palette, country/vaccine lists
-  data.py               # load + clean
   layout.py             # shared layout components
   callbacks.py          # Dash callbacks (interactive version only)
-  logging.py            # event/timing logger
   app.py                # Dash entry point
-scripts/
-  download_data.py      # fetches from OWID
-tests/
 ```
 
 ## Environment notes
@@ -178,8 +209,9 @@ and for the visual decisions. If those docs don't answer the question, ask.
 ## Anti-goals (things this project is not)
 
 - Not a general-purpose vaccination-tracking tool. It's a study instrument.
-- Not trying to be prettier or more featureful than the Tableau version — matching it is the point.
-- Not optimizing for performance. ~1,000 rows in memory, single user at a time.
+- Not trying to be impressive. The two conditions looking identical is the point; a feature that
+  makes only one of them nicer is a defect, not an improvement.
+- Not optimizing for performance. ~1,700 rows in memory, single user at a time.
 - Not building a public-facing site. Runs locally during study sessions.
 
 ---
