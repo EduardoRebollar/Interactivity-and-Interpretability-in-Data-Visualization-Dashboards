@@ -100,8 +100,13 @@ def _chart_page(interactive: bool) -> html.Div:
     return layout.page(*children)
 
 
-# Module-level app so `api/index.py` and Dash's dev server share one instance. Building it at import
-# time also means a warm serverless container skips the work entirely.
+# Module-level so Vercel and the local dev server share one instance. Building it at import time
+# also means a warm serverless container skips the work entirely.
+#
+# `server` is the deployment entrypoint, pinned by `tool.vercel.entrypoint = "src.app:server"`.
+# This matters: Vercel auto-detects `src/app.py` (its patterns include `app.py` inside `src/`) and
+# looks there for a FLASK instance named `app` — but `app` here is a dash.Dash. It happens to be
+# WSGI-callable because Dash.__call__ proxies to the backend, but relying on that is a trap.
 app = create_app()
 server = app.server
 

@@ -27,9 +27,10 @@ from src import config  # noqa: E402
 
 FORBIDDEN = ("pandas", "numpy", "pyarrow")
 
-# Vercel's Python bundle ceiling. Warn well before it rather than at deploy time.
-LIMIT_MB = 250.0
-WARN_MB = 200.0
+# Vercel's documented standard Python bundle ceiling (Large Functions raise it to 5 GB on Fluid
+# compute, but do not rely on that). Warn well before it rather than at deploy time.
+LIMIT_MB = 500.0
+WARN_MB = 350.0
 
 CHECK_SCRIPT = """
 import sys
@@ -43,7 +44,14 @@ for name in forbidden:
     else:
         raise SystemExit(f"FAIL: {name} is installed; the venv is not clean")
 
-from api.index import app as wsgi
+from flask import Flask
+
+from src.app import server as wsgi
+
+# Vercel resolves tool.vercel.entrypoint and requires a Flask instance. Assert that here rather
+# than discovering it in a deploy log.
+if not isinstance(wsgi, Flask):
+    raise SystemExit(f"FAIL: entrypoint is {type(wsgi).__name__}, not a Flask instance")
 
 client = wsgi.test_client()
 for path in ("/", "/_dash-layout", "/_dash-dependencies"):

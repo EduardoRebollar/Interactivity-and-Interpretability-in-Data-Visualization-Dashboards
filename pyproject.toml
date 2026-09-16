@@ -4,24 +4,41 @@ version = "0.1.0"
 description = "Study instrument comparing static vs. interactive dashboards for interpretability of childhood vaccination coverage time-series."
 readme = "README.md"
 requires-python = ">=3.11"
+# RUNTIME ONLY. Vercel installs from this list (it reads pyproject.toml and uv.lock with zero
+# configuration), so anything added here ships to production and grows the function bundle.
+# pandas and pyarrow are deliberately NOT here — see the `local` group below.
 dependencies = [
     "dash>=4.4.1",
     "plotly>=7.0.0",
-    "pandas>=3.0.5",
-    "pyarrow>=25.0.1",
     "psycopg[binary]>=3.3.5",
 ]
 
+# NOT INSTALLED IN PRODUCTION. `dev` is the conventional group every tool excludes with --no-dev,
+# so putting pandas and pyarrow here keeps them out of the deployment under any install strategy
+# Vercel picks — whether it reads [project.dependencies], runs `uv sync --no-dev`, or uses
+# requirements.txt. A custom group name would only be excluded by flags we cannot guarantee.
+#
+# pandas/pyarrow/numpy are ~146 MB and are needed by src/data.py and the scripts for cleaning and
+# validation, never by the deployed app, which reads data/deploy/coverage.csv with the stdlib.
+# `uv sync` installs this group by default, so local development is unaffected.
 [dependency-groups]
 dev = [
     "ruff>=0.16.6",
     "pytest>=9.1.1",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
 ]
 
 # Run as an application, not an installable library: uv sync provisions .venv
 # from uv.lock without building a distribution.
 [tool.uv]
 package = false
+
+# Pin the deployment entrypoint explicitly. Without this, Vercel auto-detects `src/app.py` (its
+# entrypoint patterns include `app.py` inside `src/`) and looks there for a *Flask* instance named
+# `app` — but that name is bound to a `dash.Dash` object. `server` is the actual Flask instance.
+[tool.vercel]
+entrypoint = "src.app:server"
 
 [tool.ruff]
 line-length = 100

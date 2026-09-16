@@ -89,12 +89,24 @@ parquet cache stay gitignored as before.
 ### Deployment
 
 - Hosted on Vercel; participants complete the whole session from one URL.
-- `requirements.txt` is a **deliberate subset** for the deployment: dash, plotly, psycopg and their
-  transitive dependencies — **no pandas, pyarrow, or numpy.** Those three are 145 MB of the 268 MB
-  local environment and would exceed the Python bundle limit. pandas 3.0 does not require pyarrow
-  (only our parquet cache does) and plotly 7 uses narwhals rather than pandas, so the runtime path
-  reads the deploy CSV with the stdlib `csv` module instead.
-- `uv.lock` remains the source of truth for local development. `requirements.txt` is generated.
+- **Entrypoint is pinned**: `tool.vercel.entrypoint = "src.app:server"` in `pyproject.toml`. Without
+  the pin, Vercel auto-detects `src/app.py` (its patterns include `app.py` inside `src/`) and looks
+  there for a **Flask** instance named `app` — but that name holds a `dash.Dash`. `server` is the
+  Flask instance. `vercel.json`'s `functions` key must match the *resolved* entrypoint file,
+  `src/app.py`, or its settings silently do nothing.
+- **pandas and pyarrow live in the `dev` dependency group, not `[project.dependencies]`.** Vercel
+  installs from `pyproject.toml`/`uv.lock` with zero configuration, so anything in the runtime
+  dependency list ships. `dev` specifically, because it is the group every tool excludes with
+  `--no-dev`; a custom group name would only be dropped by a flag we cannot guarantee Vercel passes.
+  `uv sync` still installs it, so local work is unaffected.
+- Those three libraries are ~146 MB of the 268 MB local environment. pandas 3.0 does not require
+  pyarrow (only our parquet cache does) and plotly 7 uses narwhals rather than pandas, so the runtime
+  path reads the deploy CSV with the stdlib `csv` module instead. Measured bundle: **108.9 MB**
+  against a documented 500 MB limit.
+- `uv.lock` remains the source of truth for local development. `requirements.txt` is generated and
+  kept as an explicit second expression of the same runtime set.
+- Vercel's Python versions are 3.12 (default), 3.13, 3.14. `requires-python = ">=3.11"` is not one of
+  them, so Vercel falls back to 3.12. The suite is verified on 3.11 and 3.14, which brackets it.
 - Anything imported by `src/runtime_data.py`, `src/figures.py`, `src/layout.py`, `src/flow.py`,
   `src/db.py`, or `src/app.py` ships to production. **Do not import pandas in those modules** —
   `tests/test_runtime_data.py` fails the build if you do.
@@ -196,8 +208,7 @@ tests/
 Deployment and runtime (see Deployment above):
 
 ```
-api/index.py            # Vercel entry point; exposes the Dash Flask server
-vercel.json             # routes everything to api/index.py
+vercel.json             # function config + excludeFiles, keyed by the resolved entrypoint
 requirements.txt        # generated deployment subset, no pandas/pyarrow/numpy
 data/deploy/
   coverage.csv          # committed build artifact (named exemption)

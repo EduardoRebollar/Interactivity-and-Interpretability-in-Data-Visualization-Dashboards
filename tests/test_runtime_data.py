@@ -15,6 +15,7 @@ import ast
 import math
 import subprocess
 import sys
+import tomllib
 
 import pytest
 
@@ -23,7 +24,6 @@ from src import config, data, runtime_data
 # Every module that ships to production. Anything they import lands in the Vercel bundle, and
 # pandas + numpy + pyarrow are 146 MB of the 268 MB local environment.
 RUNTIME_MODULES = [
-    "api/index.py",
     "src/app.py",
     "src/config.py",
     "src/contrast.py",
@@ -65,12 +65,12 @@ def test_runtime_modules_do_not_import_heavy_libraries(module_path):
     assert not offenders, f"{module_path} imports {sorted(offenders)}; it ships to production"
 
 
-@pytest.mark.parametrize("module", ["src.runtime_data", "src.app", "api.index"])
+@pytest.mark.parametrize("module", ["src.runtime_data", "src.app"])
 def test_importing_a_shipped_module_pulls_in_no_heavy_libraries(module):
     """Stronger than the static check: import in a fresh interpreter and inspect the real graph.
 
-    Catches a transitive import the AST scan would miss. `api.index` is the actual Vercel entry
-    point, so this covers the whole production import tree, not just the leaves.
+    Catches a transitive import the AST scan would miss. `src.app` is the Vercel entrypoint
+    (pinned by `tool.vercel.entrypoint`), so this covers the whole production import tree.
 
     This runs in the dev environment where pandas IS installed — the question is whether the app
     *loads* it, not whether it exists. For the full clean-room check with the heavy libraries
@@ -87,6 +87,42 @@ def test_importing_a_shipped_module_pulls_in_no_heavy_libraries(module):
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "[]", (
         f"importing {module} loaded {result.stdout.strip()} into the bundle"
+    )
+
+
+def test_project_dependencies_exclude_the_heavy_libraries():
+    """Vercel installs from [project.dependencies]; anything listed there ships.
+
+    pandas and pyarrow belong in the dev group. `dev` specifically, because it is the group every
+    tool excludes with --no-dev — a custom group name would only be dropped by a flag we cannot
+    guarantee Vercel passes.
+    """
+    manifest = tomllib.loads((config.PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    runtime = manifest["project"]["dependencies"]
+    offenders = [d for d in runtime if any(d.startswith(name) for name in FORBIDDEN)]
+    assert not offenders, f"{offenders} are in [project.dependencies] and would ship to production"
+
+    dev = manifest["dependency-groups"]["dev"]
+    assert any(d.startswith("pandas") for d in dev), "pandas must stay available for local work"
+
+
+def test_vercel_entrypoint_is_pinned_to_a_flask_instance():
+    """Unpinned, Vercel auto-detects src/app.py and looks there for a *Flask* instance named `app`.
+
+    That name is bound to a dash.Dash object, so the entrypoint must be pinned to `server`.
+    """
+    manifest = tomllib.loads((config.PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    entrypoint = manifest["tool"]["vercel"]["entrypoint"]
+    assert entrypoint == "src.app:server", f"entrypoint is {entrypoint!r}"
+
+    from flask import Flask
+
+    from src.app import app as dash_app
+    from src.app import server
+
+    assert isinstance(server, Flask), "the pinned entrypoint must be a Flask instance"
+    assert not isinstance(dash_app, Flask), (
+        "src.app.app is a Dash object; if this ever becomes a Flask instance, revisit the pin"
     )
 
 
