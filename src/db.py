@@ -168,3 +168,29 @@ def participant_count() -> int:
     with connect() as connection:
         row = connection.execute("SELECT count(*) FROM participants").fetchone()
         return int(row[0]) if row else 0
+
+
+def table_names() -> set[str]:
+    """Tables present in the public schema. Used to verify `init_schema` actually ran."""
+    with connect() as connection:
+        rows = connection.execute(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+        ).fetchall()
+        return {row[0] for row in rows}
+
+
+def delete_participant(participant_id: str) -> tuple[int, int]:
+    """Delete one participant and all their events. Returns (events, participants) removed.
+
+    **This destroys study data.** It exists so `scripts/verify_deployment.py` can clean up the
+    synthetic session it writes, and so a participant who withdraws consent can be removed. It is
+    never called by the app. Do not use it to tidy up data you merely find inconvenient.
+    """
+    with connect() as connection:
+        events = connection.execute(
+            "DELETE FROM study_events WHERE participant_id = %s", (participant_id,)
+        ).rowcount
+        participants = connection.execute(
+            "DELETE FROM participants WHERE participant_id = %s", (participant_id,)
+        ).rowcount
+        return events, participants

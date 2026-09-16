@@ -20,11 +20,19 @@ import pytest
 
 from src import config, data, runtime_data
 
-# Modules that ship to production. Anything they import lands in the Vercel bundle.
+# Every module that ships to production. Anything they import lands in the Vercel bundle, and
+# pandas + numpy + pyarrow are 146 MB of the 268 MB local environment.
 RUNTIME_MODULES = [
-    "src/runtime_data.py",
+    "api/index.py",
+    "src/app.py",
     "src/config.py",
     "src/contrast.py",
+    "src/db.py",
+    "src/figures.py",
+    "src/flow.py",
+    "src/layout.py",
+    "src/logging.py",
+    "src/runtime_data.py",
 ]
 
 FORBIDDEN = {"pandas", "numpy", "pyarrow"}
@@ -57,16 +65,18 @@ def test_runtime_modules_do_not_import_heavy_libraries(module_path):
     assert not offenders, f"{module_path} imports {sorted(offenders)}; it ships to production"
 
 
-def test_importing_runtime_data_does_not_pull_in_heavy_libraries():
-    """Stronger check: import it in a clean interpreter and inspect the real module graph.
+@pytest.mark.parametrize("module", ["src.runtime_data", "src.app", "api.index"])
+def test_importing_a_shipped_module_pulls_in_no_heavy_libraries(module):
+    """Stronger than the static check: import in a fresh interpreter and inspect the real graph.
 
-    Catches a transitive import that the static check above would miss.
+    Catches a transitive import the AST scan would miss. `api.index` is the actual Vercel entry
+    point, so this covers the whole production import tree, not just the leaves.
+
+    This runs in the dev environment where pandas IS installed — the question is whether the app
+    *loads* it, not whether it exists. For the full clean-room check with the heavy libraries
+    genuinely uninstalled, run `uv run python scripts/check_bundle.py`.
     """
-    code = (
-        "import sys; import src.runtime_data; "
-        f"loaded = {FORBIDDEN!r} & set(sys.modules); "
-        "print(sorted(loaded))"
-    )
+    code = f"import sys; import {module}; print(sorted({FORBIDDEN!r} & set(sys.modules)))"
     result = subprocess.run(
         [sys.executable, "-c", code],
         capture_output=True,
@@ -76,7 +86,7 @@ def test_importing_runtime_data_does_not_pull_in_heavy_libraries():
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "[]", (
-        f"importing src.runtime_data loaded {result.stdout.strip()} into the bundle"
+        f"importing {module} loaded {result.stdout.strip()} into the bundle"
     )
 
 
