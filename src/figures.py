@@ -5,12 +5,16 @@ a property of how the chart is rendered, and lives entirely in `graph_config(int
 the split here means the two conditions are visually identical *by construction* rather than by
 discipline, and `tests/test_conditions.py` proves it.
 
-Not implemented: year-over-year directional change indicators. CLAUDE.md lists them as an
-interactive-only feature, but `docs/visual-spec.md` does not define what they look like, and
-inventing a visual treatment is exactly what the working norms forbid. They are absent, not stubbed.
+Year-over-year directional change is carried in the **hover tooltip**, not as a mark on the chart —
+see `docs/visual-spec.md` section 7. A drawn indicator would have to appear in one condition and not
+the other, which is exactly the divergence `build_figure` is built to make impossible. Putting it in
+the tooltip keeps the figure identical in both conditions while leaving the information reachable
+only where hover works, which under `staticPlot: True` is the interactive condition alone.
 """
 
 from __future__ import annotations
+
+from collections.abc import Sequence
 
 import plotly.graph_objects as go
 
@@ -70,6 +74,31 @@ def build_figure(
     return figure
 
 
+def set_visible(figure: go.Figure, entities: Sequence[str]) -> go.Figure:
+    """Show only `entities`, leaving every remaining series the colour it already had.
+
+    **Filtering hides series; it never rebuilds the chart with a shorter list.** `build_figure`
+    assigns colour by position among the non-World entities, so rebuilding from four entities
+    instead of five would recolour the survivors — a participant who filtered one country out would
+    watch the others change colour mid-task, and the "visual design is held constant" constraint
+    would be broken by the interactive condition's own controls.
+
+    The end labels are filtered alongside the traces, since a label for a hidden series would
+    otherwise be left floating over the chart.
+    """
+    visible = set(entities)
+    unknown = visible - {trace.name for trace in figure.data}
+    if unknown:
+        raise FigureError(f"Cannot show entities that are not on the figure: {sorted(unknown)}")
+
+    for trace in figure.data:
+        trace.visible = trace.name in visible
+    figure.layout.annotations = [
+        annotation for annotation in figure.layout.annotations if annotation.text in visible
+    ]
+    return figure
+
+
 def _validate(entities: list[str], vaccine: str) -> None:
     if not entities:
         raise FigureError("No entities requested")
@@ -113,9 +142,46 @@ def _add_series(
             connectgaps=False,
             line={"color": color, "width": width, "dash": dash},
             marker={"color": color, "size": config.MARKER_SIZE},
-            hovertemplate=f"<b>{entity}</b><br>%{{x}}: %{{y:.0f}}%<extra></extra>",
+            customdata=change_labels(series),
+            hovertemplate=(
+                f"<b>{entity}</b><br>%{{x}}: %{{y:.0f}}%<br>%{{customdata}}<extra></extra>"
+            ),
         )
     )
+
+
+def change_labels(series: tuple[Row, ...]) -> list[str]:
+    """Year-over-year change text for the hover tooltip, one entry per point.
+
+    Interactive-only BY CONSTRUCTION rather than by branching: the text sits in both conditions'
+    figures, and `staticPlot: True` means a static participant never fires a hover to read it. A
+    drawn indicator could not work that way — it would make the two figures differ.
+
+    Deltas are computed from the ROUNDED values the tooltip displays, so the arithmetic a
+    participant can do on screen always agrees with the numbers they were shown.
+
+    A gap is reported as a gap. Differencing across one would invent a year-over-year change out of
+    two values that are not a year apart, which is the same error the chart refuses to make by
+    leaving `connectgaps` off.
+    """
+    labels: list[str] = []
+    for index, row in enumerate(series):
+        if row.coverage_pct is None:
+            # Never displayed — Plotly renders no point here — but the array must stay aligned.
+            labels.append("")
+        elif index == 0:
+            labels.append("first year shown")
+        elif series[index - 1].coverage_pct is None:
+            labels.append(f"no {series[index - 1].year} value reported")
+        else:
+            delta = round(row.coverage_pct) - round(series[index - 1].coverage_pct)
+            previous_year = series[index - 1].year
+            labels.append(
+                f"no change vs {previous_year}"
+                if delta == 0
+                else f"{delta:+d} pts vs {previous_year}"
+            )
+    return labels
 
 
 def _apply_layout(figure: go.Figure, vaccine: str) -> None:

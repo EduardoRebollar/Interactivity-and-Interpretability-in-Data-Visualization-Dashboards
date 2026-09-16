@@ -110,6 +110,14 @@ TEXT_PRIMARY = "#1A1A1A"  # 17.40:1
 TEXT_MUTED = "#595959"  # 7.00:1
 AXIS_COLOR = "#404040"  # 10.37:1
 
+# Validation-error text. UI chrome, NOT a series color: it never appears on a chart, so it does not
+# count against MAX_SERIES and does not need luminance separation from the palette.
+#
+# Derived from the vermillion series color by `contrast.darken_to_ratio`, which scales all three
+# channels equally and so holds the hue. #D55E00 itself is 3.87:1 — fine for a 2.5px line at the 3:1
+# graphic floor, but below the 4.5:1 floor that applies to text.
+ERROR_COLOR = "#C35600"  # 4.51:1
+
 # DELIBERATE EXEMPTION from the 3:1 floor. No grey reaches 3:1 against white while still reading as
 # a gridline rather than as data. This is darker than a typical default because the static condition
 # has no hover, so participants estimate values against the grid. The values themselves are carried

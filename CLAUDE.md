@@ -43,11 +43,14 @@ These are methodological requirements, not preferences. Do not relax them withou
   conditions *by construction*, not by discipline — interactivity is a property of how the figure is
   rendered, not of the figure. `tests/test_conditions.py` asserts the two conditions produce
   byte-identical figure JSON.
-- Year-over-year change indicators are **not implemented**: they are listed as an interactive-only
-  feature, but `docs/visual-spec.md` does not define what they look like, and inventing a visual
-  treatment is forbidden by the working norms. Define them in the spec first.
-- Interactive-only features: filtering, sorting, line isolation, year-over-year directional change
-  indicators.
+- Interactive-only features: filtering, sorting, line isolation, and year-over-year directional
+  change. All four are built; all four are defined in `docs/visual-spec.md` §7.
+- **Year-over-year change lives in the hover tooltip, not on the chart** (`visual-spec.md` §7.1). A
+  drawn indicator would have to be present in one condition and absent in the other, which
+  `build_figure` makes impossible by construction. The tooltip text is in both figures and
+  `staticPlot: True` is what keeps it out of the static condition's reach.
+- **Filtering hides series; it never rebuilds the chart from a shorter list** (`figures.set_visible`).
+  Colour is assigned by position, so a rebuild would recolour the survivors mid-task.
 - **The static condition is fully inert:** `staticPlot: True`, so no hover, no zoom, no pan, no
   modebar. Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition
   hoverable and the manipulation would be invalid. This is deliberate, not an oversight.
@@ -103,8 +106,11 @@ parquet cache stay gitignored as before.
   pyarrow (only our parquet cache does) and plotly 7 uses narwhals rather than pandas, so the runtime
   path reads the deploy CSV with the stdlib `csv` module instead. Measured bundle: **108.9 MB**
   against a documented 500 MB limit.
-- `uv.lock` remains the source of truth for local development. `requirements.txt` is generated and
-  kept as an explicit second expression of the same runtime set.
+- `uv.lock` remains the source of truth for local development. `requirements.txt` is generated from
+  the committed `requirements.in` (`uv pip compile requirements.in -o requirements.txt`) and kept as
+  an explicit second expression of the same runtime set. Regenerate from that input, never from a
+  scratch file outside the tree — doing so once baked an absolute local path, and a local username,
+  into a public artefact.
 - Vercel's Python versions are 3.12 (default), 3.13, 3.14. `requires-python = ">=3.11"` is not one of
   them, so Vercel falls back to 3.12. The suite is verified on 3.11 and 3.14, which brackets it.
 - Anything imported by `src/runtime_data.py`, `src/figures.py`, `src/layout.py`, `src/flow.py`,
@@ -221,11 +227,10 @@ data/deploy/
 src/
   runtime_data.py       # stdlib csv loader; NO pandas
   db.py                 # Neon Postgres connection + DDL
-  figures.py            # build_figure(..., interactive) — the one decision point
-  layout.py             # shared layout components
+  figures.py            # build_figure + graph_config(interactive) — the one decision point
+  layout.py             # shared layout components, study screens, interactive controls
   flow.py               # study flow state machine
-  callbacks.py          # server callbacks + clientside timing
-  app.py                # Dash app factory
+  app.py                # Dash app factory, callbacks, clientside timing
 scripts/
   export_deploy_data.py # parquet -> data/deploy/coverage.csv
   init_db.py            # create tables
@@ -319,16 +324,29 @@ context cheap and the reports as long as they need to be.
 
 ## Status / current focus
 
--
+- 2026-09-15 — **The instrument is finished and verified end to end.** A full session runs from one
+  URL; both conditions log a complete session; all four interactive controls work and record their
+  events. 324 tests green.
+- **Blocked on IRB.** The consent text is a draft and says so on screen. No participant runs until
+  it is approved and `docs/study-design.md` §9's placeholders are filled.
+- Next after IRB: pilot, and check T6's form equivalence (see `docs/study-design.md` §4).
 
 ## Decisions made
 
 - 2026-09-08 — Python floor stays at 3.11; `uv.lock` committed for reproducibility.
+- 2026-09-15 — Year-over-year change is a hover-tooltip delta, not an on-chart glyph. It is the only
+  treatment that is interactive-only *and* leaves the two figures identical. `visual-spec.md` §7.1.
+- 2026-09-15 — Sorting reorders the entity control list, never the chart; a time-series line chart
+  has no meaningful row order. `visual-spec.md` §7.2.
+- 2026-09-15 — Instructions are shown before **both** conditions, practice before only the first.
+  Showing instructions once would leave whoever draws interactive second unaware the controls exist.
+- 2026-09-15 — T1's answer key in `study-design.md` was wrong (said 2, is 1). The doc listed six
+  coloured countries, which `MAX_SERIES = 5` forbids; the task set was always correct.
 
 ## Open questions
 
-- `docs/study-design.md` and `docs/visual-spec.md` are named as the source of truth but don't exist
-  yet. They gate most visual and protocol work.
+- Whether the justification should stay required (`study-design.md` §10) — it may raise dropout on a
+  self-served web study.
 
 ## Reports & external material
 

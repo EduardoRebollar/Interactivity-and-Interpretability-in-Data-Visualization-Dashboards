@@ -39,11 +39,22 @@ never reported, and the gaps are part of what participants are being asked to in
 Test case: UK HepB3 reports only 2019–2024, so 19 of 25 years are absent. That series must appear as
 a short segment at the right edge, not a line spanning 2000–2024.
 
-**OPEN — how is "not reported" communicated?** A participant seeing nothing where the UK's line
-should be may reasonably conclude coverage was *zero* rather than *unrecorded*. In the interactive
-condition a tooltip can say so; in the static condition, with no hover, it cannot. Options: a caption
-listing which series have gaps, an in-chart annotation, or accepting the ambiguity as part of what is
-being measured. This must be resolved identically for both conditions.
+**RESOLVED (2026-09-15) — a caption, shown in both conditions.** A participant seeing nothing where
+the UK's line should be may reasonably conclude coverage was *zero* rather than *unrecorded*. In the
+interactive condition a tooltip can say so; in the static condition, with no hover, it cannot.
+
+The decision is a caption below the chart naming every series with unreported years and the years
+concerned — `layout.gap_note`, e.g. *"No data reported for: United Kingdom (2000–2018). A break in a
+line means the value was not reported, which is not the same as zero coverage."*
+
+It appears in **both** conditions, which is what makes it admissible. The alternative — letting the
+interactive condition explain gaps through a tooltip the static condition cannot show — would mean
+interactivity was changing what information is available, not just how it is reached, and the two
+effects could not be separated in analysis. The in-chart annotation was rejected for adding a mark to
+a locked chart; accepting the ambiguity was rejected because T6 measures gap reasoning specifically,
+and an item nobody can answer measures nothing.
+
+Enforced by `tests/test_app.py::test_gap_note_names_the_series_with_unreported_years`.
 
 ## 4. Color
 
@@ -95,7 +106,15 @@ and luminance-separated. See §6.
 | Primary text | `#1A1A1A` | 17.40:1 | 4.5:1 |
 | Muted text | `#595959` | 7.00:1 | 4.5:1 |
 | Axis | `#404040` | 10.37:1 | 4.5:1 |
+| Validation error | `#C35600` | 4.51:1 | 4.5:1 |
 | Gridline | `#B3B3B3` | 2.10:1 | **exempt** |
+
+**The error colour is UI chrome, not a sixth series colour.** It never appears on a chart, so it does
+not count against `MAX_SERIES` and needs no luminance separation from the palette. It is derived from
+the vermillion series colour by `contrast.darken_to_ratio`, which scales all three channels equally
+and so preserves the hue. The vermillion itself is 3.87:1 — above the 3:1 graphic floor that applies
+to a 2.5px line, below the 4.5:1 floor that applies to text, which is why the error text needed its
+own darker value rather than reusing the series swatch.
 
 **The gridline exemption is deliberate and recorded.** No grey reaches 3:1 against white while still
 reading as a gridline rather than as data — the lightest passing grey competes with the series lines.
@@ -122,12 +141,20 @@ and a test fails if the gridline ever drifts faint enough to be useless (< 1.8:1
 - Colour is never the only channel: every series is **directly labelled at the right end of its
   line**, so identification does not depend on matching a swatch to a legend entry.
 
-**OPEN — which entities does each condition show?** If interactive participants can filter to any of
-the 17 entities while static participants see a fixed 5, then interactivity is not only changing
-*interaction*, it is changing *how much data is reachable*, and the two effects cannot be separated
-in analysis. Recommended: both conditions show the same fixed set per task, and filtering in the
-interactive condition operates only within that set. This belongs in `docs/study-design.md` and must
-be settled before `layout.py` is written.
+**RESOLVED (2026-09-15) — the same fixed set per task, in both conditions.** If interactive
+participants could filter to any of the 17 entities while static participants saw a fixed 5, then
+interactivity would be changing *how much data is reachable* as well as *how it is worked with*, and
+the two effects could not be separated in analysis.
+
+The decision, recorded in full at `docs/study-design.md` §3: each task names its own fixed entity
+set, both conditions see it, and filtering in the interactive condition operates **only within that
+set**. No control reaches an entity the static condition cannot see.
+
+The World reference is excluded from the filter (`layout.filterable`): it is the baseline several
+items are read against, and switching it off would let a participant remove the subject of the
+question.
+
+Enforced by `tests/test_conditions.py::test_the_task_screen_opens_on_the_same_chart_in_both_conditions`.
 
 ## 7. Condition differences
 
@@ -141,11 +168,69 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | Filtering | none | yes |
 | Sorting | none | yes |
 | Line isolation | none | yes |
-| Year-over-year indicators | none | yes |
+| Year-over-year change | none | yes (in the tooltip — see below) |
 
 Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition hoverable
 and zoomable and the manipulation would be invalid. `staticPlot: True` is what makes "static"
 actually static.
+
+**The chart itself is identical.** Every difference above is either a Plotly config flag or a control
+rendered *beside* the chart. Nothing in this table adds, removes or restyles a mark. `build_figure`
+takes no `interactive` argument, so the figure cannot differ by construction, and
+`tests/test_conditions.py` proves the two conditions open on byte-identical figure JSON.
+
+### 7.1 Year-over-year change (defined 2026-09-15)
+
+A signed change against the previous year, as a **third line in the hover tooltip**:
+
+```
+India
+2017: 82%
++3 pts vs 2016
+```
+
+| Case | Text |
+|---|---|
+| Previous year reported | `+3 pts vs 2016` / `-7 pts vs 2015` |
+| Previous year equal | `no change vs 2016` |
+| Previous year unreported | `no 2018 value reported` |
+| First year on the chart | `first year shown` |
+
+- **In the tooltip, not on the chart.** A drawn glyph would have to be present in one condition and
+  absent in the other, which is the one thing the figure is built to make impossible. The tooltip
+  text sits in *both* figures; `staticPlot: True` simply means a static participant never fires a
+  hover to read it. Interactive-only by construction, with no new mark and no new colour — so no
+  contrast work, and §4 is untouched.
+- **"pts", not "%".** The difference between two percentages is percentage points. "+3%" would
+  wrongly suggest a relative change.
+- **Deltas are computed from the rounded values the tooltip displays**, so arithmetic a participant
+  can check on screen always agrees with the numbers they were shown.
+- **No delta is invented across a gap.** Differencing the UK's 2019 HepB3 value against its 2000 row
+  would fabricate a "year-over-year" change between points 19 years apart — the same error
+  `connectgaps=False` exists to prevent.
+
+### 7.2 Sorting (defined 2026-09-15)
+
+**Sorting reorders the entity control list. It never reorders the chart.** A time-series line chart
+has no meaningful row order: the x axis is time and the lines are where the data puts them.
+
+- Control: `Order: (as listed) (by coverage)`, default `as listed` (the task's own order).
+- `by coverage` sorts the checkbox list by each entity's most recently **reported** value, highest
+  first. Most recently reported, not the last year — every continent aggregate is missing 2024.
+- The value is shown in the label **only** in this mode (`Brazil — 91%`). Sorting by a value without
+  showing it is unusable; showing it by default would put numbers on a resting screen for no reason.
+- An entity with nothing reported sorts last and reads `not reported`.
+
+### 7.3 Filtering and line isolation
+
+- **Filtering** hides series via `visible`; it does **not** rebuild the chart from a shorter list.
+  Colour is assigned by position (§4), so a rebuild would recolour the survivors and a participant
+  who hid one country would watch the others change colour mid-task. An end label is hidden with its
+  series. The filter cannot empty the chart — the last series cannot be unchecked.
+- **Line isolation** is a click on the line itself (there is no legend to click — §6). Clicking an
+  isolated line again releases it, as does *Show all*. The World reference stays visible throughout
+  and cannot itself be isolated.
+- Both reset between tasks: no task inherits the previous task's view.
 
 **Consequence for task design:** static participants cannot read exact values at all; they estimate
 against gridlines. A task asking "what was Nigeria's DTP3 coverage in 2012?" therefore measures
@@ -163,8 +248,17 @@ the visual spec.
 
 ## 9. Open items
 
-1. §3 — how "not reported" is communicated, given the static condition has no tooltip.
-2. §6 — whether both conditions show the same entity set.
-3. Continent aggregates have **no 2024 data** for any vaccine, while countries do. A chart mixing
-   them shows continent lines stopping a year short. Decide: exclude 2024, exclude continents from
-   mixed charts, or annotate.
+All three items previously listed here are now settled. Kept, rather than deleted, so the reasoning
+survives into the write-up.
+
+1. ~~§3 — how "not reported" is communicated, given the static condition has no tooltip.~~
+   **Resolved 2026-09-15:** a caption in both conditions. See §3.
+2. ~~§6 — whether both conditions show the same entity set.~~
+   **Resolved 2026-09-15:** the same fixed set per task; filtering operates only within it. See §6
+   and `docs/study-design.md` §3.
+3. ~~Continent aggregates have no 2024 data.~~ **Resolved:** no task depends on a continent in 2024.
+   No item currently uses a continent at all, and `tests/test_tasks.py::test_no_task_depends_on_a_continent_in_2024`
+   fails the build if one ever does. The underlying gap is unchanged and is documented in CLAUDE.md;
+   this constrains task design rather than the visual spec.
+
+Nothing in §1–8 is open. A change to any of it needs this document edited first, then the code.

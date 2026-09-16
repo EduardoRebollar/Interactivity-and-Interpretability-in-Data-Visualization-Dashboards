@@ -1,6 +1,18 @@
 """Study session flow. Pure state transitions, no Dash and no I/O.
 
-consent -> participant id -> instructions -> condition A tasks -> break -> condition B tasks -> done
+    consent -> participant id -> instructions -> practice -> tasks -> load -> break
+                                      ^                                        |
+                                      +-------------- resume ------------------+
+                                 instructions -> tasks -> load -> done
+
+Two asymmetries are deliberate, and both implement `docs/study-design.md` section 8:
+
+- **Practice runs only before the first condition.** It teaches the interface, and a participant who
+  has already done it does not need it again.
+- **Instructions are shown again before the second condition.** The conditions differ in what the
+  chart can do, so a participant entering their second condition has to be told what changed.
+  Showing them once would leave whoever gets interactive second unaware the controls exist, which is
+  a procedural difference between conditions rather than a difference in interactivity.
 
 Kept free of framework code so the order of a within-subjects session can be tested exhaustively
 without a browser: which condition a participant sees, in which order, and how many tasks each.
@@ -27,7 +39,12 @@ class Stage(StrEnum):
     CONSENT = "consent"
     PARTICIPANT_ID = "participant_id"
     INSTRUCTIONS = "instructions"
+    PRACTICE = "practice"
     TASK = "task"
+    # The Paas mental-effort rating, asked once per condition. A stage rather than a screen the
+    # callback conjures mid-flight, so that `condition_index` can advance here — at LOAD the state
+    # still names the condition just finished, which is the one being rated.
+    LOAD = "load"
     BREAK = "break"
     COMPLETE = "complete"
 
@@ -177,9 +194,23 @@ def set_participant(
     )
 
 
+def begin_practice(state: SessionState) -> SessionState:
+    """Leave instructions for the unscored practice item.
+
+    First condition only: practice exists to teach the interface, and a participant reaching their
+    second condition has already used it.
+    """
+    _require(state, Stage.INSTRUCTIONS)
+    if state.first_condition is None:
+        raise FlowError("Cannot begin practice before a condition is assigned")
+    if state.condition_index != 0:
+        raise FlowError("Practice runs only before the first condition")
+    return replace(state, stage=Stage.PRACTICE)
+
+
 def begin_tasks(state: SessionState) -> SessionState:
-    """Leave instructions (or the mid-session break) and start this condition's first task."""
-    _require(state, Stage.INSTRUCTIONS, Stage.BREAK)
+    """Leave practice (or, in the second condition, instructions) for the first scored task."""
+    _require(state, Stage.INSTRUCTIONS, Stage.PRACTICE)
     if state.first_condition is None:
         raise FlowError("Cannot begin tasks before a condition is assigned")
     return replace(state, stage=Stage.TASK, task_index=0)
@@ -188,8 +219,9 @@ def begin_tasks(state: SessionState) -> SessionState:
 def complete_task(state: SessionState, tasks: Sequence[Task]) -> SessionState:
     """Finish the current task and move on.
 
-    Ends the condition when the tasks run out: to the break after the first condition, to completion
-    after the second.
+    When the tasks run out the condition goes to its load rating, not straight to the break: the
+    rating is about the condition just finished, so it has to be collected before the session moves
+    on to the next one.
     """
     _require(state, Stage.TASK)
     if not tasks:
@@ -198,12 +230,30 @@ def complete_task(state: SessionState, tasks: Sequence[Task]) -> SessionState:
     next_index = state.task_index + 1
     if next_index < len(tasks):
         return replace(state, task_index=next_index)
+    return replace(state, stage=Stage.LOAD, task_index=0)
 
+
+def submit_load(state: SessionState) -> SessionState:
+    """Record that the load rating is in and end the condition.
+
+    **This is where `condition_index` advances.** Keeping it here rather than in `complete_task` is
+    what lets every event from the last task through the load rating be attributed to the condition
+    that produced it, without the caller having to rewind the state to work out which that was.
+    """
+    _require(state, Stage.LOAD)
     if state.condition_index + 1 < CONDITIONS_PER_SESSION:
-        return replace(
-            state, stage=Stage.BREAK, condition_index=state.condition_index + 1, task_index=0
-        )
-    return replace(state, stage=Stage.COMPLETE, task_index=0)
+        return replace(state, stage=Stage.BREAK, condition_index=state.condition_index + 1)
+    return replace(state, stage=Stage.COMPLETE)
+
+
+def resume_after_break(state: SessionState) -> SessionState:
+    """Leave the mid-session break for the second condition's instructions.
+
+    Not straight to the tasks: the second condition's affordances differ from the first's and the
+    participant has to be told so. See the module docstring.
+    """
+    _require(state, Stage.BREAK)
+    return replace(state, stage=Stage.INSTRUCTIONS)
 
 
 def _require(state: SessionState, *allowed: Stage) -> None:

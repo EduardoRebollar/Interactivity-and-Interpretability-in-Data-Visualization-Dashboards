@@ -22,7 +22,10 @@ uv run python scripts/export_deploy_data.py # write data/deploy/coverage.csv
 uv run python -m src.app                    # http://127.0.0.1:8050
 ```
 
-Append `?interactive=1` or `?interactive=0` to the URL to review either condition.
+One URL serves both conditions. Which one a participant gets is assigned per session from the 2×2
+counterbalancing, not chosen from the URL — so to review a particular condition, start a session with
+a participant ID that draws it (assignment is deterministic without a database, so an ID always lands
+in the same cell).
 
 ## Checks
 
@@ -85,9 +88,18 @@ only; `.env` and `.env.*` are gitignored. See [.env.example](.env.example).
 
 ## Status
 
-Built and tested: data layer, event logger (schema v2, Postgres or JSONL), chart rendering with
-verified-contrast palette, session flow state machine, Vercel entry point.
+**The instrument is complete and runs end to end.** A participant can take the whole session from one
+URL: consent, participant ID, instructions, practice, six tasks, a mental-effort rating, a break, then
+the second condition in the other version and the other form.
 
-Not yet built: the study flow UI (consent, participant ID, task prompts, answer capture). It is
-blocked on `docs/study-design.md` — the task list, answer formats and scoring rubric are protocol
-decisions, and the app currently shows a clearly labelled preview chart in their place.
+Built and tested: data layer; event logger (schema v3, Postgres or JSONL); chart rendering on a
+verified-contrast palette; the session flow state machine; the study screens; the interactive
+controls (filter, sort, line isolation, and year-over-year change in the hover tooltip) with their
+interaction logging; the Vercel entry point.
+
+**Not yet run with participants, and it must not be.** The consent wording in `src/app.py` is a
+draft, marked as such on screen, and `docs/study-design.md` §9 carries unfilled contact and protocol
+placeholders. Nothing runs until IRB approves the final text.
+
+Also open before piloting: T6's form equivalence, flagged in `docs/study-design.md` §4 — the UK's
+19-year HepB3 gap has no equal in the dataset, and form B substitutes three shorter ones.

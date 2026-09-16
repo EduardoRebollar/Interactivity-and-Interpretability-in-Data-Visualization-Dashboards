@@ -74,10 +74,20 @@ def test_reference_color_meets_graphical_floor():
     assert contrast_ratio(config.REFERENCE_COLOR, BG) >= GRAPHIC_MIN
 
 
-@pytest.mark.parametrize("color", [config.TEXT_PRIMARY, config.TEXT_MUTED, config.AXIS_COLOR])
+@pytest.mark.parametrize(
+    "color",
+    [config.TEXT_PRIMARY, config.TEXT_MUTED, config.AXIS_COLOR, config.ERROR_COLOR],
+)
 def test_text_colors_meet_text_floor(color):
     ratio = contrast_ratio(color, BG)
     assert ratio >= TEXT_MIN, f"{color} is {ratio:.2f}:1, below {TEXT_MIN}:1"
+
+
+def test_the_error_colour_is_not_a_series_colour():
+    """It is UI chrome. Reusing a series colour would put a data colour on non-data text — and the
+    vermillion it derives from is 3.87:1, fine for a 2.5px line but below the 4.5:1 text floor."""
+    assert config.ERROR_COLOR not in config.SERIES_COLORS
+    assert contrast_ratio(config.ERROR_COLOR, BG) >= TEXT_MIN
 
 
 def test_series_colors_are_distinct():

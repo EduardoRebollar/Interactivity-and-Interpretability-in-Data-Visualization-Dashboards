@@ -49,6 +49,136 @@ def chart(entities: list[str], vaccine: str, interactive: bool, element_id: str 
     )
 
 
+SORT_KEYS = ("listed", "coverage")
+
+
+def filterable(entities: list[str]) -> list[str]:
+    """The entities a participant may hide.
+
+    World is excluded: it is the dashed reference every task is read against, and several items ask
+    directly about it. Letting it be switched off would let a participant remove the thing the
+    question is about.
+    """
+    return [entity for entity in entities if entity != "World"]
+
+
+def latest_values(entities: list[str], vaccine: str) -> dict[str, float | None]:
+    """Each entity's most recently REPORTED value, which is not always the last year.
+
+    Every continent aggregate is missing 2024, so keying off the final year alone would sort those
+    series as if they had no data.
+    """
+    from src import runtime_data
+
+    rows = runtime_data.load_rows()
+    values: dict[str, float | None] = {}
+    for entity in entities:
+        observed = [
+            row.coverage_pct
+            for row in runtime_data.series(entity, vaccine, rows)
+            if row.coverage_pct is not None
+        ]
+        values[entity] = observed[-1] if observed else None
+    return values
+
+
+def sorted_entities(entities: list[str], vaccine: str, sort_key: str) -> list[str]:
+    """Control-list order. `listed` is the task's own order; `coverage` is highest-latest first."""
+    if sort_key not in SORT_KEYS:
+        raise ValueError(f"Unknown sort key {sort_key!r}; expected one of {SORT_KEYS}")
+    if sort_key == "listed":
+        return list(entities)
+    values = latest_values(entities, vaccine)
+    # An entity with nothing reported sorts last rather than crashing the comparison.
+    return sorted(entities, key=lambda e: (values[e] is None, -(values[e] or 0), e))
+
+
+def control_label(entity: str, value: float | None, sort_key: str) -> str:
+    """Checkbox text. The latest value is shown only when the list is ordered BY that value.
+
+    Sorting by coverage is meaningless without showing what it sorted on, but the default view has
+    no reason to carry numbers — and leaving them out of it keeps the resting state of the two
+    conditions closer.
+    """
+    if sort_key != "coverage":
+        return entity
+    return f"{entity} — {value:.0f}%" if value is not None else f"{entity} — not reported"
+
+
+def entity_controls(task, sort_key: str, selected: list[str]) -> html.Div:
+    """Filter, sort and reset. Rendered ONLY in the interactive condition.
+
+    These are the study's independent variable. The chart they act on is the same chart the static
+    condition sees; what differs is that it can be worked with rather than only looked at.
+
+    Every control here is a native form element, so keyboard navigation comes for free — required by
+    the accessibility baseline in CLAUDE.md. Do not reimplement any of them as styled divs.
+    """
+    options = filterable(list(task.entities))
+    ordered = sorted_entities(options, task.vaccine, sort_key)
+    values = latest_values(ordered, task.vaccine) if sort_key == "coverage" else {}
+
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.Span("Show:", style={**MUTED_STYLE, "marginRight": "8px"}),
+                    dcc.Checklist(
+                        id="entity-filter",
+                        options=[
+                            {"label": control_label(e, values.get(e), sort_key), "value": e}
+                            for e in ordered
+                        ],
+                        value=[e for e in ordered if e in selected],
+                        labelStyle={"display": "inline-block", "marginRight": "16px"},
+                        inputStyle={"marginRight": "6px"},
+                        style={"display": "inline-block"},
+                    ),
+                ],
+                style={"marginBottom": "6px"},
+            ),
+            html.Div(
+                [
+                    html.Span("Order:", style={**MUTED_STYLE, "marginRight": "8px"}),
+                    dcc.RadioItems(
+                        id="entity-sort",
+                        options=[
+                            {"label": "as listed", "value": "listed"},
+                            {"label": "by coverage", "value": "coverage"},
+                        ],
+                        value=sort_key,
+                        labelStyle={"display": "inline-block", "marginRight": "16px"},
+                        inputStyle={"marginRight": "6px"},
+                        style={"display": "inline-block"},
+                    ),
+                    html.Button(
+                        "Show all",
+                        id="reset-view",
+                        n_clicks=0,
+                        style={
+                            "fontFamily": config.FONT_FAMILY,
+                            "fontSize": f"{config.FONT_SIZE_AXIS}px",
+                            "padding": "4px 10px",
+                            "marginLeft": "12px",
+                            "color": config.TEXT_PRIMARY,
+                            "backgroundColor": config.BACKGROUND,
+                            "border": f"1px solid {config.AXIS_COLOR}",
+                            "borderRadius": "4px",
+                            "cursor": "pointer",
+                        },
+                    ),
+                ]
+            ),
+            html.P(
+                "Click a line to show it on its own; click it again, or Show all, to bring the "
+                "others back.",
+                style={**MUTED_STYLE, "margin": "6px 0 0 0"},
+            ),
+        ],
+        style={"marginBottom": "12px"},
+    )
+
+
 def gap_note(entities: list[str], vaccine: str) -> html.P | None:
     """Name any series with unreported years, so absence is not read as zero coverage.
 
@@ -89,8 +219,26 @@ def _year_ranges(years: list[int]) -> str:
     return ", ".join(str(a) if a == b else f"{a}-{b}" for a, b in spans)
 
 
+ERROR_STYLE = {
+    "fontSize": f"{config.FONT_SIZE_BASE}px",
+    "color": config.ERROR_COLOR,
+    "marginTop": "12px",
+    "minHeight": "1.4em",
+}
+
+
 def page(*children) -> html.Div:
-    return html.Div(children, style=PAGE_STYLE)
+    """Page chrome plus the one validation-error slot.
+
+    `flow-error` is emitted on EVERY screen, not only the ones that can produce an error. A Dash
+    callback resolves its outputs against whatever is in the DOM, so an error output present on some
+    screens and not others is a latent failure on exactly the screens that need it most. One id,
+    always present, is the version that cannot misfire.
+    """
+    return html.Div(
+        [*children, html.Div(id="flow-error", style=ERROR_STYLE)],
+        style=PAGE_STYLE,
+    )
 
 
 def heading(text: str) -> html.H1:
@@ -163,7 +311,6 @@ def participant_screen() -> html.Div:
                 "width": "220px",
             },
         ),
-        html.Div(id="participant-error", style={**MUTED_STYLE, "color": config.SERIES_COLORS[2]}),
         primary_button("Continue", "participant-button"),
     )
 
@@ -174,36 +321,81 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
     Describing controls that are not present, or failing to describe controls that are, would be a
     procedural difference rather than a visual one — but it has to be accurate or the interactive
     condition is handicapped by not knowing its affordances exist.
+
+    **Shown before BOTH conditions.** `practice=True` marks the first, which is the only one leading
+    into the practice item. The second condition reaches this screen from the break, and needs it
+    precisely because its affordances differ from the first's — a participant who gets the
+    interactive version second would otherwise never learn the controls exist.
     """
     shared = (
         "You will see line charts of childhood vaccination coverage and answer a question about "
         "each. After each question you will be asked, in one sentence, how you decided."
     )
     specific = (
-        "You can hover a line to read its exact value, and use the controls above the chart to "
-        "filter and isolate countries."
+        "You can hover a line to read its exact value and its change from the year before, and use "
+        "the controls above the chart to filter, sort and isolate countries."
         if interactive
         else "The charts are images: read the values against the gridlines."
     )
+    intro = (
+        []
+        if practice
+        else [
+            html.P(
+                "This half uses a different version of the chart from the one you have just used. "
+                "Please read on — what the chart can do has changed.",
+                style={**PROMPT_STYLE, "fontWeight": "600"},
+            )
+        ]
+    )
     return page(
         heading("Instructions"),
+        *intro,
         html.P(shared, style=PROMPT_STYLE),
         html.P(specific, style=PROMPT_STYLE),
         html.P(
             "A break in a line means no value was reported for those years.",
             style=PROMPT_STYLE,
         ),
-        primary_button("Start the practice question" if practice else "Continue", "begin-button"),
+        primary_button(
+            "Start the practice question" if practice else "Start the questions", "begin-button"
+        ),
     )
 
 
-def task_screen(task, interactive: bool, index: int, total: int) -> html.Div:
-    """One task: prompt, chart, answer options, justification."""
+def task_screen(
+    task, interactive: bool, index: int, total: int, practice: bool = False
+) -> html.Div:
+    """One task: prompt, chart, answer options, justification.
+
+    The practice item uses this same screen, so what it teaches is the interface the scored tasks
+    actually use.
+    """
+    position = "Practice — not scored" if practice else f"Question {index} of {total}"
     children = [
-        html.P(f"Question {index} of {total}", style=MUTED_STYLE),
+        html.P(position, style=MUTED_STYLE),
         html.P(task.prompt, style={**PROMPT_STYLE, "fontWeight": "600"}),
-        chart(list(task.entities), task.vaccine, interactive),
     ]
+
+    # The controls are the interactive condition's whole point, and the static condition renders
+    # nothing in their place. The CHART is identical either way: at first render every series is
+    # shown, so both conditions open on the same picture.
+    if interactive:
+        children += [
+            # Recreated with every task render, which is what resets filtering, sorting and
+            # isolation between tasks — no task inherits the previous one's view.
+            dcc.Store(
+                id="control-state",
+                data={
+                    "selected": filterable(list(task.entities)),
+                    "sort": "listed",
+                    "isolated": None,
+                },
+            ),
+            entity_controls(task, sort_key="listed", selected=filterable(list(task.entities))),
+        ]
+
+    children.append(chart(list(task.entities), task.vaccine, interactive))
 
     note = gap_note(list(task.entities), task.vaccine)
     if note is not None:
@@ -228,7 +420,6 @@ def task_screen(task, interactive: bool, index: int, total: int) -> html.Div:
                 "padding": "8px",
             },
         ),
-        html.Div(id="task-error", style={**MUTED_STYLE, "color": config.SERIES_COLORS[2]}),
         primary_button("Submit", "submit-button"),
     ]
     return page(*children)
@@ -249,7 +440,6 @@ def load_screen(prompt: str, anchors: dict[int, str]) -> html.Div:
             labelStyle={"display": "block", "margin": "6px 0"},
             inputStyle={"marginRight": "8px"},
         ),
-        html.Div(id="load-error", style={**MUTED_STYLE, "color": config.SERIES_COLORS[2]}),
         primary_button("Continue", "load-button"),
     )
 
@@ -262,7 +452,10 @@ def break_screen() -> html.Div:
             "and different questions. Take a moment, then continue when you are ready.",
             style=PROMPT_STYLE,
         ),
-        primary_button("Continue", "begin-button"),
+        # Its own id, not `begin-button`: this leads to the second condition's INSTRUCTIONS, whereas
+        # `begin-button` starts the tasks. Sharing an id would make the two indistinguishable in the
+        # callback and is how the second condition lost its instructions in the first place.
+        primary_button("Continue", "resume-button"),
     )
 
 

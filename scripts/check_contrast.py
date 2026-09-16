@@ -46,6 +46,8 @@ def report() -> int:
     line("primary", config.TEXT_PRIMARY, TEXT_MIN)
     line("muted", config.TEXT_MUTED, TEXT_MIN)
     line("axis", config.AXIS_COLOR, TEXT_MIN)
+    # UI chrome, not a series colour, but it is text and so takes the text floor.
+    line("error", config.ERROR_COLOR, TEXT_MIN)
 
     print("\nStructural")
     line("gridline", config.GRIDLINE_COLOR, None if config.GRIDLINE_EXEMPT else GRAPHIC_MIN)

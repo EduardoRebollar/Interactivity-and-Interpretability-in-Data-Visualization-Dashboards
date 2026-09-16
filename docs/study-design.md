@@ -93,11 +93,19 @@ All values verified against `data/deploy/coverage.csv`. All items use DTP3 excep
 | | Form A | Form B |
 |---|---|---|
 | Year | 2010 (World 83%) | 2020 (World 83%) |
-| Entities | Brazil, Nigeria, Ethiopia, India, Indonesia, United States, World | same |
-| Above | Brazil 99, United States 95 | India 85, United States 93 |
-| Correct | 2 | 2 |
+| Entities | Brazil, Nigeria, Ethiopia, India, Indonesia, World | same |
+| Above | Brazil 99 | India 85 |
+| Correct | **1** | **1** |
 
-Matched: both have exactly two above the line out of six.
+Matched: exactly one above the line out of five, in both forms.
+
+> **Corrected 2026-09-15.** This table previously listed the United States among the entities and
+> gave the answer as 2 in both forms. It cannot: six coloured countries breach `MAX_SERIES = 5`
+> (`docs/visual-spec.md` §6), and `src/tasks.py` had always omitted the US accordingly. Checked
+> against `data/deploy/coverage.csv` — Form A 2010: Brazil 99 is the only country above World's 83
+> (Nigeria 56, Ethiopia 61, India 79, Indonesia 81); Form B 2020: India 85 is the only one (Brazil
+> 77, Nigeria 62, Ethiopia 62, Indonesia 77). The item stays matched across forms and "1" is among
+> the options, so the task set is unchanged — only this key was wrong.
 
 ### T2 — Trend, decline
 
@@ -224,12 +232,28 @@ network latency do not enter a dependent variable.
 
 ## 8. Procedure
 
-`consent → participant ID → instructions → practice → 6 tasks → load rating → break → 6 tasks →
-load rating → complete`
+`consent → participant ID → instructions → practice → 6 tasks → load rating → break → instructions →
+6 tasks → load rating → complete`
+
+Implemented as `flow.Stage`; `tests/test_flow.py` walks the whole sequence.
+
+**Instructions appear twice, practice once.** The conditions differ in what the chart can do, so a
+participant entering their second condition is shown the instructions again, describing the version
+they are about to use. Showing them only once would leave whoever draws the interactive condition
+second unaware that the controls exist — a procedural difference between conditions rather than a
+difference in interactivity, and one that would depress the interactive condition's scores for
+exactly the wrong reason. Practice is not repeated: it teaches the interface, and by the second
+condition the participant has used it.
+
+The practice answer is recorded under `task_id` `P0` so that its timing is available, and **excluded
+from scoring** (§7).
 
 Participants self-serve from one URL. Session state lives in `sessionStorage`, so a closed tab ends
 the session; re-entering the same participant ID resumes with the same condition and form assignment,
 never re-randomised.
+
+Each condition is one log session, opened at its instructions and closed after its load rating, so
+both halves produce a complete `session_start … session_end` record.
 
 ## 9. Consent — DRAFT FOR IRB REVIEW
 

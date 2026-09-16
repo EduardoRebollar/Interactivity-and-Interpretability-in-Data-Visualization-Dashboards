@@ -1,6 +1,10 @@
 """Event and timing logger. This module produces the study's primary data.
 
-**Schema v2 (2026-09-15).** Deployment forced three changes from v1:
+**Schema v3 (2026-09-15).** Parallel forms added the `form` column, the `load_rating` event (Paas
+mental effort, the RQ3 measure) and `justification` on `answer_submit` (the RQ2 material). Additive,
+and nothing had been collected, so there was no migration — but the record shape changed.
+
+v2 before it, where deployment forced three changes from v1:
 
 1. **Timings come from the browser.** Each event is its own HTTP request, so a server clock would
    fold network latency and 800 ms-2.5 s cold starts into task duration — and task duration is a

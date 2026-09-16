@@ -33,6 +33,23 @@ def _started(first_condition: str = "static", first_form: str = "A") -> SessionS
     return flow.set_participant(state, "P01", first_condition, first_form)
 
 
+def _first_tasks(state: SessionState) -> SessionState:
+    """Instructions -> practice -> the first scored task of the FIRST condition."""
+    return flow.begin_tasks(flow.begin_practice(state))
+
+
+def _through_tasks(state: SessionState) -> SessionState:
+    """Answer every scored task, leaving the state on that condition's load rating."""
+    for _ in range(len(TASKS)):
+        state = flow.complete_task(state, TASKS)
+    return state
+
+
+def _second_tasks(state: SessionState) -> SessionState:
+    """Load rating -> break -> instructions -> the first task of the SECOND condition."""
+    return flow.begin_tasks(flow.resume_after_break(flow.submit_load(state)))
+
+
 # --- Counterbalancing ---------------------------------------------------------------------------
 
 
@@ -66,17 +83,16 @@ def test_condition_and_form_are_independently_balanced():
 @pytest.mark.parametrize("first_condition", ["static", "interactive"])
 @pytest.mark.parametrize("first_form", ["A", "B"])
 def test_participant_sees_both_conditions_and_both_forms_once(first_condition, first_form):
-    state = flow.begin_tasks(_started(first_condition, first_form))
+    state = _first_tasks(_started(first_condition, first_form))
 
     seen = [(flow.current_condition(state), flow.current_form(state))]
-    for _ in range(len(TASKS)):
-        state = flow.complete_task(state, TASKS)
-    assert state.stage is Stage.BREAK
+    state = _through_tasks(state)
+    assert state.stage is Stage.LOAD
+    assert flow.submit_load(state).stage is Stage.BREAK
 
-    state = flow.begin_tasks(state)
+    state = _second_tasks(state)
     seen.append((flow.current_condition(state), flow.current_form(state)))
-    for _ in range(len(TASKS)):
-        state = flow.complete_task(state, TASKS)
+    state = flow.submit_load(_through_tasks(state))
 
     assert state.stage is Stage.COMPLETE
     assert sorted(c for c, _ in seen) == ["interactive", "static"]
@@ -88,20 +104,20 @@ def test_form_never_repeats_within_a_session():
     """The whole point of parallel forms: nobody answers the same question twice."""
     for seq in range(1, 9):
         condition, form = db.assignment_for(seq)
-        state = flow.begin_tasks(_started(condition, form))
+        state = _first_tasks(_started(condition, form))
         first = flow.current_form(state)
-        for _ in range(len(TASKS)):
-            state = flow.complete_task(state, TASKS)
-        second = flow.current_form(flow.begin_tasks(state))
+        second = flow.current_form(_second_tasks(_through_tasks(state)))
         assert first != second, f"seq {seq} would show form {first} twice"
 
 
 def test_is_interactive_tracks_the_current_condition():
-    state = flow.begin_tasks(_started("static"))
+    state = _first_tasks(_started("static"))
     assert flow.is_interactive(state) is False
-    for _ in range(len(TASKS)):
-        state = flow.complete_task(state, TASKS)
-    assert flow.is_interactive(state) is True
+    state = _through_tasks(state)
+    assert flow.is_interactive(state) is False, (
+        "the load rating is ABOUT the condition just finished, so the state must still name it"
+    )
+    assert flow.is_interactive(flow.submit_load(state)) is True
 
 
 def test_other_condition_and_other_form_are_involutions():
@@ -112,11 +128,11 @@ def test_other_condition_and_other_form_are_involutions():
 
 
 def test_condition_order_is_one_then_two():
-    state = flow.begin_tasks(_started())
+    state = _first_tasks(_started())
     assert flow.condition_order(state) == 1
-    for _ in range(len(TASKS)):
-        state = flow.complete_task(state, TASKS)
-    assert flow.condition_order(state) == 2
+    state = _through_tasks(state)
+    assert flow.condition_order(state) == 1, "still the first condition until the load rating is in"
+    assert flow.condition_order(flow.submit_load(state)) == 2
 
 
 def test_accessors_before_assignment_are_errors():
@@ -130,7 +146,7 @@ def test_accessors_before_assignment_are_errors():
 
 
 def test_tasks_advance_in_order():
-    state = flow.begin_tasks(_started())
+    state = _first_tasks(_started())
     seen = []
     for _ in range(len(TASKS)):
         seen.append(flow.current_task(state, TASKS).task_id)
@@ -139,12 +155,21 @@ def test_tasks_advance_in_order():
 
 
 def test_task_index_resets_for_the_second_condition():
-    state = flow.begin_tasks(_started())
-    for _ in range(len(TASKS)):
-        state = flow.complete_task(state, TASKS)
-    state = flow.begin_tasks(state)
+    state = _second_tasks(_through_tasks(_first_tasks(_started())))
     assert state.task_index == 0
     assert flow.current_task(state, TASKS).task_id == "T1"
+
+
+def test_last_task_goes_to_the_load_rating_not_the_break():
+    """The Paas rating is about the condition just finished, so it precedes the handover."""
+    state = _through_tasks(_first_tasks(_started()))
+    assert state.stage is Stage.LOAD
+
+
+def test_condition_index_advances_at_the_load_rating():
+    state = _through_tasks(_first_tasks(_started()))
+    assert state.condition_index == 0
+    assert flow.submit_load(state).condition_index == 1
 
 
 def test_current_task_outside_task_stage_is_an_error():
@@ -165,10 +190,45 @@ def test_stages_must_be_entered_in_order():
     fresh = SessionState()
     with pytest.raises(FlowError, match="Expected stage participant_id"):
         flow.set_participant(fresh, "P01", "static", "A")
-    with pytest.raises(FlowError, match="Expected stage instructions or break"):
+    with pytest.raises(FlowError, match="Expected stage instructions or practice"):
         flow.begin_tasks(fresh)
     with pytest.raises(FlowError, match="Expected stage task"):
         flow.complete_task(fresh, TASKS)
+    with pytest.raises(FlowError, match="Expected stage load"):
+        flow.submit_load(fresh)
+    with pytest.raises(FlowError, match="Expected stage break"):
+        flow.resume_after_break(fresh)
+
+
+# --- Practice and the second condition's instructions --------------------------------------------
+
+
+def test_practice_precedes_the_first_condition():
+    state = flow.begin_practice(_started())
+    assert state.stage is Stage.PRACTICE
+    assert flow.begin_tasks(state).stage is Stage.TASK
+
+
+def test_practice_does_not_run_before_the_second_condition():
+    """It teaches the interface; a participant reaching their second condition has used it."""
+    second = flow.resume_after_break(flow.submit_load(_through_tasks(_first_tasks(_started()))))
+    assert second.stage is Stage.INSTRUCTIONS
+    with pytest.raises(FlowError, match="only before the first condition"):
+        flow.begin_practice(second)
+
+
+def test_the_break_leads_back_to_instructions_not_to_the_tasks():
+    """Whoever gets the interactive version second must be told the controls exist."""
+    state = flow.submit_load(_through_tasks(_first_tasks(_started())))
+    assert state.stage is Stage.BREAK
+    assert flow.resume_after_break(state).stage is Stage.INSTRUCTIONS
+
+
+def test_the_second_conditions_instructions_describe_the_second_condition():
+    """The re-shown instructions describe the condition about to start, not the one just done."""
+    finished = _through_tasks(_first_tasks(_started("static")))
+    state = flow.resume_after_break(flow.submit_load(finished))
+    assert flow.is_interactive(state) is True
 
 
 def test_consent_cannot_be_given_twice():

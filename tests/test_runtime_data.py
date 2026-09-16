@@ -33,6 +33,8 @@ RUNTIME_MODULES = [
     "src/layout.py",
     "src/logging.py",
     "src/runtime_data.py",
+    # Ships too: imported by src/app.py and src/layout.py. Its absence here was an unguarded hole.
+    "src/tasks.py",
 ]
 
 FORBIDDEN = {"pandas", "numpy", "pyarrow"}

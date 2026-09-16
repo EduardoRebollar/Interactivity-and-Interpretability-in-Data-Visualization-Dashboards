@@ -1,0 +1,14 @@
+# Input for requirements.txt. Regenerate with:
+#
+#     uv pip compile requirements.in -o requirements.txt
+#
+# Committed so that regeneration is reproducible and so the generated file's "# via -r" comments
+# name a path that exists in the repo. Compiling from a scratch file outside the working tree baked
+# an absolute local path — and a local username — into a public artefact.
+#
+# These three are exactly [project.dependencies] in pyproject.toml, which is the runtime set Vercel
+# installs. pandas, pyarrow and numpy are deliberately absent: they live in the `dev` group, are
+# ~146 MB, and are never imported by a module that ships. See CLAUDE.md > Deployment.
+dash>=4.4.1
+plotly>=7.0.0
+psycopg[binary]>=3.3.5
