@@ -52,7 +52,8 @@ interpretation. Every item below targets direction, magnitude comparison, orderi
 ### Counterbalancing
 
 Assignment comes from a database sequence, not a random draw, so the cells fill evenly and two
-simultaneous participants can never collide (`db.assign_participant`):
+simultaneous participants can never collide (`db.register_participant`, which applies the rule
+in `db.assignment_for`):
 
 | seq % 4 | Condition 1 | Form | Condition 2 | Form |
 |---|---|---|---|---|
@@ -143,8 +144,22 @@ Matched almost exactly: +31 vs +24, against +31 vs +23.
 | Crossing | **2017** | **2009** |
 | Entities | Brazil, India, World | India, Ukraine, World |
 
-Options are 4-year bands (e.g. 2004–2008, 2009–2012, 2013–2016, 2017–2020, 2021–2024), so the answer
-does not depend on reading an exact value.
+Options are 4-year bands (`2004-2008`, `2009-2012`, `2013-2016`, `2017-2020`, `2021-2024`), so the
+answer does not depend on reading an exact value.
+
+**The crossing year → band rule (recorded 2026-09-15).** The tables above state a crossing *year*;
+the participant chooses a *band*. The key is the band containing that year. Bands are inclusive at
+both ends and contiguous, so the mapping is unambiguous:
+
+| | Form A | Form B |
+|---|---|---|
+| T4 | 2017 → `2017-2020` | 2009 → `2009-2012` |
+| T5 | 2012 → `2009-2012` | 2008 → `2004-2008` |
+
+The crossing year itself is the first year in which the overtaking series is **strictly above** the
+other, having not been above in the preceding year. Note `CROSSING_BANDS` does not cover 2000–2003;
+no item crosses there. `analysis/keys.py` derives all four from `data/deploy/coverage.csv` by this
+rule and fails if any disagrees with the table.
 
 ### T5 — Crossing, smaller
 
@@ -158,6 +173,26 @@ Same wording as T4.
 
 Both pairs have the same effect size (+13 → −17 between early and late means).
 
+> **Band-edge asymmetry — ruled on 2026-09-15, pre-registered.** Both T5 keys fall on the **last**
+> year of their band (2012 closes `2009-2012`; 2008 closes `2004-2008`), while both T4 keys fall on
+> the **first** year of theirs. A participant who reads the crossing one year late still scores
+> correctly on T4 but incorrectly on T5 — and a one-year misread is likelier in the static
+> condition, which has no hover. That would push RQ1 in the hypothesised direction for a reason that
+> is not interactivity.
+>
+> **Decision: keep the items and pre-register both analyses.** Strict band scoring is the primary
+> outcome. Adjacent-band credit on T5 (the key band, or the band containing key year ± 1) is
+> pre-registered as a **secondary** analysis, reported alongside. The forms are matched on edge
+> position — T4 first-year and T5 last-year in *both* — so neither form is advantaged; the cost is
+> error variance on T5, not bias between forms. Recording the rule now, before collection, is what
+> keeps this a disclosure rather than a post-hoc choice.
+
+> **Pilot check — A-T5 may be a weak stimulus.** China and Brazil are both *exactly* 99.0 in 2009,
+> 2010 and 2011 before China separates in 2012. Scoring is safe (first-strictly-above gives 2012 and
+> first-not-below gives 2009, and both land in `2009-2012`), but two lines sitting on top of each
+> other at 99 for three years may not read as an "overtaking" at all in the static condition. Check
+> it in the pilot alongside T6.
+
 ### T6 — Gap reasoning
 
 *What can you say about hepatitis B coverage in {country} before {year}?*
@@ -167,9 +202,17 @@ Both pairs have the same effect size (+13 → −17 between early and late means
 | Series | United Kingdom HepB3 | Ethiopia, Nigeria, India HepB3 |
 | Missing | 19 years (2000–2018) | 7, 4 and 4 years (all from 2000) |
 | Entities | United Kingdom, United States, Brazil, World | Ethiopia, Nigeria, India, Brazil, World |
+| Correct | **Coverage was not reported for those years** | same |
 
 Options distinguish *not reported* from *zero coverage* from *low coverage*. This is the item most
 directly aimed at RQ1: in the static condition there is no tooltip to explain a break in a line.
+
+> **Correct row added 2026-09-15.** This table previously had no `Correct` row at all — the key was
+> implied by the surrounding prose and stated nowhere, the same class of omission that left T1's key
+> wrong until it was checked against the data. The key is derivable, not assumed: of the four
+> options, only "not reported" is a claim the data supports. `analysis/keys.py` proves it by
+> asserting every year in the window is missing (`None`) rather than recorded as `0.0` — which is
+> exactly the distinction the item asks the participant to make.
 
 > **Known weakness — check this in the pilot.** The UK's 19-year gap has no equal in the dataset; the
 > next longest is Ethiopia's 7 years. Form B substitutes three shorter gaps to reach a comparable
@@ -208,8 +251,20 @@ administration time and fatigue without much resolution. Logged as `load_rating`
 
 ## 7. Scoring
 
+This section is a **pre-registration**. Every rule here is fixed before collection begins, because
+choosing an exclusion rule after seeing the data is a methodological problem however reasonable the
+rule is. `analysis/` implements it; nothing is decided at analysis time.
+
 **Accuracy (RQ1).** Binary per task from the multiple choice. Primary outcome: proportion correct per
 participant per condition.
+
+Scored by exact string equality against a key **derived from `data/deploy/coverage.csv`** by the
+rule each item states, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
+that disagrees with §4 fails the test suite. This exists because §4's prose key for T1 was wrong —
+it said 2, the data says 1 — and nothing would have caught it.
+
+*Secondary, for T5 only:* accuracy recomputed with adjacent-band credit, per the band-edge ruling in
+§4. Reported alongside the primary, never in place of it.
 
 **Reasoning depth (RQ2).** Each justification coded on three binary features:
 
@@ -222,13 +277,54 @@ participant per condition.
 Depth score 0–3. Code blind to condition. A second coder scores 20% of the justifications;
 report Cohen's κ.
 
+Blinding is enforced by the harness, not by discipline (`analysis/coding.py`): the coding sheet
+carries only an opaque unit id and the justification text — no condition, no form, no participant,
+and no task id. Justifications are emitted in a **seeded shuffle**, because they are produced in
+condition-blocked order and an unshuffled sheet would let a coder infer condition from position. The
+20% double-coded sample is **stratified by condition**, so reliability is not accidentally estimated
+on one condition's material.
+
+**κ is reported per code, with each code's prevalence** — three values, not one. κ is
+prevalence-sensitive, so a low κ on a rare code (`notes_uncertainty` is the likely one) indicates
+rarity, not poor coding. Where a coder used a single category throughout, κ is undefined and is
+reported as such rather than as a number. At n ≥ 25 the double-coded sample is roughly 60 units:
+conventional, but thin, and the write-up should say so.
+
 **Cognitive load (RQ3).** Paas score per condition, 1–9.
 
 **Time on task.** From the browser clock (`performance.now()`), never the server, so cold starts and
 network latency do not enter a dependent variable.
 
-**Exclusions**, decided before analysis: sessions not reaching `complete`; any task under 3 seconds
-(not read); the top 1% of task durations (walked away). Report how many were excluded and why.
+### Exclusions
+
+Decided before analysis. Each rule is a named, separately reportable filter; `analysis/exclusions.py`
+returns the count and the affected ids for every one, and the write-up reports **how many were
+excluded and why** as a table.
+
+Two kinds, which the earlier flat list did not distinguish:
+
+**Accuracy exclusions** — the response itself is not usable, so the row leaves every analysis.
+
+| Rule | Definition |
+|---|---|
+| `incomplete_session` | The participant did not produce **two** log sessions each carrying a `session_end` and six scored answers. Stated this way because `session_end` is written per *condition*, not once at the end of the study, so "reached `complete`" needed a precise test. |
+| `too_fast` | Task duration < 3000 ms — not read. A **null** duration is not "fast"; nulls are their own category and are never swept in here. |
+
+**Timing exclusions** — the answer stands, but the duration is not usable, so the row leaves
+time-on-task analysis only and keeps its accuracy.
+
+| Rule | Definition |
+|---|---|
+| `invalid_timing` | The browser clock reset mid-task (a page reload), so no duration was recorded. Flagged in the data as `duration_invalid`; see §8. |
+| `top_one_percent` | The top 1% of task durations — walked away. Computed **pooled across both conditions**, never per condition: a per-condition trim removes a different number of rows from each condition and can manufacture a difference by itself. |
+
+**Reported, not excluded:** `degraded_session` — a session in which the event logger could not reach
+the database and spooled locally (`sink_recovered` present). The answers are unaffected, but the
+interactive condition pays a database round-trip inside the measured task window, so these sessions
+are counted and timing analyses are re-run without them as a robustness check.
+
+**Order is fixed**, because a different order gives different numbers: session-level rules first,
+then `too_fast`, then the 1% trim computed on whatever survives.
 
 ## 8. Procedure
 
@@ -249,11 +345,38 @@ The practice answer is recorded under `task_id` `P0` so that its timing is avail
 from scoring** (§7).
 
 Participants self-serve from one URL. Session state lives in `sessionStorage`, so a closed tab ends
-the session; re-entering the same participant ID resumes with the same condition and form assignment,
-never re-randomised.
+the session. Re-entering the same participant ID returns the same condition and form assignment,
+never re-randomised — the assignment is held in the database and is idempotent.
+
+> **Known limitation, corrected 2026-09-15.** This paragraph previously said a returning participant
+> *resumes*. Only the assignment survives; the progress does not. `sessionStorage` is per-tab, so a
+> participant who closes the tab and re-enters their ID restarts at the beginning of condition 1 and
+> writes a second, overlapping set of events under the same participant ID with a new `session_id`.
+> The participant-ID screen still tells them they will "continue where the study left off", which is
+> not true. Until this is fixed: run sessions in one sitting in one tab, and treat a participant with
+> more than two log sessions as needing manual inspection before analysis — the
+> `incomplete_session` rule in §7 counts sessions and would otherwise be misled.
 
 Each condition is one log session, opened at its instructions and closed after its load rating, so
 both halves produce a complete `session_start … session_end` record.
+
+**Timing integrity.** Task duration is the difference between two `performance.now()` stamps taken in
+the participant's browser. That clock resets to zero on a page reload, which would otherwise yield a
+plausible but wrong duration — an undercount measured from the reload, indistinguishable from a fast
+answer. Each stamp therefore carries `performance.timeOrigin`, and a duration whose two stamps come
+from different origins is recorded as **absent and flagged** (`duration_ms` null,
+`duration_invalid: "clock_reset"`) rather than as a number. This follows the same principle as the
+coverage data: a missing value is missing, never silently filled. Those rows keep their accuracy and
+leave time-on-task analysis (§7).
+
+**One answer per task.** Submit is disabled in the browser the moment it is pressed, and re-enabled
+if the step is refused (an unanswered question) or if no response arrives within 15 seconds, so a
+participant is never left with a dead button. This is the guard that matters: two rapid clicks send
+two requests that both carry the same pre-click session state, so the server cannot tell them apart.
+Behind it, the app refuses an answer for a task already recorded in the session, and the database
+refuses a second `answer_submit` for the same session and task through a unique index. Without these
+a double-click writes a duplicate answer and a duplicate `task_end`; it does not skip an item, since
+both requests advance from the same starting point.
 
 ## 9. Consent — DRAFT FOR IRB REVIEW
 
@@ -279,10 +402,32 @@ both halves produce a complete `session_start … session_end` record.
 >
 > Selecting "I agree" records your consent with a timestamp.
 
+### How consent is recorded
+
+Selecting "I agree" captures a timestamp in the participant's browser. It is written to the log as a
+`consent` event when the session's logger opens, a moment later, on the instructions screen — the
+logger cannot open before then, because a log record must carry a participant ID and a condition, and
+neither exists until the participant has entered an ID and been assigned. The event is emitted once
+per participant, not once per condition.
+
+Two consequences, recorded rather than hidden:
+
+- The event's `server_ts` is the instructions-screen time; the true consent time is
+  `payload.consented_at`. Analysis must read the latter.
+- **A participant who agrees and then leaves before entering an ID produces no consent record.** They
+  also produce no data, so nothing unconsented is ever stored — but the record is of consenting
+  participants, not of everyone who clicked.
+
+The event also stores a hash of the consent wording shown, so a mid-study change to the text is
+detectable in the data rather than being a matter of recollection.
+
 ## 10. Open items
 
 - IRB approval, and the final consent wording.
 - T6 form equivalence — see the warning in §4.
+- **A-T5 may not read as a crossing at all** — China and Brazil sit at exactly 99.0 for three years
+  before separating. Check in the pilot, with T6. See §4.
+- **Session resume is not implemented**, and the participant-ID screen promises it. See §8.
 - Whether the justification should be optional; requiring it may increase dropout on a self-served
   web study.
 - Continent aggregates have no 2024 data, so no item may turn on a continent's most recent year.

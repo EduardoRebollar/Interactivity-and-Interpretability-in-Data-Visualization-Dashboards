@@ -124,6 +124,20 @@ parquet cache stay gitignored as before.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v4 (2026-09-15).** Pre-pilot hardening. Nothing has been collected, so no migration — but
+`scripts/init_db.py` must be re-run, and note `CREATE TABLE IF NOT EXISTS` is a no-op on an existing
+table, so new columns need an explicit `ALTER` or they are silently absent.
+
+- `event_uid` (UUID, unique) on every record, so a spooled event can be replayed without
+  double-inserting.
+- New event `consent` — §9 promised a timestamped consent record and nothing produced one.
+- New event `sink_recovered` — marks a session where the logger could not reach the database and
+  spooled locally. Not an exclusion by itself; see `study-design.md` §7.
+- `duration_invalid` on `answer_submit` and `task_end` — a page reload resets the browser clock, and
+  the resulting duration must be visibly absent rather than plausibly wrong.
+- A partial unique index on `(session_id, task_id) WHERE event = 'answer_submit'`, so one task can
+  never record two answers.
+
 **Schema v3 (2026-09-15).** Parallel forms added a `form` column, the `load_rating` event (Paas
 mental effort, the RQ3 measure), and `justification` on `answer_submit` (the RQ2 material). Additive,
 and nothing has been collected, so no migration — but the record shape changed, so the version moved.
@@ -187,54 +201,73 @@ committed, `.env*` gitignored.
 
 ## Repo layout
 
-Present:
+Every tracked file. `src/data.py` and `src/contrast.py` are the only modules under `src/` that do
+not ship to Vercel — see the import rule under Deployment above. `analysis/` never ships either: it is
+excluded in `vercel.json` and holds the answer key.
 
 ```
 CLAUDE.md
 README.md
 LICENSE
-pyproject.toml          # deps + ruff/pytest config; [tool.uv] package = false
+pyproject.toml          # deps + ruff/pytest config; [tool.uv] package = false; entrypoint pin
 uv.lock                 # committed — this is the reproducibility guarantee
+requirements.in         # hand-written runtime set; the committed input to the compile
+requirements.txt        # generated from requirements.in — no pandas/pyarrow/numpy
+vercel.json             # function config + excludeFiles, keyed by the resolved entrypoint
+.env.example            # names DATABASE_URL; the value itself lives only in Vercel / .env.local
 .gitignore
 data/
   raw/                  # downloaded CSVs (gitignored, .gitkeep only)
   processed/            # cleaned parquet (gitignored, .gitkeep only)
-  study_logs/           # participant interaction logs (gitignored, .gitkeep only)
+  study_logs/           # JSONL sessions from local runs (gitignored, .gitkeep only)
+  deploy/
+    coverage.csv        # committed build artifact (named exemption)
 docs/
   visual-spec.md        # locked visual decisions (colors, chart types, layout)
   study-design.md       # RQs, conditions, the 12 items, measures, rubric, draft consent
 src/
   config.py             # INTERACTIVE flag (local default only), palette, scope
-  data.py               # load + clean
-  tasks.py              # the 12 items, forms A and B. NO answer key — it ships to the browser
-  logging.py            # event/timing logger
-scripts/
-  download_data.py      # fetches from Our World in Data
-  check_contrast.py     # WCAG contrast report for the palette
-tests/
-  test_data.py
-  test_logging.py
-  test_palette.py       # enforces the contrast floors
-```
-
-Deployment and runtime (see Deployment above):
-
-```
-vercel.json             # function config + excludeFiles, keyed by the resolved entrypoint
-requirements.txt        # generated deployment subset, no pandas/pyarrow/numpy
-data/deploy/
-  coverage.csv          # committed build artifact (named exemption)
-src/
+  data.py               # load + clean — pandas, local only
+  contrast.py           # WCAG luminance/ratio maths; drives the palette script and its tests
   runtime_data.py       # stdlib csv loader; NO pandas
-  db.py                 # Neon Postgres connection + DDL
+  db.py                 # Neon Postgres connection, DDL, and the 2x2 assignment rule
   figures.py            # build_figure + graph_config(interactive) — the one decision point
   layout.py             # shared layout components, study screens, interactive controls
   flow.py               # study flow state machine
-  app.py                # Dash app factory, callbacks, clientside timing
+  tasks.py              # the 12 items, forms A and B. NO answer key — it ships to the browser
+  logging.py            # event/timing logger; Postgres or JSONL sink
+  app.py                # Dash app factory, callbacks, clientside timing and Submit guards
+analysis/               # offline scoring — NEVER ships; pandas allowed except in keys.py
+  keys.py               # answer key derived from the deploy CSV, checked against study-design §4
+  reshape.py            # events -> tidy task and participant x condition frames
+  exclusions.py         # the §7 rules, marked not dropped, each separately reportable
+  coding.py             # RQ2 blind coding sheets, stratified double-coding sample, Cohen's kappa
+  report.py             # the descriptive numbers §7 asks for, nothing inferential
 scripts/
+  download_data.py      # fetches from Our World in Data
   export_deploy_data.py # parquet -> data/deploy/coverage.csv
   init_db.py            # create tables
   export_logs.py        # pull study data out for analysis
+  recover_spool.py      # replay spooled events into Postgres; dry run by default, idempotent
+  derive_keys.py        # print the derived answer key; exits 1 if it disagrees with §4
+  score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
+  code_justifications.py # blind sheets, kappa, reasoning depth -> data/study_logs/coding/
+  check_contrast.py     # WCAG contrast report for the palette
+  check_bundle.py       # serves the app from requirements.txt alone, in a throwaway venv
+  verify_deployment.py  # round-trips a synthetic session through the real database, then deletes it
+tests/
+  test_data.py          # cleaning, the complete grid, the missing-data guarantees
+  test_runtime_data.py  # the csv loader — and fails the build if a runtime module imports pandas
+  test_palette.py       # enforces the contrast floors
+  test_conditions.py    # the two conditions must produce identical figure JSON
+  test_tasks.py         # item structure, and that no answer key ships
+  test_flow.py          # the stage sequence and the counterbalancing
+  test_logging.py       # event schema, both sinks, retry/spool/circuit breaker
+  test_db.py            # failure classification, timeouts, schema migrations — no live database
+  test_recover_spool.py # replay is dry by default, ordered, idempotent, never deletes
+  test_scoring.py       # derived keys match §4; each rule refuses an ill-posed item; key never ships
+  test_analysis.py      # real app sessions scored end to end; exclusions; coding harness; kappa
+  test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
 ```
 
 ### Study protocol
@@ -246,6 +279,15 @@ scripts/
   not a random draw, so cells fill evenly and concurrent starts cannot collide.
 - **No correct answers in `src/tasks.py`.** It serialises to the browser; an answer key would be
   readable in the page source. Scoring is offline against the rubric.
+- **The answer key lives in `analysis/keys.py`, and is derived, not transcribed.** Each key is
+  computed from `data/deploy/coverage.csv` by the rule the item states, then cross-checked against
+  the table in `docs/study-design.md` §4; a disagreement fails the suite. §4's T1 key was wrong for
+  days because a hand-written key has nothing checking it.
+- **`analysis/` must never ship.** Everything under `src/` is uploaded to Vercel, so the key cannot
+  live there. `analysis/**` is in `vercel.json`'s `excludeFiles`, a test asserts that it stays there,
+  and another asserts no runtime module imports it. pandas is allowed freely in `analysis/` —
+  except in `keys.py`, which reads the deploy CSV through `src.runtime_data` so the key is derived
+  from the same bytes and the same loader the participant's chart came from.
 - Static participants cannot read exact values, so no item may ask for one — it would measure
   whether hover exists rather than interpretation.
 
@@ -326,10 +368,16 @@ context cheap and the reports as long as they need to be.
 
 - 2026-09-15 — **The instrument is finished and verified end to end.** A full session runs from one
   URL; both conditions log a complete session; all four interactive controls work and record their
-  events. 324 tests green.
+  events. 489 tests green.
 - **Blocked on IRB.** The consent text is a draft and says so on screen. No participant runs until
   it is approved and `docs/study-design.md` §9's placeholders are filled.
-- Next after IRB: pilot, and check T6's form equivalence (see `docs/study-design.md` §4).
+- 2026-09-16 — **Pre-pilot hardening done** (uncommitted at time of writing). A database outage no
+  longer breaks a session or loses answers silently; consent is recorded; double-submit and
+  reload-corrupted durations are handled; schema is v4. The offline scoring pipeline exists, with
+  the answer key derived from the data. Verified over live HTTP against an unreachable Postgres.
+- **Not yet verified: any SQL against a real Postgres.** No local database here. Run
+  `scripts/init_db.py` then `scripts/verify_deployment.py` against Neon before the pilot.
+- Next after IRB: pilot, and check T6's form equivalence and A-T5's plateau (`study-design.md` §4).
 
 ## Decisions made
 
@@ -342,6 +390,15 @@ context cheap and the reports as long as they need to be.
   Showing instructions once would leave whoever draws interactive second unaware the controls exist.
 - 2026-09-15 — T1's answer key in `study-design.md` was wrong (said 2, is 1). The doc listed six
   coloured countries, which `MAX_SERIES = 5` forbids; the task set was always correct.
+- 2026-09-16 — Answer keys are derived from the data and cross-checked against §4, never only
+  transcribed. They live in `analysis/`, which does not ship.
+- 2026-09-16 — T5's keys sit on the last year of their bands: strict scoring is primary, adjacent-band
+  credit is a pre-registered secondary. `study-design.md` §4.
+- 2026-09-16 — On a DB failure: retry, then spool to browser session storage first and `/tmp` second.
+  `/tmp` alone is not recoverable on Vercel. Interaction events never retry, because a retry inside
+  the task window would inflate time-on-task in the interactive condition only.
+- 2026-09-16 — `event_uid` and the one-answer-per-task index added now, while schema changes are
+  free because nothing has been collected.
 
 ## Open questions
 

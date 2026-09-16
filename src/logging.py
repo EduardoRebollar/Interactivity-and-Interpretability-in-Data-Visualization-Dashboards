@@ -1,5 +1,23 @@
 """Event and timing logger. This module produces the study's primary data.
 
+**Schema v4 (2026-09-15).** Pre-pilot hardening:
+
+- `event_uid` on every record, generated once when the record is built, so a spooled event replays
+  without double-inserting.
+- `consent` -- the timestamped consent record `docs/study-design.md` section 9 promises.
+- `sink_recovered` -- written when events that could not reach the database are finally flushed,
+  so the outage is visible in the data rather than only in its gaps.
+- `duration_invalid` on `answer_submit` and `task_end` -- a reload resets the browser clock, and
+  the duration it would produce is plausible and wrong. It is recorded absent, with the reason.
+
+**A database failure never breaks a session.** `ResilientSink` retries connection-level failures
+within a wall-clock budget, then spools: into a `pending` list the app keeps in browser session
+storage and replays on the next callback, and into a JSONL file under `config.spool_dir()`. The
+browser copy is the one that matters on Vercel, where `/tmp` is per-instance and cannot be read back
+out of a running function -- the file copy is only genuinely recoverable on a local or self-hosted
+run. Be accurate about this in any write-up: the session continues and the loss is recorded; it is
+not true that no data can be lost.
+
 **Schema v3 (2026-09-15).** Parallel forms added the `form` column, the `load_rating` event (Paas
 mental effort, the RQ3 measure) and `justification` on `answer_submit` (the RQ2 material). Additive,
 and nothing had been collected, so there was no migration — but the record shape changed.
@@ -24,9 +42,14 @@ timings only compare if they are collected identically on both sides.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import sys
 import time
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
@@ -36,14 +59,22 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v4 (2026-09-15): event_uid, the consent and sink_recovered events, duration_invalid. See the
+# module docstring.
+#
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
 EVENTS: dict[str, tuple[str, ...]] = {
+    # Consent. Emitted once per participant, when condition 1's logger opens -- the logger cannot
+    # exist earlier, because a record needs a participant ID and a condition. So `server_ts` is the
+    # instructions-screen time; the true consent time is `consented_at`, from the browser clock.
+    # `consent_version` is a hash of the wording shown, so a mid-study text change is detectable.
+    "consent": ("consented_at", "consent_version"),
     # Session lifecycle
     "session_start": ("interactive", "entities", "vaccines", "year_range"),
     "session_end": ("reason",),
@@ -52,9 +83,11 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "condition_end": ("interactive", "condition_order"),
     # Task lifecycle
     "task_start": (),
-    "task_end": ("duration_ms",),
+    # duration_invalid is None when duration_ms is trustworthy, else why it is absent:
+    # "missing", "clock_reset" (a reload restarted the browser clock) or "negative".
+    "task_end": ("duration_ms", "duration_invalid"),
     # task_id lives in the record column, not the payload, like every other event.
-    "answer_submit": ("answer", "justification", "duration_ms"),
+    "answer_submit": ("answer", "justification", "duration_ms", "duration_invalid"),
     # Paas single-item mental effort, once per condition. The RQ3 measure.
     "load_rating": ("scale", "value"),
     # Interactive-only affordances
@@ -63,6 +96,9 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "sort_change": ("key", "direction"),
     # Present in both conditions
     "view_change": ("control", "value", "previous"),
+    # Written by ResilientSink, not by a caller: `spooled` events that could not reach the database
+    # were flushed once it came back, and `dropped` overflowed the bounded browser spool.
+    "sink_recovered": ("spooled", "dropped"),
 }
 
 CONDITIONS = ("static", "interactive")
@@ -116,8 +152,243 @@ class PostgresSink:
     def write(self, record: dict[str, Any]) -> None:
         db.insert_event(record)
 
+    def replay(self, record: dict[str, Any]) -> None:
+        """Write a spooled record. A conflict means it already landed, so it is not an error."""
+        db.insert_event(record, ignore_duplicates=True)
+
     def close(self) -> None:
         """No-op: connections are per-operation, so there is nothing to hold open."""
+
+
+# --- Resilience --------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class RetryPolicy:
+    """How hard to try before spooling. `budget_s` is wall-clock, and is the primary limit."""
+
+    attempts: int
+    base_delay_s: float
+    max_delay_s: float
+    budget_s: float
+
+
+# For callbacks outside the measured window. The Submit timestamp is taken in the browser before the
+# request leaves, so retry latency on that path lands after the duration is already fixed.
+FULL = RetryPolicy(attempts=3, base_delay_s=0.25, max_delay_s=2.0, budget_s=8.0)
+
+# For interaction events. These are logged inside a task's measured window and only in the
+# interactive condition, so retrying them would inflate a dependent variable in one condition only.
+NO_RETRY = RetryPolicy(attempts=1, base_delay_s=0.0, max_delay_s=0.0, budget_s=0.0)
+
+# The browser spool lives in sessionStorage. Bounded so an outage cannot grow the store without
+# limit; overflow drops the oldest and is counted in `sink_recovered.dropped`.
+MAX_PENDING = 200
+
+
+def call_with_retry(
+    operation: Callable[[], Any],
+    policy: RetryPolicy,
+    *,
+    sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
+) -> Any:
+    """Run `operation`, retrying `TransientDatabaseError` with capped exponential backoff.
+
+    Stops at `policy.attempts` or when `policy.budget_s` of wall clock is spent, whichever is first,
+    and re-raises the last error. Any other error is raised at once: retrying a constraint violation
+    only delays the same failure.
+
+    `sleep` and `clock` default to `time.sleep` and `time.monotonic`, looked up at call time so
+    tests can replace them.
+    """
+    sleep = sleep or time.sleep
+    clock = clock or time.monotonic
+    started = clock()
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            return operation()
+        except db.TransientDatabaseError:
+            elapsed = clock() - started
+            if attempt >= policy.attempts or elapsed >= policy.budget_s:
+                raise
+            delay = min(policy.base_delay_s * 2 ** (attempt - 1), policy.max_delay_s)
+            sleep(min(delay, policy.budget_s - elapsed))
+
+
+class CircuitBreaker:
+    """Skip the database for `cooldown_s` after a failure.
+
+    Module-level on purpose: a sink is rebuilt on every callback, but a warm serverless container
+    serves the participant's next click too. Once the database has just failed, the next interaction
+    event goes straight to the spool instead of spending another connect timeout inside the task
+    window. It holds only a timestamp, never participant data, so sharing it is safe.
+    """
+
+    def __init__(self, cooldown_s: float = 20.0, clock: Callable[[], float] | None = None):
+        self.cooldown_s = cooldown_s
+        self._clock = clock or (lambda: time.monotonic())
+        self._failed_at: float | None = None
+
+    @property
+    def open(self) -> bool:
+        return self._failed_at is not None and self._clock() - self._failed_at < self.cooldown_s
+
+    def trip(self) -> None:
+        self._failed_at = self._clock()
+
+    def reset(self) -> None:
+        self._failed_at = None
+
+
+BREAKER = CircuitBreaker()
+
+
+class ResilientSink:
+    """Retry transient failures, then spool. `write` never raises a DatabaseError.
+
+    On every write, anything pending from earlier callbacks is replayed first, so events reach the
+    database in the order they happened. A backlog that clears is followed by one `sink_recovered`
+    record, so the outage appears in the data.
+
+    `pending` belongs to one browser session, and so to one participant -- which is why the recovery
+    marker takes its identity from the backlog and never from shared module state.
+    """
+
+    def __init__(
+        self,
+        inner: Sink,
+        *,
+        pending: list[dict[str, Any]] | None = None,
+        dropped: int = 0,
+        spool_path: Path | None = None,
+        policy: RetryPolicy = FULL,
+        breaker: CircuitBreaker | None = None,
+        sleep: Callable[[float], None] | None = None,
+        clock: Callable[[], float] | None = None,
+    ) -> None:
+        self.inner = inner
+        self.pending: list[dict[str, Any]] = list(pending or [])
+        self.dropped = dropped
+        self.spool_path = spool_path
+        self.policy = policy
+        self.breaker = breaker if breaker is not None else BREAKER
+        self._sleep = sleep
+        self._clock = clock
+
+    @property
+    def degraded(self) -> bool:
+        return bool(self.pending) or self.dropped > 0
+
+    def write(self, record: dict[str, Any]) -> None:
+        if (self.pending or self.dropped) and not self._flush(record):
+            self._spool(record, "database unavailable; earlier events still pending")
+            return
+        try:
+            self._attempt(self.inner.write, record)
+        except db.DatabaseError as exc:
+            self._spool(record, str(exc))
+
+    def close(self) -> None:
+        # Last chance to flush before the caller discards this sink. On failure the backlog stays in
+        # `pending`, which the caller still holds.
+        if self.pending:
+            self._flush(self.pending[-1])
+        self.inner.close()
+
+    def _attempt(self, operation: Callable[[dict[str, Any]], None], record: dict[str, Any]) -> None:
+        """Run `operation`, retrying transient failures within the policy. Raises on exhaustion."""
+        if self.breaker.open:
+            raise db.TransientDatabaseError("circuit open: the database failed moments ago")
+        try:
+            call_with_retry(
+                lambda: operation(record), self.policy, sleep=self._sleep, clock=self._clock
+            )
+        except db.TransientDatabaseError:
+            self.breaker.trip()
+            raise
+        self.breaker.reset()
+
+    def _flush(self, identity: dict[str, Any]) -> bool:
+        """Replay pending records in order. True when the backlog is fully cleared."""
+        replay = getattr(self.inner, "replay", self.inner.write)
+        template = self.pending[0] if self.pending else identity
+        flushed = 0
+        while self.pending:
+            try:
+                self._attempt(replay, self.pending[0])
+            except db.DatabaseError:
+                return False
+            self.pending.pop(0)
+            flushed += 1
+        # The events made it; if only the marker fails, it is not worth re-spooling a marker.
+        with contextlib.suppress(db.DatabaseError):
+            self._attempt(self.inner.write, recovery_record(template, flushed, self.dropped))
+        self.dropped = 0
+        return True
+
+    def _spool(self, record: dict[str, Any], reason: str) -> None:
+        print(f"[study-log] spooling {record.get('event')}: {reason}", file=sys.stderr)
+        self.pending.append(record)
+        if len(self.pending) > MAX_PENDING:
+            overflow = len(self.pending) - MAX_PENDING
+            del self.pending[:overflow]
+            self.dropped += overflow
+        if self.spool_path is None:
+            return
+        envelope = {"record": record, "spooled_at": datetime.now(UTC).isoformat(), "error": reason}
+        try:
+            self.spool_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.spool_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(envelope, ensure_ascii=False, default=str) + "\n")
+        except OSError as exc:
+            # The browser copy is still held; a read-only filesystem must not break the session.
+            print(f"[study-log] spool file unavailable: {exc}", file=sys.stderr)
+
+
+IDENTITY_KEYS = (
+    "schema_version",
+    "session_id",
+    "participant_id",
+    "condition",
+    "condition_order",
+    "form",
+)
+
+
+def recovery_record(template: dict[str, Any], spooled: int, dropped: int) -> dict[str, Any]:
+    """The `sink_recovered` marker, attributed to the session the backlog came from."""
+    return {
+        **{key: template.get(key) for key in IDENTITY_KEYS},
+        "event_uid": str(uuid.uuid4()),
+        "task_id": None,
+        "event": "sink_recovered",
+        "server_ts": datetime.now(UTC).isoformat(),
+        "client_elapsed_ms": None,
+        "task_elapsed_ms": None,
+        "server_elapsed_ms": None,
+        "payload": {"spooled": spooled, "dropped": dropped},
+    }
+
+
+def spool_file(participant_id: str, condition: str, session_id: str) -> Path:
+    """Where a session's spooled events are also written, besides the browser store.
+
+    The pid disambiguates two containers serving one session.
+    """
+    short = session_id.replace("-", "")[:12]
+    return config.spool_dir() / f"{participant_id}_{condition}_{short}_{os.getpid()}.spool.jsonl"
+
+
+def read_spool(directory: Path | None = None) -> list[dict[str, Any]]:
+    """Every spooled envelope under `directory`, oldest first. For scripts/recover_spool.py."""
+    directory = directory or config.spool_dir()
+    envelopes: list[dict[str, Any]] = []
+    for path in sorted(directory.glob("*.spool.jsonl")):
+        envelopes.extend(read_log(path))
+    return sorted(envelopes, key=lambda envelope: envelope.get("spooled_at") or "")
 
 
 class StudyLogger:
@@ -139,6 +410,9 @@ class StudyLogger:
         task_id: str | None = None,
         sink: Sink | None = None,
         log_dir: Path | None = None,
+        policy: RetryPolicy = FULL,
+        pending: list[dict[str, Any]] | None = None,
+        dropped: int = 0,
     ) -> None:
         if not participant_id or not participant_id.strip():
             raise LogError("participant_id must be a non-empty string")
@@ -163,7 +437,9 @@ class StudyLogger:
         self._origin = time.perf_counter()
         self._task_id = task_id
         self._closed = False
-        self._sink = sink if sink is not None else self._default_sink(log_dir)
+        self._sink = (
+            sink if sink is not None else self._default_sink(log_dir, policy, pending, dropped)
+        )
 
         if not self._resumed:
             self.event(
@@ -174,14 +450,26 @@ class StudyLogger:
                 year_range=[config.YEAR_MIN, config.YEAR_MAX],
             )
 
-    def _default_sink(self, log_dir: Path | None) -> Sink:
-        """Postgres when configured, otherwise a per-session JSONL file.
+    def _default_sink(
+        self,
+        log_dir: Path | None,
+        policy: RetryPolicy,
+        pending: list[dict[str, Any]] | None,
+        dropped: int,
+    ) -> Sink:
+        """Postgres (made resilient) when configured, otherwise a per-session JSONL file.
 
         The filename is keyed on `session_id`, not a timestamp, so a resumed logger appends to the
         same file instead of scattering one sitting across a file per callback.
         """
         if db.configured():
-            return PostgresSink()
+            return ResilientSink(
+                PostgresSink(),
+                pending=pending,
+                dropped=dropped,
+                spool_path=spool_file(self.participant_id, self.condition, self.session_id),
+                policy=policy,
+            )
         directory = log_dir or config.STUDY_LOGS_DIR
         short = self.session_id.replace("-", "")[:12]
         return JsonlSink(directory / f"{self.participant_id}_{self.condition}_{short}.jsonl")
@@ -205,6 +493,9 @@ class StudyLogger:
 
         record = {
             "schema_version": SCHEMA_VERSION,
+            # Generated here, once. A retry or a replay of this record carries the same uid, which
+            # is what makes replay idempotent.
+            "event_uid": str(uuid.uuid4()),
             "session_id": self.session_id,
             "participant_id": self.participant_id,
             "condition": self.condition,
@@ -237,9 +528,14 @@ class StudyLogger:
         task_id: str | None = None,
         *,
         duration_ms: float | None = None,
+        duration_invalid: str | None = None,
         client_elapsed_ms: float | None = None,
     ) -> dict[str, Any]:
-        """Close the open task. `duration_ms` is the browser-measured time on task."""
+        """Close the open task. `duration_ms` is the browser-measured time on task.
+
+        `duration_invalid` says why `duration_ms` is absent when it is, so an unusable duration is
+        visibly absent in the data rather than silently wrong.
+        """
         if self._task_id is None:
             raise LogError("No task is open")
         if task_id is not None and task_id != self._task_id:
@@ -248,6 +544,7 @@ class StudyLogger:
         record = self.event(
             "task_end",
             duration_ms=duration_ms,
+            duration_invalid=duration_invalid,
             client_elapsed_ms=client_elapsed_ms,
             task_elapsed_ms=duration_ms,
         )
@@ -261,6 +558,7 @@ class StudyLogger:
         *,
         justification: str | None = None,
         duration_ms: float | None = None,
+        duration_invalid: str | None = None,
         client_elapsed_ms: float | None = None,
     ) -> dict[str, Any]:
         """Record a participant's answer and their reasoning.
@@ -274,6 +572,7 @@ class StudyLogger:
             answer=answer,
             justification=justification,
             duration_ms=duration_ms,
+            duration_invalid=duration_invalid,
             client_elapsed_ms=client_elapsed_ms,
         )
 
@@ -284,6 +583,31 @@ class StudyLogger:
         return self.event(
             "load_rating", scale="paas", value=value, client_elapsed_ms=client_elapsed_ms
         )
+
+    def record_consent(self, consented_at: str, consent_version: str) -> dict[str, Any]:
+        """Record consent. Call once, on condition 1's logger, before anything else.
+
+        `consented_at` is the browser's ISO timestamp from the moment "I agree" was pressed.
+        """
+        if not consented_at:
+            raise LogError("consented_at is required; a consent record without a time is not one")
+        return self.event("consent", consented_at=consented_at, consent_version=consent_version)
+
+    # --- Spool state, for the caller to carry between requests --------------------------------
+
+    @property
+    def resilient(self) -> bool:
+        """True when writes go through a ResilientSink, i.e. there is a spool to carry."""
+        return isinstance(self._sink, ResilientSink)
+
+    @property
+    def pending(self) -> list[dict[str, Any]]:
+        """Events not yet in the database. The caller stores these in browser session state."""
+        return list(getattr(self._sink, "pending", []))
+
+    @property
+    def dropped(self) -> int:
+        return int(getattr(self._sink, "dropped", 0))
 
     # --- Session lifecycle --------------------------------------------------------------------
 

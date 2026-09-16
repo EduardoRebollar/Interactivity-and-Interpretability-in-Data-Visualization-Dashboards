@@ -31,6 +31,7 @@ pytestmark = pytest.mark.skipif(
     reason="deploy CSV absent; run scripts/export_deploy_data.py",
 )
 
+CONSENTED_AT = "2026-09-16T10:00:00.000Z"
 ANSWER_KWARGS = {"answer": "1", "justification": "because the line is higher"}
 
 
@@ -85,12 +86,14 @@ def _run_session(log_dir, participant_id: str = "P01") -> list[dict]:
 
     def click(trigger, **kwargs):
         nonlocal session, log
-        session, log, screen, error = app.step(trigger, session, log, log_dir=log_dir, **kwargs)
+        session, log, screen, error, _spool = app.step(
+            trigger, session, log, log_dir=log_dir, **kwargs
+        )
         assert error == "", f"{trigger} was refused: {error}"
         assert session is not no_update
         return screen
 
-    click("consent-button")
+    click("consent-clock", consented_at=CONSENTED_AT)
     click("participant-button", participant_id=participant_id)
 
     for condition in range(2):
@@ -296,12 +299,17 @@ def _task_state():
 
 
 def _interact(triggered, tmp_path, control_state=None, **kwargs):
-    """Run one control interaction and return (result tuple, events logged by it)."""
+    """Run one control interaction and return (the four chart outputs, events logged by it).
+
+    The fifth output, the spool, is `no_update` whenever the database is healthy; the tests that
+    care about it call `control_step` directly.
+    """
     log_state = {"session_id": str(uuid.uuid4())}
     result = app.control_step(
         triggered, _task_state(), log_state, control_state, log_dir=tmp_path, **kwargs
     )
-    return result, [e for e in _events(tmp_path) if e["event"] != "session_start"]
+    assert result[4] is no_update, "a healthy write must not touch the spool store"
+    return result[:4], [e for e in _events(tmp_path) if e["event"] != "session_start"]
 
 
 def _first_task():
@@ -496,7 +504,7 @@ def test_the_controls_do_nothing_off_a_task_screen(tmp_path):
             selected=["Brazil"],
             log_dir=tmp_path,
         )
-        assert result == (no_update,) * 4, f"{stage.value} has no chart to control"
+        assert result == (no_update,) * 5, f"{stage.value} has no chart to control"
 
 
 def test_a_stale_control_state_from_the_previous_task_is_discarded(tmp_path):
@@ -524,7 +532,7 @@ def test_a_stale_control_state_from_the_previous_task_is_discarded(tmp_path):
     ],
 )
 def test_incomplete_input_is_refused_without_advancing(stage, trigger, kwargs, expected, tmp_path):
-    session, log, screen, error = app.step(
+    session, log, screen, error, _spool = app.step(
         trigger, _state(stage).to_dict(), {}, log_dir=tmp_path, **kwargs
     )
     assert expected in error
@@ -535,8 +543,12 @@ def test_incomplete_input_is_refused_without_advancing(stage, trigger, kwargs, e
 
 def test_an_invalid_transition_becomes_a_message_not_a_crash(tmp_path):
     """A participant who double-clicks, or resumes a stale tab, must see a message."""
-    session, _log, _screen, error = app.step(
-        "consent-button", _state(Stage.TASK).to_dict(), {}, log_dir=tmp_path
+    session, _log, _screen, error, _spool = app.step(
+        "consent-clock",
+        _state(Stage.TASK).to_dict(),
+        {},
+        consented_at=CONSENTED_AT,
+        log_dir=tmp_path,
     )
     assert "Expected stage consent" in error
     assert session is no_update
@@ -546,18 +558,40 @@ def test_an_invalid_transition_becomes_a_message_not_a_crash(tmp_path):
 
 
 def test_elapsed_subtracts_two_browser_timestamps():
-    assert app._elapsed(1000.0, 2500.5) == 1500.5
+    assert app._elapsed(1000.0, 2500.5) == (1500.5, None)
+
+
+def test_elapsed_subtracts_stamps_from_the_same_page_load():
+    origin = 1_758_000_000_000.25
+    started = {"t": 1000.0, "origin": origin}
+    submitted = {"t": 2500.5, "origin": origin}
+    assert app._elapsed(started, submitted) == (1500.5, None)
 
 
 @pytest.mark.parametrize(("started", "submitted"), [(None, 1.0), (1.0, None), (None, None)])
 def test_elapsed_is_none_when_a_timestamp_is_missing(started, submitted):
     """Absent must stay visibly absent; recording it as zero would corrupt a dependent variable."""
-    assert app._elapsed(started, submitted) is None
+    assert app._elapsed(started, submitted) == (None, "missing")
 
 
 def test_elapsed_rejects_a_clock_that_ran_backwards():
     """performance.now() is monotonic, so a negative span means the stores are out of step."""
-    assert app._elapsed(2000.0, 1000.0) is None
+    assert app._elapsed(2000.0, 1000.0) == (None, "negative")
+
+
+def test_elapsed_rejects_a_clock_origin_change():
+    """A reload restarts performance.now() at zero. The span is plausible, positive and wrong.
+
+    Here the task appeared 40 s into the first page load and Submit came 3 s after a reload: plain
+    subtraction would record a 37-second task as a fast, believable number rather than as absent.
+    """
+    started = {"t": 40_000.0, "origin": 1_758_000_000_000.0}
+    submitted = {"t": 3_000.0, "origin": 1_758_000_050_000.0}
+    assert app._elapsed(started, submitted) == (None, "clock_reset")
+    # Positive-looking case too: the undercount that plain subtraction could not have caught.
+    started = {"t": 500.0, "origin": 1_758_000_000_000.0}
+    submitted = {"t": 3_000.0, "origin": 1_758_000_050_000.0}
+    assert app._elapsed(started, submitted) == (None, "clock_reset")
 
 
 # --- Assignment without a database ----------------------------------------------------------------
@@ -630,3 +664,406 @@ def test_the_deployment_entrypoint_is_a_flask_instance():
     from flask import Flask
 
     assert isinstance(app.server, Flask)
+
+
+# --- Consent --------------------------------------------------------------------------------------
+
+
+def test_consent_is_logged_once_per_participant_with_the_browser_timestamp(tmp_path):
+    events = _run_session(tmp_path)
+    consents = [e for e in events if e["event"] == "consent"]
+    assert len(consents) == 1, "once per participant, not once per condition"
+    consent = consents[0]
+    assert consent["payload"]["consented_at"] == CONSENTED_AT, "the browser time, not server_ts"
+    assert consent["payload"]["consent_version"] == app.CONSENT_VERSION
+    assert consent["condition_order"] == 1
+
+
+def test_consent_precedes_the_first_condition(tmp_path):
+    events = _run_session(tmp_path)
+    consent = next(e for e in events if e["event"] == "consent")
+    names = [e["event"] for e in events if e["session_id"] == consent["session_id"]]
+    assert names.index("consent") < names.index("condition_start")
+
+
+def test_consent_without_a_browser_timestamp_is_refused(tmp_path):
+    session, _log, screen, error, _spool = app.step(
+        "consent-clock", _state(Stage.CONSENT).to_dict(), {}, consented_at=None, log_dir=tmp_path
+    )
+    assert error
+    assert session is no_update
+
+
+def test_the_consent_version_is_a_hash_of_the_displayed_text():
+    import hashlib
+
+    expected = hashlib.sha256(app.CONSENT_TEXT.encode()).hexdigest()[:16]
+    assert expected == app.CONSENT_VERSION
+
+
+# --- Duplicate submission -------------------------------------------------------------------------
+
+
+def _through_practice(log_dir):
+    """Consent, ID, instructions and the practice item. Returns (session, log) on task T1."""
+    session = log = None
+    for trigger, kwargs in [
+        ("consent-clock", {"consented_at": CONSENTED_AT}),
+        ("participant-button", {"participant_id": "P01"}),
+        ("begin-button", {}),
+        ("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1000.0}),
+    ]:
+        session, log, _screen, error, _spool = app.step(
+            trigger, session, log, log_dir=log_dir, **kwargs
+        )
+        assert error == ""
+    return session, log
+
+
+def test_an_answer_already_recorded_is_not_recorded_again(tmp_path):
+    session, log = _through_practice(tmp_path)
+    before = session
+    session, log, _screen, error, _spool = app.step(
+        "submit-clock", before, log, log_dir=tmp_path, **ANSWER_KWARGS, duration_ms=900.0
+    )
+    assert error == ""
+
+    # The same Submit arriving again with the stale session state it was sent with.
+    repeat = app.step(
+        "submit-clock", before, log, log_dir=tmp_path, **ANSWER_KWARGS, duration_ms=950.0
+    )
+    answers = [e for e in _events(tmp_path) if e["event"] == "answer_submit"]
+    assert [a["task_id"] for a in answers] == ["P0", "T1"], "T1 must be recorded exactly once"
+    assert repeat == (no_update, no_update, no_update, "", no_update)
+
+
+def test_a_duplicate_submit_does_not_re_render_the_page(tmp_path):
+    """Re-rendering would restamp task-clock and silently reset the timing of the task now on
+    screen, so the refusal must leave the page untouched."""
+    session, log = _through_practice(tmp_path)
+    before = session
+    _session, log, _screen, _error, _spool = app.step(
+        "submit-clock", before, log, log_dir=tmp_path, **ANSWER_KWARGS, duration_ms=900.0
+    )
+    _s, _l, screen, _e, _sp = app.step(
+        "submit-clock", before, log, log_dir=tmp_path, **ANSWER_KWARGS, duration_ms=950.0
+    )
+    assert screen is no_update
+
+
+def test_submit_with_no_task_on_screen_is_a_message_not_a_crash(tmp_path):
+    _session, _log, _screen, error, _spool = app.step(
+        "submit-clock", _state(Stage.BREAK).to_dict(), {}, log_dir=tmp_path, **ANSWER_KWARGS
+    )
+    assert "No task to answer" in error
+
+
+def test_an_invalid_duration_is_recorded_absent_and_flagged(tmp_path):
+    session, log = _through_practice(tmp_path)
+    app.step(
+        "submit-clock",
+        session,
+        log,
+        log_dir=tmp_path,
+        **ANSWER_KWARGS,
+        duration_ms=None,
+        duration_invalid="clock_reset",
+    )
+    events = _events(tmp_path)
+    answer = next(e for e in events if e["event"] == "answer_submit" and e["task_id"] == "T1")
+    end = next(e for e in events if e["event"] == "task_end" and e["task_id"] == "T1")
+    for record in (answer, end):
+        assert record["payload"]["duration_ms"] is None
+        assert record["payload"]["duration_invalid"] == "clock_reset"
+
+
+# --- Database outage ------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def database(monkeypatch, tmp_path):
+    """A configured database whose writes can be switched between failing and succeeding."""
+    from src import logging as study_logging
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pw@host/db")
+    monkeypatch.setenv("STUDY_SPOOL_DIR", str(tmp_path / "spool"))
+    monkeypatch.setattr(study_logging, "BREAKER", study_logging.CircuitBreaker())
+    # No real waiting: the retry loop's sleeps are recorded instead.
+    sleeps: list[float] = []
+    monkeypatch.setattr(study_logging.time, "sleep", sleeps.append)
+    monkeypatch.setattr(db, "register_participant", lambda pid: (1, "static", "A"))
+
+    class Database:
+        up = False
+        written: list[dict] = []
+        slept = sleeps
+        breaker_module = study_logging
+
+        @staticmethod
+        def insert(record, **kwargs):
+            if not Database.up:
+                raise db.TransientDatabaseError("Neon compute is suspended")
+            Database.written.append(record)
+
+    Database.written = []
+    monkeypatch.setattr(db, "insert_event", Database.insert)
+    return Database
+
+
+def _drive_with_spool(steps):
+    """Run `step` through a sequence, threading every store the way the browser would."""
+    session = log = spool = None
+    errors = []
+    for trigger, kwargs in steps:
+        new_session, new_log, _screen, error, new_spool = app.step(
+            trigger, session, log, spool=spool, **kwargs
+        )
+        errors.append(error)
+        if new_session is not no_update:
+            session = new_session
+        if new_log is not no_update:
+            log = new_log
+        if new_spool is not no_update:
+            spool = new_spool
+    return session, log, spool, errors
+
+
+def _full_session_steps():
+    steps = [
+        ("consent-clock", {"consented_at": CONSENTED_AT}),
+        ("participant-button", {"participant_id": "P01"}),
+    ]
+    for condition in range(2):
+        steps.append(("begin-button", {}))
+        if condition == 0:
+            steps.append(("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1234.5}))
+        steps += [("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1000.0})] * len(
+            tasks.for_form("A")
+        )
+        steps.append(("load-button", {"load": 5}))
+        if condition == 0:
+            steps.append(("resume-button", {}))
+    return steps
+
+
+def test_a_session_completes_through_a_database_outage(database, tmp_path):
+    """The failure this whole layer exists for: Neon unreachable for an entire session.
+
+    Before, the first write raised out of the callback, Dash returned a 500, and the participant was
+    left pressing a Submit button that did nothing while their answer was lost.
+    """
+    session, _log, spool, errors = _drive_with_spool(_full_session_steps())
+
+    assert errors == [""] * len(errors), "no step may be refused because the database is down"
+    assert SessionState.from_dict(session).stage is Stage.COMPLETE
+    assert database.written == []
+
+    pending = spool["pending"]
+    names = [record["event"] for record in pending]
+    assert names.count("answer_submit") == 2 * len(tasks.for_form("A")) + 1
+    assert names.count("consent") == 1
+    assert names.count("load_rating") == 2
+    assert len({record["event_uid"] for record in pending}) == len(pending)
+
+    envelopes = database.breaker_module.read_spool(tmp_path / "spool")
+    assert [e["record"]["event_uid"] for e in envelopes] == [r["event_uid"] for r in pending], (
+        "the file copy must hold the same events, in the same order"
+    )
+
+
+def test_an_outage_costs_retry_time_once_not_on_every_event(database):
+    """The circuit breaker: after the first exhausted retry, events go straight to the spool."""
+    _drive_with_spool(_full_session_steps())
+    assert 0 < sum(database.slept) <= database.breaker_module.FULL.budget_s
+
+
+def test_spooled_events_are_replayed_in_order_when_the_database_returns(database):
+    steps = _full_session_steps()
+    session, log, spool, _errors = _drive_with_spool(steps[:4])
+    backlog = [record["event_uid"] for record in spool["pending"]]
+    assert backlog
+
+    database.up = True
+    database.breaker_module.BREAKER.reset()
+    _new_session, _new_log, _screen, error, new_spool = app.step(
+        "submit-clock", session, log, spool=spool, **ANSWER_KWARGS, duration_ms=900.0
+    )
+
+    assert error == ""
+    assert [r["event_uid"] for r in database.written][: len(backlog)] == backlog
+    marker = next(r for r in database.written if r["event"] == "sink_recovered")
+    assert marker["payload"]["spooled"] == len(backlog)
+    assert marker["participant_id"] == "P01"
+    assert new_spool == {"pending": [], "dropped": 0}
+
+
+def test_a_healthy_database_never_touches_the_spool_store(database):
+    database.up = True
+    session = log = None
+    for trigger, kwargs in _full_session_steps():
+        session, log, _screen, error, spool = app.step(trigger, session, log, **kwargs)
+        assert error == ""
+        assert spool is no_update, f"{trigger} wrote the spool store with nothing to spool"
+
+
+def test_assignment_failure_is_a_retryable_message(database, monkeypatch):
+    """Assignment cannot be spooled or invented without breaking the counterbalancing."""
+
+    def unavailable(pid):
+        raise db.TransientDatabaseError("Neon compute is suspended")
+
+    monkeypatch.setattr(db, "register_participant", unavailable)
+    session, _log, screen, error, _spool = app.step(
+        "participant-button",
+        _state(Stage.PARTICIPANT_ID).to_dict(),
+        {},
+        participant_id="P01",
+    )
+    assert "could not start your session" in error
+    assert session is no_update
+    assert screen is no_update
+    assert database.slept, "assignment is outside any task window, so it retries"
+
+
+def test_a_control_still_updates_the_chart_when_logging_fails(database, monkeypatch):
+    """Logging used to run before the figure was built, so a failed write swallowed the click."""
+
+    def no_sleeping(_seconds):
+        raise AssertionError("interaction events must never retry: it would inflate task time")
+
+    monkeypatch.setattr(database.breaker_module.time, "sleep", no_sleeping)
+    figure, _options, value, _control, spool = app.control_step(
+        "entity-filter.value",
+        _task_state(),
+        {"session_id": str(uuid.uuid4())},
+        None,
+        selected=["Brazil"],
+    )
+    assert figure is not no_update
+    assert value == ["Brazil"]
+    assert [r["event"] for r in spool["pending"]] == ["filter_change"]
+
+
+# --- Clientside JavaScript ------------------------------------------------------------------------
+#
+# Nothing in this suite runs a browser, and these functions are the whole of the study's timing
+# instrumentation. Node executes them against a stub `window`, which is enough to catch a syntax
+# error, a wrong return shape, or a guard that would leave a participant with a dead button.
+
+_NODE_HARNESS = r"""
+const calls = [];
+const timers = [];
+const window = {
+  performance: { now: () => 1234.5, timeOrigin: 1758000000000.25 },
+  dash_clientside: { no_update: "NO_UPDATE", set_props: (id, props) => calls.push([id, props]) },
+  setTimeout: (fn, ms) => timers.push([fn, ms]),
+};
+const cases = JSON.parse(process.argv[1]);
+const out = cases.map(([source, arg, fireTimers]) => {
+  const fn = eval("(" + source + ")");
+  const result = fn(arg);
+  if (fireTimers) { timers.forEach(([f]) => f()); }
+  return { result, timers: timers.map(([, ms]) => ms), calls: calls.slice() };
+});
+console.log(JSON.stringify(out));
+"""
+
+
+def _run_js(cases):
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed")
+    completed = subprocess.run(
+        [node, "-e", _NODE_HARNESS, json.dumps(cases)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+    return json.loads(completed.stdout)
+
+
+def test_the_clock_stamps_carry_their_origin():
+    task, submit, no_click = _run_js(
+        [
+            [app.CLOCK_JS, None, False],
+            [app.SUBMIT_CLOCK_JS, 1, False],
+            [app.SUBMIT_CLOCK_JS, 0, False],
+        ]
+    )
+    assert task["result"] == {"t": 1234.5, "origin": 1758000000000.25}
+    assert submit["result"] == {"t": 1234.5, "origin": 1758000000000.25}
+    assert no_click["result"] == "NO_UPDATE"
+    # The browser's stamps are exactly what the server subtracts.
+    assert app._elapsed(task["result"], submit["result"]) == (0.0, None)
+
+
+def test_submit_is_disabled_on_click_and_the_watchdog_re_enables_it():
+    (clicked,) = _run_js([[app.SUBMIT_DISABLE_JS, 1, True]])
+    assert clicked["result"] is True
+    assert clicked["timers"] == [15000]
+    assert clicked["calls"] == [["submit-button", {"disabled": False}]]
+
+
+def test_an_unclicked_submit_is_not_disabled():
+    (initial,) = _run_js([[app.SUBMIT_DISABLE_JS, 0, True]])
+    assert initial["result"] == "NO_UPDATE"
+    assert initial["timers"] == []
+
+
+def test_a_refusal_re_enables_submit():
+    """A refusal does not re-render the screen. Without this the button stays disabled for good."""
+    refused, succeeded = _run_js(
+        [
+            [app.SUBMIT_ENABLE_JS, "Please choose an answer.", False],
+            [app.SUBMIT_ENABLE_JS, "", False],
+        ]
+    )
+    assert refused["result"] is False
+    assert succeeded["result"] == "NO_UPDATE"
+
+
+def test_the_consent_clock_is_an_iso_timestamp():
+    from datetime import datetime
+
+    clicked, initial = _run_js([[app.CONSENT_CLOCK_JS, 1, False], [app.CONSENT_CLOCK_JS, 0, False]])
+    assert datetime.fromisoformat(clicked["result"].replace("Z", "+00:00"))
+    assert initial["result"] == "NO_UPDATE"
+
+
+def _wired(output: str, input_: str) -> bool:
+    """True when some callback writes `output` and is triggered by `input_`.
+
+    Dash keys `callback_map` by its outputs, as "id.prop", or "..a.prop...b.prop.." for several,
+    with an "@hash" suffix on an allow_duplicate output.
+    """
+    for key, callback in app.create_app().callback_map.items():
+        outputs = {part.split("@")[0] for part in key.strip(".").split("...")}
+        inputs = {f"{i['id']}.{i['property']}" for i in callback["inputs"]}
+        if output in outputs and input_ in inputs:
+            return True
+    return False
+
+
+def test_the_disable_and_re_enable_callbacks_are_registered():
+    assert _wired("submit-button.disabled", "submit-button.n_clicks")
+    assert _wired("submit-button.disabled", "flow-error.children")
+
+
+def test_advance_is_triggered_by_the_consent_clock_not_the_button():
+    """Chaining off the clock is what guarantees the timestamp exists when the step runs."""
+    assert _wired("consent-clock.data", "consent-button.n_clicks")
+    assert _wired("session-state.data", "consent-clock.data")
+    assert not _wired("session-state.data", "consent-button.n_clicks")
+
+
+def test_both_callbacks_that_log_can_write_the_spool():
+    assert _wired("spool-state.data", "submit-clock.data")
+    assert _wired("spool-state.data", "chart.clickData")
+
+
+def test_the_new_stores_are_in_the_base_layout():
+    assert {"consent-clock", "spool-state"} <= _ids(app.create_app().layout)

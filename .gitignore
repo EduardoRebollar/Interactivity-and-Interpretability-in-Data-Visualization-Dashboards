@@ -23,3 +23,11 @@ data/study_logs/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/study_logs/.gitkeep
+
+# Belt and braces for participant data. The entries above already cover these, but a spool file or a
+# coding sheet (participant-written free text) reaching this public repo is not a mistake to leave
+# to one pattern. Analysis outputs are written under data/study_logs/ for the same reason.
+data/study_logs/**
+!data/study_logs/.gitkeep
+*.spool.jsonl
+*.recovered.jsonl

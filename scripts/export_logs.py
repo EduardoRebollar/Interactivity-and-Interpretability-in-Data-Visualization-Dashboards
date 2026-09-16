@@ -24,6 +24,7 @@ from src import logging as study_logging  # noqa: E402
 
 COLUMNS = [
     "schema_version",
+    "event_uid",
     "session_id",
     "participant_id",
     "condition",

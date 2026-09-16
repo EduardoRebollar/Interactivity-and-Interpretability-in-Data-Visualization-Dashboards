@@ -1,4 +1,4 @@
-"""Tests for the study event logger (schema v2).
+"""Tests for the study event logger (schema v4).
 
 This logging is the study's primary data, so these focus on what would silently corrupt an analysis:
 record shape, task attribution, sink selection, durability, and the separation between the browser
@@ -19,12 +19,14 @@ from src.logging import (
     JsonlSink,
     LogError,
     PostgresSink,
+    ResilientSink,
     StudyLogger,
     read_log,
 )
 
 REQUIRED_KEYS = {
     "schema_version",
+    "event_uid",
     "session_id",
     "participant_id",
     "condition",
@@ -88,7 +90,9 @@ def test_uses_postgres_sink_when_database_url_is_set(monkeypatch, tmp_path):
     monkeypatch.setattr(study_logging.db, "insert_event", written.append)
 
     log = StudyLogger("P07", condition_order=1, interactive=True, log_dir=tmp_path)
-    assert isinstance(log._sink, PostgresSink)
+    # Wrapped, so a database failure spools instead of breaking the participant's session.
+    assert isinstance(log._sink, ResilientSink)
+    assert isinstance(log._sink.inner, PostgresSink)
     assert written and written[0]["event"] == "session_start"
     assert not list(tmp_path.glob("*.jsonl")), "should not have written a file"
 
@@ -126,9 +130,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_three():
-    """v3 added the form column, load_rating, and justification. Pooling versions is invalid."""
-    assert SCHEMA_VERSION == 3
+def test_schema_version_is_four():
+    """v4 added event_uid, consent, sink_recovered, duration_invalid. Never pool versions."""
+    assert SCHEMA_VERSION == 4
 
 
 def test_form_is_recorded_on_every_event():
@@ -345,3 +349,329 @@ def test_read_all_collects_every_session(tmp_path):
     records = study_logging.read_all(tmp_path)
     assert {r["condition"] for r in records} == {"static", "interactive"}
     assert {r["condition_order"] for r in records} == {1, 2}
+
+
+# --- v4 record additions ----------------------------------------------------------------------
+
+
+def test_event_uid_is_unique_per_record(logger):
+    """Replay is idempotent only because each record carries its own, fixed uid."""
+    logger.event("line_isolate", entity="Ukraine", isolated=True)
+    logger.event("line_isolate", entity="Ukraine", isolated=False)
+    uids = [r["event_uid"] for r in read_log(logger._sink.path)]
+    assert len(uids) == len(set(uids)) == 3
+
+
+def test_consent_is_recorded_with_the_browser_timestamp(logger):
+    record = logger.record_consent("2026-09-16T10:00:00.000Z", "abc123")
+    assert record["event"] == "consent"
+    assert record["payload"] == {
+        "consented_at": "2026-09-16T10:00:00.000Z",
+        "consent_version": "abc123",
+    }
+
+
+def test_consent_without_a_timestamp_is_refused(logger):
+    with pytest.raises(LogError, match="consented_at"):
+        logger.record_consent("", "abc123")
+
+
+def test_an_invalid_duration_is_recorded_absent_with_its_reason(logger):
+    logger.start_task("T1")
+    answer = logger.submit_answer("T1", "1", duration_ms=None, duration_invalid="clock_reset")
+    end = logger.end_task(duration_ms=None, duration_invalid="clock_reset")
+    for record in (answer, end):
+        assert record["payload"]["duration_ms"] is None
+        assert record["payload"]["duration_invalid"] == "clock_reset"
+
+
+def test_new_events_are_documented():
+    assert EVENTS["consent"] == ("consented_at", "consent_version")
+    assert EVENTS["sink_recovered"] == ("spooled", "dropped")
+    assert "duration_invalid" in EVENTS["answer_submit"]
+    assert "duration_invalid" in EVENTS["task_end"]
+
+
+# --- ResilientSink ----------------------------------------------------------------------------
+#
+# The deployed sink. A database failure here must never surface as an exception to the app -- that
+# is what used to leave a participant pressing a Submit button that did nothing -- and it must never
+# quietly lose an event either.
+
+TRANSIENT = study_logging.db.TransientDatabaseError
+PERMANENT = study_logging.db.DatabaseError
+
+
+class FakeDatabase:
+    """A sink whose failures are scripted: each call pops the next outcome, None meaning success."""
+
+    def __init__(self, outcomes=()):
+        self.outcomes = list(outcomes)
+        self.written: list[dict] = []
+        self.replayed: list[dict] = []
+        self.calls = 0
+
+    def _next(self):
+        self.calls += 1
+        outcome = self.outcomes.pop(0) if self.outcomes else None
+        if outcome is not None:
+            raise outcome("scripted failure")
+
+    def write(self, record):
+        self._next()
+        self.written.append(record)
+
+    def replay(self, record):
+        self._next()
+        self.replayed.append(record)
+
+    def close(self):
+        pass
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+        self.sleeps: list[float] = []
+
+    def __call__(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def _record(event="line_isolate", n=0):
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "event_uid": f"uid-{event}-{n}",
+        "session_id": "11111111-1111-1111-1111-111111111111",
+        "participant_id": "P07",
+        "condition": "interactive",
+        "condition_order": 1,
+        "form": "A",
+        "task_id": "T1",
+        "event": event,
+        "payload": {},
+    }
+
+
+def _sink(database, tmp_path=None, clock=None, **kwargs):
+    clock = clock or FakeClock()
+    kwargs.setdefault("breaker", study_logging.CircuitBreaker(clock=clock))
+    return ResilientSink(
+        database,
+        spool_path=(tmp_path / "s.spool.jsonl") if tmp_path else None,
+        sleep=clock.sleep,
+        clock=clock,
+        **kwargs,
+    )
+
+
+def _uids(records):
+    return [r["event_uid"] for r in records]
+
+
+def test_resilient_sink_retries_a_transient_failure_then_succeeds():
+    database = FakeDatabase([TRANSIENT, TRANSIENT])
+    sink = _sink(database)
+    sink.write(_record())
+    assert database.calls == 3
+    assert len(database.written) == 1
+    assert sink.pending == []
+
+
+def test_resilient_sink_backoff_increases_and_is_capped():
+    clock = FakeClock()
+    policy = study_logging.RetryPolicy(attempts=6, base_delay_s=0.5, max_delay_s=1.0, budget_s=100)
+    sink = _sink(FakeDatabase([TRANSIENT] * 5), clock=clock, policy=policy)
+    sink.write(_record())
+    assert clock.sleeps == [0.5, 1.0, 1.0, 1.0, 1.0]
+
+
+def test_resilient_sink_respects_the_wall_clock_budget():
+    """The budget, not the attempt count, is what keeps a retry inside Vercel's maxDuration."""
+    clock = FakeClock()
+    policy = study_logging.RetryPolicy(attempts=100, base_delay_s=2.0, max_delay_s=2.0, budget_s=5)
+    sink = _sink(FakeDatabase([TRANSIENT] * 100), clock=clock, policy=policy)
+    sink.write(_record())
+    assert clock.now <= 5
+    assert len(sink.pending) == 1
+
+
+def test_resilient_sink_spools_after_exhausting_retries_and_does_not_raise(tmp_path):
+    """The headline guarantee: a dead database costs the event its trip, never the session."""
+    record = _record()
+    sink = _sink(FakeDatabase([TRANSIENT] * 10), tmp_path)
+    sink.write(record)
+
+    assert sink.pending == [record], "the browser copy is the one that survives on Vercel"
+    envelopes = read_log(tmp_path / "s.spool.jsonl")
+    assert len(envelopes) == 1
+    assert envelopes[0]["record"] == record, "spooled in an envelope, never as a bare record"
+    assert "scripted failure" in envelopes[0]["error"]
+    assert envelopes[0]["spooled_at"]
+
+
+def test_resilient_sink_does_not_retry_a_non_transient_error():
+    """Retrying a constraint violation only spends the retry budget before the same failure."""
+    clock = FakeClock()
+    database = FakeDatabase([PERMANENT])
+    sink = _sink(database, clock=clock)
+    sink.write(_record())
+    assert database.calls == 1
+    assert clock.sleeps == []
+    assert len(sink.pending) == 1
+
+
+def test_immediate_spool_policy_never_sleeps():
+    """Interaction events are logged inside the measured task window, in the interactive condition
+    only. A retry sleep there would inflate time-on-task in one condition: a manufactured result."""
+    clock = FakeClock()
+    database = FakeDatabase([TRANSIENT] * 10)
+    sink = _sink(database, clock=clock, policy=study_logging.NO_RETRY)
+    sink.write(_record())
+    assert clock.sleeps == []
+    assert database.calls == 1
+
+
+def test_circuit_breaker_skips_the_database_during_cooldown():
+    clock = FakeClock()
+    breaker = study_logging.CircuitBreaker(cooldown_s=20, clock=clock)
+    database = FakeDatabase([TRANSIENT] * 10)
+
+    first = _sink(database, clock=clock, breaker=breaker, policy=study_logging.NO_RETRY)
+    first.write(_record())
+    assert database.calls == 1
+
+    # The next callback builds a fresh sink; the breaker is the only thing it shares.
+    second = _sink(
+        database, clock=clock, breaker=breaker, policy=study_logging.NO_RETRY, pending=first.pending
+    )
+    second.write(_record(n=1))
+    assert database.calls == 1, "during cooldown the database must not be touched at all"
+
+    clock.now += 21
+    database.outcomes = []
+    third = _sink(database, clock=clock, breaker=breaker, pending=second.pending)
+    third.write(_record(n=2))
+    assert database.calls > 1, "after cooldown the database is tried again"
+    assert third.pending == []
+
+
+def test_pending_events_replay_in_order_before_new_ones():
+    database = FakeDatabase()
+    sink = _sink(database, pending=[_record(n=0), _record(n=1)])
+    sink.write(_record(n=2))
+
+    assert _uids(database.replayed) == ["uid-line_isolate-0", "uid-line_isolate-1"]
+    assert database.written[-1]["event_uid"] == "uid-line_isolate-2"
+    assert sink.pending == []
+
+
+def test_sink_recovered_is_written_once_the_backlog_clears():
+    database = FakeDatabase()
+    _sink(database, pending=[_record(n=0), _record(n=1)]).write(_record(n=2))
+
+    markers = [r for r in database.written if r["event"] == "sink_recovered"]
+    assert len(markers) == 1
+    assert markers[0]["payload"] == {"spooled": 2, "dropped": 0}
+
+
+def test_sink_recovered_is_attributed_to_the_backlogs_own_session():
+    """A warm container serves many participants. The marker must name the participant whose events
+    were spooled, never whoever happens to be the current request's subject."""
+    backlog = [_record(n=0)]
+    database = FakeDatabase()
+    someone_else = {**_record(n=9), "participant_id": "P99", "session_id": "other"}
+    _sink(database, pending=backlog).write(someone_else)
+
+    marker = next(r for r in database.written if r["event"] == "sink_recovered")
+    assert marker["participant_id"] == "P07"
+    assert marker["session_id"] == backlog[0]["session_id"]
+    assert marker["event_uid"] and marker["event_uid"] != backlog[0]["event_uid"]
+
+
+def test_no_recovery_marker_without_a_backlog():
+    database = FakeDatabase()
+    _sink(database).write(_record())
+    assert [r["event"] for r in database.written] == ["line_isolate"]
+
+
+def test_a_failed_replay_keeps_the_backlog_and_spools_the_new_event():
+    database = FakeDatabase([TRANSIENT] * 10)
+    sink = _sink(database, pending=[_record(n=0)], policy=study_logging.NO_RETRY)
+    sink.write(_record(n=1))
+    assert _uids(sink.pending) == ["uid-line_isolate-0", "uid-line_isolate-1"]
+    assert database.written == []
+
+
+def test_the_browser_spool_is_bounded_and_counts_what_it_drops(monkeypatch):
+    monkeypatch.setattr(study_logging, "MAX_PENDING", 3)
+    sink = _sink(FakeDatabase([PERMANENT] * 10))
+    for n in range(5):
+        sink.write(_record(n=n))
+    assert _uids(sink.pending) == [f"uid-line_isolate-{n}" for n in (2, 3, 4)]
+    assert sink.dropped == 2
+    assert sink.degraded
+
+
+def test_dropped_events_are_reported_in_the_recovery_marker():
+    database = FakeDatabase()
+    _sink(database, pending=[_record(n=0)], dropped=4).write(_record(n=1))
+    marker = next(r for r in database.written if r["event"] == "sink_recovered")
+    assert marker["payload"] == {"spooled": 1, "dropped": 4}
+
+
+def test_an_unwritable_spool_file_does_not_break_the_session(tmp_path):
+    """Vercel's filesystem is read-only outside /tmp. Failing to write the file copy is survivable
+    because the browser copy is still held."""
+    blocker = tmp_path / "not-a-directory"
+    blocker.write_text("x", encoding="utf-8")
+    clock = FakeClock()
+    sink = ResilientSink(
+        FakeDatabase([PERMANENT]),
+        spool_path=blocker / "s.spool.jsonl",
+        breaker=study_logging.CircuitBreaker(clock=clock),
+        sleep=clock.sleep,
+        clock=clock,
+    )
+    sink.write(_record())
+    assert len(sink.pending) == 1
+
+
+def test_spool_files_round_trip_through_read_spool(tmp_path):
+    for n in range(3):
+        _sink(FakeDatabase([PERMANENT]), tmp_path).write(_record(n=n))
+    envelopes = study_logging.read_spool(tmp_path)
+    assert [e["record"]["event_uid"] for e in envelopes] == [
+        f"uid-line_isolate-{n}" for n in range(3)
+    ]
+
+
+def test_postgres_replay_ignores_duplicates(monkeypatch):
+    """A spooled event may already have landed before the response was lost."""
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pw@host/db")
+    calls = []
+    monkeypatch.setattr(study_logging.db, "insert_event", lambda record, **kw: calls.append(kw))
+    sink = PostgresSink()
+    sink.write(_record())
+    sink.replay(_record())
+    assert calls == [{}, {"ignore_duplicates": True}]
+
+
+def test_the_default_postgres_sink_spools_to_the_configured_directory(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pw@host/db")
+    monkeypatch.setenv("STUDY_SPOOL_DIR", str(tmp_path))
+    monkeypatch.setattr(study_logging.db, "insert_event", lambda record, **kw: None)
+    log = StudyLogger("P07", condition_order=1, interactive=True)
+    assert log.resilient
+    assert log._sink.spool_path.parent == tmp_path
+    assert log.pending == []
+
+
+def test_the_file_sink_has_no_spool_to_carry(logger):
+    assert not logger.resilient
+    assert logger.pending == []
+    assert logger.dropped == 0

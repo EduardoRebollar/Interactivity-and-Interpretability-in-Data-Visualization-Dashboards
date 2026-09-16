@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS participants (
 CREATE TABLE IF NOT EXISTS study_events (
     id                 BIGSERIAL PRIMARY KEY,
     schema_version     INTEGER NOT NULL,
+    event_uid          UUID,
     session_id         UUID NOT NULL,
     participant_id     TEXT NOT NULL,
     condition          TEXT NOT NULL CHECK (condition IN ('static', 'interactive')),
@@ -46,14 +47,30 @@ CREATE TABLE IF NOT EXISTS study_events (
     payload            JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
+-- v4 columns, added explicitly. CREATE TABLE IF NOT EXISTS is a no-op on a table that already
+-- exists, so a column added to the definition above would be SILENTLY ABSENT on any database
+-- created before v4 -- and every write of it would be quietly dropped.
+ALTER TABLE study_events ADD COLUMN IF NOT EXISTS event_uid UUID;
+
 CREATE INDEX IF NOT EXISTS study_events_participant_idx
     ON study_events (participant_id, condition, id);
 CREATE INDEX IF NOT EXISTS study_events_session_idx
     ON study_events (session_id, id);
+
+-- Replaying a spooled event must not double-insert it. The uid is generated once, when the record
+-- is built, so a retry and a replay of the same event carry the same uid.
+CREATE UNIQUE INDEX IF NOT EXISTS study_events_event_uid_idx
+    ON study_events (event_uid) WHERE event_uid IS NOT NULL;
+
+-- One task, one answer -- enforced here and not only in the app, because the app's guard lives in
+-- browser session state and a second tab has its own. A duplicate would also skip the next task.
+CREATE UNIQUE INDEX IF NOT EXISTS study_events_one_answer_per_task
+    ON study_events (session_id, task_id) WHERE event = 'answer_submit';
 """
 
 EVENT_COLUMNS = (
     "schema_version",
+    "event_uid",
     "session_id",
     "participant_id",
     "condition",
@@ -67,9 +84,26 @@ EVENT_COLUMNS = (
     "payload",
 )
 
+# Calls made inside a participant's request -- event writes and assignment -- get a shorter connect
+# timeout than the default. A retry budget is wall-clock, and
+# vercel.json pins maxDuration to 30s: three attempts at a 10s connect timeout would blow it and the
+# function would be killed before the retry helped. A pooled Neon endpoint that has not answered in
+# 5s will not answer in 10.
+EVENT_CONNECT_TIMEOUT = 5
+
 
 class DatabaseError(RuntimeError):
     """Raised when the database is unreachable or not configured."""
+
+
+class TransientDatabaseError(DatabaseError):
+    """A connection-level failure a retry may fix: a suspended Neon compute, a dropped socket.
+
+    Subclasses DatabaseError, so existing `except DatabaseError` handlers keep catching both. The
+    distinction exists for the retry loop in src/logging.py: retrying a constraint violation three
+    times before spooling it would turn a code bug into silent data loss, and would spend the retry
+    budget inside a participant's measured task window to do it.
+    """
 
 
 def database_url() -> str | None:
@@ -83,14 +117,23 @@ def configured() -> bool:
 
 
 @contextmanager
-def connect() -> Iterator[psycopg.Connection]:
-    """Open a connection for one operation, committing on success."""
+def connect(timeout: int = 10) -> Iterator[psycopg.Connection]:
+    """Open a connection for one operation, committing on success.
+
+    `timeout` is the connect timeout in whole seconds (libpq parses the option as an integer). It
+    is the real bound on any retry loop -- see EVENT_CONNECT_TIMEOUT -- so it is a parameter.
+
+    Connection-level failures are raised as TransientDatabaseError so a caller can tell "Neon is
+    asleep" from "that INSERT violates a constraint"; everything else is a plain DatabaseError.
+    """
     dsn = database_url()
     if dsn is None:
         raise DatabaseError("DATABASE_URL is not set")
     try:
-        with psycopg.connect(dsn, connect_timeout=10) as connection:
+        with psycopg.connect(dsn, connect_timeout=timeout) as connection:
             yield connection
+    except (psycopg.OperationalError, psycopg.InterfaceError) as exc:
+        raise TransientDatabaseError(f"Database unreachable: {exc}") from exc
     except psycopg.Error as exc:
         raise DatabaseError(f"Database operation failed: {exc}") from exc
 
@@ -126,8 +169,10 @@ def register_participant(participant_id: str) -> tuple[int, str, str]:
 
     Idempotent: calling again for a known participant returns the same assignment, so someone who
     reloads or returns for their second condition is never re-randomised.
+
+    Uses the short connect timeout: a participant is waiting on the ID screen while this runs.
     """
-    with connect() as connection:
+    with connect(timeout=EVENT_CONNECT_TIMEOUT) as connection:
         row = connection.execute(
             "INSERT INTO participants (participant_id) VALUES (%s) "
             "ON CONFLICT (participant_id) DO NOTHING RETURNING seq",
@@ -148,22 +193,30 @@ def register_participant(participant_id: str) -> tuple[int, str, str]:
         return seq, condition, form
 
 
-def insert_event(record: dict[str, Any]) -> None:
-    """Write one event row. `record` uses the keys in EVENT_COLUMNS."""
+def insert_event(record: dict[str, Any], *, ignore_duplicates: bool = False) -> int:
+    """Write one event row. `record` uses the keys in EVENT_COLUMNS.
+
+    `ignore_duplicates` adds ON CONFLICT DO NOTHING, for replaying a spool where an event may
+    already have landed before the response was lost. Off by default: during a live session a
+    conflict is a real fault and should be seen, not swallowed.
+
+    Returns the number of rows written: 0 means a replayed event was already present.
+    """
     values = [record.get(column) for column in EVENT_COLUMNS]
     values[-1] = Json(record.get("payload") or {})
     placeholders = ", ".join(["%s"] * len(EVENT_COLUMNS))
-    with connect() as connection:
-        connection.execute(
-            f"INSERT INTO study_events ({', '.join(EVENT_COLUMNS)}) VALUES ({placeholders})",
-            values,
-        )
+    statement = f"INSERT INTO study_events ({', '.join(EVENT_COLUMNS)}) VALUES ({placeholders})"
+    if ignore_duplicates:
+        statement += " ON CONFLICT DO NOTHING"
+    with connect(timeout=EVENT_CONNECT_TIMEOUT) as connection:
+        return connection.execute(statement, values).rowcount
 
 
 def fetch_events(participant_id: str | None = None) -> list[dict[str, Any]]:
     """Read events back, oldest first. For `scripts/export_logs.py` and for verification."""
     query = (
-        "SELECT id, schema_version, session_id, participant_id, condition, condition_order, form, "
+        "SELECT id, schema_version, event_uid, session_id, participant_id, condition, "
+        "condition_order, form, "
         "task_id, event, server_ts, client_elapsed_ms, task_elapsed_ms, server_elapsed_ms, payload "
         "FROM study_events"
     )
@@ -190,6 +243,21 @@ def table_names() -> set[str]:
     with connect() as connection:
         rows = connection.execute(
             "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+        ).fetchall()
+        return {row[0] for row in rows}
+
+
+def column_names(table: str) -> set[str]:
+    """Columns present on a public table. Verifies a schema bump actually reached the database.
+
+    `table_names` alone cannot catch a half-migrated database: CREATE TABLE IF NOT EXISTS succeeds
+    on an old table without adding the new columns, so the table exists and the column does not.
+    """
+    with connect() as connection:
+        rows = connection.execute(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = %s",
+            (table,),
         ).fetchall()
         return {row[0] for row in rows}
 

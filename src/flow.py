@@ -81,6 +81,9 @@ class SessionState:
     first_form: str | None = None
     condition_index: int = 0  # 0 = first condition, 1 = second
     task_index: int = 0
+    # Browser ISO timestamp from the moment "I agree" was pressed. Held here because consent comes
+    # before the participant ID, and a log record cannot be written until the ID exists.
+    consent_at: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -90,6 +93,7 @@ class SessionState:
             "first_form": self.first_form,
             "condition_index": self.condition_index,
             "task_index": self.task_index,
+            "consent_at": self.consent_at,
         }
 
     @classmethod
@@ -104,6 +108,7 @@ class SessionState:
                 first_form=raw.get("first_form"),
                 condition_index=int(raw.get("condition_index", 0)),
                 task_index=int(raw.get("task_index", 0)),
+                consent_at=raw.get("consent_at"),
             )
         except (KeyError, ValueError) as exc:
             raise FlowError(f"Malformed session state: {exc}") from exc
@@ -168,9 +173,10 @@ def current_task(state: SessionState, tasks: Sequence[Task]) -> Task:
 # --- Transitions --------------------------------------------------------------------------------
 
 
-def give_consent(state: SessionState) -> SessionState:
+def give_consent(state: SessionState, consent_at: str | None = None) -> SessionState:
+    """Accept consent. `consent_at` is the browser timestamp, logged once the logger can open."""
     _require(state, Stage.CONSENT)
-    return replace(state, stage=Stage.PARTICIPANT_ID)
+    return replace(state, stage=Stage.PARTICIPANT_ID, consent_at=consent_at)
 
 
 def set_participant(

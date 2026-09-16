@@ -4,7 +4,7 @@
     "src/app.py": {
       "memory": 1024,
       "maxDuration": 30,
-      "excludeFiles": "{tests/**,docs/**,scripts/**,data/raw/**,data/processed/**,data/study_logs/**,.ruff_cache/**,.pytest_cache/**,**/__pycache__/**}"
+      "excludeFiles": "{tests/**,docs/**,scripts/**,analysis/**,data/raw/**,data/processed/**,data/study_logs/**,.ruff_cache/**,.pytest_cache/**,**/__pycache__/**}"
     }
   }
 }

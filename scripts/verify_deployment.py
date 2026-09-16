@@ -53,6 +53,12 @@ def verify() -> None:
     _check("tables created", tables >= EXPECTED_TABLES, f"found {sorted(tables)}")
     db.init_schema()
     _check("init_schema is idempotent", True)
+    columns = db.column_names("study_events")
+    _check(
+        "every logged column exists on the table",
+        set(db.EVENT_COLUMNS) <= columns,
+        f"missing {sorted(set(db.EVENT_COLUMNS) - columns)} -- a pre-v4 table was not migrated",
+    )
 
     print("2. Counterbalancing")
     seq_a, cond_a, form_a = db.register_participant(participant)
@@ -85,6 +91,9 @@ def verify() -> None:
             form=form,
             sink=PostgresSink(),
         )
+        if order == 1:
+            log.record_consent("2026-09-16T10:00:00.000Z", "verify")
+            written += 1
         log.event("condition_start", interactive=interactive, condition_order=order)
         log.start_task("T1", client_elapsed_ms=1500.0)
         log.event("line_isolate", entity="Nigeria", isolated=True, client_elapsed_ms=2000.0)
@@ -148,7 +157,32 @@ def verify() -> None:
     )
     _check("server timestamps set", all(e["server_ts"] is not None for e in events))
 
-    print("5. Cleanup")
+    consents = [e for e in events if e["event"] == "consent"]
+    _check("one consent record", len(consents) == 1, f"found {len(consents)}")
+    _check(
+        "consent keeps the browser timestamp",
+        consents[0]["payload"]["consented_at"] == "2026-09-16T10:00:00.000Z",
+    )
+    uids = [e["event_uid"] for e in events]
+    _check("every event has a uid", all(uids))
+    _check("event uids are unique", len(set(uids)) == len(uids))
+
+    print("5. Duplicate protection")
+    duplicate = dict(next(e for e in events if e["event"] == "answer_submit"))
+    duplicate["event_uid"] = str(uuid.uuid4())
+    try:
+        db.insert_event(duplicate)
+    except db.TransientDatabaseError as exc:
+        raise VerificationError(f"duplicate answer read as a connection failure: {exc}") from exc
+    except db.DatabaseError:
+        _check("a second answer for the same task is refused", True)
+    else:
+        raise VerificationError("the database accepted two answers for one task")
+    replayed = db.insert_event(dict(events[0]), ignore_duplicates=True)
+    _check("replaying an event that already landed writes nothing", replayed == 0)
+    _check("still exactly the events written", len(db.fetch_events(participant)) == written)
+
+    print("6. Cleanup")
     removed_events, removed_participants = db.delete_participant(participant)
     db.delete_participant(partner)
     _check("events removed", removed_events == written, f"removed {removed_events}")

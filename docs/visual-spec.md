@@ -7,7 +7,9 @@ Both study conditions use these values identically. A visual change applies to b
 neither — that is the methodological premise of the whole study, so a difference in appearance
 between static and interactive is a defect, not a variation.
 
-Status: **draft, 2026-09-09.** Sections marked OPEN need Eduardo's ruling before the UI is built.
+Status: **settled, 2026-09-15.** Every section is decided and built; the three formerly OPEN items
+are resolved in place, with the reasoning kept in §9. A change to any of §1–8 needs this document
+edited first, then the code.
 
 ---
 

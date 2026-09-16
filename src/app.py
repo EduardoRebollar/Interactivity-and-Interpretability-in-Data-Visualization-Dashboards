@@ -10,13 +10,21 @@ both conditions, so a module-level flag would be shared across concurrent partic
 
 **Timing is measured in the browser.** Each event is its own HTTP request, so a server clock would
 fold network latency and cold starts into task duration — a dependent variable. Clientside callbacks
-stamp `performance.now()` at screen render and at submit; the server only subtracts them.
+stamp `performance.now()` at screen render and at submit; the server only subtracts them. Each stamp
+carries `performance.timeOrigin`, because a reload restarts that clock: two stamps from different
+origins cannot be subtracted, and the duration is recorded absent and flagged instead.
+
+**A database failure never leaves a dead button.** Event writes go through `logging.ResilientSink`,
+which retries and then spools. The browser copy of the spool lives in the `spool-state` store and is
+handed back to the sink on the next callback, where it is replayed before anything new.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +33,7 @@ from dash import Input, Output, State, callback_context, dcc, html, no_update
 
 from src import config, db, figures, flow, layout, tasks
 from src.flow import SessionState, Stage
-from src.logging import StudyLogger
+from src.logging import FULL, NO_RETRY, RetryPolicy, StudyLogger, call_with_retry
 
 # Consent wording lives in docs/study-design.md section 9 and is a DRAFT until IRB approves it.
 CONSENT_TEXT = """\
@@ -42,6 +50,10 @@ collected.
 Voluntary: you may stop at any time by closing the tab, with no consequence.
 
 DRAFT CONSENT TEXT - pending IRB review. Do not run participants on this wording."""
+
+# Recorded on every consent event, so a change to the wording mid-study shows up in the data rather
+# than depending on anyone's memory of when the text was edited.
+CONSENT_VERSION = hashlib.sha256(CONSENT_TEXT.encode("utf-8")).hexdigest()[:16]
 
 
 def create_app() -> dash.Dash:
@@ -65,6 +77,13 @@ def create_app() -> dash.Dash:
             # The server only subtracts them, so the measurement is entirely the browser's clock.
             dcc.Store(id="task-clock", storage_type="session"),
             dcc.Store(id="submit-clock", storage_type="session"),
+            # The consent timestamp, stamped in the browser when "I agree" is pressed.
+            dcc.Store(id="consent-clock", storage_type="session"),
+            # Events the database refused, kept in the browser until they can be replayed. Its own
+            # store, not a key on log-state: both callbacks write it, and letting the controls
+            # callback write log-state would let a slow click response overwrite the task
+            # attribution a later Submit had just set.
+            dcc.Store(id="spool-state", storage_type="session"),
             html.Div(id="page"),
         ]
     )
@@ -110,8 +129,42 @@ def render(state: SessionState) -> html.Div:
     raise flow.FlowError(f"No screen for stage {state.stage}")
 
 
+class _Spool:
+    """The browser-held spool, carried across the loggers one request builds.
+
+    A request can construct more than one logger (a Submit writes the answer, then opens the next
+    task), and each wraps its own sink. Whatever one leaves pending must be handed to the next, and
+    the final state written back to the browser -- but only when it changed, so an ordinary request
+    never touches the store.
+    """
+
+    def __init__(self, raw: dict[str, Any] | None) -> None:
+        raw = raw or {}
+        self.pending: list[dict[str, Any]] = list(raw.get("pending") or [])
+        self.dropped = int(raw.get("dropped") or 0)
+        self._initial = (len(self.pending), self.dropped, _uids(self.pending))
+
+    def take(self, logger: StudyLogger) -> None:
+        if logger.resilient:
+            self.pending = logger.pending
+            self.dropped = logger.dropped
+
+    def output(self) -> Any:
+        if (len(self.pending), self.dropped, _uids(self.pending)) == self._initial:
+            return no_update
+        return {"pending": self.pending, "dropped": self.dropped}
+
+
+def _uids(records: list[dict[str, Any]]) -> tuple[str, ...]:
+    return tuple(str(record.get("event_uid")) for record in records)
+
+
 def _logger(
-    state: SessionState, log: dict[str, Any] | None, log_dir: Path | None = None
+    state: SessionState,
+    log: dict[str, Any] | None,
+    log_dir: Path | None = None,
+    spool: _Spool | None = None,
+    policy: RetryPolicy = FULL,
 ) -> StudyLogger:
     """Rebuild the logger for this request from browser-held session state.
 
@@ -130,6 +183,9 @@ def _logger(
         session_id=log.get("session_id"),
         task_id=log.get("task_id"),
         log_dir=log_dir,
+        policy=policy,
+        pending=spool.pending if spool else None,
+        dropped=spool.dropped if spool else 0,
     )
 
 
@@ -150,22 +206,32 @@ def step(
     justification: str | None = None,
     load: int | None = None,
     duration_ms: float | None = None,
+    duration_invalid: str | None = None,
+    consented_at: str | None = None,
+    spool: dict[str, Any] | None = None,
     log_dir: Path | None = None,
-) -> tuple[Any, Any, Any, str]:
-    """Advance the session one click. Returns (session state, log state, screen, error message).
+) -> tuple[Any, Any, Any, str, Any]:
+    """Advance the session one click.
 
-    Any of the first three may be `dash.no_update`, which leaves that store untouched — that is how
-    a validation failure re-renders nothing and only fills the error slot.
+    Returns (session state, log state, screen, error message, spool). Any of them may be
+    `dash.no_update`, which leaves that store untouched — that is how a validation failure
+    re-renders nothing and only fills the error slot.
     """
     state = SessionState.from_dict(stored)
     log_state = dict(log_state or {})
+    carried = _Spool(spool)
 
-    def refuse(message: str) -> tuple[Any, Any, Any, str]:
-        return (no_update, no_update, no_update, message)
+    def refuse(message: str) -> tuple[Any, Any, Any, str, Any]:
+        # The spool is still returned: a refusal can follow writes that spooled.
+        return (no_update, no_update, no_update, message, carried.output())
 
     try:
-        if triggered == "consent-button":
-            state = flow.give_consent(state)
+        if triggered == "consent-clock":
+            if not consented_at:
+                # The clock is what triggers this branch, so a missing value means the browser
+                # failed to stamp it. Consent without a time is not a record of consent.
+                return refuse("Please press the button again.")
+            state = flow.give_consent(state, consented_at)
 
         elif triggered == "participant-button":
             if not (participant_id or "").strip():
@@ -181,12 +247,17 @@ def step(
                 if state.condition_index == 0
                 else flow.begin_tasks(state)
             )
-            logger = _logger(state, {}, log_dir)
+            logger = _logger(state, {}, log_dir, carried)
+            if state.condition_index == 0 and state.consent_at:
+                # Once per participant, first in their record. It could not be written at the
+                # consent click itself, before any participant ID existed.
+                logger.record_consent(state.consent_at, CONSENT_VERSION)
             logger.event(
                 "condition_start",
                 interactive=flow.is_interactive(state),
                 condition_order=flow.condition_order(state),
             )
+            carried.take(logger)
             log_state = {"session_id": logger.session_id}
 
         elif triggered == "resume-button":
@@ -198,7 +269,17 @@ def step(
             if not (justification or "").strip():
                 return refuse("Please say briefly how you decided.")
 
-            logger = _logger(state, log_state, log_dir)
+            on_screen = _active_task(state)
+            if on_screen is None:
+                raise flow.FlowError(f"No task to answer at stage {state.stage.value}")
+            answered_id = on_screen.task_id
+            if answered_id in log_state.get("answered", []):
+                # Already recorded in this session. Change nothing — and in particular do not
+                # re-render: a fresh screen would restamp task-clock and corrupt the timing of the
+                # task that is now actually on screen.
+                return (no_update, no_update, no_update, "", no_update)
+
+            logger = _logger(state, log_state, log_dir, carried)
             open_task = log_state.pop("task_id", None)
             if state.stage is Stage.PRACTICE:
                 # Recorded like any other answer under task_id "P0". Not scored — analysis drops
@@ -208,6 +289,7 @@ def step(
                     answer=answer,
                     justification=justification.strip(),
                     duration_ms=duration_ms,
+                    duration_invalid=duration_invalid,
                 )
                 state = flow.begin_tasks(state)
             else:
@@ -218,20 +300,23 @@ def step(
                     answer=answer,
                     justification=justification.strip(),
                     duration_ms=duration_ms,
+                    duration_invalid=duration_invalid,
                 )
                 state = flow.complete_task(state, items)
             # Closes the span opened when this screen appeared, so the interaction events in
             # between are bracketed by the task they happened on.
             if open_task is not None:
-                logger.end_task(duration_ms=duration_ms)
+                logger.end_task(duration_ms=duration_ms, duration_invalid=duration_invalid)
+            carried.take(logger)
             log_state["session_id"] = logger.session_id
+            log_state["answered"] = [*log_state.get("answered", []), answered_id]
 
         elif triggered == "load-button":
             if load is None:
                 return refuse("Please choose a number.")
             # `condition_index` advances in `flow.submit_load`, below — so the state here still
             # names the condition being rated, and no rewind is needed to find it.
-            logger = _logger(state, log_state, log_dir)
+            logger = _logger(state, log_state, log_dir, carried)
             logger.rate_load(int(load))
             logger.event(
                 "condition_end",
@@ -241,18 +326,28 @@ def step(
             # Closed at the end of BOTH conditions. Closing only at COMPLETE left every participant
             # with one session carrying a session_end and one without.
             logger.close()
+            carried.take(logger)
             log_state = {}
             state = flow.submit_load(state)
 
     except flow.FlowError as exc:
         return refuse(str(exc))
+    except db.DatabaseError as exc:
+        # A safety net, not the expected path: event writes spool rather than raise, and assignment
+        # failures become FlowErrors in `_assign`. If something still escapes, say so and let the
+        # participant retry, rather than advancing on a half-applied step or failing silently.
+        print(f"[study] database error in step {triggered!r}: {exc}", file=sys.stderr)
+        return refuse("Something went wrong saving that. Please wait a moment and try again.")
 
-    log_state = _open_task(state, log_state, log_dir)
-    return state.to_dict(), log_state, render(state), ""
+    log_state = _open_task(state, log_state, log_dir, carried)
+    return state.to_dict(), log_state, render(state), "", carried.output()
 
 
 def _open_task(
-    state: SessionState, log_state: dict[str, Any], log_dir: Path | None
+    state: SessionState,
+    log_state: dict[str, Any],
+    log_dir: Path | None,
+    spool: _Spool | None = None,
 ) -> dict[str, Any]:
     """Emit `task_start` for the task now on screen, and remember that it is open.
 
@@ -263,8 +358,17 @@ def _open_task(
     task = _active_task(state)
     if task is None or not log_state.get("session_id") or log_state.get("task_id"):
         return log_state
-    logger = _logger(state, {**log_state, "task_id": None}, log_dir)
-    logger.start_task(task.task_id)
+    logger = _logger(state, {**log_state, "task_id": None}, log_dir, spool)
+    try:
+        logger.start_task(task.task_id)
+    except db.DatabaseError as exc:
+        # The answer that got the participant here is already written. Leave the task unopened
+        # rather than fail the whole step: the matching task_end is then skipped too, so the record
+        # stays consistently bracketed instead of half-open.
+        print(f"[study] could not open task {task.task_id}: {exc}", file=sys.stderr)
+        return log_state
+    if spool is not None:
+        spool.take(logger)
     return {**log_state, "task_id": task.task_id}
 
 
@@ -315,9 +419,12 @@ def control_step(
     sort_key: str | None = None,
     click_data: dict[str, Any] | None = None,
     relayout: dict[str, Any] | None = None,
+    spool: dict[str, Any] | None = None,
     log_dir: Path | None = None,
-) -> tuple[Any, Any, Any, Any]:
-    """Apply one control interaction. Returns (figure, filter options, filter value, control state).
+) -> tuple[Any, Any, Any, Any, Any]:
+    """Apply one control interaction.
+
+    Returns (figure, filter options, filter value, control state, spool).
 
     `triggered` is a Dash **prop id** — "chart.clickData", not "chart". The chart raises two
     different inputs and the component id alone cannot tell them apart: `clickData` stays set on the
@@ -332,7 +439,7 @@ def control_step(
     state = SessionState.from_dict(stored)
     task = _active_task(state)
     if task is None:
-        return (no_update,) * 4
+        return (no_update,) * 5
 
     options = layout.filterable(list(task.entities))
     control = {"selected": list(options), "sort": "listed", "isolated": None}
@@ -342,7 +449,7 @@ def control_step(
     if control["isolated"] not in task.entities:
         control["isolated"] = None
 
-    unchanged: tuple[Any, ...] = (no_update,) * 4
+    unchanged: tuple[Any, ...] = (no_update,) * 5
     event: tuple[str, dict[str, Any]] | None = None
 
     if triggered == "entity-filter.value":
@@ -408,10 +515,6 @@ def control_step(
     else:
         return unchanged
 
-    if event is not None:
-        name, payload = event
-        _logger(state, log_state, log_dir).event(name, task_id=task.task_id, **payload)
-
     shown = [control["isolated"]] if control["isolated"] else list(control["selected"])
     if "World" in task.entities:
         shown.append("World")
@@ -426,7 +529,23 @@ def control_step(
         }
         for entity in ordered
     ]
-    return figure, filter_options, list(control["selected"]), control
+
+    # Logged AFTER the figure is built. Logged first, a database failure left the participant's
+    # click with no visible effect -- the chart simply did not change.
+    #
+    # NO_RETRY: this runs inside the task's measured window, and only in the interactive
+    # condition. A retry here would inflate time-on-task in one condition only. A failed write
+    # spools at once, and the circuit breaker sends the next click straight to the spool.
+    carried = _Spool(spool)
+    if event is not None:
+        name, payload = event
+        logger = _logger(state, log_state, log_dir, carried, policy=NO_RETRY)
+        try:
+            logger.event(name, task_id=task.task_id, **payload)
+        except db.DatabaseError as exc:
+            print(f"[study] could not log {name}: {exc}", file=sys.stderr)
+        carried.take(logger)
+    return figure, filter_options, list(control["selected"]), control, carried.output()
 
 
 # --- Callbacks ------------------------------------------------------------------------------------
@@ -448,7 +567,10 @@ def _register_callbacks(app: dash.Dash) -> None:
         # One error slot, emitted by `layout.page` on every screen. Outputs that exist on only some
         # screens are a latent failure on the rest; see the note in `layout.page`.
         Output("flow-error", "children"),
-        Input("consent-button", "n_clicks"),
+        Output("spool-state", "data", allow_duplicate=True),
+        # Triggered by the consent CLOCK, like Submit below, so the browser timestamp is taken
+        # before the request leaves and is guaranteed to be present.
+        Input("consent-clock", "data"),
         Input("participant-button", "n_clicks"),
         Input("begin-button", "n_clicks"),
         Input("resume-button", "n_clicks"),
@@ -464,10 +586,11 @@ def _register_callbacks(app: dash.Dash) -> None:
         State("justification-input", "value"),
         State("load-input", "value"),
         State("task-clock", "data"),
+        State("spool-state", "data"),
         prevent_initial_call=True,
     )
     def advance(
-        _c,
+        consented_at,
         _p,
         _b,
         _r,
@@ -480,8 +603,10 @@ def _register_callbacks(app: dash.Dash) -> None:
         justification,
         load,
         started_at,
+        spool,
     ):
         """Thin wrapper: unpack Dash's arguments and hand them to `step`, which holds the logic."""
+        duration_ms, duration_invalid = _elapsed(started_at, submitted_at)
         return step(
             callback_context.triggered_id,
             stored,
@@ -490,7 +615,10 @@ def _register_callbacks(app: dash.Dash) -> None:
             answer=answer,
             justification=justification,
             load=load,
-            duration_ms=_elapsed(started_at, submitted_at),
+            duration_ms=duration_ms,
+            duration_invalid=duration_invalid,
+            consented_at=consented_at,
+            spool=spool,
         )
 
     @app.callback(
@@ -498,6 +626,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         Output("entity-filter", "options"),
         Output("entity-filter", "value"),
         Output("control-state", "data"),
+        Output("spool-state", "data", allow_duplicate=True),
         Input("entity-filter", "value"),
         Input("entity-sort", "value"),
         Input("chart", "clickData"),
@@ -506,9 +635,12 @@ def _register_callbacks(app: dash.Dash) -> None:
         State("session-state", "data"),
         State("log-state", "data"),
         State("control-state", "data"),
+        State("spool-state", "data"),
         prevent_initial_call=True,
     )
-    def controls(selected, sort_key, click_data, relayout, _reset, stored, log, control_state):
+    def controls(
+        selected, sort_key, click_data, relayout, _reset, stored, log, control_state, spool
+    ):
         """Thin wrapper over `control_step`.
 
         Interactive condition only: the static condition renders none of these components, so this
@@ -527,12 +659,15 @@ def _register_callbacks(app: dash.Dash) -> None:
             sort_key=sort_key,
             click_data=click_data,
             relayout=relayout,
+            spool=spool,
         )
 
     # Stamps the browser clock when a screen appears. Clientside so it never touches the server
     # clock, which would include network and cold-start time.
+    # The origin travels with the reading: a reload restarts performance.now() at zero, and without
+    # the origin a post-reload stamp is indistinguishable from a genuine one.
     app.clientside_callback(
-        "function(_) { return window.performance.now(); }",
+        CLOCK_JS,
         Output("task-clock", "data"),
         Input("page", "children"),
     )
@@ -541,25 +676,108 @@ def _register_callbacks(app: dash.Dash) -> None:
     # callback above. Chaining that way means the timestamp is taken in the browser before the
     # request leaves, so no network or cold-start time can leak into the measurement.
     app.clientside_callback(
-        "function(n) { return n ? window.performance.now() : window.dash_clientside.no_update; }",
+        SUBMIT_CLOCK_JS,
         Output("submit-clock", "data"),
         Input("submit-button", "n_clicks"),
         prevent_initial_call=True,
     )
 
+    # Disable Submit the moment it is pressed. Two rapid clicks send two requests that both read the
+    # same pre-click session state, so no server-side check can tell them apart; stopping the second
+    # click in the browser is the only complete guard. The database's unique index is the backstop.
+    app.clientside_callback(
+        SUBMIT_DISABLE_JS,
+        Output("submit-button", "disabled"),
+        Input("submit-button", "n_clicks"),
+        prevent_initial_call=True,
+    )
 
-def _elapsed(started_at: float | None, submitted_at: float | None) -> float | None:
-    """Browser-measured milliseconds on task.
+    # ...and re-enable it when the step is refused. A refusal ("Please choose an answer") does not
+    # re-render the screen, so without this the participant would be left with a dead button.
+    app.clientside_callback(
+        SUBMIT_ENABLE_JS,
+        Output("submit-button", "disabled", allow_duplicate=True),
+        Input("flow-error", "children"),
+        prevent_initial_call=True,
+    )
 
-    Both timestamps come from the same `performance.now()` clock in the participant's browser; the
-    server only subtracts them. Returns None when either is missing, because a missing value must
-    be visibly absent in the data rather than silently recorded as zero.
+    app.clientside_callback(
+        CONSENT_CLOCK_JS,
+        Output("consent-clock", "data"),
+        Input("consent-button", "n_clicks"),
+        prevent_initial_call=True,
+    )
+
+
+# --- Clientside JavaScript ------------------------------------------------------------------------
+#
+# Module constants so tests can assert on them; nothing in the suite runs a browser.
+
+CLOCK_JS = """function(_) {
+    return {t: window.performance.now(), origin: window.performance.timeOrigin};
+}"""
+
+SUBMIT_CLOCK_JS = """function(n) {
+    if (!n) { return window.dash_clientside.no_update; }
+    return {t: window.performance.now(), origin: window.performance.timeOrigin};
+}"""
+
+# The watchdog re-enables the button if no response ever arrives (a killed function, a dropped
+# connection), so a lost request can never strand a participant. By the time it fires on a
+# successful step the screen has been replaced, and re-enabling a fresh button is harmless.
+SUBMIT_DISABLE_JS = """function(n) {
+    if (!n) { return window.dash_clientside.no_update; }
+    window.setTimeout(function () {
+        window.dash_clientside.set_props("submit-button", {disabled: false});
+    }, 15000);
+    return true;
+}"""
+
+SUBMIT_ENABLE_JS = """function(message) {
+    return message ? false : window.dash_clientside.no_update;
+}"""
+
+CONSENT_CLOCK_JS = """function(n) {
+    return n ? new Date().toISOString() : window.dash_clientside.no_update;
+}"""
+
+
+def _elapsed(started_at: Any, submitted_at: Any) -> tuple[float | None, str | None]:
+    """Browser-measured milliseconds on task, and why the value is absent when it is.
+
+    Stamps are `{"t": performance.now(), "origin": performance.timeOrigin}`; bare numbers are
+    accepted as readings from an unknown but shared clock. The server only subtracts.
+
+    Returns `(None, reason)` whenever the result cannot be trusted, because a missing value must be
+    visibly absent rather than silently wrong:
+
+    - `"missing"` — a stamp was never taken.
+    - `"clock_reset"` — the two stamps come from different page loads. A reload restarts
+      `performance.now()` at zero, so the difference would be a plausible, wrong undercount.
+    - `"negative"` — the stores are out of step; a monotonic clock cannot run backwards.
     """
-    if started_at is None or submitted_at is None:
-        return None
-    elapsed = submitted_at - started_at
-    # A monotonic clock cannot go backwards; a negative value means the stores are out of step.
-    return round(elapsed, 3) if elapsed >= 0 else None
+    start, start_origin = _reading(started_at)
+    end, end_origin = _reading(submitted_at)
+    if start is None or end is None:
+        return None, "missing"
+    if start_origin is not None and end_origin is not None and start_origin != end_origin:
+        return None, "clock_reset"
+    elapsed = end - start
+    if elapsed < 0:
+        return None, "negative"
+    return round(elapsed, 3), None
+
+
+def _reading(stamp: Any) -> tuple[float | None, float | None]:
+    """Split a clock stamp into (time, origin). Unrecognised shapes read as missing."""
+    if isinstance(stamp, bool):
+        return None, None
+    if isinstance(stamp, int | float):
+        return float(stamp), None
+    if isinstance(stamp, dict) and isinstance(stamp.get("t"), int | float):
+        origin = stamp.get("origin")
+        return float(stamp["t"]), float(origin) if isinstance(origin, int | float) else None
+    return None, None
 
 
 def _assign(participant_id: str) -> tuple[str, str]:
@@ -569,7 +787,18 @@ def _assign(participant_id: str) -> tuple[str, str]:
     gets the same cell and local walkthroughs are reproducible.
     """
     if db.configured():
-        _seq, condition, form = db.register_participant(participant_id)
+        # The one database call that must not degrade: inventing an assignment locally would break
+        # the sequence-based counterbalancing. Retry -- no task clock runs on this screen, so the
+        # wait costs nothing measured -- then stop with a message the participant can act on.
+        try:
+            _seq, condition, form = call_with_retry(
+                lambda: db.register_participant(participant_id), FULL
+            )
+        except db.DatabaseError as exc:
+            print(f"[study] assignment failed: {exc}", file=sys.stderr)
+            raise flow.FlowError(
+                "We could not start your session. Please wait a moment and press Continue again."
+            ) from exc
         return condition, form
     return db.assignment_for(sum(participant_id.encode()) % 4)
 

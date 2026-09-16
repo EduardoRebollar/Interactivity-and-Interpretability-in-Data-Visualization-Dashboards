@@ -5,6 +5,7 @@ spec first, then these values. Every color here has a measured WCAG 2.1 contrast
 alongside it, and `tests/test_palette.py` fails the build if any of them drifts below its floor.
 """
 
+import os
 from pathlib import Path
 
 # --- Condition toggle -------------------------------------------------------------------------
@@ -19,6 +20,23 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 STUDY_LOGS_DIR = DATA_DIR / "study_logs"
+
+
+def spool_dir() -> Path:
+    """Where events go when the database refuses them, besides the browser store.
+
+    A function, not a constant, so the environment is read at call time: `STUDY_SPOOL_DIR`
+    overrides it (tests point it at a temporary directory), and on Vercel -- where everything
+    outside /tmp is read-only -- it is /tmp. /tmp there is per-instance and not retrievable, which
+    is why the browser store, not this directory, is the copy that counts in production.
+    """
+    override = os.environ.get("STUDY_SPOOL_DIR")
+    if override:
+        return Path(override)
+    if os.environ.get("VERCEL"):
+        return Path("/tmp/study_spool")
+    return STUDY_LOGS_DIR / "spool"
+
 
 # --- Source -----------------------------------------------------------------------------------
 # Our World in Data grapher export of the WHO/UNICEF (WUENIC) coverage estimates.
