@@ -118,6 +118,10 @@ parquet cache stay gitignored as before.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v3 (2026-09-15).** Parallel forms added a `form` column, the `load_rating` event (Paas
+mental effort, the RQ3 measure), and `justification` on `answer_submit` (the RQ2 material). Additive,
+and nothing has been collected, so no migration — but the record shape changed, so the version moved.
+
 **Schema v2 (2026-09-15).** Deployment forced three changes:
 
 - **Sink:** Neon Postgres when `DATABASE_URL` is set; JSONL under `data/study_logs/` otherwise.
@@ -192,9 +196,11 @@ data/
   study_logs/           # participant interaction logs (gitignored, .gitkeep only)
 docs/
   visual-spec.md        # locked visual decisions (colors, chart types, layout)
+  study-design.md       # RQs, conditions, the 12 items, measures, rubric, draft consent
 src/
-  config.py             # INTERACTIVE flag, palette, country/vaccine lists
+  config.py             # INTERACTIVE flag (local default only), palette, scope
   data.py               # load + clean
+  tasks.py              # the 12 items, forms A and B. NO answer key — it ships to the browser
   logging.py            # event/timing logger
 scripts/
   download_data.py      # fetches from Our World in Data
@@ -226,12 +232,17 @@ scripts/
   export_logs.py        # pull study data out for analysis
 ```
 
-Planned, not yet written:
+### Study protocol
 
-```
-docs/
-  study-design.md       # RQs, conditions, tasks, rubric — GATES the study flow UI
-```
+- `docs/study-design.md` is the source of truth for the protocol. Change it before `src/tasks.py`.
+- **Parallel forms A and B**: a participant sees one form per condition and never the same form
+  twice. Plain order-counterbalancing cannot fix a memory effect — it only spreads it evenly.
+- Counterbalancing is **2×2**, assigned from a database sequence (`db.assignment_for`, `seq % 4`),
+  not a random draw, so cells fill evenly and concurrent starts cannot collide.
+- **No correct answers in `src/tasks.py`.** It serialises to the browser; an answer key would be
+  readable in the page source. Scoring is offline against the rubric.
+- Static participants cannot read exact values, so no item may ask for one — it would measure
+  whether hover exists rather than interpretation.
 
 ## Environment notes
 

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS study_events (
     participant_id     TEXT NOT NULL,
     condition          TEXT NOT NULL CHECK (condition IN ('static', 'interactive')),
     condition_order    INTEGER NOT NULL CHECK (condition_order IN (1, 2)),
+    form               TEXT CHECK (form IN ('A', 'B')),
     task_id            TEXT,
     event              TEXT NOT NULL,
     server_ts          TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -57,6 +58,7 @@ EVENT_COLUMNS = (
     "participant_id",
     "condition",
     "condition_order",
+    "form",
     "task_id",
     "event",
     "client_elapsed_ms",
@@ -99,19 +101,31 @@ def init_schema() -> None:
         connection.execute(SCHEMA_SQL)
 
 
-def first_condition_for(seq: int) -> str:
-    """Counterbalancing rule: odd sequence numbers start static, even start interactive.
+# 2x2 counterbalancing: condition order crossed with form order. Indexed by seq % 4, so the four
+# cells fill evenly as participants arrive. See docs/study-design.md section 2.
+ASSIGNMENTS: dict[int, tuple[str, str]] = {
+    1: ("static", "A"),
+    2: ("interactive", "A"),
+    3: ("static", "B"),
+    0: ("interactive", "B"),
+}
 
-    Pure so the assignment rule is testable without a database.
+
+def assignment_for(seq: int) -> tuple[str, str]:
+    """Return (first_condition, first_form) for a sequence number.
+
+    Pure, so the rule is testable without a database. The second condition and second form are
+    always the opposites — every participant sees both conditions and both forms, never a form
+    twice, which is what stops them answering the same question with the answer already known.
     """
-    return "static" if seq % 2 == 1 else "interactive"
+    return ASSIGNMENTS[seq % 4]
 
 
-def register_participant(participant_id: str) -> tuple[int, str]:
-    """Return this participant's (seq, first_condition), assigning one on first sight.
+def register_participant(participant_id: str) -> tuple[int, str, str]:
+    """Return (seq, first_condition, first_form), assigning on first sight.
 
-    Idempotent: calling again for a known participant returns the same assignment, so a participant
-    who reloads or returns for their second condition is never re-randomised.
+    Idempotent: calling again for a known participant returns the same assignment, so someone who
+    reloads or returns for their second condition is never re-randomised.
     """
     with connect() as connection:
         row = connection.execute(
@@ -130,7 +144,8 @@ def register_participant(participant_id: str) -> tuple[int, str]:
                 raise DatabaseError(f"Could not register or find participant {participant_id!r}")
 
         seq = int(row[0])
-        return seq, first_condition_for(seq)
+        condition, form = assignment_for(seq)
+        return seq, condition, form
 
 
 def insert_event(record: dict[str, Any]) -> None:
@@ -148,7 +163,7 @@ def insert_event(record: dict[str, Any]) -> None:
 def fetch_events(participant_id: str | None = None) -> list[dict[str, Any]]:
     """Read events back, oldest first. For `scripts/export_logs.py` and for verification."""
     query = (
-        "SELECT id, schema_version, session_id, participant_id, condition, condition_order, "
+        "SELECT id, schema_version, session_id, participant_id, condition, condition_order, form, "
         "task_id, event, server_ts, client_elapsed_ms, task_elapsed_ms, server_elapsed_ms, payload "
         "FROM study_events"
     )

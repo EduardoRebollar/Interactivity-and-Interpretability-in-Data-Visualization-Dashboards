@@ -1,11 +1,13 @@
-"""Tests for the session flow and the counterbalancing rule.
+"""Tests for the session flow and the 2x2 counterbalancing.
 
-The property that matters most: every participant sees both conditions, exactly once each, and the
-order alternates across participants. If that breaks, a practice effect becomes indistinguishable
-from an effect of interactivity and the within-subjects design is worthless.
+The property that matters most: every participant sees both conditions and both forms, exactly once
+each, and the four orderings fill evenly. If that breaks, a practice effect becomes
+indistinguishable from an effect of interactivity and the within-subjects design is worthless.
 """
 
 from __future__ import annotations
+
+from collections import Counter
 
 import pytest
 
@@ -15,67 +17,83 @@ from src.flow import FlowError, SessionState, Stage, Task
 TASKS = tuple(
     Task(
         task_id=f"T{n}",
+        form="A",
+        kind="trend",
         prompt=f"Placeholder prompt {n}",
         vaccine="DTP3",
         entities=("Nigeria", "India"),
-        answer_kind="text",
+        options=("Nigeria", "India"),
     )
     for n in range(1, 4)
 )
 
 
-def _started(first_condition: str = "static") -> SessionState:
+def _started(first_condition: str = "static", first_form: str = "A") -> SessionState:
     state = flow.give_consent(SessionState())
-    return flow.set_participant(state, "P01", first_condition)
+    return flow.set_participant(state, "P01", first_condition, first_form)
 
 
 # --- Counterbalancing ---------------------------------------------------------------------------
 
 
-def test_assignment_alternates_by_sequence():
-    assert db.first_condition_for(1) == "static"
-    assert db.first_condition_for(2) == "interactive"
-    assert db.first_condition_for(3) == "static"
+def test_assignment_cycles_through_all_four_cells():
+    assert db.assignment_for(1) == ("static", "A")
+    assert db.assignment_for(2) == ("interactive", "A")
+    assert db.assignment_for(3) == ("static", "B")
+    assert db.assignment_for(4) == ("interactive", "B")
+    assert db.assignment_for(5) == db.assignment_for(1), "should repeat every four"
 
 
 def test_assignment_is_balanced_over_a_realistic_cohort():
-    """n >= 25 is the target; the two orders must come out within one of each other."""
-    assigned = [db.first_condition_for(seq) for seq in range(1, 26)]
-    static = assigned.count("static")
-    interactive = assigned.count("interactive")
-    assert abs(static - interactive) <= 1, f"{static} static vs {interactive} interactive"
+    """n >= 25 is the target; no cell may be more than one ahead of another."""
+    cells = Counter(db.assignment_for(seq) for seq in range(1, 26))
+    assert len(cells) == 4, f"only {len(cells)} of 4 cells used"
+    assert max(cells.values()) - min(cells.values()) <= 1, cells
 
 
-# --- Condition sequencing -----------------------------------------------------------------------
+def test_condition_and_form_are_independently_balanced():
+    """Condition must not correlate with form, or the two are confounded."""
+    assignments = [db.assignment_for(seq) for seq in range(1, 25)]
+    conditions = Counter(c for c, _ in assignments)
+    forms = Counter(f for _, f in assignments)
+    assert conditions["static"] == conditions["interactive"]
+    assert forms["A"] == forms["B"]
 
 
-@pytest.mark.parametrize("first", ["static", "interactive"])
-def test_participant_sees_both_conditions_exactly_once(first):
-    state = _started(first)
-    state = flow.begin_tasks(state)
+# --- Condition and form sequencing ---------------------------------------------------------------
 
-    seen = [flow.current_condition(state)]
+
+@pytest.mark.parametrize("first_condition", ["static", "interactive"])
+@pytest.mark.parametrize("first_form", ["A", "B"])
+def test_participant_sees_both_conditions_and_both_forms_once(first_condition, first_form):
+    state = flow.begin_tasks(_started(first_condition, first_form))
+
+    seen = [(flow.current_condition(state), flow.current_form(state))]
     for _ in range(len(TASKS)):
         state = flow.complete_task(state, TASKS)
     assert state.stage is Stage.BREAK
 
     state = flow.begin_tasks(state)
-    seen.append(flow.current_condition(state))
+    seen.append((flow.current_condition(state), flow.current_form(state)))
     for _ in range(len(TASKS)):
         state = flow.complete_task(state, TASKS)
 
     assert state.stage is Stage.COMPLETE
-    assert sorted(seen) == ["interactive", "static"]
-    assert seen[0] == first
+    assert sorted(c for c, _ in seen) == ["interactive", "static"]
+    assert sorted(f for _, f in seen) == ["A", "B"]
+    assert seen[0] == (first_condition, first_form)
 
 
-@pytest.mark.parametrize("first", ["static", "interactive"])
-def test_condition_order_is_one_then_two(first):
-    state = flow.begin_tasks(_started(first))
-    assert flow.condition_order(state) == 1
-    for _ in range(len(TASKS)):
-        state = flow.complete_task(state, TASKS)
-    assert flow.condition_order(state) == 2
+def test_form_never_repeats_within_a_session():
+    """The whole point of parallel forms: nobody answers the same question twice."""
+    for seq in range(1, 9):
+        condition, form = db.assignment_for(seq)
+        state = flow.begin_tasks(_started(condition, form))
+        first = flow.current_form(state)
+        for _ in range(len(TASKS)):
+            state = flow.complete_task(state, TASKS)
+        second = flow.current_form(flow.begin_tasks(state))
+        assert first != second, f"seq {seq} would show form {first} twice"
 
 
 def test_is_interactive_tracks_the_current_condition():
@@ -86,14 +104,26 @@ def test_is_interactive_tracks_the_current_condition():
     assert flow.is_interactive(state) is True
 
 
-def test_other_condition_is_an_involution():
+def test_other_condition_and_other_form_are_involutions():
     for condition in flow.CONDITIONS:
         assert flow.other_condition(flow.other_condition(condition)) == condition
+    for form in flow.FORMS:
+        assert flow.other_form(flow.other_form(form)) == form
 
 
-def test_condition_before_assignment_is_an_error():
+def test_condition_order_is_one_then_two():
+    state = flow.begin_tasks(_started())
+    assert flow.condition_order(state) == 1
+    for _ in range(len(TASKS)):
+        state = flow.complete_task(state, TASKS)
+    assert flow.condition_order(state) == 2
+
+
+def test_accessors_before_assignment_are_errors():
     with pytest.raises(FlowError, match="No condition assigned"):
         flow.current_condition(SessionState())
+    with pytest.raises(FlowError, match="No form assigned"):
+        flow.current_form(SessionState())
 
 
 # --- Task progression ---------------------------------------------------------------------------
@@ -134,7 +164,7 @@ def test_complete_task_with_no_tasks_is_an_error():
 def test_stages_must_be_entered_in_order():
     fresh = SessionState()
     with pytest.raises(FlowError, match="Expected stage participant_id"):
-        flow.set_participant(fresh, "P01", "static")
+        flow.set_participant(fresh, "P01", "static", "A")
     with pytest.raises(FlowError, match="Expected stage instructions or break"):
         flow.begin_tasks(fresh)
     with pytest.raises(FlowError, match="Expected stage task"):
@@ -150,13 +180,15 @@ def test_consent_cannot_be_given_twice():
 def test_participant_id_must_not_be_blank():
     state = flow.give_consent(SessionState())
     with pytest.raises(FlowError, match="non-empty"):
-        flow.set_participant(state, "   ", "static")
+        flow.set_participant(state, "   ", "static", "A")
 
 
-def test_unknown_condition_rejected():
+def test_unknown_condition_or_form_rejected():
     state = flow.give_consent(SessionState())
     with pytest.raises(FlowError, match="Unknown condition"):
-        flow.set_participant(state, "P01", "semi-interactive")
+        flow.set_participant(state, "P01", "semi-interactive", "A")
+    with pytest.raises(FlowError, match="Unknown form"):
+        flow.set_participant(state, "P01", "static", "C")
 
 
 # --- Serialisation ------------------------------------------------------------------------------
@@ -164,7 +196,7 @@ def test_unknown_condition_rejected():
 
 def test_state_round_trips_through_a_store():
     """State lives in a browser dcc.Store, so it must survive JSON and back unchanged."""
-    state = flow.begin_tasks(_started("interactive"))
+    state = flow.begin_tasks(_started("interactive", "B"))
     state = flow.complete_task(state, TASKS)
     assert SessionState.from_dict(state.to_dict()) == state
 
@@ -179,8 +211,7 @@ def test_malformed_store_is_rejected():
         SessionState.from_dict({"stage": "nonsense"})
 
 
-def test_answer_key_is_not_shipped_to_the_browser():
-    """A correct answer in the task object would be readable in the page source."""
-    assert not any("answer" in f and f != "answer_kind" for f in Task.__slots__), (
-        "Task must not carry a correct answer; scoring happens offline"
-    )
+def test_task_carries_no_answer_key():
+    """A correct answer on the Task object would be readable in the page source."""
+    assert "answer" not in Task.__slots__
+    assert "correct" not in Task.__slots__

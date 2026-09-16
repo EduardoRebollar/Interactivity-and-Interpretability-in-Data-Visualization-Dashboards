@@ -1,7 +1,13 @@
-"""Shared layout components. No pandas — this ships to production.
+"""Shared layout components and the study flow screens. No pandas — this ships to production.
 
-Every component is used by BOTH conditions. Nothing here branches on `interactive`: the only
-divergence permitted is the Plotly config from `figures.graph_config`, which is passed in.
+Every screen is used by BOTH conditions. Only two things branch on `interactive`:
+
+1. The Plotly config passed to `chart()` — `figures.graph_config`, the single decision point.
+2. `instructions_screen`, which must describe the affordances that actually exist. Telling static
+   participants about hover, or failing to tell interactive participants, would handicap one
+   condition procedurally. That is a difference in instructions, not in the visual design.
+
+Nothing else may differ. `tests/test_conditions.py` enforces the figure half of that.
 """
 
 from __future__ import annotations
@@ -9,6 +15,7 @@ from __future__ import annotations
 from dash import dcc, html
 
 from src import config, figures
+from src.tasks import JUSTIFICATION_PROMPT
 
 # Shared page chrome, so both conditions are laid out identically.
 PAGE_STYLE = {
@@ -97,20 +104,173 @@ def heading(text: str) -> html.H1:
     )
 
 
-def primary_button(label: str, element_id: str) -> html.Button:
+def primary_button(label: str, element_id: str, disabled: bool = False) -> html.Button:
     """Keyboard-navigable by default; do not replace with a div."""
     return html.Button(
         label,
         id=element_id,
         n_clicks=0,
+        disabled=disabled,
         style={
             "fontFamily": config.FONT_FAMILY,
             "fontSize": f"{config.FONT_SIZE_BASE}px",
             "padding": "10px 20px",
             "color": config.BACKGROUND,
-            "backgroundColor": config.SERIES_COLORS[0],
+            "backgroundColor": config.TEXT_MUTED if disabled else config.SERIES_COLORS[0],
             "border": "none",
             "borderRadius": "4px",
-            "cursor": "pointer",
+            "cursor": "not-allowed" if disabled else "pointer",
+            "marginTop": "16px",
         },
+    )
+
+
+# --- Study flow screens --------------------------------------------------------------------------
+#
+# Every screen is identical across conditions. The only permitted divergence is the Plotly config
+# passed to `chart()`, plus the interactive-only controls, which render only when `interactive`.
+
+
+def consent_screen(text: str) -> html.Div:
+    """Consent. `text` comes from docs/study-design.md and is a DRAFT until IRB approves it."""
+    paragraphs = [
+        html.P(line.strip(), style=PROMPT_STYLE) for line in text.split("\n\n") if line.strip()
+    ]
+    return page(
+        heading("Before you begin"),
+        *paragraphs,
+        primary_button("I agree — begin", "consent-button"),
+    )
+
+
+def participant_screen() -> html.Div:
+    return page(
+        heading("Participant ID"),
+        html.P(
+            "Enter the ID you were given. If you are returning to finish a session, enter the same "
+            "ID and you will continue where the study left off.",
+            style=PROMPT_STYLE,
+        ),
+        dcc.Input(
+            id="participant-input",
+            type="text",
+            debounce=True,
+            placeholder="e.g. P07",
+            style={
+                "fontFamily": config.FONT_FAMILY,
+                "fontSize": f"{config.FONT_SIZE_BASE}px",
+                "padding": "10px",
+                "width": "220px",
+            },
+        ),
+        html.Div(id="participant-error", style={**MUTED_STYLE, "color": config.SERIES_COLORS[2]}),
+        primary_button("Continue", "participant-button"),
+    )
+
+
+def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
+    """Instructions. The wording differs by condition ONLY in describing what the chart can do.
+
+    Describing controls that are not present, or failing to describe controls that are, would be a
+    procedural difference rather than a visual one — but it has to be accurate or the interactive
+    condition is handicapped by not knowing its affordances exist.
+    """
+    shared = (
+        "You will see line charts of childhood vaccination coverage and answer a question about "
+        "each. After each question you will be asked, in one sentence, how you decided."
+    )
+    specific = (
+        "You can hover a line to read its exact value, and use the controls above the chart to "
+        "filter and isolate countries."
+        if interactive
+        else "The charts are images: read the values against the gridlines."
+    )
+    return page(
+        heading("Instructions"),
+        html.P(shared, style=PROMPT_STYLE),
+        html.P(specific, style=PROMPT_STYLE),
+        html.P(
+            "A break in a line means no value was reported for those years.",
+            style=PROMPT_STYLE,
+        ),
+        primary_button("Start the practice question" if practice else "Continue", "begin-button"),
+    )
+
+
+def task_screen(task, interactive: bool, index: int, total: int) -> html.Div:
+    """One task: prompt, chart, answer options, justification."""
+    children = [
+        html.P(f"Question {index} of {total}", style=MUTED_STYLE),
+        html.P(task.prompt, style={**PROMPT_STYLE, "fontWeight": "600"}),
+        chart(list(task.entities), task.vaccine, interactive),
+    ]
+
+    note = gap_note(list(task.entities), task.vaccine)
+    if note is not None:
+        children.append(note)
+
+    children += [
+        dcc.RadioItems(
+            id="answer-input",
+            options=[{"label": o, "value": o} for o in task.options],
+            value=None,
+            labelStyle={"display": "block", "margin": "6px 0"},
+            inputStyle={"marginRight": "8px"},
+        ),
+        html.P(JUSTIFICATION_PROMPT, style={**PROMPT_STYLE, "marginTop": "16px"}),
+        dcc.Textarea(
+            id="justification-input",
+            style={
+                "fontFamily": config.FONT_FAMILY,
+                "fontSize": f"{config.FONT_SIZE_BASE}px",
+                "width": "100%",
+                "height": "70px",
+                "padding": "8px",
+            },
+        ),
+        html.Div(id="task-error", style={**MUTED_STYLE, "color": config.SERIES_COLORS[2]}),
+        primary_button("Submit", "submit-button"),
+    ]
+    return page(*children)
+
+
+def load_screen(prompt: str, anchors: dict[int, str]) -> html.Div:
+    """Paas single-item mental effort, asked once per condition."""
+    return page(
+        heading("One quick question"),
+        html.P(prompt, style={**PROMPT_STYLE, "fontWeight": "600"}),
+        dcc.RadioItems(
+            id="load-input",
+            options=[
+                {"label": f"{n} — {anchors[n]}" if n in anchors else str(n), "value": n}
+                for n in range(1, 10)
+            ],
+            value=None,
+            labelStyle={"display": "block", "margin": "6px 0"},
+            inputStyle={"marginRight": "8px"},
+        ),
+        html.Div(id="load-error", style={**MUTED_STYLE, "color": config.SERIES_COLORS[2]}),
+        primary_button("Continue", "load-button"),
+    )
+
+
+def break_screen() -> html.Div:
+    return page(
+        heading("Halfway"),
+        html.P(
+            "That is the first half finished. The next set uses a different version of the chart "
+            "and different questions. Take a moment, then continue when you are ready.",
+            style=PROMPT_STYLE,
+        ),
+        primary_button("Continue", "begin-button"),
+    )
+
+
+def complete_screen() -> html.Div:
+    return page(
+        heading("Finished — thank you"),
+        html.P(
+            "Your responses have been recorded. You can close this tab.",
+            style=PROMPT_STYLE,
+        ),
     )

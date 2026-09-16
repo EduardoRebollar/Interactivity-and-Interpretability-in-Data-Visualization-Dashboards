@@ -8,6 +8,7 @@ clock (the measurement) and the server clock (a cross-check only).
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -28,6 +29,7 @@ REQUIRED_KEYS = {
     "participant_id",
     "condition",
     "condition_order",
+    "form",
     "task_id",
     "event",
     "server_ts",
@@ -124,8 +126,49 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_two():
-    assert SCHEMA_VERSION == 2
+def test_schema_version_is_three():
+    """v3 added the form column, load_rating, and justification. Pooling versions is invalid."""
+    assert SCHEMA_VERSION == 3
+
+
+def test_form_is_recorded_on_every_event():
+    """Analysis pairs matched items across forms; an unlabelled event cannot be paired."""
+    with StudyLogger(
+        "P20", condition_order=1, interactive=True, form="B", log_dir=Path(__file__).parent
+    ) as log:
+        record = log.event("view_change")
+        assert record["form"] == "B"
+        path = log._sink.path
+    assert all(r["form"] == "B" for r in read_log(path))
+    path.unlink()
+
+
+def test_form_is_validated(tmp_path):
+    with pytest.raises(LogError, match="form must be one of"):
+        StudyLogger("P07", condition_order=1, interactive=True, form="C", log_dir=tmp_path)
+
+
+def test_load_rating_records_the_paas_scale(logger):
+    record = logger.rate_load(7)
+    assert record["event"] == "load_rating"
+    assert record["payload"] == {"scale": "paas", "value": 7}
+
+
+@pytest.mark.parametrize("bad", [0, 10, -1, 4.5, "7"])
+def test_load_rating_rejects_out_of_scale_values(logger, bad):
+    """A rating outside 1-9 is not a Paas score and would corrupt the RQ3 measure."""
+    with pytest.raises(LogError, match="1-9"):
+        logger.rate_load(bad)
+
+
+def test_answer_carries_its_justification(logger):
+    """The justification is the raw material for the reasoning-depth coding."""
+    logger.start_task("T3")
+    record = logger.submit_answer(
+        "T3", answer="Brazil", justification="It dropped furthest after 2015.", duration_ms=5000.0
+    )
+    assert record["payload"]["justification"] == "It dropped furthest after 2015."
+    assert record["payload"]["answer"] == "Brazil"
 
 
 def test_unknown_event_is_rejected(logger):

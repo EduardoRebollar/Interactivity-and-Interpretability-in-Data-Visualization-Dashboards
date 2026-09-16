@@ -28,6 +28,7 @@ COLUMNS = [
     "participant_id",
     "condition",
     "condition_order",
+    "form",
     "task_id",
     "event",
     "server_ts",

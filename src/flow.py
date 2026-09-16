@@ -17,6 +17,7 @@ from enum import StrEnum
 from typing import Any
 
 CONDITIONS = ("static", "interactive")
+FORMS = ("A", "B")
 CONDITIONS_PER_SESSION = 2
 
 
@@ -45,10 +46,11 @@ class Task:
     """
 
     task_id: str
+    form: str  # "A" | "B"
+    kind: str  # "reference" | "trend" | "crossing" | "gap" | "practice"
     prompt: str
     vaccine: str
     entities: tuple[str, ...]
-    answer_kind: str  # "text" | "number" | "choice" | "multi_choice"
     options: tuple[str, ...] = ()
 
 
@@ -59,6 +61,7 @@ class SessionState:
     stage: Stage = Stage.CONSENT
     participant_id: str | None = None
     first_condition: str | None = None
+    first_form: str | None = None
     condition_index: int = 0  # 0 = first condition, 1 = second
     task_index: int = 0
 
@@ -67,6 +70,7 @@ class SessionState:
             "stage": self.stage.value,
             "participant_id": self.participant_id,
             "first_condition": self.first_condition,
+            "first_form": self.first_form,
             "condition_index": self.condition_index,
             "task_index": self.task_index,
         }
@@ -80,6 +84,7 @@ class SessionState:
                 stage=Stage(raw["stage"]),
                 participant_id=raw.get("participant_id"),
                 first_condition=raw.get("first_condition"),
+                first_form=raw.get("first_form"),
                 condition_index=int(raw.get("condition_index", 0)),
                 task_index=int(raw.get("task_index", 0)),
             )
@@ -91,6 +96,25 @@ def other_condition(condition: str) -> str:
     if condition not in CONDITIONS:
         raise FlowError(f"Unknown condition {condition!r}")
     return "interactive" if condition == "static" else "static"
+
+
+def other_form(form: str) -> str:
+    if form not in FORMS:
+        raise FlowError(f"Unknown form {form!r}")
+    return "B" if form == "A" else "A"
+
+
+def current_form(state: SessionState) -> str:
+    """Which task form the participant is working through right now.
+
+    The form flips with the condition, so nobody answers the same question twice — which is what a
+    plain order-counterbalance cannot achieve on its own.
+    """
+    if state.first_form is None:
+        raise FlowError("No form assigned yet")
+    if state.condition_index == 0:
+        return state.first_form
+    return other_form(state.first_form)
 
 
 def current_condition(state: SessionState) -> str:
@@ -132,19 +156,24 @@ def give_consent(state: SessionState) -> SessionState:
     return replace(state, stage=Stage.PARTICIPANT_ID)
 
 
-def set_participant(state: SessionState, participant_id: str, first_condition: str) -> SessionState:
-    """Record the identity and the counterbalanced assignment from `db.register_participant`."""
+def set_participant(
+    state: SessionState, participant_id: str, first_condition: str, first_form: str
+) -> SessionState:
+    """Record the identity and the 2x2 assignment from `db.register_participant`."""
     _require(state, Stage.PARTICIPANT_ID)
     cleaned = (participant_id or "").strip()
     if not cleaned:
         raise FlowError("participant_id must be a non-empty string")
     if first_condition not in CONDITIONS:
         raise FlowError(f"Unknown condition {first_condition!r}")
+    if first_form not in FORMS:
+        raise FlowError(f"Unknown form {first_form!r}")
     return replace(
         state,
         stage=Stage.INSTRUCTIONS,
         participant_id=cleaned,
         first_condition=first_condition,
+        first_form=first_form,
     )
 
 

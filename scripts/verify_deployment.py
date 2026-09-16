@@ -30,6 +30,11 @@ class VerificationError(RuntimeError):
     pass
 
 
+def other(form: str) -> str:
+    """The form a participant sees in their second condition."""
+    return "B" if form == "A" else "A"
+
+
 def _check(label: str, condition: bool, detail: str = "") -> None:
     if condition:
         print(f"  OK   {label}")
@@ -50,26 +55,35 @@ def verify() -> None:
     _check("init_schema is idempotent", True)
 
     print("2. Counterbalancing")
-    seq_a, cond_a = db.register_participant(participant)
-    seq_b, cond_b = db.register_participant(partner)
+    seq_a, cond_a, form_a = db.register_participant(participant)
+    seq_b, cond_b, form_b = db.register_participant(partner)
     _check(
         "two participants get consecutive sequence numbers",
         seq_b == seq_a + 1,
         f"{seq_a} then {seq_b}",
     )
-    _check("their first conditions differ", cond_a != cond_b, f"{cond_a} and {cond_b}")
-    repeat_seq, repeat_cond = db.register_participant(participant)
+    _check(
+        "consecutive participants differ in condition or form",
+        (cond_a, form_a) != (cond_b, form_b),
+        f"{cond_a}/{form_a} and {cond_b}/{form_b}",
+    )
+    repeat = db.register_participant(participant)
     _check(
         "re-registering is idempotent",
-        (repeat_seq, repeat_cond) == (seq_a, cond_a),
+        repeat == (seq_a, cond_a, form_a),
         "a returning participant must not be re-randomised",
     )
 
     print("3. A full synthetic session")
     written = 0
-    for order, interactive in ((1, cond_a == "interactive"), (2, cond_a != "interactive")):
+    orders = ((1, cond_a == "interactive", form_a), (2, cond_a != "interactive", other(form_a)))
+    for order, interactive, form in orders:
         log = StudyLogger(
-            participant, condition_order=order, interactive=interactive, sink=PostgresSink()
+            participant,
+            condition_order=order,
+            interactive=interactive,
+            form=form,
+            sink=PostgresSink(),
         )
         log.event("condition_start", interactive=interactive, condition_order=order)
         log.start_task("T1", client_elapsed_ms=1500.0)
@@ -77,15 +91,17 @@ def verify() -> None:
         log.submit_answer(
             "T1",
             answer={"choice": "Nigeria", "confidence": 4},
+            justification="Its line fell furthest over the window.",
             duration_ms=8200.5,
             client_elapsed_ms=9700.5,
         )
         log.end_task("T1", duration_ms=8200.5, client_elapsed_ms=9700.5)
         # Deliberately omit client timings here: nulls must survive too.
         log.event("view_change", control="vaccine", value="MCV1", previous="DTP3")
+        log.rate_load(7, client_elapsed_ms=12000.0)
         log.event("condition_end", interactive=interactive, condition_order=order)
         log.close()
-        written += 8
+        written += 9
     print(f"  wrote {written} events across both conditions")
 
     print("4. Reading it back")
@@ -96,6 +112,8 @@ def verify() -> None:
     _check("both condition orders present", {e["condition_order"] for e in events} == {1, 2})
     _check("events are ordered", [e["id"] for e in events] == sorted(e["id"] for e in events))
 
+    _check("both forms present", {e["form"] for e in events} == {"A", "B"})
+
     answers = [e for e in events if e["event"] == "answer_submit"]
     _check("answers recorded", len(answers) == 2, f"found {len(answers)}")
     _check(
@@ -103,6 +121,17 @@ def verify() -> None:
         all(a["payload"]["answer"] == {"choice": "Nigeria", "confidence": 4} for a in answers),
     )
     _check("answers attributed to their task", all(a["task_id"] == "T1" for a in answers))
+    _check(
+        "justification survived",
+        all(a["payload"]["justification"].startswith("Its line fell") for a in answers),
+    )
+
+    ratings = [e for e in events if e["event"] == "load_rating"]
+    _check("one load rating per condition", len(ratings) == 2, f"found {len(ratings)}")
+    _check(
+        "Paas rating survived",
+        all(r["payload"] == {"scale": "paas", "value": 7} for r in ratings),
+    )
 
     timed = [e for e in events if e["event"] == "task_end"]
     _check(

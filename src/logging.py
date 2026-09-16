@@ -31,7 +31,11 @@ from typing import Any, Protocol
 from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
-SCHEMA_VERSION = 2
+#
+# v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
+# effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
+# been collected, so no migration — but the record shape changed, so the version moves.
+SCHEMA_VERSION = 3
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -46,7 +50,9 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "task_start": (),
     "task_end": ("duration_ms",),
     # task_id lives in the record column, not the payload, like every other event.
-    "answer_submit": ("answer", "duration_ms"),
+    "answer_submit": ("answer", "justification", "duration_ms"),
+    # Paas single-item mental effort, once per condition. The RQ3 measure.
+    "load_rating": ("scale", "value"),
     # Interactive-only affordances
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
@@ -56,6 +62,7 @@ EVENTS: dict[str, tuple[str, ...]] = {
 }
 
 CONDITIONS = ("static", "interactive")
+FORMS = ("A", "B")
 
 
 class LogError(RuntimeError):
@@ -123,6 +130,9 @@ class StudyLogger:
         condition_order: int,
         *,
         interactive: bool,
+        form: str | None = None,
+        session_id: str | None = None,
+        task_id: str | None = None,
         sink: Sink | None = None,
         log_dir: Path | None = None,
     ) -> None:
@@ -130,33 +140,47 @@ class StudyLogger:
             raise LogError("participant_id must be a non-empty string")
         if condition_order not in (1, 2):
             raise LogError(f"condition_order must be 1 or 2, got {condition_order!r}")
+        if form is not None and form not in FORMS:
+            raise LogError(f"form must be one of {FORMS}, got {form!r}")
 
         self.participant_id = participant_id.strip()
         self.condition_order = condition_order
         self.interactive = interactive
+        self.form = form
         self.condition = "interactive" if interactive else "static"
-        self.session_id = str(uuid.uuid4())
+
+        # Resuming: on a serverless host every callback is a separate request, so a logger cannot
+        # be held in memory between events. The caller keeps `session_id` (and any open task) in
+        # browser session state and hands them back, so one sitting stays one session_id rather
+        # than fragmenting into dozens, each with a spurious session_start.
+        self._resumed = session_id is not None
+        self.session_id = session_id or str(uuid.uuid4())
 
         self._origin = time.perf_counter()
-        self._task_id: str | None = None
+        self._task_id = task_id
         self._closed = False
         self._sink = sink if sink is not None else self._default_sink(log_dir)
 
-        self.event(
-            "session_start",
-            interactive=self.interactive,
-            entities=config.ENTITIES,
-            vaccines=list(config.VACCINES),
-            year_range=[config.YEAR_MIN, config.YEAR_MAX],
-        )
+        if not self._resumed:
+            self.event(
+                "session_start",
+                interactive=self.interactive,
+                entities=config.ENTITIES,
+                vaccines=list(config.VACCINES),
+                year_range=[config.YEAR_MIN, config.YEAR_MAX],
+            )
 
     def _default_sink(self, log_dir: Path | None) -> Sink:
-        """Postgres when configured, otherwise a per-session JSONL file."""
+        """Postgres when configured, otherwise a per-session JSONL file.
+
+        The filename is keyed on `session_id`, not a timestamp, so a resumed logger appends to the
+        same file instead of scattering one sitting across a file per callback.
+        """
         if db.configured():
             return PostgresSink()
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         directory = log_dir or config.STUDY_LOGS_DIR
-        return JsonlSink(directory / f"{self.participant_id}_{self.condition}_{stamp}.jsonl")
+        short = self.session_id.replace("-", "")[:12]
+        return JsonlSink(directory / f"{self.participant_id}_{self.condition}_{short}.jsonl")
 
     # --- Core ---------------------------------------------------------------------------------
 
@@ -181,6 +205,7 @@ class StudyLogger:
             "participant_id": self.participant_id,
             "condition": self.condition,
             "condition_order": self.condition_order,
+            "form": self.form,
             "task_id": task_id if task_id is not None else self._task_id,
             "event": name,
             "server_ts": datetime.now(UTC).isoformat(),
@@ -230,16 +255,30 @@ class StudyLogger:
         task_id: str,
         answer: Any,
         *,
+        justification: str | None = None,
         duration_ms: float | None = None,
         client_elapsed_ms: float | None = None,
     ) -> dict[str, Any]:
-        """Record a participant's answer. Accuracy is scored later, not here."""
+        """Record a participant's answer and their reasoning.
+
+        Accuracy is scored offline against the rubric in docs/study-design.md; no answer key exists
+        in the running app, where a participant could read it out of the page source.
+        """
         return self.event(
             "answer_submit",
             task_id=task_id,
             answer=answer,
+            justification=justification,
             duration_ms=duration_ms,
             client_elapsed_ms=client_elapsed_ms,
+        )
+
+    def rate_load(self, value: int, *, client_elapsed_ms: float | None = None) -> dict[str, Any]:
+        """Record the Paas mental-effort rating for the condition just finished (RQ3)."""
+        if not isinstance(value, int) or not 1 <= value <= 9:
+            raise LogError(f"Paas rating must be an integer 1-9, got {value!r}")
+        return self.event(
+            "load_rating", scale="paas", value=value, client_elapsed_ms=client_elapsed_ms
         )
 
     # --- Session lifecycle --------------------------------------------------------------------
