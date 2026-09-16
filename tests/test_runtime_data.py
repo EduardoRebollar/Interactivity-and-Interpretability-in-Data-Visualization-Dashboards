@@ -1,0 +1,178 @@
+"""Tests for the deployment runtime data path.
+
+Two jobs:
+
+1. The lightweight loader must agree with the validated pandas one, row for row, including where the
+   gaps fall. If it drifts, the deployed app charts different numbers than the ones we validated.
+2. The runtime modules must not import pandas, numpy, or pyarrow. Those are 145 MB of the local
+   environment; importing one would silently push the Vercel bundle over its limit, and the failure
+   would appear at deploy time rather than here.
+"""
+
+from __future__ import annotations
+
+import ast
+import math
+import subprocess
+import sys
+
+import pytest
+
+from src import config, data, runtime_data
+
+# Modules that ship to production. Anything they import lands in the Vercel bundle.
+RUNTIME_MODULES = [
+    "src/runtime_data.py",
+    "src/config.py",
+    "src/contrast.py",
+]
+
+FORBIDDEN = {"pandas", "numpy", "pyarrow"}
+
+requires_deploy_csv = pytest.mark.skipif(
+    not runtime_data.DEPLOY_CSV.exists(),
+    reason="deploy CSV absent; run scripts/export_deploy_data.py",
+)
+requires_raw = pytest.mark.skipif(
+    not config.RAW_CSV.exists(),
+    reason="raw export absent; run scripts/download_data.py",
+)
+
+
+# --- Bundle constraint ------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("module_path", RUNTIME_MODULES)
+def test_runtime_modules_do_not_import_heavy_libraries(module_path):
+    """Static check: no direct import of pandas, numpy, or pyarrow in a shipped module."""
+    tree = ast.parse((config.PROJECT_ROOT / module_path).read_text(encoding="utf-8"))
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            imported.add(node.module.split(".")[0])
+
+    offenders = imported & FORBIDDEN
+    assert not offenders, f"{module_path} imports {sorted(offenders)}; it ships to production"
+
+
+def test_importing_runtime_data_does_not_pull_in_heavy_libraries():
+    """Stronger check: import it in a clean interpreter and inspect the real module graph.
+
+    Catches a transitive import that the static check above would miss.
+    """
+    code = (
+        "import sys; import src.runtime_data; "
+        f"loaded = {FORBIDDEN!r} & set(sys.modules); "
+        "print(sorted(loaded))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        cwd=config.PROJECT_ROOT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "[]", (
+        f"importing src.runtime_data loaded {result.stdout.strip()} into the bundle"
+    )
+
+
+# --- Agreement with the validated loader --------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def rows():
+    return runtime_data.load_rows()
+
+
+@requires_deploy_csv
+def test_row_count_matches_locked_scope(rows):
+    years = config.YEAR_MAX - config.YEAR_MIN + 1
+    assert len(rows) == len(config.ENTITIES) * years * len(config.VACCINES)
+
+
+@requires_deploy_csv
+@requires_raw
+def test_matches_the_pandas_loader_exactly(rows):
+    """Every cell must agree, including which cells are missing."""
+    frame = data.load()
+    assert len(rows) == len(frame)
+
+    from_csv = {(r.country, r.year, r.vaccine): r.coverage_pct for r in rows}
+    assert len(from_csv) == len(rows), "duplicate keys in deploy CSV"
+
+    mismatches = []
+    for record in frame.itertuples(index=False):
+        key = (record.country, int(record.year), record.vaccine)
+        assert key in from_csv, f"{key} missing from deploy CSV"
+        csv_value = from_csv[key]
+        frame_value = None if math.isnan(record.coverage_pct) else float(record.coverage_pct)
+
+        if csv_value is None or frame_value is None:
+            if csv_value is not frame_value:
+                mismatches.append((key, frame_value, csv_value))
+        elif abs(csv_value - frame_value) > 1e-9:
+            mismatches.append((key, frame_value, csv_value))
+
+    assert not mismatches, f"{len(mismatches)} cells differ, first: {mismatches[:3]}"
+
+
+@requires_deploy_csv
+def test_gaps_are_none_not_zero(rows):
+    """A missing value must never arrive as 0.0 — that would read as zero coverage."""
+    uk_hepb = runtime_data.series("United Kingdom", "HepB3", rows)
+    missing = [r for r in uk_hepb if r.coverage_pct is None]
+    assert len(missing) == 19, f"expected 19 UK HepB3 gaps, got {len(missing)}"
+    assert all(r.coverage_pct != 0.0 for r in uk_hepb if r.coverage_pct is not None)
+
+
+@requires_deploy_csv
+def test_series_is_year_ordered_and_complete(rows):
+    series = runtime_data.series("Nigeria", "DTP3", rows)
+    years = [r.year for r in series]
+    assert years == sorted(years)
+    assert years == list(range(config.YEAR_MIN, config.YEAR_MAX + 1))
+
+
+@requires_deploy_csv
+def test_entities_and_vaccines_follow_config_order(rows):
+    assert runtime_data.entities(rows) == config.ENTITIES
+    assert runtime_data.vaccines(rows) == list(config.VACCINES)
+
+
+# --- Failure modes ----------------------------------------------------------------------------
+
+
+def test_missing_file_raises_with_instructions(tmp_path):
+    with pytest.raises(runtime_data.RuntimeDataError, match="export_deploy_data"):
+        runtime_data.load_rows(tmp_path / "absent.csv")
+
+
+def test_wrong_columns_rejected(tmp_path):
+    path = tmp_path / "bad.csv"
+    path.write_text("country,year\nNigeria,2000\n", encoding="utf-8")
+    with pytest.raises(runtime_data.RuntimeDataError, match="Unexpected columns"):
+        runtime_data.load_rows(path)
+
+
+def test_out_of_range_coverage_rejected(tmp_path):
+    path = tmp_path / "bad.csv"
+    path.write_text(
+        "country,iso_code,year,vaccine,coverage_pct\nNigeria,NGA,2000,DTP3,140\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(runtime_data.RuntimeDataError, match="outside 0-100"):
+        runtime_data.load_rows(path)
+
+
+def test_malformed_year_rejected(tmp_path):
+    path = tmp_path / "bad.csv"
+    path.write_text(
+        "country,iso_code,year,vaccine,coverage_pct\nNigeria,NGA,two-thousand,DTP3,50\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(runtime_data.RuntimeDataError, match="Malformed value on line 2"):
+        runtime_data.load_rows(path)

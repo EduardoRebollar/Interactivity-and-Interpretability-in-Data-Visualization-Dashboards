@@ -1,35 +1,21 @@
 """Event and timing logger. This module produces the study's primary data.
 
-Output is JSON Lines (one JSON object per line) under `data/study_logs/`, one file per session:
+**Schema v2 (2026-09-15).** Deployment forced three changes from v1:
 
-    {participant_id}_{condition}_{utc_timestamp}.jsonl
+1. **Timings come from the browser.** Each event is its own HTTP request, so a server clock would
+   fold network latency and 800 ms-2.5 s cold starts into task duration — and task duration is a
+   dependent variable. The browser measures with `performance.now()` and sends the number.
+   `server_elapsed_ms` is still recorded, but only as a cross-check for a missing or implausible
+   client value. It is NOT the measurement.
+2. **The sink is swappable.** Postgres when `DATABASE_URL` is set, JSONL otherwise. Vercel's
+   filesystem is ephemeral and read-only outside `/tmp`, so a deployed session cannot use files.
+3. **Answers are captured** (`answer_submit`), because the deployed page runs the whole session.
 
-JSONL rather than CSV because event payloads differ by event type, and because an append-and-flush
-line format survives a crash mid-session — a partially written file still parses up to the last
-complete line, so a participant's session is never lost wholesale.
-
-Every record carries these keys:
-
-    schema_version   int    bump on ANY breaking change to this record shape
-    session_id       str    uuid4, groups all records from one sitting
-    participant_id   str    stable across BOTH of a participant's conditions
-    condition        str    "static" | "interactive"
-    condition_order  int    1 if this condition was seen first, 2 if second
-    task_id          str    task this event belongs to, or null between tasks
-    event            str    one of EVENTS
-    timestamp        str    ISO-8601 UTC wall clock, for cross-referencing external records
-    elapsed_ms       int    since session start, monotonic
-    task_elapsed_ms  int    since current task start, monotonic; null outside a task
-    payload          dict   event-specific fields, see EVENTS
-
-`condition_order` is what makes the within-subjects design analysable: without it, a practice effect
+`condition_order` is what makes the within-subjects design analysable: without it a practice effect
 is indistinguishable from an effect of interactivity.
 
-Durations come from a monotonic clock, not the wall clock, so an NTP correction or a sleeping
-laptop cannot produce a negative or wildly inflated task time.
-
-BOTH conditions are logged. Zero interaction events in the static condition is itself a finding, and
-task timings are only comparable if they are collected identically on both sides.
+BOTH conditions are logged. Zero interaction events under static is itself a finding, and task
+timings only compare if they are collected identically on both sides.
 """
 
 from __future__ import annotations
@@ -40,20 +26,27 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
+from typing import Any, Protocol
 
-from src import config
+from src import config, db
 
-# Bump on any breaking change to the record shape. Analysis code should refuse to mix versions.
-SCHEMA_VERSION = 1
+# Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
+SCHEMA_VERSION = 2
 
-# event name -> expected payload keys. Documents the contract and guards against typos silently
-# inventing a new event type that analysis would then miss.
+# event name -> documented payload keys. Guards against a typo silently inventing an event type
+# that analysis would then miss.
 EVENTS: dict[str, tuple[str, ...]] = {
-    # Lifecycle
+    # Session lifecycle
     "session_start": ("interactive", "entities", "vaccines", "year_range"),
     "session_end": ("reason",),
+    # Condition lifecycle (a participant does both, in counterbalanced order)
+    "condition_start": ("interactive", "condition_order"),
+    "condition_end": ("interactive", "condition_order"),
+    # Task lifecycle
     "task_start": (),
     "task_end": ("duration_ms",),
+    # task_id lives in the record column, not the payload, like every other event.
+    "answer_submit": ("answer", "duration_ms"),
     # Interactive-only affordances
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
@@ -69,15 +62,59 @@ class LogError(RuntimeError):
     """Raised on invalid logger construction or an unknown event name."""
 
 
-class StudyLogger:
-    """Append-only JSONL logger for one participant's session in one condition.
+class Sink(Protocol):
+    """Somewhere a record can be durably written."""
 
-    Usage:
-        with StudyLogger("P07", condition_order=1) as log:
-            log.start_task("T1")
-            log.event("filter_change", control="country", action="add",
-                      value=["Nigeria"], previous=[])
-            log.end_task("T1")
+    def write(self, record: dict[str, Any]) -> None: ...
+
+    def close(self) -> None: ...
+
+
+class JsonlSink:
+    """Append-and-flush JSONL, one file per session. The local path.
+
+    Flushes per record and tolerates a truncated final line on read, so a crash mid-session costs at
+    most the event in flight.
+    """
+
+    def __init__(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.path = path
+        self._handle = path.open("a", encoding="utf-8")
+
+    def write(self, record: dict[str, Any]) -> None:
+        self._handle.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+        self._handle.flush()
+
+    def close(self) -> None:
+        if not self._handle.closed:
+            self._handle.close()
+
+    @property
+    def closed(self) -> bool:
+        return self._handle.closed
+
+
+class PostgresSink:
+    """Neon Postgres. The deployed path."""
+
+    def __init__(self) -> None:
+        if not db.configured():
+            raise LogError("PostgresSink requires DATABASE_URL")
+
+    def write(self, record: dict[str, Any]) -> None:
+        db.insert_event(record)
+
+    def close(self) -> None:
+        """No-op: connections are per-operation, so there is nothing to hold open."""
+
+
+class StudyLogger:
+    """Records one participant's session in one condition.
+
+    Timings are supplied by the caller from the browser clock. Passing none is allowed — the record
+    then carries only `server_elapsed_ms`, and analysis can see the client value is absent rather
+    than being handed a silently wrong number.
     """
 
     def __init__(
@@ -85,7 +122,8 @@ class StudyLogger:
         participant_id: str,
         condition_order: int,
         *,
-        interactive: bool | None = None,
+        interactive: bool,
+        sink: Sink | None = None,
         log_dir: Path | None = None,
     ) -> None:
         if not participant_id or not participant_id.strip():
@@ -95,19 +133,14 @@ class StudyLogger:
 
         self.participant_id = participant_id.strip()
         self.condition_order = condition_order
-        self.interactive = config.INTERACTIVE if interactive is None else interactive
-        self.condition = "interactive" if self.interactive else "static"
+        self.interactive = interactive
+        self.condition = "interactive" if interactive else "static"
         self.session_id = str(uuid.uuid4())
-
-        self._dir = log_dir or config.STUDY_LOGS_DIR
-        self._dir.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-        self.path = self._dir / f"{self.participant_id}_{self.condition}_{stamp}.jsonl"
 
         self._origin = time.perf_counter()
         self._task_id: str | None = None
-        self._task_origin: float | None = None
-        self._handle = self.path.open("a", encoding="utf-8")
+        self._closed = False
+        self._sink = sink if sink is not None else self._default_sink(log_dir)
 
         self.event(
             "session_start",
@@ -117,14 +150,31 @@ class StudyLogger:
             year_range=[config.YEAR_MIN, config.YEAR_MAX],
         )
 
+    def _default_sink(self, log_dir: Path | None) -> Sink:
+        """Postgres when configured, otherwise a per-session JSONL file."""
+        if db.configured():
+            return PostgresSink()
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        directory = log_dir or config.STUDY_LOGS_DIR
+        return JsonlSink(directory / f"{self.participant_id}_{self.condition}_{stamp}.jsonl")
+
     # --- Core ---------------------------------------------------------------------------------
 
-    def event(self, name: str, *, task_id: str | None = None, **payload: object) -> dict:
-        """Write one event record. Returns the record, mainly so tests can assert on it."""
+    def event(
+        self,
+        name: str,
+        *,
+        task_id: str | None = None,
+        client_elapsed_ms: float | None = None,
+        task_elapsed_ms: float | None = None,
+        **payload: Any,
+    ) -> dict[str, Any]:
+        """Write one event record. Returns it, mainly so callers and tests can assert on it."""
         if name not in EVENTS:
             raise LogError(f"Unknown event {name!r}; known events: {sorted(EVENTS)}")
+        if self._closed:
+            raise LogError("Logger is closed")
 
-        now = time.perf_counter()
         record = {
             "schema_version": SCHEMA_VERSION,
             "session_id": self.session_id,
@@ -133,52 +183,81 @@ class StudyLogger:
             "condition_order": self.condition_order,
             "task_id": task_id if task_id is not None else self._task_id,
             "event": name,
-            "timestamp": datetime.now(UTC).isoformat(),
-            "elapsed_ms": round((now - self._origin) * 1000),
-            "task_elapsed_ms": (
-                None if self._task_origin is None else round((now - self._task_origin) * 1000)
-            ),
+            "server_ts": datetime.now(UTC).isoformat(),
+            "client_elapsed_ms": client_elapsed_ms,
+            "task_elapsed_ms": task_elapsed_ms,
+            # Cross-check only. Includes network and cold-start time; never the measurement.
+            "server_elapsed_ms": round((time.perf_counter() - self._origin) * 1000, 3),
             "payload": payload,
         }
-        self._handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-        # Flush per record: a crashed session must not cost a participant's data.
-        self._handle.flush()
+        self._sink.write(record)
         return record
 
-    # --- Task timing --------------------------------------------------------------------------
+    # --- Task lifecycle -----------------------------------------------------------------------
 
-    def start_task(self, task_id: str) -> dict:
+    def start_task(self, task_id: str, *, client_elapsed_ms: float | None = None) -> dict[str, Any]:
         if self._task_id is not None:
             raise LogError(
                 f"Task {self._task_id!r} is still open; end it before starting {task_id!r}"
             )
         self._task_id = task_id
-        self._task_origin = time.perf_counter()
-        return self.event("task_start")
+        return self.event("task_start", client_elapsed_ms=client_elapsed_ms)
 
-    def end_task(self, task_id: str | None = None) -> dict:
+    def end_task(
+        self,
+        task_id: str | None = None,
+        *,
+        duration_ms: float | None = None,
+        client_elapsed_ms: float | None = None,
+    ) -> dict[str, Any]:
+        """Close the open task. `duration_ms` is the browser-measured time on task."""
         if self._task_id is None:
             raise LogError("No task is open")
         if task_id is not None and task_id != self._task_id:
             raise LogError(f"Open task is {self._task_id!r}, not {task_id!r}")
 
-        duration = round((time.perf_counter() - self._task_origin) * 1000)
-        record = self.event("task_end", duration_ms=duration)
+        record = self.event(
+            "task_end",
+            duration_ms=duration_ms,
+            client_elapsed_ms=client_elapsed_ms,
+            task_elapsed_ms=duration_ms,
+        )
         self._task_id = None
-        self._task_origin = None
         return record
 
-    # --- Lifecycle ----------------------------------------------------------------------------
+    def submit_answer(
+        self,
+        task_id: str,
+        answer: Any,
+        *,
+        duration_ms: float | None = None,
+        client_elapsed_ms: float | None = None,
+    ) -> dict[str, Any]:
+        """Record a participant's answer. Accuracy is scored later, not here."""
+        return self.event(
+            "answer_submit",
+            task_id=task_id,
+            answer=answer,
+            duration_ms=duration_ms,
+            client_elapsed_ms=client_elapsed_ms,
+        )
+
+    # --- Session lifecycle --------------------------------------------------------------------
 
     def close(self, reason: str = "normal") -> None:
-        if self._handle.closed:
+        if self._closed:
             return
         if self._task_id is not None:
             # Record the abandonment rather than silently dropping an in-flight task.
             self.end_task()
             reason = "task_abandoned" if reason == "normal" else reason
         self.event("session_end", reason=reason)
-        self._handle.close()
+        self._closed = True
+        self._sink.close()
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
 
     def __enter__(self) -> StudyLogger:
         return self
@@ -192,10 +271,10 @@ class StudyLogger:
         self.close(reason="normal" if exc_type is None else f"error:{exc_type.__name__}")
 
 
-# --- Reading ----------------------------------------------------------------------------------
+# --- Reading (JSONL sink only; use db.fetch_events for Postgres) --------------------------------
 
 
-def read_log(path: Path) -> list[dict]:
+def read_log(path: Path) -> list[dict[str, Any]]:
     """Read one JSONL session file, tolerating a truncated final line from a crashed session."""
     lines = path.read_text(encoding="utf-8").splitlines()
     records = []
@@ -212,10 +291,10 @@ def read_log(path: Path) -> list[dict]:
     return records
 
 
-def read_all(log_dir: Path | None = None) -> list[dict]:
-    """Read every session file in `log_dir`, newest last."""
+def read_all(log_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Read every JSONL session file in `log_dir`."""
     directory = log_dir or config.STUDY_LOGS_DIR
-    records: list[dict] = []
+    records: list[dict[str, Any]] = []
     for path in sorted(directory.glob("*.jsonl")):
         records.extend(read_log(path))
     return records

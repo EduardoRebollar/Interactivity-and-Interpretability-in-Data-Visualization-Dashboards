@@ -3,6 +3,14 @@
 __pycache__/
 *.py[cod]
 
+# Secrets. DATABASE_URL must never reach this public repo.
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+
 # Tooling caches
 .pytest_cache/
 .ruff_cache/

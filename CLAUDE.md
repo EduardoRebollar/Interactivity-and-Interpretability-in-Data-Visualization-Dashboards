@@ -37,13 +37,30 @@ These are methodological requirements, not preferences. Do not relax them withou
 
 ### Static vs. interactive is a single toggle
 
-- The two conditions differ only via an `INTERACTIVE: bool` flag in `src/config.py`.
+- Exactly one boolean separates the conditions, and it is consulted in exactly one place:
+  `graph_config(interactive: bool)` in `src/figures.py`.
+- **`build_figure()` takes no `interactive` argument at all.** The chart is identical in both
+  conditions *by construction*, not by discipline — interactivity is a property of how the figure is
+  rendered, not of the figure. `tests/test_conditions.py` asserts the two conditions produce
+  byte-identical figure JSON.
+- Year-over-year change indicators are **not implemented**: they are listed as an interactive-only
+  feature, but `docs/visual-spec.md` does not define what they look like, and inventing a visual
+  treatment is forbidden by the working norms. Define them in the spec first.
 - Interactive-only features: filtering, sorting, line isolation, year-over-year directional change
   indicators.
 - **The static condition is fully inert:** `staticPlot: True`, so no hover, no zoom, no pan, no
   modebar. Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition
   hoverable and the manipulation would be invalid. This is deliberate, not an oversight.
 - Do not introduce any other divergence between the two conditions.
+- `tests/test_conditions.py` enforces this: the two conditions must produce identical figure JSON
+  apart from the interactivity configuration.
+
+**Amended 2026-09-15 — `INTERACTIVE` is no longer a module constant at deploy time.** One deployed
+URL serves both conditions, so a module-level global would be shared across concurrent participants
+and could serve someone the wrong condition. `config.INTERACTIVE` remains the default for **local**
+runs; the deployed app carries the condition in per-session state and passes `interactive` explicitly
+down through layout and figure building. The intent of the original constraint is unchanged — one
+boolean, one decision point — only the mechanism moved.
 
 ### Scope is locked
 
@@ -63,12 +80,44 @@ These are methodological requirements, not preferences. Do not relax them withou
   from Our World in Data.
 - Public GitHub repo — no secrets, no API keys, nothing that shouldn't be public.
 
+**Named exemption (2026-09-15): `data/deploy/coverage.csv` is committed.** A Vercel deployment only
+has what is in git or in the database — a local download does not reach it. This file is a generated
+build artifact (~60 KB, 1700 rows), produced by `scripts/export_deploy_data.py` from the validated
+parquet, never hand-edited. Regenerate it whenever the data is refreshed. Raw downloads and the
+parquet cache stay gitignored as before.
+
+### Deployment
+
+- Hosted on Vercel; participants complete the whole session from one URL.
+- `requirements.txt` is a **deliberate subset** for the deployment: dash, plotly, psycopg and their
+  transitive dependencies — **no pandas, pyarrow, or numpy.** Those three are 145 MB of the 268 MB
+  local environment and would exceed the Python bundle limit. pandas 3.0 does not require pyarrow
+  (only our parquet cache does) and plotly 7 uses narwhals rather than pandas, so the runtime path
+  reads the deploy CSV with the stdlib `csv` module instead.
+- `uv.lock` remains the source of truth for local development. `requirements.txt` is generated.
+- Anything imported by `src/runtime_data.py`, `src/figures.py`, `src/layout.py`, `src/flow.py`,
+  `src/db.py`, or `src/app.py` ships to production. **Do not import pandas in those modules** —
+  `tests/test_runtime_data.py` fails the build if you do.
+
 ### Study instrumentation
 
-- The app logs interaction events (filter changes, legend/isolation clicks, sort actions) and task
-  timings to a local file (JSON or CSV under `data/study_logs/`).
+- The app logs interaction events (filter changes, legend/isolation clicks, sort actions), task
+  timings, and participant answers.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
-- Log schema changes are breaking — flag them explicitly.
+- Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v2 (2026-09-15).** Deployment forced three changes:
+
+- **Sink:** Neon Postgres when `DATABASE_URL` is set; JSONL under `data/study_logs/` otherwise.
+  Vercel's filesystem is ephemeral and read-only outside `/tmp`, so file writes there are lost. The
+  file sink remains the local path and stays supported.
+- **Timings come from the browser** (`performance.now()`), not server `perf_counter()`. Each event is
+  a separate HTTP request, so server-side timing would fold network latency and 800 ms–2.5 s cold
+  starts into task duration — a dependent variable.
+- **Answers are captured**, since the deployed page runs the whole session. Event `answer_submit`.
+
+`DATABASE_URL` is a secret and this is a public repo: Vercel environment variables only, never
+committed, `.env*` gitignored.
 
 ### Accessibility baseline
 
@@ -82,9 +131,12 @@ These are methodological requirements, not preferences. Do not relax them withou
 
 - Python 3.11+
 - `uv` for dependency and environment management
-- `dash`, `plotly`, `pandas`, `pyarrow`
+- `dash`, `plotly` — ship to production
+- `psycopg[binary]` — Neon Postgres driver, ships to production
+- `pandas`, `pyarrow` — **local only**, for cleaning and validation; never imported by runtime modules
 - `ruff` for linting/formatting, `pytest` for tests
-- Do not add dependencies without asking first.
+- Do not add dependencies without asking first. A new runtime dependency also grows the Vercel
+  bundle, so say which of the two groups above it belongs in.
 
 ## Data conventions
 
@@ -141,15 +193,33 @@ tests/
   test_palette.py       # enforces the contrast floors
 ```
 
+Deployment and runtime (see Deployment above):
+
+```
+api/index.py            # Vercel entry point; exposes the Dash Flask server
+vercel.json             # routes everything to api/index.py
+requirements.txt        # generated deployment subset, no pandas/pyarrow/numpy
+data/deploy/
+  coverage.csv          # committed build artifact (named exemption)
+src/
+  runtime_data.py       # stdlib csv loader; NO pandas
+  db.py                 # Neon Postgres connection + DDL
+  figures.py            # build_figure(..., interactive) — the one decision point
+  layout.py             # shared layout components
+  flow.py               # study flow state machine
+  callbacks.py          # server callbacks + clientside timing
+  app.py                # Dash app factory
+scripts/
+  export_deploy_data.py # parquet -> data/deploy/coverage.csv
+  init_db.py            # create tables
+  export_logs.py        # pull study data out for analysis
+```
+
 Planned, not yet written:
 
 ```
 docs/
-  study-design.md       # RQs, conditions, tasks, rubric
-src/
-  layout.py             # shared layout components
-  callbacks.py          # Dash callbacks (interactive version only)
-  app.py                # Dash entry point
+  study-design.md       # RQs, conditions, tasks, rubric — GATES the study flow UI
 ```
 
 ## Environment notes
