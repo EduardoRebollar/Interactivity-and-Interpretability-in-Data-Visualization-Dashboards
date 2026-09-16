@@ -137,6 +137,13 @@ and a test fails if the gridline ever drifts faint enough to be useless (< 1.8:1
 | Marker radius | 5 px |
 | Chart height | 520 px |
 
+**The chart's 520 px is reserved from the moment a task screen appears (2026-09-16), in both
+conditions.** Plotly is loaded on demand, the first time a chart is drawn in a session. Until it
+arrives, `dcc.Graph` renders at zero height, so the question, answers and Submit first appeared
+directly under the prompt and then jumped 520 px down about 600 ms later — long enough for a click
+to land on the wrong option. A fixed-height container around the chart holds the space. The
+finished page is unchanged.
+
 ## 6. Series limits and labelling
 
 - **Maximum 5 entities plus the World reference on one chart.**

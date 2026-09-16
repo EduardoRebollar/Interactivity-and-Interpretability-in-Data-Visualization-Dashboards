@@ -21,8 +21,9 @@ from collections import Counter
 
 import pytest
 from dash import no_update
+from dash.exceptions import PreventUpdate
 
-from src import app, db, layout, runtime_data, tasks
+from src import app, db, flow, layout, runtime_data, tasks
 from src.flow import SessionState, Stage
 from src.logging import SCHEMA_VERSION
 
@@ -149,6 +150,98 @@ def test_each_screen_carries_the_control_that_advances_it(stage, trigger_id):
 def test_the_break_does_not_reuse_the_begin_button():
     """Sharing an id is what let the break skip the second condition's instructions."""
     assert "begin-button" not in _ids(app.render(_state(Stage.BREAK)))
+
+
+def _every_screen():
+    """Every distinct screen a participant can see: each stage, in each condition, in each half."""
+    for stage in Stage:
+        for condition in ("static", "interactive"):
+            for index in (0, 1):
+                state = _state(stage, first_condition=condition, condition_index=index)
+                shown = "interactive" if flow.is_interactive(state) else "static"
+                yield f"{stage.value}/{shown}/{index}", app.render(state)
+
+
+def test_no_callback_is_dead_on_the_screens_that_trigger_it():
+    """Dash's browser renderer will not run a callback whose Inputs are only partly on the page.
+
+    It throws a ReferenceError to the console and sends nothing, so the button simply does nothing.
+    One callback wired to every screen's button was dead on every screen -- "I agree" did nothing
+    in a browser -- while every test calling `step` directly passed. This checks the rule itself:
+    on any screen showing one of a callback's Inputs, all its Inputs and States must be present.
+    """
+    instance = app.create_app()
+    base = _ids(instance.layout)
+    problems = []
+    for name, screen in _every_screen():
+        present = base | _ids(screen)
+        for key, callback in instance.callback_map.items():
+            inputs = {i["id"] for i in callback["inputs"]}
+            states = {s["id"] for s in callback["state"]}
+            if not (inputs - base) & present:
+                continue  # nothing on this screen can trigger it
+            missing = (inputs | states) - present
+            if missing:
+                problems.append(f"{name}: {key} is missing {sorted(missing)}")
+    assert not problems, "\n".join(problems)
+
+
+def test_button_callbacks_ignore_the_click_count_of_a_freshly_rendered_button():
+    """Dash fires a callback when its Input is inserted with a new screen, whatever
+    `prevent_initial_call` says. Unguarded, the instructions screen pressed its own Begin button."""
+    triggers = {"participant-button", "begin-button", "resume-button", "load-button"}
+    guarded = set()
+    for callback in app.create_app().callback_map.values():
+        inputs = [i["id"] for i in callback["inputs"]]
+        if "callback" not in callback or not inputs or inputs[0] not in triggers:
+            continue  # clientside callbacks have no Python function, and guard themselves in JS
+        # A fresh screen: n_clicks 0, any other trigger (Enter's n_submit) and every State unset.
+        # It must change nothing at all.
+        args = [0] + [None] * (len(inputs) - 1 + len(callback["state"]))
+        with pytest.raises(PreventUpdate):
+            callback["callback"].__wrapped__(*args)
+        guarded.add(inputs[0])
+    assert guarded == triggers
+
+
+def _participant_callback():
+    for callback in app.create_app().callback_map.values():
+        inputs = [i["id"] for i in callback["inputs"]]
+        if "callback" in callback and inputs[:1] == ["participant-button"]:
+            return callback
+    raise AssertionError("no participant callback")
+
+
+def test_enter_in_the_id_box_submits_it(monkeypatch):
+    """Enter did nothing, and a participant got no response until they found the button."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    callback = _participant_callback()
+    assert {"id": "participant-input", "property": "n_submit"} in callback["inputs"]
+    at_id_screen = _state(Stage.PARTICIPANT_ID, participant_id=None).to_dict()
+    # Enter pressed once, Continue never clicked.
+    session, _log, _screen, error, _spool = callback["callback"].__wrapped__(
+        0, 1, "P01", at_id_screen, None, None
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).stage is Stage.INSTRUCTIONS
+
+
+def test_the_id_screen_does_not_promise_a_resume_that_does_not_exist():
+    text = json.dumps(app.render(_state(Stage.PARTICIPANT_ID)).to_plotly_json(), default=str)
+    assert "left off" not in text
+    assert "one sitting" in text
+
+
+def test_the_chart_holds_its_height_before_plotly_has_loaded():
+    """dcc.Graph renders at zero height until Plotly arrives; the page jumped 520 px under a click.
+    The container must reserve the height in both conditions, identically."""
+    task = tasks.for_form("A")[0]
+    containers = []
+    for interactive in (False, True):
+        wrapper = layout.chart(list(task.entities), task.vaccine, interactive)
+        assert wrapper.children.id == "chart"
+        containers.append(wrapper.style)
+    assert containers[0] == containers[1] == {"height": f"{layout.config.CHART_HEIGHT}px"}
 
 
 def test_inputs_the_callback_reads_exist_on_the_screens_that_supply_them():
@@ -316,6 +409,11 @@ def _first_task():
     return tasks.for_form("A")[0]
 
 
+def _view(**kwargs):
+    """A control state belonging to the task `_task_state` is on: first half, first scored task."""
+    return {"screen": f"0/{_first_task().task_id}", **kwargs}
+
+
 def test_filtering_hides_a_series_and_logs_it(tmp_path):
     keep = [e for e in layout.filterable(list(_first_task().entities)) if e != "Nigeria"]
     (figure, options, value, control), events = _interact(
@@ -398,7 +496,7 @@ def test_clicking_a_line_isolates_it_and_logs_it(tmp_path):
 
 def test_clicking_an_isolated_line_again_releases_it(tmp_path):
     task = _first_task()
-    isolated = {"selected": layout.filterable(list(task.entities)), "isolated": task.entities[0]}
+    isolated = _view(selected=layout.filterable(list(task.entities)), isolated=task.entities[0])
     (figure, _options, _value, control), events = _interact(
         "chart.clickData",
         tmp_path,
@@ -422,7 +520,7 @@ def test_clicking_the_world_reference_does_nothing(tmp_path):
 
 def test_show_all_restores_everything_and_logs_it(tmp_path):
     task = _first_task()
-    narrowed = {"selected": ["Brazil"], "isolated": "Nigeria"}
+    narrowed = _view(selected=["Brazil"], isolated="Nigeria")
     (figure, _options, _value, control), events = _interact(
         "reset-view.n_clicks", tmp_path, control_state=narrowed
     )
@@ -452,10 +550,9 @@ def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
     a phantom `line_isolate` and silently un-isolated their chart. The prop id separates them.
     """
     task = _first_task()
-    already_isolated = {
-        "selected": layout.filterable(list(task.entities)),
-        "isolated": task.entities[0],
-    }
+    already_isolated = _view(
+        selected=layout.filterable(list(task.entities)), isolated=task.entities[0]
+    )
     (figure, _options, _value, control), events = _interact(
         "chart.relayoutData",
         tmp_path,
@@ -481,7 +578,7 @@ def test_re_rendering_a_task_does_not_log_a_phantom_filter_change(tmp_path):
     """Dash fires input callbacks when a component is recreated, which happens every task."""
     options = layout.filterable(list(_first_task().entities))
     result, events = _interact(
-        "entity-filter.value", tmp_path, control_state={"selected": options}, selected=options
+        "entity-filter.value", tmp_path, control_state=_view(selected=options), selected=options
     )
     assert result == (no_update,) * 4
     assert events == []
@@ -516,6 +613,56 @@ def test_a_stale_control_state_from_the_previous_task_is_discarded(tmp_path):
     assert control["isolated"] is None, "an isolation on an absent series must not survive"
     assert control["selected"] == ["Brazil", "India"]
     assert {t.name for t in figure.data if t.visible} == {"Brazil", "India", "World"}
+
+
+def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_path):
+    """The store outlives the screen. Only its key tells one task's view from the next one's.
+
+    The previous task's isolation names an entity this task also has, so filtering by entity alone
+    would carry it over -- and the participant's first click here would appear to do nothing.
+    """
+    task = _first_task()
+    for screen in ("0/P0", f"1/{task.task_id}", None):
+        leftover = {"screen": screen, "selected": ["Brazil"], "isolated": task.entities[0]}
+        (figure, _options, _value, control), events = _interact(
+            "chart.clickData",
+            tmp_path,
+            control_state=leftover,
+            click_data={"points": [{"curveNumber": 0}]},
+        )
+        # Fresh view, so the click isolates rather than releases.
+        assert events[-1]["payload"] == {"entity": task.entities[0], "isolated": True}, screen
+        assert control["selected"] == layout.filterable(list(task.entities)), screen
+        assert control["screen"] == f"0/{task.task_id}"
+
+
+def test_the_chart_callback_has_nothing_the_static_condition_lacks():
+    """The chart is rendered in both conditions, so its callback must be complete in both."""
+    instance = app.create_app()
+    base = _ids(instance.layout)
+    static = _ids(app.render(_state(Stage.TASK, first_condition="static")))
+    for callback in instance.callback_map.values():
+        if "chart" in {i["id"] for i in callback["inputs"]}:
+            ids = {i["id"] for i in callback["inputs"]} | {s["id"] for s in callback["state"]}
+            assert ids <= base | static
+            assert not {"entity-filter", "entity-sort", "reset-view"} & ids
+
+
+def test_the_chart_callback_changes_nothing_on_a_static_render(tmp_path):
+    """Plotly's render-time relayout reaches the server in the static condition too. It must be
+    ignored there, as in the interactive condition: no event, no change to the chart."""
+    static = _state(Stage.TASK, first_condition="static").to_dict()
+    for relayout in ({"autosize": True}, {}, None):
+        result = app.control_step(
+            "chart.relayoutData",
+            static,
+            {"session_id": "s"},
+            None,
+            relayout=relayout,
+            log_dir=tmp_path,
+        )
+        assert result == (no_update,) * 5
+    assert _events(tmp_path) == []
 
 
 # --- Validation refuses rather than advancing -----------------------------------------------------
@@ -959,9 +1106,9 @@ const window = {
   setTimeout: (fn, ms) => timers.push([fn, ms]),
 };
 const cases = JSON.parse(process.argv[1]);
-const out = cases.map(([source, arg, fireTimers]) => {
+const out = cases.map(([source, arg, fireTimers, extra]) => {
   const fn = eval("(" + source + ")");
-  const result = fn(arg);
+  const result = fn(arg, ...(extra || []));
   if (fireTimers) { timers.forEach(([f]) => f()); }
   return { result, timers: timers.map(([, ms]) => ms), calls: calls.slice() };
 });
@@ -994,11 +1141,66 @@ def test_the_clock_stamps_carry_their_origin():
             [app.SUBMIT_CLOCK_JS, 0, False],
         ]
     )
-    assert task["result"] == {"t": 1234.5, "origin": 1758000000000.25}
+    assert {k: task["result"][k] for k in ("t", "origin")} == {
+        "t": 1234.5,
+        "origin": 1758000000000.25,
+    }
     assert submit["result"] == {"t": 1234.5, "origin": 1758000000000.25}
     assert no_click["result"] == "NO_UPDATE"
     # The browser's stamps are exactly what the server subtracts.
     assert app._elapsed(task["result"], submit["result"]) == (0.0, None)
+
+
+_SESSION = {"participant_id": "P01", "condition_index": 0, "stage": "task", "task_index": 2}
+
+
+def test_the_task_clock_stamps_each_screen_once():
+    """A reload re-renders the screen already showing. Restamping it measured from the reload."""
+    first, same, next_task, other_participant = _run_js(
+        [
+            [app.CLOCK_JS, None, False, [_SESSION, None]],
+            # The stamp taken before a reload: same screen, a different page load's origin.
+            [
+                app.CLOCK_JS,
+                None,
+                False,
+                [_SESSION, {"t": 9.0, "origin": 1.0, "screen": "P01/0/task/2"}],
+            ],
+            [
+                app.CLOCK_JS,
+                None,
+                False,
+                [
+                    {**_SESSION, "task_index": 3},
+                    {"t": 9.0, "origin": 1.0, "screen": "P01/0/task/2"},
+                ],
+            ],
+            [
+                app.CLOCK_JS,
+                None,
+                False,
+                [
+                    {**_SESSION, "participant_id": "P02"},
+                    {"t": 9.0, "origin": 1.0, "screen": "P01/0/task/2"},
+                ],
+            ],
+        ]
+    )
+    assert first["result"]["screen"] == "P01/0/task/2"
+    assert same["result"] == "NO_UPDATE"
+    assert next_task["result"]["screen"] == "P01/0/task/3"
+    assert other_participant["result"]["screen"] == "P02/0/task/2"
+
+
+def test_a_reload_mid_task_is_recorded_as_a_clock_reset():
+    """End to end across the JS and the server: the kept stamp and a post-reload Submit disagree
+    on their origin, so the duration is absent and flagged rather than a quiet undercount."""
+    kept = {"t": 800.0, "origin": 1758000000000.0, "screen": "P01/0/task/2"}
+    after_reload, submitted = _run_js(
+        [[app.CLOCK_JS, None, False, [_SESSION, kept]], [app.SUBMIT_CLOCK_JS, 1, False]]
+    )
+    assert after_reload["result"] == "NO_UPDATE"
+    assert app._elapsed(kept, submitted["result"]) == (None, "clock_reset")
 
 
 def test_submit_is_disabled_on_click_and_the_watchdog_re_enables_it():
@@ -1024,6 +1226,33 @@ def test_a_refusal_re_enables_submit():
     )
     assert refused["result"] is False
     assert succeeded["result"] == "NO_UPDATE"
+
+
+def test_continue_is_disabled_on_click_or_enter_and_the_watchdog_re_enables_it():
+    clicked, entered, fresh = _run_js(
+        [
+            [app.PARTICIPANT_DISABLE_JS, 1, True, [None]],
+            [app.PARTICIPANT_DISABLE_JS, None, False, [1]],
+            [app.PARTICIPANT_DISABLE_JS, 0, False, [None]],
+        ]
+    )
+    assert clicked["result"] is True
+    assert clicked["calls"] == [["participant-button", {"disabled": False}]]
+    assert entered["result"] is True
+    assert fresh["result"] == "NO_UPDATE"
+    # Longer than the slowest assignment against an unreachable database.
+    assert clicked["timers"] == [25000]
+
+
+def test_a_refused_id_re_enables_continue():
+    refused, cleared = _run_js(
+        [
+            [app.PARTICIPANT_ENABLE_JS, "Please enter your participant ID.", False],
+            [app.PARTICIPANT_ENABLE_JS, "", False],
+        ]
+    )
+    assert refused["result"] is False
+    assert cleared["result"] == "NO_UPDATE"
 
 
 def test_the_consent_clock_is_an_iso_timestamp():
@@ -1067,3 +1296,14 @@ def test_both_callbacks_that_log_can_write_the_spool():
 
 def test_the_new_stores_are_in_the_base_layout():
     assert {"consent-clock", "spool-state"} <= _ids(app.create_app().layout)
+
+
+def test_the_click_clocks_do_not_survive_a_reload():
+    """A session store restores itself on mount, and Dash counts the restore as a change -- so a
+    persisted click clock would re-fire its callback on every page load, with a stale stamp."""
+    stores = {
+        child.id: getattr(child, "storage_type", "memory")
+        for child in app.create_app().layout.children
+        if getattr(child, "id", None) in {"consent-clock", "submit-clock"}
+    }
+    assert stores == {"consent-clock": "memory", "submit-clock": "memory"}

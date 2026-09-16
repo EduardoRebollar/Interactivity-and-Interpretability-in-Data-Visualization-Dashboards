@@ -130,9 +130,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_four():
-    """v4 added event_uid, consent, sink_recovered, duration_invalid. Never pool versions."""
-    assert SCHEMA_VERSION == 4
+def test_schema_version_is_five():
+    """v5: Postgres `server_ts` is the record's own time, not the insert time. Never pool them."""
+    assert SCHEMA_VERSION == 5
 
 
 def test_form_is_recorded_on_every_event():

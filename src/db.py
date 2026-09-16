@@ -78,6 +78,7 @@ EVENT_COLUMNS = (
     "form",
     "task_id",
     "event",
+    "server_ts",
     "client_elapsed_ms",
     "task_elapsed_ms",
     "server_elapsed_ms",
@@ -164,27 +165,37 @@ def assignment_for(seq: int) -> tuple[str, str]:
     return ASSIGNMENTS[seq % 4]
 
 
+_FIND_PARTICIPANT = "SELECT seq FROM participants WHERE participant_id = %s"
+
+
 def register_participant(participant_id: str) -> tuple[int, str, str]:
     """Return (seq, first_condition, first_form), assigning on first sight.
 
     Idempotent: calling again for a known participant returns the same assignment, so someone who
     reloads or returns for their second condition is never re-randomised.
 
+    **Looks the ID up before inserting.** An `INSERT ... ON CONFLICT DO NOTHING` on its own draws
+    the next sequence value before it detects the conflict, so every repeat registration -- a
+    double-click on Continue, a returning participant -- burned a number and pushed the next new
+    participant into the wrong counterbalancing cell. The insert remains the race-safe path for a
+    genuinely new ID; only two people entering the same new ID at the same instant can still leave a
+    gap, and they get one assignment between them.
+
     Uses the short connect timeout: a participant is waiting on the ID screen while this runs.
     """
     with connect(timeout=EVENT_CONNECT_TIMEOUT) as connection:
-        row = connection.execute(
-            "INSERT INTO participants (participant_id) VALUES (%s) "
-            "ON CONFLICT (participant_id) DO NOTHING RETURNING seq",
-            (participant_id,),
-        ).fetchone()
+        row = connection.execute(_FIND_PARTICIPANT, (participant_id,)).fetchone()
 
         if row is None:
-            # Already registered: read the assignment made the first time.
             row = connection.execute(
-                "SELECT seq FROM participants WHERE participant_id = %s",
+                "INSERT INTO participants (participant_id) VALUES (%s) "
+                "ON CONFLICT (participant_id) DO NOTHING RETURNING seq",
                 (participant_id,),
             ).fetchone()
+
+        if row is None:
+            # Registered by a concurrent request between the lookup and the insert.
+            row = connection.execute(_FIND_PARTICIPANT, (participant_id,)).fetchone()
             if row is None:
                 raise DatabaseError(f"Could not register or find participant {participant_id!r}")
 
@@ -200,11 +211,19 @@ def insert_event(record: dict[str, Any], *, ignore_duplicates: bool = False) -> 
     already have landed before the response was lost. Off by default: during a live session a
     conflict is a real fault and should be seen, not swallowed.
 
+    `server_ts` is the time the logger created the record, not the time of this INSERT. Schema v5:
+    before it, the column took the insert time, so an event spooled through an outage and replayed
+    later carried the replay time -- and disagreed with the JSONL sink, which always kept the
+    record's own. A record without one still gets `now()`.
+
     Returns the number of rows written: 0 means a replayed event was already present.
     """
     values = [record.get(column) for column in EVENT_COLUMNS]
     values[-1] = Json(record.get("payload") or {})
-    placeholders = ", ".join(["%s"] * len(EVENT_COLUMNS))
+    placeholders = ", ".join(
+        "COALESCE(%s::timestamptz, now())" if column == "server_ts" else "%s"
+        for column in EVENT_COLUMNS
+    )
     statement = f"INSERT INTO study_events ({', '.join(EVENT_COLUMNS)}) VALUES ({placeholders})"
     if ignore_duplicates:
         statement += " ON CONFLICT DO NOTHING"

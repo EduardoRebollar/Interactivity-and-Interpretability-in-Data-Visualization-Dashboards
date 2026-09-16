@@ -97,7 +97,8 @@ def test_only_the_interactive_condition_renders_controls(rows):
     task = tasks.for_form("A")[0]
     static_ids = {getattr(n, "id", None) for n in _walk(layout.task_screen(task, False, 1, 6))}
     live_ids = {getattr(n, "id", None) for n in _walk(layout.task_screen(task, True, 1, 6))}
-    controls = {"entity-filter", "entity-sort", "reset-view", "control-state"}
+    # `control-state` is not here: it is a store in the app's base layout, present in both.
+    controls = {"entity-filter", "entity-sort", "reset-view"}
     assert not (controls & static_ids), "the static condition must have no controls"
     assert controls <= live_ids
 

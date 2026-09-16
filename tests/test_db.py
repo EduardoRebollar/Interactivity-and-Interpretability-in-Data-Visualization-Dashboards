@@ -129,6 +129,63 @@ def test_assignment_uses_the_short_connect_timeout(url, monkeypatch):
     assert captured["connect_timeout"] == db.EVENT_CONNECT_TIMEOUT
 
 
+class Registry(FakeConnection):
+    """Answers the participant lookup and insert like Postgres would, counting sequence draws."""
+
+    def __init__(self, known: dict[str, int] | None = None, race: bool = False):
+        super().__init__()
+        self.known = dict(known or {})
+        self.next_seq = max(self.known.values(), default=0) + 1
+        self.race = race
+        self._row = None
+
+    def execute(self, sql, params=None):
+        super().execute(sql, params)
+        (participant_id,) = params
+        if sql.startswith("SELECT"):
+            self._row = (self.known[participant_id],) if participant_id in self.known else None
+        else:
+            # Postgres draws nextval before it checks the conflict: a conflicting insert burns one.
+            seq, self.next_seq = self.next_seq, self.next_seq + 1
+            if self.race:
+                self.known[participant_id] = 99  # a concurrent request got there first
+                self._row = None
+            elif participant_id in self.known:
+                self._row = None
+            else:
+                self.known[participant_id] = seq
+                self._row = (seq,)
+        return self
+
+    def fetchone(self):
+        return self._row
+
+
+def test_a_known_participant_is_looked_up_not_inserted(url, monkeypatch):
+    """Inserting a known ID burned a sequence number and skipped the next participant's cell."""
+    registry = Registry(known={"P01": 5})
+    _patch_connect(monkeypatch, registry)
+    assert db.register_participant("P01") == (5, *db.assignment_for(5))
+    assert not [sql for sql, _ in registry.statements if sql.startswith("INSERT")]
+    assert registry.next_seq == 6, "a repeat registration must not draw from the sequence"
+
+
+def test_repeat_registrations_leave_the_next_participant_consecutive(url, monkeypatch):
+    registry = Registry()
+    _patch_connect(monkeypatch, registry)
+    first = db.register_participant("P01")
+    db.register_participant("P01")
+    db.register_participant("P01")
+    second = db.register_participant("P02")
+    assert (first[0], second[0]) == (1, 2)
+
+
+def test_a_concurrent_registration_of_the_same_id_is_read_back(url, monkeypatch):
+    registry = Registry(race=True)
+    _patch_connect(monkeypatch, registry)
+    assert db.register_participant("P01") == (99, *db.assignment_for(99))
+
+
 def test_timeouts_are_whole_seconds():
     """libpq parses connect_timeout as an integer."""
     assert isinstance(db.EVENT_CONNECT_TIMEOUT, int)
@@ -149,6 +206,20 @@ def test_insert_event_writes_every_declared_column(url, monkeypatch):
         assert column in sql
     assert params[db.EVENT_COLUMNS.index("event_uid")] == "value-event_uid"
     assert params[-1].obj == {"answer": "1"}, "payload must be wrapped as JSONB"
+
+
+def test_server_ts_is_the_records_own_time_with_now_as_the_fallback(url, monkeypatch):
+    """A spooled event replayed later must keep the time it happened, not take the replay time."""
+    connection = FakeConnection()
+    _patch_connect(monkeypatch, connection)
+    db.insert_event({"server_ts": "2026-09-16T10:00:00+00:00", "payload": {}})
+
+    ((sql, params),) = connection.statements
+    assert "server_ts" in db.EVENT_COLUMNS
+    assert params[db.EVENT_COLUMNS.index("server_ts")] == "2026-09-16T10:00:00+00:00"
+    # A record without a time must not violate NOT NULL; it falls back to the insert time.
+    assert "COALESCE(%s::timestamptz, now())" in sql
+    assert sql.count("%s") == len(db.EVENT_COLUMNS)
 
 
 def test_live_inserts_do_not_swallow_conflicts(url, monkeypatch):

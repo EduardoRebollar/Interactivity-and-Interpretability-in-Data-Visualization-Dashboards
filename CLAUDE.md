@@ -124,6 +124,11 @@ parquet cache stay gitignored as before.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v5 (2026-09-16).** No new column; what Postgres stores in `server_ts` changed. It is now the
+time the logger created the record (`db.insert_event` writes it, falling back to `now()`). Under v4
+the column took the INSERT time, so an event spooled through an outage carried its replay time and
+disagreed with the JSONL sink. Nothing collected, so no migration and no `init_db.py` re-run needed.
+
 **Schema v4 (2026-09-15).** Pre-pilot hardening. Nothing has been collected, so no migration — but
 `scripts/init_db.py` must be re-run, and note `CREATE TABLE IF NOT EXISTS` is a no-op on an existing
 table, so new columns need an explicit `ALTER` or they are silently absent.
@@ -375,8 +380,12 @@ context cheap and the reports as long as they need to be.
   longer breaks a session or loses answers silently; consent is recorded; double-submit and
   reload-corrupted durations are handled; schema is v4. The offline scoring pipeline exists, with
   the answer key derived from the data. Verified over live HTTP against an unreachable Postgres.
-- **Not yet verified: any SQL against a real Postgres.** No local database here. Run
-  `scripts/init_db.py` then `scripts/verify_deployment.py` against Neon before the pilot.
+- 2026-09-16 — **Verified in a real browser and against a local Postgres 16** (throwaway, not Neon):
+  full sessions in both orders, a DB outage mid-session with replay, and `verify_deployment.py`,
+  which could never pass before (it miscounted events). The pytest suite calls `step()` directly
+  and cannot see Dash-renderer failures — every button was dead in a browser while it was green.
+- **Still to do before the pilot:** run `scripts/init_db.py` then `scripts/verify_deployment.py`
+  against **Neon**.
 - Next after IRB: pilot, and check T6's form equivalence and A-T5's plateau (`study-design.md` §4).
 
 ## Decisions made
@@ -399,6 +408,15 @@ context cheap and the reports as long as they need to be.
   the task window would inflate time-on-task in the interactive condition only.
 - 2026-09-16 — `event_uid` and the one-answer-per-task index added now, while schema changes are
   free because nothing has been collected.
+- 2026-09-16 — A mid-task reload records the duration absent and flagged `clock_reset`; it used to
+  restart the timer silently. The task clock stamps each screen once. `study-design.md` §8.
+- 2026-09-16 — Registration looks an ID up before inserting. A repeat registration (even a
+  double-click on Continue) burned a sequence number and skipped the next participant's cell.
+- 2026-09-16 — Schema v5: Postgres `server_ts` is the record's creation time, not the insert time.
+- 2026-09-16 — The chart's 520 px is reserved before Plotly loads, in both conditions; the practice
+  screen used to jump 520 px under the cursor. `visual-spec.md` §5.
+- 2026-09-16 — Resume is not built; the ID screen now asks for one sitting in one tab instead of
+  promising it. Enter in the ID box submits it. `study-design.md` §8.
 
 ## Open questions
 

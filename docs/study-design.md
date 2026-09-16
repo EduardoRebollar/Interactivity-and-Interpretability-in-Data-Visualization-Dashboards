@@ -64,6 +64,14 @@ in `db.assignment_for`):
 
 Every participant sees both conditions and both forms, never the same form twice.
 
+**A returning ID does not consume a sequence number (fixed 2026-09-16).** Registration looks the ID
+up before inserting. It used to insert with `ON CONFLICT DO NOTHING`, and Postgres draws the next
+sequence value *before* detecting the conflict — so every repeat registration of a known ID, a
+double-click on Continue included, silently skipped the next participant into a different cell. The
+sequence can still have gaps (two people entering the *same new* ID at the same instant, a rolled-back
+insert, `scripts/verify_deployment.py` runs), so check the realised cell counts before analysis rather
+than assuming they are equal.
+
 ### Why parallel forms
 
 If both conditions used the same tasks, a participant would answer each question a second time
@@ -352,10 +360,14 @@ never re-randomised — the assignment is held in the database and is idempotent
 > *resumes*. Only the assignment survives; the progress does not. `sessionStorage` is per-tab, so a
 > participant who closes the tab and re-enters their ID restarts at the beginning of condition 1 and
 > writes a second, overlapping set of events under the same participant ID with a new `session_id`.
-> The participant-ID screen still tells them they will "continue where the study left off", which is
-> not true. Until this is fixed: run sessions in one sitting in one tab, and treat a participant with
-> more than two log sessions as needing manual inspection before analysis — the
-> `incomplete_session` rule in §7 counts sessions and would otherwise be misled.
+> A reload within the same tab does keep their place.
+>
+> **The participant-ID screen no longer promises resume (2026-09-16).** It used to say a returning
+> participant would "continue where the study left off". It now reads: *"Enter the ID you were
+> given. Please complete the study in one sitting, in this tab — closing it ends your session."*
+> Resume itself is still not implemented, so treat a participant with more than two log sessions as
+> needing manual inspection before analysis — the `incomplete_session` rule in §7 counts sessions and
+> would otherwise be misled.
 
 Each condition is one log session, opened at its instructions and closed after its load rating, so
 both halves produce a complete `session_start … session_end` record.
@@ -427,7 +439,8 @@ detectable in the data rather than being a matter of recollection.
 - T6 form equivalence — see the warning in §4.
 - **A-T5 may not read as a crossing at all** — China and Brazil sit at exactly 99.0 for three years
   before separating. Check in the pilot, with T6. See §4.
-- **Session resume is not implemented**, and the participant-ID screen promises it. See §8.
+- **Session resume is not implemented.** The participant-ID screen no longer promises it; it asks
+  for one sitting in one tab instead. See §8.
 - Whether the justification should be optional; requiring it may increase dropout on a self-served
   web study.
 - Continent aggregates have no 2024 data, so no item may turn on a continent's most recent year.

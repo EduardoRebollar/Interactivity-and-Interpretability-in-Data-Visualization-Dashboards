@@ -30,6 +30,7 @@ from typing import Any
 
 import dash
 from dash import Input, Output, State, callback_context, dcc, html, no_update
+from dash.exceptions import PreventUpdate
 
 from src import config, db, figures, flow, layout, tasks
 from src.flow import SessionState, Stage
@@ -76,14 +77,24 @@ def create_app() -> dash.Dash:
             # Two browser timestamps: when the task screen appeared, and when Submit was pressed.
             # The server only subtracts them, so the measurement is entirely the browser's clock.
             dcc.Store(id="task-clock", storage_type="session"),
-            dcc.Store(id="submit-clock", storage_type="session"),
+            # The two click clocks are MEMORY stores, unlike everything else here. Each exists only
+            # to trigger one server callback. A session store restores itself when the page mounts,
+            # and that restore counts as a change: a reload would re-fire Submit with the previous
+            # task's stamp, before any screen existed to receive it.
+            dcc.Store(id="submit-clock"),
             # The consent timestamp, stamped in the browser when "I agree" is pressed.
-            dcc.Store(id="consent-clock", storage_type="session"),
+            dcc.Store(id="consent-clock"),
             # Events the database refused, kept in the browser until they can be replayed. Its own
             # store, not a key on log-state: both callbacks write it, and letting the controls
             # callback write log-state would let a slow click response overwrite the task
             # attribution a later Submit had just set.
             dcc.Store(id="spool-state", storage_type="session"),
+            # The interactive controls' view: filter, sort, isolation. In the base layout, not on
+            # the task screen, so the chart's callback can read it in BOTH conditions -- see
+            # `chart_interaction`. Memory, because a reload re-renders the screen with every series
+            # shown, and the store must agree with what is on screen. `control_step` keys it to the
+            # task, which is what resets the view between tasks.
+            dcc.Store(id="control-state"),
             html.Div(id="page"),
         ]
     )
@@ -375,8 +386,10 @@ def _open_task(
 # --- The interactive controls ---------------------------------------------------------------------
 #
 # Filtering, sorting, line isolation and zoom/pan. These exist ONLY in the interactive condition —
-# the static condition never renders the controls and `staticPlot: True` means its chart emits no
-# click or relayout data — so every event below is, by construction, an interactive-condition event.
+# the static condition never renders the controls, and `staticPlot: True` means its chart can be
+# neither clicked nor zoomed — so every event below is, by construction, an interactive-condition
+# event. The static chart does still send Plotly's render-time relayout, which carries no axis range
+# and is ignored below exactly as it is in the interactive condition.
 # That is the study's independent variable, and this is where it gets recorded.
 
 # Zoom and pan arrive as axis-range keys. Plotly also sends relayout on resize and on render, which
@@ -435,6 +448,9 @@ def control_step(
     Returns `no_update` throughout when nothing actually changed. Dash fires input callbacks when a
     component is recreated, which happens on every task render, and logging those would fill the
     interaction record with events no participant caused.
+
+    A chart click or zoom never changes the filter list, so `chart_interaction` writes only the
+    figure, the control state and the spool, and discards the other two outputs.
     """
     state = SessionState.from_dict(stored)
     task = _active_task(state)
@@ -442,8 +458,13 @@ def control_step(
         return (no_update,) * 5
 
     options = layout.filterable(list(task.entities))
-    control = {"selected": list(options), "sort": "listed", "isolated": None}
-    control.update(control_state or {})
+    # The store outlives the screen, so its view belongs to one task in one half. Any other key --
+    # the previous task, the same task id in the other condition, or none -- is discarded, which is
+    # what gives every task the fresh view its screen was rendered with.
+    screen = f"{state.condition_index}/{task.task_id}"
+    control = {"selected": list(options), "sort": "listed", "isolated": None, "screen": screen}
+    if (control_state or {}).get("screen") == screen:
+        control.update(control_state)
     # A stale store from the previous task would name entities this one does not have.
     control["selected"] = [e for e in control["selected"] if e in options] or list(options)
     if control["isolated"] not in task.entities:
@@ -551,6 +572,28 @@ def control_step(
 # --- Callbacks ------------------------------------------------------------------------------------
 
 
+def _step_outputs() -> list[Output]:
+    """What every advancing callback writes. Built fresh for each, as they are duplicate writers."""
+    return [
+        Output("session-state", "data", allow_duplicate=True),
+        Output("log-state", "data", allow_duplicate=True),
+        Output("page", "children", allow_duplicate=True),
+        # One error slot, emitted by `layout.page` on every screen. Outputs that exist on only some
+        # screens are a latent failure on the rest; see the note in `layout.page`.
+        Output("flow-error", "children", allow_duplicate=True),
+        Output("spool-state", "data", allow_duplicate=True),
+    ]
+
+
+def _session_states() -> list[State]:
+    """The browser-held stores `step` reads. All in the base layout, so present on every screen."""
+    return [
+        State("session-state", "data"),
+        State("log-state", "data"),
+        State("spool-state", "data"),
+    ]
+
+
 def _register_callbacks(app: dash.Dash) -> None:
     @app.callback(
         Output("page", "children"),
@@ -560,77 +603,114 @@ def _register_callbacks(app: dash.Dash) -> None:
     def show_page(_pathname, stored):
         return render(SessionState.from_dict(stored))
 
+    # --- Advancing the session: ONE CALLBACK PER SCREEN ---
+    #
+    # Each screen's control gets its own callback, whose Inputs and States all live on that screen
+    # or in the base layout. This is not style. Dash's browser renderer refuses to run a callback
+    # when some of its Inputs are on the page and others are not: it throws a ReferenceError to the
+    # console and sends nothing. A single callback listening to every screen's button was therefore
+    # dead on every screen -- "I agree" did nothing -- while `step`, called directly by the tests,
+    # worked perfectly. `tests/test_app.py` now checks every callback against every screen.
+    #
+    # The button callbacks refuse `n_clicks` of 0. Dash fires a callback when its Input is inserted
+    # with a new screen, and `prevent_initial_call` does not stop that -- which is why the
+    # clientside callbacks below guard on `!n` too. Without it, the instructions screen pressed its
+    # own Begin button the moment it appeared.
+
+    # Triggered by the consent CLOCK, like Submit below, so the browser timestamp is taken before
+    # the request leaves and is guaranteed to be present.
     @app.callback(
-        Output("session-state", "data"),
-        Output("log-state", "data"),
-        Output("page", "children", allow_duplicate=True),
-        # One error slot, emitted by `layout.page` on every screen. Outputs that exist on only some
-        # screens are a latent failure on the rest; see the note in `layout.page`.
-        Output("flow-error", "children"),
-        Output("spool-state", "data", allow_duplicate=True),
-        # Triggered by the consent CLOCK, like Submit below, so the browser timestamp is taken
-        # before the request leaves and is guaranteed to be present.
+        *_step_outputs(),
         Input("consent-clock", "data"),
-        Input("participant-button", "n_clicks"),
-        Input("begin-button", "n_clicks"),
-        Input("resume-button", "n_clicks"),
-        # Triggered by the submit CLOCK, not the button: the clientside callback below stamps the
-        # browser time first, so by the time this runs the timestamp is guaranteed fresh rather
-        # than racing the button click.
-        Input("submit-clock", "data"),
-        Input("load-button", "n_clicks"),
-        State("session-state", "data"),
-        State("log-state", "data"),
-        State("participant-input", "value"),
-        State("answer-input", "value"),
-        State("justification-input", "value"),
-        State("load-input", "value"),
-        State("task-clock", "data"),
-        State("spool-state", "data"),
+        *_session_states(),
         prevent_initial_call=True,
     )
-    def advance(
-        consented_at,
-        _p,
-        _b,
-        _r,
-        submitted_at,
-        _l,
-        stored,
-        log_state,
-        participant_id,
-        answer,
-        justification,
-        load,
-        started_at,
-        spool,
-    ):
-        """Thin wrapper: unpack Dash's arguments and hand them to `step`, which holds the logic."""
+    def consent(consented_at, stored, log_state, spool):
+        return step("consent-clock", stored, log_state, consented_at=consented_at, spool=spool)
+
+    # Continue, or Enter in the ID box: both on the ID screen, so both may be Inputs here.
+    @app.callback(
+        *_step_outputs(),
+        Input("participant-button", "n_clicks"),
+        Input("participant-input", "n_submit"),
+        State("participant-input", "value"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def participant(n, n_submit, participant_id, stored, log_state, spool):
+        if not n and not n_submit:
+            raise PreventUpdate
+        return step(
+            "participant-button", stored, log_state, participant_id=participant_id, spool=spool
+        )
+
+    @app.callback(
+        *_step_outputs(),
+        Input("begin-button", "n_clicks"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def begin(n, stored, log_state, spool):
+        if not n:
+            raise PreventUpdate
+        return step("begin-button", stored, log_state, spool=spool)
+
+    @app.callback(
+        *_step_outputs(),
+        Input("resume-button", "n_clicks"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def resume(n, stored, log_state, spool):
+        if not n:
+            raise PreventUpdate
+        return step("resume-button", stored, log_state, spool=spool)
+
+    # Triggered by the submit CLOCK, not the button: the clientside callback below stamps the
+    # browser time first, so by the time this runs the timestamp is guaranteed fresh rather than
+    # racing the button click.
+    @app.callback(
+        *_step_outputs(),
+        Input("submit-clock", "data"),
+        State("answer-input", "value"),
+        State("justification-input", "value"),
+        State("task-clock", "data"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def submit(submitted_at, answer, justification, started_at, stored, log_state, spool):
         duration_ms, duration_invalid = _elapsed(started_at, submitted_at)
         return step(
-            callback_context.triggered_id,
+            "submit-clock",
             stored,
             log_state,
-            participant_id=participant_id,
             answer=answer,
             justification=justification,
-            load=load,
             duration_ms=duration_ms,
             duration_invalid=duration_invalid,
-            consented_at=consented_at,
             spool=spool,
         )
 
     @app.callback(
-        Output("chart", "figure"),
+        *_step_outputs(),
+        Input("load-button", "n_clicks"),
+        State("load-input", "value"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def rate_load(n, load, stored, log_state, spool):
+        if not n:
+            raise PreventUpdate
+        return step("load-button", stored, log_state, load=load, spool=spool)
+
+    @app.callback(
+        Output("chart", "figure", allow_duplicate=True),
         Output("entity-filter", "options"),
         Output("entity-filter", "value"),
-        Output("control-state", "data"),
+        Output("control-state", "data", allow_duplicate=True),
         Output("spool-state", "data", allow_duplicate=True),
         Input("entity-filter", "value"),
         Input("entity-sort", "value"),
-        Input("chart", "clickData"),
-        Input("chart", "relayoutData"),
         Input("reset-view", "n_clicks"),
         State("session-state", "data"),
         State("log-state", "data"),
@@ -638,16 +718,11 @@ def _register_callbacks(app: dash.Dash) -> None:
         State("spool-state", "data"),
         prevent_initial_call=True,
     )
-    def controls(
-        selected, sort_key, click_data, relayout, _reset, stored, log, control_state, spool
-    ):
-        """Thin wrapper over `control_step`.
+    def controls(selected, sort_key, _reset, stored, log, control_state, spool):
+        """Thin wrapper over `control_step` for the controls above the chart.
 
         Interactive condition only: the static condition renders none of these components, so this
         callback has nothing to fire on there.
-
-        Passes the **prop id**, not `triggered_id`: the chart raises both `clickData` and
-        `relayoutData`, and the component id alone cannot separate a zoom from a stale click.
         """
         fired = callback_context.triggered
         return control_step(
@@ -657,19 +732,59 @@ def _register_callbacks(app: dash.Dash) -> None:
             control_state,
             selected=selected,
             sort_key=sort_key,
+            spool=spool,
+        )
+
+    # The chart's own events, in a callback of their own. The chart is rendered in BOTH conditions,
+    # so everything this callback touches must be too: were it wired to the interactive-only
+    # controls, the renderer would refuse it on every static screen with a console ReferenceError.
+    # Its Inputs are on every task screen and its States and other Outputs are in the base layout.
+    @app.callback(
+        Output("chart", "figure", allow_duplicate=True),
+        Output("control-state", "data", allow_duplicate=True),
+        Output("spool-state", "data", allow_duplicate=True),
+        Input("chart", "clickData"),
+        Input("chart", "relayoutData"),
+        State("session-state", "data"),
+        State("log-state", "data"),
+        State("control-state", "data"),
+        State("spool-state", "data"),
+        prevent_initial_call=True,
+    )
+    def chart_interaction(click_data, relayout, stored, log, control_state, spool):
+        """Thin wrapper over `control_step` for clicks and zooms on the chart itself.
+
+        Passes the **prop id**, not `triggered_id`: the chart raises both `clickData` and
+        `relayoutData`, and the component id alone cannot separate a zoom from a stale click.
+        """
+        fired = callback_context.triggered
+        figure, _options, _value, control, spool_out = control_step(
+            fired[0]["prop_id"] if fired else None,
+            stored,
+            log,
+            control_state,
             click_data=click_data,
             relayout=relayout,
             spool=spool,
         )
+        return figure, control, spool_out
 
     # Stamps the browser clock when a screen appears. Clientside so it never touches the server
     # clock, which would include network and cold-start time.
     # The origin travels with the reading: a reload restarts performance.now() at zero, and without
     # the origin a post-reload stamp is indistinguishable from a genuine one.
+    #
+    # It stamps a screen ONCE. A reload re-renders the same screen, and restamping it then would
+    # measure from the reload -- a plausible, wrong undercount, which is exactly what happened
+    # before this guard. Keeping the first stamp keeps its old origin, so `_elapsed` sees two
+    # origins and records the duration absent and flagged `clock_reset`, as study-design section 6
+    # says it must.
     app.clientside_callback(
         CLOCK_JS,
         Output("task-clock", "data"),
         Input("page", "children"),
+        State("session-state", "data"),
+        State("task-clock", "data"),
     )
 
     # Stamps the browser clock when Submit is pressed, and *this* is what triggers the server
@@ -701,6 +816,24 @@ def _register_callbacks(app: dash.Dash) -> None:
         prevent_initial_call=True,
     )
 
+    # Continue gets the same guard as Submit. A double-click sent two registrations for one ID,
+    # and before `db.register_participant` looked the ID up first, the second burned a sequence
+    # number and skipped the next participant's counterbalancing cell. The lookup is the fix; this
+    # stops the duplicate request being sent at all. Re-enabled by a refusal or the watchdog.
+    app.clientside_callback(
+        PARTICIPANT_DISABLE_JS,
+        Output("participant-button", "disabled"),
+        Input("participant-button", "n_clicks"),
+        Input("participant-input", "n_submit"),
+        prevent_initial_call=True,
+    )
+    app.clientside_callback(
+        PARTICIPANT_ENABLE_JS,
+        Output("participant-button", "disabled", allow_duplicate=True),
+        Input("flow-error", "children"),
+        prevent_initial_call=True,
+    )
+
     app.clientside_callback(
         CONSENT_CLOCK_JS,
         Output("consent-clock", "data"),
@@ -713,8 +846,15 @@ def _register_callbacks(app: dash.Dash) -> None:
 #
 # Module constants so tests can assert on them; nothing in the suite runs a browser.
 
-CLOCK_JS = """function(_) {
-    return {t: window.performance.now(), origin: window.performance.timeOrigin};
+# `screen` names what is on screen. `session-state` is written by the same response that wrote
+# `page`, so it already describes the new screen when this runs.
+CLOCK_JS = """function(_, session, previous) {
+    var s = session || {};
+    var screen = [s.participant_id, s.condition_index, s.stage, s.task_index].join("/");
+    if (previous && previous.screen === screen) {
+        return window.dash_clientside.no_update;
+    }
+    return {t: window.performance.now(), origin: window.performance.timeOrigin, screen: screen};
 }"""
 
 SUBMIT_CLOCK_JS = """function(n) {
@@ -734,6 +874,21 @@ SUBMIT_DISABLE_JS = """function(n) {
 }"""
 
 SUBMIT_ENABLE_JS = """function(message) {
+    return message ? false : window.dash_clientside.no_update;
+}"""
+
+# The watchdog is longer than Submit's: assignment retries under the FULL policy before refusing,
+# which took ~11 s against an unreachable database (an 8 s budget, plus a 5 s connect attempt that
+# starts just inside it). The refusal re-enables the button; this only covers a lost response.
+PARTICIPANT_DISABLE_JS = """function(n, nSubmit) {
+    if (!n && !nSubmit) { return window.dash_clientside.no_update; }
+    window.setTimeout(function () {
+        window.dash_clientside.set_props("participant-button", {disabled: false});
+    }, 25000);
+    return true;
+}"""
+
+PARTICIPANT_ENABLE_JS = """function(message) {
     return message ? false : window.dash_clientside.no_update;
 }"""
 

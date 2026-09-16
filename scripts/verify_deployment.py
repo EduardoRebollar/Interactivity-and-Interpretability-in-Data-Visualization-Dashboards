@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import sys
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -46,6 +47,21 @@ def verify() -> None:
     # A unique id so a failed earlier run cannot collide, and so cleanup is unambiguous.
     participant = f"__verify_{uuid.uuid4().hex[:8]}"
     partner = f"__verify_{uuid.uuid4().hex[:8]}"
+    third = f"__verify_{uuid.uuid4().hex[:8]}"
+    try:
+        _verify(participant, partner, third)
+    finally:
+        # Always, pass or fail. A failed check used to return before cleanup and leave synthetic
+        # participants and events in the database that holds the real data.
+        try:
+            for synthetic in (participant, partner, third):
+                db.delete_participant(synthetic)
+            print("  cleanup: synthetic participants removed")
+        except db.DatabaseError as exc:
+            print(f"  cleanup FAILED, remove {participant}, {partner}, {third} by hand: {exc}")
+
+
+def _verify(participant: str, partner: str, third: str) -> None:
 
     print("1. Schema")
     db.init_schema()
@@ -79,6 +95,13 @@ def verify() -> None:
         repeat == (seq_a, cond_a, form_a),
         "a returning participant must not be re-randomised",
     )
+    db.register_participant(participant)
+    seq_c, _cond_c, _form_c = db.register_participant(third)
+    _check(
+        "re-registering does not consume a sequence number",
+        seq_c == seq_b + 1,
+        f"{seq_b} then {seq_c}: a repeat registration skipped the next participant's cell",
+    )
 
     print("3. A full synthetic session")
     written = 0
@@ -110,7 +133,8 @@ def verify() -> None:
         log.rate_load(7, client_elapsed_ms=12000.0)
         log.event("condition_end", interactive=interactive, condition_order=order)
         log.close()
-        written += 9
+        # session_start (written when the logger opens), the seven above, and session_end.
+        written += 10
     print(f"  wrote {written} events across both conditions")
 
     print("4. Reading it back")
@@ -184,10 +208,21 @@ def verify() -> None:
 
     print("6. Cleanup")
     removed_events, removed_participants = db.delete_participant(participant)
-    db.delete_participant(partner)
     _check("events removed", removed_events == written, f"removed {removed_events}")
     _check("participant removed", removed_participants == 1)
     _check("nothing left behind", db.fetch_events(participant) == [])
+
+    print("7. Timestamps")
+    stamped = datetime(2026, 9, 16, 10, 0, tzinfo=UTC)
+    record = {**dict(events[0]), "event_uid": str(uuid.uuid4()), "server_ts": stamped.isoformat()}
+    record["event"] = "view_change"
+    db.insert_event(record)
+    (stored,) = db.fetch_events(participant)
+    _check(
+        "server_ts is the record's own time, not the insert time",
+        stored["server_ts"] == stamped,
+        f"stored {stored['server_ts'].isoformat()} -- a replayed event would carry its replay time",
+    )
 
 
 def main() -> int:

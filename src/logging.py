@@ -59,13 +59,17 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v5 (2026-09-16): the record shape is unchanged, but what Postgres stores in `server_ts` is not.
+# It is now the record's own creation time; under v4 it was the INSERT time, so an event spooled
+# through an outage carried its replay time. See `db.insert_event`.
+#
 # v4 (2026-09-15): event_uid, the consent and sink_recovered events, duration_invalid. See the
 # module docstring.
 #
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

@@ -38,14 +38,24 @@ MUTED_STYLE = {"color": config.TEXT_MUTED, "fontSize": f"{config.FONT_SIZE_AXIS}
 
 
 def chart(entities: list[str], vaccine: str, interactive: bool, element_id: str = "chart"):
-    """The coverage chart. The figure is condition-independent; only the config differs."""
-    return dcc.Graph(
-        id=element_id,
-        figure=figures.build_figure(entities, vaccine),
-        config=figures.graph_config(interactive),
-        # Keeps the rendered size identical across conditions rather than letting the
-        # modebar's presence shift the layout.
-        style={"height": f"{config.CHART_HEIGHT}px"},
+    """The coverage chart. The figure is condition-independent; only the config differs.
+
+    Wrapped in a container that holds the chart's height before Plotly has loaded. `dcc.Graph`
+    loads Plotly on demand and renders at zero height until it arrives, so without the wrapper the
+    answers and Submit jumped 520 px down the page while a participant might be clicking them.
+    `docs/visual-spec.md` section 5.
+    """
+    height = f"{config.CHART_HEIGHT}px"
+    return html.Div(
+        dcc.Graph(
+            id=element_id,
+            figure=figures.build_figure(entities, vaccine),
+            config=figures.graph_config(interactive),
+            # Keeps the rendered size identical across conditions rather than letting the
+            # modebar's presence shift the layout.
+            style={"height": height},
+        ),
+        style={"height": height},
     )
 
 
@@ -294,9 +304,10 @@ def consent_screen(text: str) -> html.Div:
 def participant_screen() -> html.Div:
     return page(
         heading("Participant ID"),
+        # Resume is not implemented, so this must not promise it. docs/study-design.md section 8.
         html.P(
-            "Enter the ID you were given. If you are returning to finish a session, enter the same "
-            "ID and you will continue where the study left off.",
+            "Enter the ID you were given. Please complete the study in one sitting, in this tab "
+            "— closing it ends your session.",
             style=PROMPT_STYLE,
         ),
         dcc.Input(
@@ -381,19 +392,12 @@ def task_screen(
     # nothing in their place. The CHART is identical either way: at first render every series is
     # shown, so both conditions open on the same picture.
     if interactive:
-        children += [
-            # Recreated with every task render, which is what resets filtering, sorting and
-            # isolation between tasks — no task inherits the previous one's view.
-            dcc.Store(
-                id="control-state",
-                data={
-                    "selected": filterable(list(task.entities)),
-                    "sort": "listed",
-                    "isolated": None,
-                },
-            ),
-            entity_controls(task, sort_key="listed", selected=filterable(list(task.entities))),
-        ]
+        # Rendered fresh with every task. The view they act on lives in the app's `control-state`
+        # store, which `app.control_step` keys to the task, so no task inherits the previous one's
+        # filtering, sorting or isolation.
+        children.append(
+            entity_controls(task, sort_key="listed", selected=filterable(list(task.entities)))
+        )
 
     children.append(chart(list(task.entities), task.vaccine, interactive))
 
