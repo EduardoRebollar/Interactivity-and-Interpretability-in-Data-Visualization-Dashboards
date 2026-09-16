@@ -21,20 +21,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from analysis import exclusions, keys, reshape  # noqa: E402
+from analysis import exclusions, keys, reshape, sources  # noqa: E402
 from analysis import report as study_report  # noqa: E402
 from src import config, db  # noqa: E402
-from src import logging as study_logging  # noqa: E402
 
 DERIVED_DIR = config.STUDY_LOGS_DIR / "derived"
-
-
-def load_records(events_csv: Path | None) -> tuple[list[dict], str]:
-    if events_csv is not None:
-        return reshape.read_export(events_csv), str(events_csv)
-    if db.configured():
-        return db.fetch_events(), "database"
-    return study_logging.read_all(), f"JSONL under {config.STUDY_LOGS_DIR}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -51,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        records, source = load_records(args.events)
+        records, source = sources.load_records(args.events)
         events = reshape.events_frame(records)
         tasks = reshape.tidy_tasks(events)
         conditions = reshape.tidy_conditions(events, tasks)

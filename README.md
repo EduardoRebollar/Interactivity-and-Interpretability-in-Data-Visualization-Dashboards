@@ -115,6 +115,30 @@ uv run python scripts/export_logs.py --participant P07
 
 Reads from Postgres when `DATABASE_URL` is set and from local JSONL sessions otherwise.
 
+### Viewing collected data
+
+```bash
+uv run python scripts/view_data.py                          # local JSONL sessions
+uv run --env-file .env.local python scripts/view_data.py    # Neon
+uv run python scripts/view_data.py --events data/study_logs/events.csv
+```
+
+Opens a local dashboard at http://127.0.0.1:8051. It has four tabs:
+
+- **Health:** collection checks (manipulation check, consent, duplicate answers, unfinished
+  sessions, outages, schema version, answer key) and the 2×2 cell balance.
+- **Participants:** progress, Paas and accuracy per condition. Select a row to see each answer and
+  the session's event timeline.
+- **Events:** every raw event, with filtering.
+- **Summary:** the §7 report, plus CSV downloads in the `export_logs.py` / `score_study.py`
+  formats.
+
+It is read-only and serves on localhost only. It never deploys, because it lives in `analysis/`
+with the answer key. Justifications are hidden unless you tick the box, since reading them beside
+their condition breaks the blind coding in §7. The downloads always include them. Data loads when
+the page opens and again when you press Reload; the page doesn't poll, so it won't keep Neon
+awake.
+
 ### Scoring
 
 Offline, against the pre-registration in `docs/study-design.md` §7. Everything below writes under

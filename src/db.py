@@ -251,6 +251,20 @@ def fetch_events(participant_id: str | None = None) -> list[dict[str, Any]]:
         return [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
 
 
+def fetch_participants() -> list[dict[str, Any]]:
+    """Registered participants in assignment order. Read-only; for the local data viewer.
+
+    A participant registered here with no events dropped out between the ID screen and the
+    instructions, which the events table alone cannot show.
+    """
+    with connect() as connection:
+        cursor = connection.execute(
+            "SELECT participant_id, seq, created_at FROM participants ORDER BY seq"
+        )
+        columns = [description[0] for description in cursor.description]
+        return [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
+
+
 def participant_count() -> int:
     with connect() as connection:
         row = connection.execute("SELECT count(*) FROM participants").fetchone()

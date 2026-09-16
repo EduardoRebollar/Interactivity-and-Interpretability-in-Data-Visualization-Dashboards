@@ -248,6 +248,9 @@ analysis/               # offline scoring — NEVER ships; pandas allowed except
   exclusions.py         # the §7 rules, marked not dropped, each separately reportable
   coding.py             # RQ2 blind coding sheets, stratified double-coding sample, Cohen's kappa
   report.py             # the descriptive numbers §7 asks for, nothing inferential
+  sources.py            # where events are read from: CSV export, Postgres, or JSONL
+  viewer_data.py        # the data viewer's checks and tables; never raises on broken data
+  viewer_app.py         # the data viewer's Dash layout; localhost only, justifications masked
 scripts/
   download_data.py      # fetches from Our World in Data
   export_deploy_data.py # parquet -> data/deploy/coverage.csv
@@ -257,6 +260,7 @@ scripts/
   derive_keys.py        # print the derived answer key; exits 1 if it disagrees with §4
   score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
   code_justifications.py # blind sheets, kappa, reasoning depth -> data/study_logs/coding/
+  view_data.py          # local data viewer on 127.0.0.1:8051; read-only
   check_contrast.py     # WCAG contrast report for the palette
   check_bundle.py       # serves the app from requirements.txt alone, in a throwaway venv
   verify_deployment.py  # round-trips a synthetic session through the real database, then deletes it
@@ -272,6 +276,7 @@ tests/
   test_recover_spool.py # replay is dry by default, ordered, idempotent, never deletes
   test_scoring.py       # derived keys match §4; each rule refuses an ill-posed item; key never ships
   test_analysis.py      # real app sessions scored end to end; exclusions; coding harness; kappa
+  test_viewer.py        # each health check trips on its fault; masking; download re-scores
   test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
 ```
 
@@ -415,6 +420,9 @@ context cheap and the reports as long as they need to be.
 - 2026-09-16 — Schema v5: Postgres `server_ts` is the record's creation time, not the insert time.
 - 2026-09-16 — The chart's 520 px is reserved before Plotly loads, in both conditions; the practice
   screen used to jump 520 px under the cursor. `visual-spec.md` §5.
+- 2026-09-16 — Collected data is viewed in a **local** Dash viewer (`scripts/view_data.py`), not an
+  admin page on Vercel: correctness needs the answer key, which must not ship. Justifications are
+  masked by default to protect the §7 coding blind.
 - 2026-09-16 — Resume is not built; the ID screen now asks for one sitting in one tab instead of
   promising it. Enter in the ID box submits it. `study-design.md` §8.
 
