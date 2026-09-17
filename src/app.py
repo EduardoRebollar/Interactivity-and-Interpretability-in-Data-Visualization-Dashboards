@@ -34,7 +34,7 @@ from dash.exceptions import PreventUpdate
 
 from src import config, db, figures, flow, layout, tasks
 from src.flow import SessionState, Stage
-from src.logging import FULL, NO_RETRY, RetryPolicy, StudyLogger, call_with_retry
+from src.logging import FULL, NO_RETRY, LogError, RetryPolicy, StudyLogger, call_with_retry
 
 # Consent wording lives in docs/study-design.md section 9 and is a DRAFT until IRB approves it.
 CONSENT_TEXT = """\
@@ -55,6 +55,12 @@ DRAFT CONSENT TEXT - pending IRB review. Do not run participants on this wording
 # Recorded on every consent event, so a change to the wording mid-study shows up in the data rather
 # than depending on anyone's memory of when the text was edited.
 CONSENT_VERSION = hashlib.sha256(CONSENT_TEXT.encode("utf-8")).hexdigest()[:16]
+
+# Shown when responses cannot be saved at all, as opposed to a database that is briefly unreachable.
+UNSAVEABLE = (
+    "The study cannot save responses right now, so it cannot continue. "
+    "Please contact the researcher."
+)
 
 
 def create_app() -> dash.Dash:
@@ -349,6 +355,12 @@ def step(
         # participant retry, rather than advancing on a half-applied step or failing silently.
         print(f"[study] database error in step {triggered!r}: {exc}", file=sys.stderr)
         return refuse("Something went wrong saving that. Please wait a moment and try again.")
+    except (LogError, OSError) as exc:
+        # The log sink itself could not be opened or written: no DATABASE_URL on a deployment, or a
+        # JSONL file that cannot be created. Uncaught, this was an HTTP 500 -- a button that did
+        # nothing and said nothing. Retrying will not help, so the message does not suggest it.
+        print(f"[study] logging failed in step {triggered!r}: {exc}", file=sys.stderr)
+        return refuse(UNSAVEABLE)
 
     log_state = _open_task(state, log_state, log_dir, carried)
     return state.to_dict(), log_state, render(state), "", carried.output()
@@ -372,7 +384,7 @@ def _open_task(
     logger = _logger(state, {**log_state, "task_id": None}, log_dir, spool)
     try:
         logger.start_task(task.task_id)
-    except db.DatabaseError as exc:
+    except (db.DatabaseError, LogError, OSError) as exc:
         # The answer that got the participant here is already written. Leave the task unopened
         # rather than fail the whole step: the matching task_end is then skipped too, so the record
         # stays consistently bracketed instead of half-open.

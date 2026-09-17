@@ -701,6 +701,37 @@ def test_an_invalid_transition_becomes_a_message_not_a_crash(tmp_path):
     assert session is no_update
 
 
+def test_a_log_that_cannot_be_written_is_a_message_not_a_dead_button(tmp_path, monkeypatch):
+    """Found in a browser: on a read-only filesystem, Begin raised OSError and returned HTTP 500.
+
+    The renderer shows nothing for a 500, so the participant pressed a button that did nothing.
+    """
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+    def read_only(*_args, **_kwargs):
+        raise OSError(30, "Read-only file system")
+
+    monkeypatch.setattr("src.logging.JsonlSink.__init__", read_only)
+    session, _log, screen, error, _spool = app.step(
+        "begin-button", _state(Stage.INSTRUCTIONS).to_dict(), {}, log_dir=tmp_path
+    )
+    assert error == app.UNSAVEABLE
+    assert session is no_update, "the session must not advance past a log that was never written"
+    assert screen is no_update
+
+
+def test_a_deployment_without_a_database_refuses_instead_of_losing_the_data(monkeypatch):
+    """On Vercel a JSONL file is unwritable or lost with the instance, so it is never the sink."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("VERCEL", "1")
+    session, _log, screen, error, _spool = app.step(
+        "begin-button", _state(Stage.INSTRUCTIONS).to_dict(), {}
+    )
+    assert error == app.UNSAVEABLE
+    assert session is no_update
+    assert screen is no_update
+
+
 # --- Timing ---------------------------------------------------------------------------------------
 
 

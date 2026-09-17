@@ -474,6 +474,11 @@ class StudyLogger:
                 spool_path=spool_file(self.participant_id, self.condition, self.session_id),
                 policy=policy,
             )
+        if os.environ.get("VERCEL") and log_dir is None:
+            # Vercel's filesystem is read-only outside /tmp, and /tmp is per-instance and lost. A
+            # JSONL file there would either crash the request or silently discard the study data, so
+            # a deployment without DATABASE_URL is refused outright.
+            raise LogError("DATABASE_URL is not set on this deployment; no event could be saved")
         directory = log_dir or config.STUDY_LOGS_DIR
         short = self.session_id.replace("-", "")[:12]
         return JsonlSink(directory / f"{self.participant_id}_{self.condition}_{short}.jsonl")
