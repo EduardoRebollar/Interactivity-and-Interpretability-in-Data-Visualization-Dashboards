@@ -3,7 +3,7 @@
   "functions": {
     "src/app.py": {
       "maxDuration": 30,
-      "excludeFiles": "{tests/**,docs/**,scripts/**,analysis/**,data/raw/**,data/processed/**,data/study_logs/**,.ruff_cache/**,.pytest_cache/**,**/__pycache__/**}"
+      "excludeFiles": "{tests/**,docs/**,scripts/**,analysis/**,data/raw/**,data/processed/**,data/study_logs/**,data/consent/**,irb/**,.ruff_cache/**,.pytest_cache/**,**/__pycache__/**}"
     }
   }
 }

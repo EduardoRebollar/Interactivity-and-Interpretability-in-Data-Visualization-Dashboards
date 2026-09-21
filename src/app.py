@@ -22,7 +22,6 @@ handed back to the sink on the next callback, where it is replayed before anythi
 from __future__ import annotations
 
 import argparse
-import hashlib
 import os
 import sys
 from pathlib import Path
@@ -32,29 +31,20 @@ import dash
 from dash import Input, Output, State, callback_context, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 
-from src import config, db, figures, flow, layout, tasks
+from src import config, consent, db, figures, flow, layout, tasks
 from src.flow import SessionState, Stage
 from src.logging import FULL, NO_RETRY, LogError, RetryPolicy, StudyLogger, call_with_retry
 
-# Consent wording lives in docs/study-design.md section 9 and is a DRAFT until IRB approves it.
-CONSENT_TEXT = """\
-You are invited to take part in a study run by a senior Computer Science student at Occidental \
-College. It takes about 20-25 minutes.
+# The consent form's wording, and its hash, live in src/consent.py (docs/study-design.md section 9).
+CONSENT_TEXT = consent.CONSENT_TEXT
+CONSENT_VERSION = consent.CONSENT_VERSION
 
-You will read charts of childhood vaccination coverage and answer questions about them. There are \
-no right-or-wrong consequences for you; we are studying the charts, not you.
-
-What is recorded: your answers, how long each task takes, and how you interact with the charts. A \
-participant ID that you enter, which is not linked to your name. No personal information is \
-collected.
-
-Voluntary: you may stop at any time by closing the tab, with no consequence.
-
-DRAFT CONSENT TEXT - pending IRB review. Do not run participants on this wording."""
-
-# Recorded on every consent event, so a change to the wording mid-study shows up in the data rather
-# than depending on anyone's memory of when the text was edited.
-CONSENT_VERSION = hashlib.sha256(CONSENT_TEXT.encode("utf-8")).hexdigest()[:16]
+# Shown when the signed consent could not be stored. The participant stays on the consent screen:
+# the session must not continue on a consent that was not recorded (IRB form item 12B).
+CONSENT_UNSAVED = (
+    "We could not record your consent. Please wait a moment and press "
+    '"I agree to participate" again.'
+)
 
 # Shown when responses cannot be saved at all, as opposed to a database that is briefly unreachable.
 UNSAVEABLE = (
@@ -90,6 +80,18 @@ def create_app() -> dash.Dash:
             dcc.Store(id="submit-clock"),
             # The consent timestamp, stamped in the browser when "I agree" is pressed.
             dcc.Store(id="consent-clock"),
+            # The drawn signature, written by src/assets/signature.js. Memory, so a signature never
+            # outlives the page it was drawn on, and never sits in sessionStorage.
+            dcc.Store(id="signature-strokes"),
+            # The participant's own signed copy of the consent form, and the component that hands
+            # it to them. Memory: identifying, so it is not kept a moment longer than the page.
+            dcc.Store(id="consent-copy"),
+            dcc.Download(id="consent-download"),
+            # Continue on the demographics and survey screens. Like submit-clock: written only
+            # once the browser has confirmed any skipped questions; memory, so a reload cannot
+            # fire it.
+            dcc.Store(id="demographics-clock"),
+            dcc.Store(id="survey-clock"),
             # Events the database refused, kept in the browser until they can be replayed. Its own
             # store, not a key on log-state: both callbacks write it, and letting the controls
             # callback write log-state would let a slow click response overwrite the task
@@ -119,9 +121,13 @@ def render(state: SessionState) -> html.Div:
     stage without a screen fails the suite rather than a participant's session.
     """
     if state.stage is Stage.CONSENT:
-        return layout.consent_screen(CONSENT_TEXT)
+        return layout.consent_screen()
+    if state.stage is Stage.DECLINED:
+        return layout.declined_screen()
     if state.stage is Stage.PARTICIPANT_ID:
         return layout.participant_screen()
+    if state.stage is Stage.DEMOGRAPHICS:
+        return layout.demographics_screen()
     if state.stage is Stage.INSTRUCTIONS:
         # Practice precedes the first condition only; the second reaches this screen from the break.
         return layout.instructions_screen(
@@ -136,7 +142,7 @@ def render(state: SessionState) -> html.Div:
     if state.stage is Stage.BREAK:
         return layout.break_screen()
     if state.stage is Stage.COMPLETE:
-        return layout.complete_screen()
+        return layout.complete_screen(state.participant_id)
     if state.stage is Stage.TASK:
         items = tasks.for_form(flow.current_form(state))
         task = flow.current_task(state, items)
@@ -222,18 +228,31 @@ def step(
     answer: str | None = None,
     justification: str | None = None,
     load: int | None = None,
+    survey: dict[str, int | None] | None = None,
+    demographics: dict[str, str | None] | None = None,
     duration_ms: float | None = None,
     duration_invalid: str | None = None,
     consented_at: str | None = None,
+    consent_record: dict[str, Any] | None = None,
     spool: dict[str, Any] | None = None,
     log_dir: Path | None = None,
+    consent_dir: Path | None = None,
 ) -> tuple[Any, Any, Any, str, Any]:
     """Advance the session one click.
 
     Returns (session state, log state, screen, error message, spool). Any of them may be
     `dash.no_update`, which leaves that store untouched — that is how a validation failure
     re-renders nothing and only fills the error slot.
+
+    **Any question may be skipped** (IRB form item 10). The browser asks the participant to confirm
+    before a skip reaches here, so a missing answer, justification or rating is recorded as absent,
+    never refused. Only consent and the participant ID are required.
+
+    `consent_dir` is for tests, like `log_dir`; when only `log_dir` is given, consent records go to
+    a `consent/` folder inside it, never beside the event files.
     """
+    if consent_dir is None and log_dir is not None:
+        consent_dir = log_dir / "consent"
     state = SessionState.from_dict(stored)
     log_state = dict(log_state or {})
     carried = _Spool(spool)
@@ -248,13 +267,34 @@ def step(
                 # The clock is what triggers this branch, so a missing value means the browser
                 # failed to stamp it. Consent without a time is not a record of consent.
                 return refuse("Please press the button again.")
-            state = flow.give_consent(state, consented_at)
+            message = consent.problem(consent_record)
+            if message:
+                return refuse(message)
+            # Transition first: a stale tab that is no longer on the consent screen must be refused
+            # before a signed record is stored for it.
+            state = flow.give_consent(state, consented_at, consent_record["signature_method"])
+            # The signed record goes to its own store, never the event log, and it must be stored
+            # before the participant moves on. Retried, because no task clock runs here.
+            try:
+                call_with_retry(lambda: consent.save(consent_record, consent_dir), FULL)
+            except (db.DatabaseError, consent.ConsentError, OSError) as exc:
+                print(f"[study] consent could not be stored: {exc}", file=sys.stderr)
+                return refuse(CONSENT_UNSAVED)
+
+        elif triggered == "decline-button":
+            state = flow.decline(state)
+
+        elif triggered == "reconsider-button":
+            state = flow.reconsider(state)
 
         elif triggered == "participant-button":
             if not (participant_id or "").strip():
                 return refuse("Please enter your participant ID.")
             condition, form = _assign(participant_id.strip())
             state = flow.set_participant(state, participant_id.strip(), condition, form)
+
+        elif triggered == "demographics-clock":
+            state = flow.submit_demographics(state, _demographic_answers(demographics))
 
         elif triggered == "begin-button":
             # Leaving the instructions starts the condition, practice included — so the log session
@@ -268,7 +308,10 @@ def step(
             if state.condition_index == 0 and state.consent_at:
                 # Once per participant, first in their record. It could not be written at the
                 # consent click itself, before any participant ID existed.
-                logger.record_consent(state.consent_at, CONSENT_VERSION)
+                logger.record_consent(state.consent_at, CONSENT_VERSION, state.consent_method)
+            if state.condition_index == 0 and state.demographics is not None:
+                # Held since the demographics screen, for the same reason.
+                logger.record_demographics(state.demographics)
             logger.event(
                 "condition_start",
                 interactive=flow.is_interactive(state),
@@ -281,11 +324,8 @@ def step(
             state = flow.resume_after_break(state)
 
         elif triggered == "submit-clock":
-            if not answer:
-                return refuse("Please choose an answer.")
-            if not (justification or "").strip():
-                return refuse("Please say briefly how you decided.")
-
+            # No refusal for a blank answer or justification: the browser has already asked the
+            # participant to confirm the skip, and `submit_answer` records it as such.
             on_screen = _active_task(state)
             if on_screen is None:
                 raise flow.FlowError(f"No task to answer at stage {state.stage.value}")
@@ -304,7 +344,7 @@ def step(
                 logger.submit_answer(
                     tasks.PRACTICE.task_id,
                     answer=answer,
-                    justification=justification.strip(),
+                    justification=justification,
                     duration_ms=duration_ms,
                     duration_invalid=duration_invalid,
                 )
@@ -315,7 +355,7 @@ def step(
                 logger.submit_answer(
                     task.task_id,
                     answer=answer,
-                    justification=justification.strip(),
+                    justification=justification,
                     duration_ms=duration_ms,
                     duration_invalid=duration_invalid,
                 )
@@ -328,13 +368,19 @@ def step(
             log_state["session_id"] = logger.session_id
             log_state["answered"] = [*log_state.get("answered", []), answered_id]
 
-        elif triggered == "load-button":
-            if load is None:
-                return refuse("Please choose a number.")
+        elif triggered == "survey-clock":
             # `condition_index` advances in `flow.submit_load`, below — so the state here still
-            # names the condition being rated, and no rewind is needed to find it.
+            # names the condition being rated, and no rewind is needed to find it. A None rating
+            # is a confirmed skip.
+            if state.stage is not Stage.LOAD:
+                raise flow.FlowError(f"Expected stage load, got {state.stage.value}")
+            # Read every value before writing anything, so a malformed one refuses the step
+            # without leaving half the survey in the log.
+            paas = _rating(load)
+            ratings = {key: _rating((survey or {}).get(key)) for key in tasks.LIKERT_ITEMS}
             logger = _logger(state, log_state, log_dir, carried)
-            logger.rate_load(int(load))
+            logger.rate_load(paas)
+            logger.rate_survey(ratings)
             logger.event(
                 "condition_end",
                 interactive=flow.is_interactive(state),
@@ -349,6 +395,10 @@ def step(
 
     except flow.FlowError as exc:
         return refuse(str(exc))
+    except (ValueError, TypeError) as exc:
+        # A rating that is not a number cannot come from the radio buttons. Refuse, never crash.
+        print(f"[study] malformed input in step {triggered!r}: {exc}", file=sys.stderr)
+        return refuse("That answer could not be read. Please choose again.")
     except db.DatabaseError as exc:
         # A safety net, not the expected path: event writes spool rather than raise, and assignment
         # failures become FlowErrors in `_assign`. If something still escapes, say so and let the
@@ -364,6 +414,60 @@ def step(
 
     log_state = _open_task(state, log_state, log_dir, carried)
     return state.to_dict(), log_state, render(state), "", carried.output()
+
+
+def consent_step(
+    consented_at: str | None,
+    name: str | None,
+    signed_date: str | None,
+    paper: list[str] | None,
+    strokes: Any,
+    stored: dict[str, Any] | None,
+    log_state: dict[str, Any] | None,
+    spool: dict[str, Any] | None,
+    *,
+    consent_dir: Path | None = None,
+) -> tuple[Any, ...]:
+    """ "I agree to participate": build the signed record, store it, advance.
+
+    Returns `step`'s five outputs plus the participant's signed copy (HTML), which is `no_update`
+    unless the record was actually stored and the session moved on.
+    """
+    record = consent.build_record(
+        consented_at, name, signed_date, strokes, paper=bool(paper and "paper" in paper)
+    )
+    outputs = step(
+        "consent-clock",
+        stored,
+        log_state,
+        consented_at=consented_at,
+        consent_record=record,
+        spool=spool,
+        consent_dir=consent_dir,
+    )
+    advanced = outputs[0] is not no_update
+    return (*outputs, consent.copy_html(record) if advanced else no_update)
+
+
+def _rating(value: Any) -> int | None:
+    """A radio value as a scale point. None stays None: that is a skip, not a zero."""
+    return None if value is None else int(value)
+
+
+def _demographic_answers(raw: dict[str, Any] | None) -> dict[str, str | None]:
+    """Every demographic key, each an offered option or None (skipped).
+
+    A value that is not one of the options cannot come from the radio buttons, so it is refused
+    rather than stored: this is study data, and an unrecognised category cannot be analysed.
+    """
+    raw = raw or {}
+    answers: dict[str, str | None] = {}
+    for key, (_question, options) in tasks.DEMOGRAPHIC_ITEMS.items():
+        value = raw.get(key)
+        if value is not None and value not in options:
+            raise flow.FlowError(f"Unrecognised answer for {key}. Please choose again.")
+        answers[key] = value
+    return answers
 
 
 def _open_task(
@@ -631,14 +735,46 @@ def _register_callbacks(app: dash.Dash) -> None:
 
     # Triggered by the consent CLOCK, like Submit below, so the browser timestamp is taken before
     # the request leaves and is guaranteed to be present.
+    #
+    # Also writes the participant's signed copy into `consent-copy`, for the download button on the
+    # next screen -- only once the record has been stored and the session has advanced.
     @app.callback(
         *_step_outputs(),
+        Output("consent-copy", "data"),
         Input("consent-clock", "data"),
+        State("consent-name", "value"),
+        State("consent-date", "value"),
+        State("consent-paper", "value"),
+        State("signature-strokes", "data"),
         *_session_states(),
         prevent_initial_call=True,
     )
-    def consent(consented_at, stored, log_state, spool):
-        return step("consent-clock", stored, log_state, consented_at=consented_at, spool=spool)
+    def agree(consented_at, name, signed_date, paper, strokes, stored, log_state, spool):
+        return consent_step(
+            consented_at, name, signed_date, paper, strokes, stored, log_state, spool
+        )
+
+    @app.callback(
+        *_step_outputs(),
+        Input("decline-button", "n_clicks"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def decline(n, stored, log_state, spool):
+        if not n:
+            raise PreventUpdate
+        return step("decline-button", stored, log_state, spool=spool)
+
+    @app.callback(
+        *_step_outputs(),
+        Input("reconsider-button", "n_clicks"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def reconsider(n, stored, log_state, spool):
+        if not n:
+            raise PreventUpdate
+        return step("reconsider-button", stored, log_state, spool=spool)
 
     # Continue, or Enter in the ID box: both on the ID screen, so both may be Inputs here.
     @app.callback(
@@ -655,6 +791,22 @@ def _register_callbacks(app: dash.Dash) -> None:
         return step(
             "participant-button", stored, log_state, participant_id=participant_id, spool=spool
         )
+
+    @app.callback(
+        *_step_outputs(),
+        Input("demographics-clock", "data"),
+        *[State(f"demo-{key}", "value") for key in tasks.DEMOGRAPHIC_ITEMS],
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def demographics(clock, *values):
+        if not clock:
+            raise PreventUpdate
+        answers = dict(
+            zip(tasks.DEMOGRAPHIC_ITEMS, values[: len(tasks.DEMOGRAPHIC_ITEMS)], strict=True)
+        )
+        stored, log_state, spool = values[len(tasks.DEMOGRAPHIC_ITEMS) :]
+        return step("demographics-clock", stored, log_state, demographics=answers, spool=spool)
 
     @app.callback(
         *_step_outputs(),
@@ -703,17 +855,21 @@ def _register_callbacks(app: dash.Dash) -> None:
             spool=spool,
         )
 
+    # Triggered by the survey CLOCK, which the browser writes only after confirming any skips.
     @app.callback(
         *_step_outputs(),
-        Input("load-button", "n_clicks"),
+        Input("survey-clock", "data"),
         State("load-input", "value"),
+        *[State(f"likert-{key}", "value") for key in tasks.LIKERT_ITEMS],
         *_session_states(),
         prevent_initial_call=True,
     )
-    def rate_load(n, load, stored, log_state, spool):
-        if not n:
+    def rate_survey(clock, load, *values):
+        if not clock:
             raise PreventUpdate
-        return step("load-button", stored, log_state, load=load, spool=spool)
+        ratings = dict(zip(tasks.LIKERT_ITEMS, values[: len(tasks.LIKERT_ITEMS)], strict=True))
+        stored, log_state, spool = values[len(tasks.LIKERT_ITEMS) :]
+        return step("survey-clock", stored, log_state, load=load, survey=ratings, spool=spool)
 
     @app.callback(
         Output("chart", "figure", allow_duplicate=True),
@@ -802,20 +958,57 @@ def _register_callbacks(app: dash.Dash) -> None:
     # Stamps the browser clock when Submit is pressed, and *this* is what triggers the server
     # callback above. Chaining that way means the timestamp is taken in the browser before the
     # request leaves, so no network or cold-start time can leak into the measurement.
+    #
+    # The same function asks the participant to confirm a skip, and disables Submit. One callback,
+    # not three: a cancelled skip must neither stamp the clock nor leave the button disabled, and
+    # two callbacks on one click could not agree on that. Disabling matters because two rapid clicks
+    # send two requests that both read the same pre-click session state, so no server-side check can
+    # tell them apart; stopping the second click in the browser is the only complete guard. The
+    # database's unique index is the backstop.
     app.clientside_callback(
-        SUBMIT_CLOCK_JS,
+        SUBMIT_JS,
         Output("submit-clock", "data"),
+        Output("submit-button", "disabled"),
         Input("submit-button", "n_clicks"),
+        State("answer-input", "value"),
+        State("justification-input", "value"),
         prevent_initial_call=True,
     )
 
-    # Disable Submit the moment it is pressed. Two rapid clicks send two requests that both read the
-    # same pre-click session state, so no server-side check can tell them apart; stopping the second
-    # click in the browser is the only complete guard. The database's unique index is the backstop.
+    # Continue on the demographics and survey screens: confirm any skips, then trigger the server.
+    # Disabled on the way, like Submit, so a double click cannot record the survey twice.
     app.clientside_callback(
-        SUBMIT_DISABLE_JS,
-        Output("submit-button", "disabled"),
-        Input("submit-button", "n_clicks"),
+        confirm_js("demographics-button"),
+        Output("demographics-clock", "data"),
+        Output("demographics-button", "disabled"),
+        Input("demographics-button", "n_clicks"),
+        *[State(f"demo-{key}", "value") for key in tasks.DEMOGRAPHIC_ITEMS],
+        prevent_initial_call=True,
+    )
+    app.clientside_callback(
+        confirm_js("load-button"),
+        Output("survey-clock", "data"),
+        Output("load-button", "disabled"),
+        Input("load-button", "n_clicks"),
+        State("load-input", "value"),
+        *[State(f"likert-{key}", "value") for key in tasks.LIKERT_ITEMS],
+        prevent_initial_call=True,
+    )
+    for button in ("demographics-button", "load-button"):
+        app.clientside_callback(
+            SUBMIT_ENABLE_JS,
+            Output(button, "disabled", allow_duplicate=True),
+            Input("flow-error", "children"),
+            prevent_initial_call=True,
+        )
+
+    # The participant's own signed copy of the consent form. Clientside: the copy is already in the
+    # browser, so it never needs to go back to the server.
+    app.clientside_callback(
+        COPY_DOWNLOAD_JS,
+        Output("consent-download", "data"),
+        Input("consent-copy-button", "n_clicks"),
+        State("consent-copy", "data"),
         prevent_initial_call=True,
     )
 
@@ -869,20 +1062,70 @@ CLOCK_JS = """function(_, session, previous) {
     return {t: window.performance.now(), origin: window.performance.timeOrigin, screen: screen};
 }"""
 
-SUBMIT_CLOCK_JS = """function(n) {
-    if (!n) { return window.dash_clientside.no_update; }
-    return {t: window.performance.now(), origin: window.performance.timeOrigin};
-}"""
-
+# Returns [submit-clock, submit-button.disabled].
+#
+# The stamp is taken at the click, BEFORE any skip popup: time spent reading the popup is not time
+# spent on the task. Cancelling the popup changes nothing -- no stamp, no disabled button -- and the
+# participant is back on the task. A skip is confirmed with the browser's own dialog, which is
+# keyboard-operable (CLAUDE.md accessibility baseline).
+#
 # The watchdog re-enables the button if no response ever arrives (a killed function, a dropped
 # connection), so a lost request can never strand a participant. By the time it fires on a
 # successful step the screen has been replaced, and re-enabling a fresh button is harmless.
-SUBMIT_DISABLE_JS = """function(n) {
-    if (!n) { return window.dash_clientside.no_update; }
+SUBMIT_JS = """function(n, answer, justification) {
+    var no = window.dash_clientside.no_update;
+    if (!n) { return [no, no]; }
+    var stamp = {t: window.performance.now(), origin: window.performance.timeOrigin};
+    var missing = [];
+    if (answer === null || answer === undefined || answer === "") {
+        missing.push("the multiple-choice question");
+    }
+    if (!justification || !String(justification).trim()) {
+        missing.push("how you decided");
+    }
+    if (missing.length && !window.confirm(
+        "You have not answered " + missing.join(" or ") + ". Continue without answering?"
+    )) {
+        return [no, no];
+    }
     window.setTimeout(function () {
         window.dash_clientside.set_props("submit-button", {disabled: false});
     }, 15000);
-    return true;
+    return [stamp, true];
+}"""
+
+
+def confirm_js(button: str) -> str:
+    """Continue on a questionnaire screen: confirm any skipped questions, then fire.
+
+    Returns [clock, button.disabled]. The State values follow `n` in the order the callback lists
+    them; any that is null or empty counts as skipped. The clock carries the time, so every press is
+    a distinct value -- the survey screen's button starts again at n_clicks 1 in the second
+    condition, and the store must not look unchanged.
+    """
+    return f"""function(n) {{
+    var no = window.dash_clientside.no_update;
+    if (!n) {{ return [no, no]; }}
+    var values = Array.prototype.slice.call(arguments, 1);
+    var skipped = values.filter(function (v) {{
+        return v === null || v === undefined || v === "";
+    }}).length;
+    if (skipped && !window.confirm(
+        "You have left " + skipped + (skipped === 1 ? " question" : " questions") +
+        " unanswered. Continue without answering?"
+    )) {{
+        return [no, no];
+    }}
+    window.setTimeout(function () {{
+        window.dash_clientside.set_props("{button}", {{disabled: false}});
+    }}, 15000);
+    return [{{n: n, skipped: skipped, at: Date.now()}}, true];
+}}"""
+
+
+COPY_DOWNLOAD_JS = """function(n, copy) {
+    if (!n || !copy) { return window.dash_clientside.no_update; }
+    return {content: copy, filename: "signed-consent-form.html", type: "text/html"};
 }"""
 
 SUBMIT_ENABLE_JS = """function(message) {
@@ -961,6 +1204,11 @@ def _assign(participant_id: str) -> tuple[str, str]:
             _seq, condition, form = call_with_retry(
                 lambda: db.register_participant(participant_id), FULL
             )
+        except db.WithdrawnParticipantError as exc:
+            # Their data was deleted at their request; a new session under the ID would undo that.
+            raise flow.FlowError(
+                "This participant ID can no longer be used. Please contact the researcher."
+            ) from exc
         except db.DatabaseError as exc:
             print(f"[study] assignment failed: {exc}", file=sys.stderr)
             raise flow.FlowError(

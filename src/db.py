@@ -66,7 +66,37 @@ CREATE UNIQUE INDEX IF NOT EXISTS study_events_event_uid_idx
 -- browser session state and a second tab has its own. A duplicate would also skip the next task.
 CREATE UNIQUE INDEX IF NOT EXISTS study_events_one_answer_per_task
     ON study_events (session_id, task_id) WHERE event = 'answer_submit';
+
+-- v6: a withdrawn participant keeps their registration row -- so the counterbalancing cell counts
+-- stay explainable and the ID cannot be reused -- but loses every event. See withdraw_participant.
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS withdrawn_at TIMESTAMPTZ;
+
+-- v6: signed consent. NO participant_id, deliberately: IRB form items 15 and 17 require signed
+-- consent and identifying information to be kept apart from the study data, so this table cannot
+-- be joined to study_events through any key. Exported and purged by scripts/export_consents.py.
+CREATE TABLE IF NOT EXISTS consent_records (
+    id                BIGSERIAL PRIMARY KEY,
+    record_uid        UUID NOT NULL UNIQUE,
+    consent_version   TEXT NOT NULL,
+    consented_at      TEXT NOT NULL,
+    printed_name      TEXT NOT NULL,
+    signed_date       TEXT NOT NULL,
+    signature_method  TEXT NOT NULL CHECK (signature_method IN ('drawn', 'paper')),
+    signature         JSONB,
+    received_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 """
+
+CONSENT_COLUMNS = (
+    "record_uid",
+    "consent_version",
+    "consented_at",
+    "printed_name",
+    "signed_date",
+    "signature_method",
+    "signature",
+    "received_at",
+)
 
 EVENT_COLUMNS = (
     "schema_version",
@@ -104,6 +134,13 @@ class TransientDatabaseError(DatabaseError):
     distinction exists for the retry loop in src/logging.py: retrying a constraint violation three
     times before spooling it would turn a code bug into silent data loss, and would spend the retry
     budget inside a participant's measured task window to do it.
+    """
+
+
+class WithdrawnParticipantError(DatabaseError):
+    """The ID belongs to a participant who withdrew. It must not start a new session.
+
+    A DatabaseError so existing handlers still catch it, but never transient: retrying cannot help.
     """
 
 
@@ -165,7 +202,7 @@ def assignment_for(seq: int) -> tuple[str, str]:
     return ASSIGNMENTS[seq % 4]
 
 
-_FIND_PARTICIPANT = "SELECT seq FROM participants WHERE participant_id = %s"
+_FIND_PARTICIPANT = "SELECT seq, withdrawn_at FROM participants WHERE participant_id = %s"
 
 
 def register_participant(participant_id: str) -> tuple[int, str, str]:
@@ -186,10 +223,13 @@ def register_participant(participant_id: str) -> tuple[int, str, str]:
     with connect(timeout=EVENT_CONNECT_TIMEOUT) as connection:
         row = connection.execute(_FIND_PARTICIPANT, (participant_id,)).fetchone()
 
+        if row is not None and row[1] is not None:
+            raise WithdrawnParticipantError(f"Participant {participant_id!r} has withdrawn")
+
         if row is None:
             row = connection.execute(
                 "INSERT INTO participants (participant_id) VALUES (%s) "
-                "ON CONFLICT (participant_id) DO NOTHING RETURNING seq",
+                "ON CONFLICT (participant_id) DO NOTHING RETURNING seq, NULL",
                 (participant_id,),
             ).fetchone()
 
@@ -259,7 +299,7 @@ def fetch_participants() -> list[dict[str, Any]]:
     """
     with connect() as connection:
         cursor = connection.execute(
-            "SELECT participant_id, seq, created_at FROM participants ORDER BY seq"
+            "SELECT participant_id, seq, created_at, withdrawn_at FROM participants ORDER BY seq"
         )
         columns = [description[0] for description in cursor.description]
         return [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
@@ -293,6 +333,71 @@ def column_names(table: str) -> set[str]:
             (table,),
         ).fetchall()
         return {row[0] for row in rows}
+
+
+def insert_consent(record: dict[str, Any]) -> int:
+    """Write one signed consent record (src/consent.py). Idempotent on `record_uid`.
+
+    A retry after a lost response must not store the same signature twice, hence ON CONFLICT.
+    """
+    values = [record.get(column) for column in CONSENT_COLUMNS]
+    values[CONSENT_COLUMNS.index("signature")] = Json(record.get("signature"))
+    placeholders = ", ".join(
+        "COALESCE(%s::timestamptz, now())" if column == "received_at" else "%s"
+        for column in CONSENT_COLUMNS
+    )
+    statement = (
+        f"INSERT INTO consent_records ({', '.join(CONSENT_COLUMNS)}) VALUES ({placeholders}) "
+        "ON CONFLICT (record_uid) DO NOTHING"
+    )
+    with connect(timeout=EVENT_CONNECT_TIMEOUT) as connection:
+        return connection.execute(statement, values).rowcount
+
+
+def fetch_consents() -> list[dict[str, Any]]:
+    """Every signed consent record, oldest first. For `scripts/export_consents.py` only."""
+    with connect() as connection:
+        cursor = connection.execute(
+            f"SELECT {', '.join(CONSENT_COLUMNS)} FROM consent_records ORDER BY id"
+        )
+        columns = [description[0] for description in cursor.description]
+        return [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
+
+
+def delete_consents(record_uids: list[str]) -> int:
+    """Delete consent records that have been exported. Returns the number removed.
+
+    Called by `scripts/export_consents.py --purge` only after each record's copy is on disk, so the
+    database copy is never the last one destroyed.
+    """
+    if not record_uids:
+        return 0
+    with connect() as connection:
+        return connection.execute(
+            "DELETE FROM consent_records WHERE record_uid = ANY(%s::uuid[])", (record_uids,)
+        ).rowcount
+
+
+def withdraw_participant(participant_id: str) -> int | None:
+    """Delete a participant's events and mark them withdrawn. Returns events removed, or None.
+
+    None means the ID was never registered. **This destroys study data**, and exists only for a
+    participant exercising the two-week withdrawal right (IRB form item 13); see
+    `scripts/withdraw_participant.py`. Unlike `delete_participant`, the registration row stays,
+    stamped `withdrawn_at`, so the counterbalancing sequence stays explainable and
+    `register_participant` refuses the ID from now on. One transaction: both happen or neither.
+    """
+    with connect() as connection:
+        marked = connection.execute(
+            "UPDATE participants SET withdrawn_at = COALESCE(withdrawn_at, now()) "
+            "WHERE participant_id = %s",
+            (participant_id,),
+        ).rowcount
+        if not marked:
+            return None
+        return connection.execute(
+            "DELETE FROM study_events WHERE participant_id = %s", (participant_id,)
+        ).rowcount
 
 
 def delete_participant(participant_id: str) -> tuple[int, int]:

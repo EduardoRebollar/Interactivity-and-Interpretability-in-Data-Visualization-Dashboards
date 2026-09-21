@@ -305,6 +305,13 @@ def test_analysis_is_excluded_from_the_vercel_bundle():
     assert "analysis/**" in excluded.strip("{}").split(",")
 
 
+def test_identifying_material_never_ships():
+    """Local signed consent records and the IRB paperwork carry names; neither may be uploaded."""
+    manifest = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
+    excluded = manifest["functions"]["src/app.py"]["excludeFiles"].strip("{}").split(",")
+    assert {"data/consent/**", "irb/**"} <= set(excluded)
+
+
 @pytest.mark.parametrize("module", sorted((ROOT / "src").glob("*.py")), ids=lambda p: p.name)
 def test_no_src_module_imports_analysis(module):
     """Everything in src/ ships; the key must not be reachable from any of it."""

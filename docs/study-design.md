@@ -4,8 +4,12 @@ Source of truth for the protocol: research questions, conditions, tasks, measure
 `docs/visual-spec.md` is the source of truth for what the charts look like. Change this document
 before changing `src/tasks.py` or `src/flow.py`.
 
-Status: **draft, 2026-09-15.** The consent text in §9 is a DRAFT FOR IRB REVIEW and must not be
-shown to a participant until approved.
+Status: **draft, 2026-09-15; revised 2026-09-21 to match the IRB submission.** The consent text in
+§9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
+
+**The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
+the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
+paperwork can be amended before submission.
 
 ---
 
@@ -32,7 +36,7 @@ Within-subjects, 2 (condition: static / interactive) × 2 (form: A / B), fully c
 Target n ≥ 25.
 
 Each participant completes **6 scored tasks per condition, 12 in total**, plus one unscored practice
-task. Expected duration 20–25 minutes.
+task. Expected duration 20–35 minutes, capped at one hour (IRB form items 5B and 10).
 
 ### Conditions
 
@@ -242,13 +246,24 @@ Every scored task collects two things:
 2. **A short free-text justification** ("In one sentence, how did you decide?") — the material for
    RQ2.
 
-The justification is required but not length-constrained. Correct answers are **never** stored in
+**Both may be skipped (2026-09-21).** The IRB form (item 10) and the consent form promise that a
+participant may skip any question. Pressing Submit with either part empty opens a confirmation popup
+naming what is unanswered; confirming moves on, cancelling returns to the task. A skipped part is
+recorded as `null`, and `answer_submit` carries `skipped` — the list of parts left empty — so a skip
+is explicit in the data rather than inferred from a blank. The practice item works the same way. The
+justification is not length-constrained. Correct answers are **never** stored in
 `src/tasks.py`: that module ships to the browser, where an answer key would be readable in the page
 source. Scoring happens offline against §7.
 
-## 6. Cognitive load
+## 6. Surveys
 
-After each condition, one item (Paas mental-effort scale):
+### 6.1 Post-condition survey
+
+After **each** condition — the consent form says so ("For each version … followed by a brief survey
+with Likert-scale ratings of clarity, ease of use, confidence, and cognitive load"), and a single
+survey after both would give one rating that cannot be split between the conditions it compares.
+
+Cognitive load is the Paas mental-effort item (RQ3):
 
 > **In solving the preceding tasks, I invested:**
 > 1 — very, very low mental effort … 9 — very, very high mental effort
@@ -256,6 +271,37 @@ After each condition, one item (Paas mental-effort scale):
 One item, not NASA-TLX: with only two conditions per participant the extra subscales add
 administration time and fatigue without much resolution. Logged as `load_rating` with
 `{"scale": "paas", "value": 1-9}`.
+
+Clarity, ease of use and confidence are three 7-point agreement items (1 = strongly disagree,
+4 = neither agree nor disagree, 7 = strongly agree), chosen 2026-09-21 over 5-point for resolution,
+since each condition yields only one rating per participant:
+
+| Key | Statement |
+|---|---|
+| `clarity` | The charts in this part made the information clear. |
+| `ease_of_use` | The charts in this part were easy to use. |
+| `confidence` | I am confident in my answers in this part. |
+
+Logged as `survey_rating` with `{"scale": "likert7", "clarity": …, "ease_of_use": …,
+"confidence": …}`. Every item may be skipped, behind the same confirmation popup as a task (§5); a
+skipped rating is `null`.
+
+### 6.2 Demographics
+
+Once, after the participant ID and before the instructions (chosen 2026-09-21: simplest, and nothing
+is lost when a participant stops part-way). Broad categories only, per IRB form item 17, so no answer
+can re-identify anyone. Every item may be skipped, behind the confirmation popup, and every item also
+offers "Prefer not to say".
+
+| Key | Question | Options |
+|---|---|---|
+| `age_range` | What is your age range? | 18–24; 25–34; 35–44; 45–54; 55–64; 65 or older |
+| `field` | What is your main field of study or work? | Arts and humanities; Social sciences; Natural sciences; Mathematics, statistics or computer science; Engineering; Health or medicine; Business or economics; Education; Other |
+| `chart_frequency` | How often do you read charts or graphs, for example in the news, at work, or in class? | Never; Less than once a month; A few times a month; A few times a week; Daily |
+| `dashboard_familiarity` | How familiar are you with interactive data dashboards, such as Tableau, Power BI, or online COVID-19 trackers? | Not at all familiar; Slightly familiar; Moderately familiar; Very familiar; Extremely familiar |
+
+Logged as a `demographics` event, once per participant, in condition 1's log session right after
+`consent` — it is held in session state until then, for the same reason consent is (§9).
 
 ## 7. Scoring
 
@@ -265,6 +311,12 @@ rule is. `analysis/` implements it; nothing is decided at analysis time.
 
 **Accuracy (RQ1).** Binary per task from the multiple choice. Primary outcome: proportion correct per
 participant per condition.
+
+**A skipped answer scores as incorrect** in the primary analysis (ruled 2026-09-21), so every
+participant is scored out of six per condition. Dropping skips instead would let a condition that
+provokes more skipping look more accurate than it is. *Secondary, pre-registered:* proportion correct
+among answered items only, skips excluded. The number of skips per condition is reported alongside
+both.
 
 Scored by exact string equality against a key **derived from `data/deploy/coverage.csv`** by the
 rule each item states, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
@@ -282,7 +334,8 @@ it said 2, the data says 1 — and nothing would have caught it.
 | `compares_series` | refers to more than one country, not just the answer |
 | `notes_uncertainty` | flags missing data, an estimate, or ambiguity |
 
-Depth score 0–3. Code blind to condition. A second coder scores 20% of the justifications;
+Depth score 0–3. Code blind to condition. A skipped justification has no text to code; it is
+absent from the coding sheet and missing, not zero, in the depth analysis. A second coder scores 20% of the justifications;
 report Cohen's κ.
 
 Blinding is enforced by the harness, not by discipline (`analysis/coding.py`): the coding sheet
@@ -298,7 +351,8 @@ rarity, not poor coding. Where a coder used a single category throughout, κ is 
 reported as such rather than as a number. At n ≥ 25 the double-coded sample is roughly 60 units:
 conventional, but thin, and the write-up should say so.
 
-**Cognitive load (RQ3).** Paas score per condition, 1–9.
+**Cognitive load (RQ3).** Paas score per condition, 1–9. A skipped rating is missing for that
+participant × condition. The three Likert items (§6.1) are reported descriptively per condition.
 
 **Time on task.** From the browser clock (`performance.now()`), never the server, so cold starts and
 network latency do not enter a dependent variable.
@@ -315,7 +369,7 @@ Two kinds, which the earlier flat list did not distinguish:
 
 | Rule | Definition |
 |---|---|
-| `incomplete_session` | The participant did not produce **two** log sessions each carrying a `session_end` and six scored answers. Stated this way because `session_end` is written per *condition*, not once at the end of the study, so "reached `complete`" needed a precise test. |
+| `incomplete_session` | The participant did not produce **two** log sessions each carrying a `session_end` and six scored answers — a skipped item still counts, since a skip is a response rather than an abandoned session. Stated this way because `session_end` is written per *condition*, not once at the end of the study, so "reached `complete`" needed a precise test. |
 | `too_fast` | Task duration < 3000 ms — not read. A **null** duration is not "fast"; nulls are their own category and are never swept in here. |
 
 **Timing exclusions** — the answer stands, but the duration is not usable, so the row leaves
@@ -336,8 +390,12 @@ then `too_fast`, then the 1% trim computed on whatever survives.
 
 ## 8. Procedure
 
-`consent → participant ID → instructions → practice → 6 tasks → load rating → break → instructions →
-6 tasks → load rating → complete`
+`consent → participant ID → demographics → instructions → practice → 6 tasks → survey → break →
+instructions → 6 tasks → survey → complete`
+
+Declining on the consent screen leads to a thank-you screen that confirms no data was collected (IRB
+form item 12B), with a button back to the consent form in case the choice was a mis-click. Nothing is
+written anywhere before consent, so the confirmation is true.
 
 Implemented as `flow.Stage`; `tests/test_flow.py` walks the whole sequence.
 
@@ -390,31 +448,45 @@ refuses a second `answer_submit` for the same session and task through a unique 
 a double-click writes a duplicate answer and a duplicate `task_end`; it does not skip an item, since
 both requests advance from the same starting point.
 
-## 9. Consent — DRAFT FOR IRB REVIEW
+## 9. Consent
 
-> **This wording is a draft. It has not been reviewed or approved, and must be replaced with
-> IRB-approved text before any participant sees it.**
+The consent screen shows the Occidental informed consent form submitted to HSRRC
+(`irb/COMP 490 Consent Form.pdf`, local only), word for word. The app's copy lives in
+`src/consent.py`; `tests/test_consent.py` pins it. **Until HSRRC approves it, the screen carries a
+"pending approval" banner** (`consent.APPROVED = False`), and no participant may be run.
 
-> **Interactivity and interpretability in data dashboards**
->
-> You are invited to take part in a study run by a senior Computer Science student at Occidental
-> College. It takes about 20–25 minutes.
->
-> You will read charts of childhood vaccination coverage and answer questions about them. There are
-> no right-or-wrong consequences for you; we are studying the charts, not you.
->
-> **What is recorded:** your answers, how long each task takes, and how you interact with the charts
-> (clicks, filters, hovers). A participant ID that you enter, which is not linked to your name. No
-> personal information is collected.
->
-> **Voluntary:** you may stop at any time by closing the tab, with no consequence. Data from an
-> incomplete session is discarded.
->
-> **Contact:** [name, email]. **IRB:** [protocol number, contact].
->
-> Selecting "I agree" records your consent with a timestamp.
+### How consent is given
 
-### How consent is recorded
+IRB form item 12A: the participant types their **printed name** and the **date**, **signs**, and
+presses **"I agree to participate"**. The signature is drawn with a mouse, trackpad or finger on a
+signature pad. A participant who cannot or prefers not to draw one signs the paper copy the
+researcher brings instead, and ticks "I have signed a paper copy of this form with the researcher".
+"I do not agree" is always available (item 12B). The app refuses to go on without a name, a date, and
+either a drawn signature or the paper box ticked.
+
+Electronic documentation of consent is permitted by 45 CFR 46.117; confirm with HSRRC that Occidental
+accepts a drawn signature.
+
+### Where the signed consent goes
+
+Items 15 and 17 require signed consent forms and identifying information to be kept apart from the
+study data. So:
+
+- **The signed record goes to its own table, `consent_records`, which has no participant ID.** It
+  cannot be joined to answers through any key. (Locally, without a database, it goes to
+  `data/consent/`, gitignored and separate from `data/study_logs/`.)
+- **The study log gets only a `consent` event**: the browser timestamp, the consent-text hash and
+  the signature method (`drawn` or `paper`). No name, no signature.
+- `scripts/export_consents.py` writes each record out as a signed copy of the form, for the
+  researcher to countersign and store in the encrypted Oxy Drive folder (item 15), and with
+  `--purge` then deletes it from the database.
+- The participant can download their own signed copy from the next screen. The paper form asks the
+  subject to "keep one copy"; this is the digital equivalent.
+- Consent must be recorded before the session continues. If the database cannot be reached, the
+  participant is asked to try again, and nothing else happens. A consent record is never spooled or
+  held back.
+
+### How consent is logged in the study data
 
 Selecting "I agree" captures a timestamp in the participant's browser. It is written to the log as a
 `consent` event when the session's logger opens, a moment later, on the instructions screen — the
@@ -426,12 +498,27 @@ Two consequences, recorded rather than hidden:
 
 - The event's `server_ts` is the instructions-screen time; the true consent time is
   `payload.consented_at`. Analysis must read the latter.
-- **A participant who agrees and then leaves before entering an ID produces no consent record.** They
-  also produce no data, so nothing unconsented is ever stored — but the record is of consenting
-  participants, not of everyone who clicked.
+- **A participant who agrees and then leaves before entering an ID has a signed consent record but no
+  study data.** Nothing unconsented is ever stored.
 
 The event also stores a hash of the consent wording shown, so a mid-study change to the text is
 detectable in the data rather than being a matter of recollection.
+
+### Withdrawal
+
+IRB form item 13: a participant may withdraw their data **up to two weeks after the session**,
+without giving a reason. The final screen tells them so, shows their participant ID, and gives the
+researcher's email.
+
+The researcher runs `scripts/withdraw_participant.py <ID>`. It is a dry run by default. `--apply`
+deletes every study event for that ID — from the database, from `data/study_logs/`, and from any
+spool file, so `recover_spool.py` cannot bring it back — and marks the participant `withdrawn_at`
+rather than deleting the registration, so counterbalancing cell counts stay explainable and the ID
+cannot be used again. Past two weeks it refuses without `--late`.
+
+The signed consent record is kept: it is proof that consent was given, subject to the retention rules
+in item 15, and it is not study data. Copies already exported — `data/study_logs/derived/`, a CSV
+export, the Drive — must be regenerated or deleted by hand; the script lists what to check.
 
 ## 10. Open items
 
@@ -441,7 +528,21 @@ detectable in the data rather than being a matter of recollection.
   before separating. Check in the pilot, with T6. See §4.
 - **Session resume is not implemented.** The participant-ID screen no longer promises it; it asks
   for one sitting in one tab instead. See §8.
-- Whether the justification should be optional; requiring it may increase dropout on a self-served
-  web study.
+- ~~Whether the justification should be optional.~~ Resolved 2026-09-21: every question may be
+  skipped (IRB form item 10), behind a confirmation popup. See §5.
+- **IRB paperwork wording to fix before submission.** The app follows this document; these lines in
+  the IRB documents describe it inaccurately:
+  - *Both forms:* "randomized order". It is counterbalanced by a database sequence (§2), which is
+    stronger and should be described as such.
+  - *Both forms:* "explicit directional (year-over-year) change indicators". Year-over-year change
+    appears only in the hover tooltip (`visual-spec.md` §7.1).
+  - *Approval form 5B:* "value retrieval" tasks. No item may ask for an exact value (§2).
+  - *Approval form 5B:* logging "hovers". Hovers are not logged (decided 2026-09-21).
+  - *Approval form 5A:* "so findings aren't platform specific". One platform cannot support that
+    claim, and CLAUDE.md forbids it.
+  - *Approval form 15 and consent form "Confidentiality":* neither mentions that responses are first
+    stored in a Neon Postgres database, hosted through Vercel, before export to the Oxy Drive and
+    deletion from Neon.
+  - *Consent form:* does not mention the two-week withdrawal window that item 13 promises.
 - Continent aggregates have no 2024 data, so no item may turn on a continent's most recent year.
   None currently does.

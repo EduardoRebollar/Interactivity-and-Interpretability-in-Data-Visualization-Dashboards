@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src import db  # noqa: E402
 from src.logging import SCHEMA_VERSION, PostgresSink, StudyLogger  # noqa: E402
 
-EXPECTED_TABLES = {"participants", "study_events"}
+EXPECTED_TABLES = {"participants", "study_events", "consent_records"}
 
 
 class VerificationError(RuntimeError):
@@ -75,6 +75,17 @@ def _verify(participant: str, partner: str, third: str) -> None:
         set(db.EVENT_COLUMNS) <= columns,
         f"missing {sorted(set(db.EVENT_COLUMNS) - columns)} -- a pre-v4 table was not migrated",
     )
+    _check(
+        "participants can be marked withdrawn",
+        "withdrawn_at" in db.column_names("participants"),
+        "a pre-v6 participants table was not migrated",
+    )
+    consent_columns = db.column_names("consent_records")
+    _check(
+        "the consent table has every column and no participant ID",
+        set(db.CONSENT_COLUMNS) <= consent_columns and "participant_id" not in consent_columns,
+        f"found {sorted(consent_columns)}",
+    )
 
     print("2. Counterbalancing")
     seq_a, cond_a, form_a = db.register_participant(participant)
@@ -102,6 +113,37 @@ def _verify(participant: str, partner: str, third: str) -> None:
         seq_c == seq_b + 1,
         f"{seq_b} then {seq_c}: a repeat registration skipped the next participant's cell",
     )
+
+    print("2b. Consent records and withdrawal")
+    record_uid = str(uuid.uuid4())
+    signature = [[[10, 20], [30, 40], [50, 45]], [[60, 60]]]
+    db.insert_consent(
+        {
+            "record_uid": record_uid,
+            "consent_version": "verify",
+            "consented_at": "2026-09-16T10:00:00.000Z",
+            "printed_name": "Verify Deployment",
+            "signed_date": "2026-09-16",
+            "signature_method": "drawn",
+            "signature": signature,
+            "received_at": None,
+        }
+    )
+    try:
+        stored = [r for r in db.fetch_consents() if str(r["record_uid"]) == record_uid]
+        _check("a consent record round-trips", len(stored) == 1, f"found {len(stored)}")
+        _check("the signature survived as JSONB", stored[0]["signature"] == signature)
+    finally:
+        removed = db.delete_consents([record_uid])
+    _check("the synthetic consent record is deleted", removed == 1, f"removed {removed}")
+
+    _check("withdrawing marks a registered participant", db.withdraw_participant(third) == 0)
+    try:
+        db.register_participant(third)
+        refused = False
+    except db.WithdrawnParticipantError:
+        refused = True
+    _check("a withdrawn ID cannot register again", refused)
 
     print("3. A full synthetic session")
     written = 0

@@ -28,9 +28,19 @@ TASKS = tuple(
 )
 
 
+DEMOGRAPHICS = {
+    "age_range": "18–24",
+    "field": None,
+    "chart_frequency": None,
+    "dashboard_familiarity": None,
+}
+
+
 def _started(first_condition: str = "static", first_form: str = "A") -> SessionState:
-    state = flow.give_consent(SessionState())
-    return flow.set_participant(state, "P01", first_condition, first_form)
+    """Consent, ID and demographics done: parked on the first condition's instructions."""
+    state = flow.give_consent(SessionState(), "2026-09-21T10:00:00Z", "drawn")
+    state = flow.set_participant(state, "P01", first_condition, first_form)
+    return flow.submit_demographics(state, DEMOGRAPHICS)
 
 
 def _first_tasks(state: SessionState) -> SessionState:
@@ -275,3 +285,44 @@ def test_task_carries_no_answer_key():
     """A correct answer on the Task object would be readable in the page source."""
     assert "answer" not in Task.__slots__
     assert "correct" not in Task.__slots__
+
+
+# --- Consent, decline and demographics (IRB form items 12A, 12B, 17) ---------------------------
+
+
+def test_declining_leads_to_the_declined_screen_and_back():
+    declined = flow.decline(SessionState())
+    assert declined.stage is Stage.DECLINED
+    assert flow.reconsider(declined).stage is Stage.CONSENT
+
+
+def test_nothing_but_the_consent_screen_can_decline():
+    with pytest.raises(FlowError, match="Expected stage consent"):
+        flow.decline(_started())
+    with pytest.raises(FlowError, match="Expected stage declined"):
+        flow.reconsider(SessionState())
+
+
+def test_a_declined_participant_cannot_enter_an_id():
+    with pytest.raises(FlowError, match="Expected stage participant_id"):
+        flow.set_participant(flow.decline(SessionState()), "P01", "static", "A")
+
+
+def test_consent_records_how_the_form_was_signed():
+    assert flow.give_consent(SessionState(), "t", "paper").consent_method == "paper"
+
+
+def test_demographics_come_between_the_id_and_the_instructions():
+    state = flow.set_participant(flow.give_consent(SessionState(), "t"), "P01", "static", "A")
+    assert state.stage is Stage.DEMOGRAPHICS
+    with pytest.raises(FlowError, match="Expected stage instructions"):
+        flow.begin_practice(state)
+    state = flow.submit_demographics(state, DEMOGRAPHICS)
+    assert state.stage is Stage.INSTRUCTIONS
+    assert state.demographics == DEMOGRAPHICS
+
+
+def test_demographics_survive_the_store():
+    """Held in browser session state until condition 1's logger opens, so they must round-trip."""
+    state = _started()
+    assert SessionState.from_dict(state.to_dict()).demographics == DEMOGRAPHICS

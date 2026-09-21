@@ -14,8 +14,14 @@ from __future__ import annotations
 
 from dash import dcc, html
 
-from src import config, figures
-from src.tasks import JUSTIFICATION_PROMPT
+from src import config, consent, figures
+from src.tasks import (
+    DEMOGRAPHIC_ITEMS,
+    JUSTIFICATION_PROMPT,
+    LIKERT_ANCHORS,
+    LIKERT_ITEMS,
+    LIKERT_POINTS,
+)
 
 # Shared page chrome, so both conditions are laid out identically.
 PAGE_STYLE = {
@@ -283,27 +289,213 @@ def primary_button(label: str, element_id: str, disabled: bool = False) -> html.
     )
 
 
+def secondary_button(label: str, element_id: str) -> html.Button:
+    """The quieter action beside a primary one. A native button, so keyboard-navigable."""
+    return html.Button(
+        label,
+        id=element_id,
+        n_clicks=0,
+        style={
+            "fontFamily": config.FONT_FAMILY,
+            "fontSize": f"{config.FONT_SIZE_BASE}px",
+            "padding": "9px 18px",
+            "color": config.TEXT_PRIMARY,
+            "backgroundColor": config.BACKGROUND,
+            "border": f"1px solid {config.AXIS_COLOR}",
+            "borderRadius": "4px",
+            "cursor": "pointer",
+            "marginTop": "16px",
+            "marginLeft": "12px",
+        },
+    )
+
+
+FIELD_STYLE = {
+    "fontFamily": config.FONT_FAMILY,
+    "fontSize": f"{config.FONT_SIZE_BASE}px",
+    "padding": "10px",
+    "width": "320px",
+    "maxWidth": "100%",
+    "boxSizing": "border-box",
+}
+
+LABEL_STYLE = {"display": "block", "fontWeight": "600", "margin": "16px 0 6px 0"}
+
+SUBHEADING_STYLE = {
+    "fontSize": f"{config.FONT_SIZE_BASE + 2}px",
+    "fontWeight": "600",
+    "margin": "20px 0 6px 0",
+}
+
+SKIP_NOTE = "You may skip any question. If you leave one unanswered, you will be asked to confirm."
+
+
+def choice_question(element_id: str, question: str, options) -> html.Div:
+    """A question and its radio options. Native radios: keyboard-navigable (CLAUDE.md baseline)."""
+    return html.Div(
+        [
+            html.P(question, style={**PROMPT_STYLE, "fontWeight": "600", "margin": "20px 0 8px"}),
+            dcc.RadioItems(
+                id=element_id,
+                options=options,
+                value=None,
+                labelStyle={"display": "block", "margin": "6px 0"},
+                inputStyle={"marginRight": "8px"},
+            ),
+        ]
+    )
+
+
 # --- Study flow screens --------------------------------------------------------------------------
 #
 # Every screen is identical across conditions. The only permitted divergence is the Plotly config
 # passed to `chart()`, plus the interactive-only controls, which render only when `interactive`.
 
 
-def consent_screen(text: str) -> html.Div:
-    """Consent. `text` comes from docs/study-design.md and is a DRAFT until IRB approves it."""
-    paragraphs = [
-        html.P(line.strip(), style=PROMPT_STYLE) for line in text.split("\n\n") if line.strip()
-    ]
+def consent_screen() -> html.Div:
+    """The Occidental informed consent form, then name, date, signature, agree or decline.
+
+    IRB form item 12A: typed name and date, a signature, and an explicit "I agree to participate".
+    Item 12B: declining must be possible and must lead somewhere that says no data was collected.
+
+    The signature pad (`src/assets/signature.js`) cannot be used from a keyboard. The paper-copy box
+    is the alternative, and it is a native checkbox: a participant who cannot draw signs the paper
+    form the researcher brings, which item 12A already provides for.
+    """
+    banner = (
+        []
+        if consent.APPROVED
+        else [
+            html.P(
+                "PENDING HSRRC APPROVAL — this consent form has not been approved. Do not run "
+                "participants.",
+                style={
+                    **PROMPT_STYLE,
+                    "fontWeight": "600",
+                    "color": config.ERROR_COLOR,
+                    "border": f"2px solid {config.ERROR_COLOR}",
+                    "padding": "10px",
+                },
+            )
+        ]
+    )
+    body = []
+    for section_heading, text in consent.SECTIONS:
+        if section_heading:
+            body.append(html.H2(section_heading, style=SUBHEADING_STYLE))
+        body.append(html.P(text, style=PROMPT_STYLE))
+
     return page(
-        heading("Before you begin"),
-        *paragraphs,
-        primary_button("I agree — begin", "consent-button"),
+        heading("Informed consent"),
+        *banner,
+        html.P("Occidental College — Informed Consent Form", style=MUTED_STYLE),
+        *body,
+        html.Label("Printed name", htmlFor="consent-name", style=LABEL_STYLE),
+        dcc.Input(id="consent-name", type="text", autoComplete="name", style=FIELD_STYLE),
+        html.Label("Date", htmlFor="consent-date", style=LABEL_STYLE),
+        dcc.Input(id="consent-date", type="date", style=FIELD_STYLE),
+        html.Label("Signature", htmlFor="signature-pad", style=LABEL_STYLE),
+        html.P(
+            "Sign in the box with your mouse, trackpad or finger.",
+            style={**MUTED_STYLE, "margin": "0 0 6px 0"},
+        ),
+        html.Canvas(
+            id="signature-pad",
+            width=consent.PAD_WIDTH,
+            height=consent.PAD_HEIGHT,
+            style={
+                "display": "block",
+                "width": "100%",
+                "maxWidth": f"{consent.PAD_WIDTH}px",
+                "aspectRatio": f"{consent.PAD_WIDTH} / {consent.PAD_HEIGHT}",
+                "border": f"1px solid {config.AXIS_COLOR}",
+                "borderRadius": "4px",
+                "backgroundColor": config.BACKGROUND,
+                # The pen colour: the pad's script draws in the canvas's computed `color`.
+                "color": config.TEXT_PRIMARY,
+                # Without this a finger on a touchscreen scrolls the page instead of signing.
+                "touchAction": "none",
+                "cursor": "crosshair",
+            },
+        ),
+        html.Button(
+            "Clear signature",
+            id="signature-clear",
+            n_clicks=0,
+            style={
+                "fontFamily": config.FONT_FAMILY,
+                "fontSize": f"{config.FONT_SIZE_AXIS}px",
+                "padding": "4px 10px",
+                "marginTop": "6px",
+                "color": config.TEXT_PRIMARY,
+                "backgroundColor": config.BACKGROUND,
+                "border": f"1px solid {config.AXIS_COLOR}",
+                "borderRadius": "4px",
+                "cursor": "pointer",
+            },
+        ),
+        dcc.Checklist(
+            id="consent-paper",
+            options=[
+                {
+                    "label": "I have signed a paper copy of this form with the researcher instead",
+                    "value": "paper",
+                }
+            ],
+            value=[],
+            inputStyle={"marginRight": "8px"},
+            style={"marginTop": "12px"},
+        ),
+        html.Div(
+            [
+                primary_button("I agree to participate", "consent-button"),
+                secondary_button("I do not agree", "decline-button"),
+            ]
+        ),
+    )
+
+
+def declined_screen() -> html.Div:
+    """IRB form item 12B. Nothing is written before consent, so the second sentence is true."""
+    return page(
+        heading("Thank you for your time"),
+        html.P(
+            "You chose not to take part in this study. No data has been collected. You can close "
+            "this tab.",
+            style=PROMPT_STYLE,
+        ),
+        html.P(
+            "If you chose this by mistake, you can go back to the consent form.",
+            style=MUTED_STYLE,
+        ),
+        secondary_button("Go back to the consent form", "reconsider-button"),
     )
 
 
 def participant_screen() -> html.Div:
     return page(
         heading("Participant ID"),
+        # The copy is held in a memory store and lost on reload; the researcher can send one then.
+        html.P(
+            "Thank you for signing. You can keep a copy of the consent form you signed.",
+            style=PROMPT_STYLE,
+        ),
+        html.Button(
+            "Download your signed consent form",
+            id="consent-copy-button",
+            n_clicks=0,
+            style={
+                "fontFamily": config.FONT_FAMILY,
+                "fontSize": f"{config.FONT_SIZE_AXIS}px",
+                "padding": "6px 12px",
+                "marginBottom": "20px",
+                "color": config.TEXT_PRIMARY,
+                "backgroundColor": config.BACKGROUND,
+                "border": f"1px solid {config.AXIS_COLOR}",
+                "borderRadius": "4px",
+                "cursor": "pointer",
+            },
+        ),
         # Resume is not implemented, so this must not promise it. docs/study-design.md section 8.
         html.P(
             "Enter the ID you were given. Please complete the study in one sitting, in this tab "
@@ -323,6 +515,25 @@ def participant_screen() -> html.Div:
             },
         ),
         primary_button("Continue", "participant-button"),
+    )
+
+
+def demographics_screen() -> html.Div:
+    """Broad-category background questions, once per participant. study-design.md section 6.2."""
+    questions = [
+        choice_question(f"demo-{key}", question, [{"label": o, "value": o} for o in options])
+        for key, (question, options) in DEMOGRAPHIC_ITEMS.items()
+    ]
+    return page(
+        heading("About you"),
+        html.P(
+            "A few questions about your background. The answers are broad categories and cannot "
+            "identify you.",
+            style=PROMPT_STYLE,
+        ),
+        html.P(SKIP_NOTE, style=MUTED_STYLE),
+        *questions,
+        primary_button("Continue", "demographics-button"),
     )
 
 
@@ -368,6 +579,7 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
             "A break in a line means no value was reported for those years.",
             style=PROMPT_STYLE,
         ),
+        html.P(SKIP_NOTE, style=PROMPT_STYLE),
         primary_button(
             "Start the practice question" if practice else "Start the questions", "begin-button"
         ),
@@ -430,20 +642,42 @@ def task_screen(
 
 
 def load_screen(prompt: str, anchors: dict[int, str]) -> html.Div:
-    """Paas single-item mental effort, asked once per condition."""
+    """The post-condition survey, asked after EACH condition. study-design.md section 6.1.
+
+    Paas mental effort (the RQ3 measure) first, then the three 7-point Likert items. The screen is
+    identical in both conditions; the statements say "in this part", never which version it was.
+    """
+    likert = [
+        choice_question(
+            f"likert-{key}",
+            statement,
+            [
+                {
+                    "label": f"{n} — {LIKERT_ANCHORS[n]}" if n in LIKERT_ANCHORS else str(n),
+                    "value": n,
+                }
+                for n in range(1, LIKERT_POINTS + 1)
+            ],
+        )
+        for key, statement in LIKERT_ITEMS.items()
+    ]
     return page(
-        heading("One quick question"),
-        html.P(prompt, style={**PROMPT_STYLE, "fontWeight": "600"}),
-        dcc.RadioItems(
-            id="load-input",
-            options=[
+        heading("A few quick questions about this part"),
+        html.P(SKIP_NOTE, style=MUTED_STYLE),
+        choice_question(
+            "load-input",
+            prompt,
+            [
                 {"label": f"{n} — {anchors[n]}" if n in anchors else str(n), "value": n}
                 for n in range(1, 10)
             ],
-            value=None,
-            labelStyle={"display": "block", "margin": "6px 0"},
-            inputStyle={"marginRight": "8px"},
         ),
+        html.P(
+            "How much do you agree with each statement? "
+            f"1 = {LIKERT_ANCHORS[1]}, {LIKERT_POINTS} = {LIKERT_ANCHORS[LIKERT_POINTS]}.",
+            style={**PROMPT_STYLE, "marginTop": "28px"},
+        ),
+        *likert,
         primary_button("Continue", "load-button"),
     )
 
@@ -463,11 +697,19 @@ def break_screen() -> html.Div:
     )
 
 
-def complete_screen() -> html.Div:
+def complete_screen(participant_id: str | None = None) -> html.Div:
+    """The end, with the withdrawal right IRB form item 13 promises to remind participants of."""
+    who = f" (your participant ID is {participant_id})" if participant_id else ""
     return page(
         heading("Finished — thank you"),
         html.P(
             "Your responses have been recorded. You can close this tab.",
+            style=PROMPT_STYLE,
+        ),
+        html.P(
+            "If you change your mind, you can withdraw your responses within two weeks of today, "
+            f"without giving a reason. Email {consent.RESEARCHER_EMAIL} and include your "
+            f"participant ID{who}.",
             style=PROMPT_STYLE,
         ),
     )

@@ -15,6 +15,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# IRB paperwork — local reference only. It will carry names, contact details and the institution's
+# form, none of which belong in a public repo.
+irb/
+
 # Data — never committed. download_data.py refetches raw from OWID;
 # processed/ is derived cache; study_logs/ is participant data.
 data/raw/*
@@ -23,6 +27,9 @@ data/study_logs/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/study_logs/.gitkeep
+
+# Signed consent records from local runs: names and signatures. Never committed (IRB form item 15).
+data/consent/
 
 # Belt and braces for participant data. The entries above already cover these, but a spool file or a
 # coding sheet (participant-written free text) reaching this public repo is not a mistake to leave

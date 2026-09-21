@@ -179,6 +179,64 @@ JUSTIFICATION_PROMPT = "In one sentence, how did you decide?"
 LOAD_PROMPT = "In solving the preceding tasks, I invested:"
 LOAD_ANCHORS = {1: "very, very low mental effort", 9: "very, very high mental effort"}
 
+# The rest of the post-condition survey: 7-point agreement items, asked after EACH condition, as the
+# consent form states. See docs/study-design.md section 6.1. Key -> statement.
+LIKERT_ITEMS: dict[str, str] = {
+    "clarity": "The charts in this part made the information clear.",
+    "ease_of_use": "The charts in this part were easy to use.",
+    "confidence": "I am confident in my answers in this part.",
+}
+LIKERT_ANCHORS = {1: "strongly disagree", 4: "neither agree nor disagree", 7: "strongly agree"}
+LIKERT_POINTS = 7
+
+# Asked once, after the participant ID. Broad categories only (IRB form item 17), so no answer can
+# re-identify anyone. See docs/study-design.md section 6.2. Key -> (question, options).
+PREFER_NOT = "Prefer not to say"
+DEMOGRAPHIC_ITEMS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "age_range": (
+        "What is your age range?",
+        ("18–24", "25–34", "35–44", "45–54", "55–64", "65 or older", PREFER_NOT),
+    ),
+    "field": (
+        "What is your main field of study or work?",
+        (
+            "Arts and humanities",
+            "Social sciences",
+            "Natural sciences",
+            "Mathematics, statistics or computer science",
+            "Engineering",
+            "Health or medicine",
+            "Business or economics",
+            "Education",
+            "Other",
+            PREFER_NOT,
+        ),
+    ),
+    "chart_frequency": (
+        "How often do you read charts or graphs, for example in the news, at work, or in class?",
+        (
+            "Never",
+            "Less than once a month",
+            "A few times a month",
+            "A few times a week",
+            "Daily",
+            PREFER_NOT,
+        ),
+    ),
+    "dashboard_familiarity": (
+        "How familiar are you with interactive data dashboards, such as Tableau, Power BI, or "
+        "online COVID-19 trackers?",
+        (
+            "Not at all familiar",
+            "Slightly familiar",
+            "Moderately familiar",
+            "Very familiar",
+            "Extremely familiar",
+            PREFER_NOT,
+        ),
+    ),
+}
+
 
 def for_form(form: str) -> tuple[Task, ...]:
     """The six scored tasks for one form, in presentation order."""

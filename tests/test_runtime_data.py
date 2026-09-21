@@ -26,6 +26,8 @@ from src import config, data, runtime_data
 RUNTIME_MODULES = [
     "src/app.py",
     "src/config.py",
+    # Ships: the consent form and the signed-record handling, imported by app.py and layout.py.
+    "src/consent.py",
     "src/contrast.py",
     "src/db.py",
     "src/figures.py",

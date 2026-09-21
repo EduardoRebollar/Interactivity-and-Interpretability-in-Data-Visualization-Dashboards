@@ -1,9 +1,11 @@
 """Study session flow. Pure state transitions, no Dash and no I/O.
 
-    consent -> participant id -> instructions -> practice -> tasks -> load -> break
-                                      ^                                        |
-                                      +-------------- resume ------------------+
-                                 instructions -> tasks -> load -> done
+    consent -> participant id -> demographics -> instructions -> practice -> tasks -> load -> break
+       |  ^                                          ^                                        |
+       v  |                                          +-------------- resume ------------------+
+     declined                                   instructions -> tasks -> load -> done
+
+`load` is the whole post-condition survey: the Paas rating and the three Likert items.
 
 Two asymmetries are deliberate, and both implement `docs/study-design.md` section 8:
 
@@ -37,7 +39,12 @@ class Stage(StrEnum):
     """Where a participant is. A string enum so it serialises straight into a dcc.Store."""
 
     CONSENT = "consent"
+    # "I do not agree". Terminal unless the participant goes back to the form: nothing is written
+    # anywhere before consent, so the screen can truthfully say no data was collected.
+    DECLINED = "declined"
     PARTICIPANT_ID = "participant_id"
+    # Broad-category questions, once per participant. docs/study-design.md section 6.2.
+    DEMOGRAPHICS = "demographics"
     INSTRUCTIONS = "instructions"
     PRACTICE = "practice"
     TASK = "task"
@@ -84,6 +91,12 @@ class SessionState:
     # Browser ISO timestamp from the moment "I agree" was pressed. Held here because consent comes
     # before the participant ID, and a log record cannot be written until the ID exists.
     consent_at: str | None = None
+    # "drawn" or "paper": how the consent form was signed. The signature itself never enters session
+    # state or the study log -- it lives only in the separate consent record. See src/consent.py.
+    consent_method: str | None = None
+    # The demographic answers, held for the same reason as `consent_at`: they are given before any
+    # logger can exist, and are written when condition 1's logger opens.
+    demographics: dict[str, str | None] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -94,6 +107,8 @@ class SessionState:
             "condition_index": self.condition_index,
             "task_index": self.task_index,
             "consent_at": self.consent_at,
+            "consent_method": self.consent_method,
+            "demographics": self.demographics,
         }
 
     @classmethod
@@ -109,6 +124,8 @@ class SessionState:
                 condition_index=int(raw.get("condition_index", 0)),
                 task_index=int(raw.get("task_index", 0)),
                 consent_at=raw.get("consent_at"),
+                consent_method=raw.get("consent_method"),
+                demographics=raw.get("demographics"),
             )
         except (KeyError, ValueError) as exc:
             raise FlowError(f"Malformed session state: {exc}") from exc
@@ -173,10 +190,24 @@ def current_task(state: SessionState, tasks: Sequence[Task]) -> Task:
 # --- Transitions --------------------------------------------------------------------------------
 
 
-def give_consent(state: SessionState, consent_at: str | None = None) -> SessionState:
+def give_consent(
+    state: SessionState, consent_at: str | None = None, method: str | None = None
+) -> SessionState:
     """Accept consent. `consent_at` is the browser timestamp, logged once the logger can open."""
     _require(state, Stage.CONSENT)
-    return replace(state, stage=Stage.PARTICIPANT_ID, consent_at=consent_at)
+    return replace(state, stage=Stage.PARTICIPANT_ID, consent_at=consent_at, consent_method=method)
+
+
+def decline(state: SessionState) -> SessionState:
+    """'I do not agree' (IRB form item 12B). Nothing has been recorded, and nothing will be."""
+    _require(state, Stage.CONSENT)
+    return replace(state, stage=Stage.DECLINED)
+
+
+def reconsider(state: SessionState) -> SessionState:
+    """Back to the consent form from the declined screen, in case the choice was a mis-click."""
+    _require(state, Stage.DECLINED)
+    return replace(state, stage=Stage.CONSENT)
 
 
 def set_participant(
@@ -193,11 +224,20 @@ def set_participant(
         raise FlowError(f"Unknown form {first_form!r}")
     return replace(
         state,
-        stage=Stage.INSTRUCTIONS,
+        stage=Stage.DEMOGRAPHICS,
         participant_id=cleaned,
         first_condition=first_condition,
         first_form=first_form,
     )
+
+
+def submit_demographics(state: SessionState, answers: dict[str, str | None]) -> SessionState:
+    """Hold the demographic answers until a logger exists, and move on to the instructions.
+
+    Any answer may be None: every question may be skipped (IRB form item 10).
+    """
+    _require(state, Stage.DEMOGRAPHICS)
+    return replace(state, stage=Stage.INSTRUCTIONS, demographics=dict(answers))
 
 
 def begin_practice(state: SessionState) -> SessionState:

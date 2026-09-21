@@ -167,20 +167,22 @@ only; `.env` and `.env.*` are gitignored. See [.env.example](.env.example).
 ## Status
 
 **The instrument is complete and runs end to end.** A participant can take the whole session from one
-URL: consent, participant ID, instructions, practice, six tasks, a mental-effort rating, a break, then
-the second condition in the other version and the other form.
+URL: a signed consent form (or a decline), participant ID, a few demographic questions, instructions,
+practice, six tasks, a short survey, a break, then the second condition in the other version and the
+other form. Any question may be skipped, after a confirmation.
 
-Built and tested: data layer; event logger (schema v4, Postgres or JSONL) with retry and spooling
+Built and tested: data layer; event logger (schema v6, Postgres or JSONL) with retry and spooling
 through a database outage; chart rendering on a verified-contrast palette; the session flow state
 machine; the study screens; the interactive controls (filter, sort, line isolation, and
-year-over-year change in the hover tooltip) with their interaction logging; the consent record;
+year-over-year change in the hover tooltip) with their interaction logging; the signed consent
+record, kept apart from the study data, with export and a two-week withdrawal script;
 duplicate-submit protection; flagged rather than wrong durations after a reload; the Vercel entry
 point; and the offline scoring pipeline — derived answer key, pre-registered exclusions, blind RQ2
 coding and Cohen's kappa.
 
-**Not yet run with participants, and it must not be.** The consent wording in `src/app.py` is a
-draft, marked as such on screen, and `docs/study-design.md` §9 carries unfilled contact and protocol
-placeholders. Nothing runs until IRB approves the final text.
+**Not yet run with participants, and it must not be.** The consent form in `src/consent.py` is the
+one submitted to Occidental's HSRRC and is marked "pending approval" on screen until it is approved.
+`docs/study-design.md` §10 lists wording in the IRB paperwork still to fix before submission.
 
 Also open before piloting:
 

@@ -23,7 +23,7 @@ import pytest
 from dash import no_update
 from dash.exceptions import PreventUpdate
 
-from src import app, db, flow, layout, runtime_data, tasks
+from src import app, consent, db, flow, layout, runtime_data, tasks
 from src.flow import SessionState, Stage
 from src.logging import SCHEMA_VERSION
 
@@ -34,6 +34,29 @@ pytestmark = pytest.mark.skipif(
 
 CONSENTED_AT = "2026-09-16T10:00:00.000Z"
 ANSWER_KWARGS = {"answer": "1", "justification": "because the line is higher"}
+# A drawn signature: two strokes, comfortably over consent.MIN_POINTS.
+SIGNATURE = [[[10 + 4 * i, 40 + (i % 3)] for i in range(12)], [[30, 60], [80, 64], [120, 58]]]
+DEMOGRAPHICS = {
+    "age_range": "18–24",
+    "field": "Engineering",
+    "chart_frequency": None,
+    "dashboard_familiarity": "Slightly familiar",
+}
+SURVEY_KWARGS = {"load": 5, "survey": {"clarity": 6, "ease_of_use": 5, "confidence": 4}}
+
+
+def _consent_kwargs(**overrides) -> dict:
+    """What the consent callback hands `step`: the browser time and a complete signed record."""
+    fields = {"name": "Test Participant", "date": "2026-09-16", "signature": SIGNATURE}
+    fields.update(overrides)
+    record = consent.build_record(
+        CONSENTED_AT,
+        fields["name"],
+        fields["date"],
+        fields["signature"],
+        fields.get("paper", False),
+    )
+    return {"consented_at": CONSENTED_AT, "consent_record": record}
 
 
 # --- Helpers --------------------------------------------------------------------------------------
@@ -94,8 +117,9 @@ def _run_session(log_dir, participant_id: str = "P01") -> list[dict]:
         assert session is not no_update
         return screen
 
-    click("consent-clock", consented_at=CONSENTED_AT)
+    click("consent-clock", **_consent_kwargs())
     click("participant-button", participant_id=participant_id)
+    click("demographics-clock", demographics=DEMOGRAPHICS)
 
     for condition in range(2):
         click("begin-button")
@@ -104,7 +128,7 @@ def _run_session(log_dir, participant_id: str = "P01") -> list[dict]:
             click("submit-clock", **ANSWER_KWARGS, duration_ms=1234.5)
         for _ in range(len(tasks.for_form("A"))):
             click("submit-clock", **ANSWER_KWARGS, duration_ms=1000.0)
-        click("load-button", load=5)
+        click("survey-clock", **SURVEY_KWARGS)
         if condition == 0:
             click("resume-button")
 
@@ -134,7 +158,10 @@ def test_every_stage_carries_the_error_slot():
     ("stage", "trigger_id"),
     [
         (Stage.CONSENT, "consent-button"),
+        (Stage.CONSENT, "decline-button"),
+        (Stage.DECLINED, "reconsider-button"),
         (Stage.PARTICIPANT_ID, "participant-button"),
+        (Stage.DEMOGRAPHICS, "demographics-button"),
         (Stage.INSTRUCTIONS, "begin-button"),
         (Stage.PRACTICE, "submit-button"),
         (Stage.TASK, "submit-button"),
@@ -189,7 +216,15 @@ def test_no_callback_is_dead_on_the_screens_that_trigger_it():
 def test_button_callbacks_ignore_the_click_count_of_a_freshly_rendered_button():
     """Dash fires a callback when its Input is inserted with a new screen, whatever
     `prevent_initial_call` says. Unguarded, the instructions screen pressed its own Begin button."""
-    triggers = {"participant-button", "begin-button", "resume-button", "load-button"}
+    triggers = {
+        "participant-button",
+        "begin-button",
+        "resume-button",
+        "decline-button",
+        "reconsider-button",
+        "demographics-clock",
+        "survey-clock",
+    }
     guarded = set()
     for callback in app.create_app().callback_map.values():
         inputs = [i["id"] for i in callback["inputs"]]
@@ -223,7 +258,7 @@ def test_enter_in_the_id_box_submits_it(monkeypatch):
         0, 1, "P01", at_id_screen, None, None
     )
     assert error == ""
-    assert SessionState.from_dict(session).stage is Stage.INSTRUCTIONS
+    assert SessionState.from_dict(session).stage is Stage.DEMOGRAPHICS
 
 
 def test_the_id_screen_does_not_promise_a_resume_that_does_not_exist():
@@ -246,7 +281,12 @@ def test_the_chart_holds_its_height_before_plotly_has_loaded():
 
 def test_inputs_the_callback_reads_exist_on_the_screens_that_supply_them():
     assert "participant-input" in _ids(app.render(_state(Stage.PARTICIPANT_ID)))
-    assert "load-input" in _ids(app.render(_state(Stage.LOAD)))
+    load = _ids(app.render(_state(Stage.LOAD)))
+    assert {"load-input", *(f"likert-{key}" for key in tasks.LIKERT_ITEMS)} <= load
+    demographics = _ids(app.render(_state(Stage.DEMOGRAPHICS)))
+    assert {f"demo-{key}" for key in tasks.DEMOGRAPHIC_ITEMS} <= demographics
+    consent_ids = _ids(app.render(_state(Stage.CONSENT)))
+    assert {"consent-name", "consent-date", "consent-paper", "signature-pad"} <= consent_ids
     for stage in (Stage.PRACTICE, Stage.TASK):
         ids = _ids(app.render(_state(stage)))
         assert {"answer-input", "justification-input"} <= ids
@@ -672,10 +712,18 @@ def test_the_chart_callback_changes_nothing_on_a_static_render(tmp_path):
     ("stage", "trigger", "kwargs", "expected"),
     [
         (Stage.PARTICIPANT_ID, "participant-button", {"participant_id": "  "}, "participant ID"),
-        (Stage.TASK, "submit-clock", {"justification": "x"}, "choose an answer"),
-        (Stage.TASK, "submit-clock", {"answer": "1", "justification": " "}, "how you decided"),
-        (Stage.PRACTICE, "submit-clock", {"justification": "x"}, "choose an answer"),
-        (Stage.LOAD, "load-button", {"load": None}, "choose a number"),
+        (Stage.CONSENT, "consent-clock", _consent_kwargs(name=" "), "your full name"),
+        (Stage.CONSENT, "consent-clock", _consent_kwargs(date=""), "today's date"),
+        (Stage.CONSENT, "consent-clock", _consent_kwargs(signature=None), "sign in the box"),
+        (Stage.CONSENT, "consent-clock", _consent_kwargs(signature=[[[1, 1]]]), "sign in the box"),
+        (
+            Stage.CONSENT,
+            "consent-clock",
+            _consent_kwargs(signature=[[["x", 1]] * 20]),
+            "could not be read",
+        ),
+        (Stage.CONSENT, "consent-clock", {"consented_at": CONSENTED_AT}, "sign"),
+        (Stage.LOAD, "survey-clock", {"load": "lots"}, "could not be read"),
     ],
 )
 def test_incomplete_input_is_refused_without_advancing(stage, trigger, kwargs, expected, tmp_path):
@@ -694,10 +742,11 @@ def test_an_invalid_transition_becomes_a_message_not_a_crash(tmp_path):
         "consent-clock",
         _state(Stage.TASK).to_dict(),
         {},
-        consented_at=CONSENTED_AT,
+        **_consent_kwargs(),
         log_dir=tmp_path,
     )
     assert "Expected stage consent" in error
+    assert not (tmp_path / "consent").exists(), "a refused consent must not be stored"
     assert session is no_update
 
 
@@ -886,8 +935,9 @@ def _through_practice(log_dir):
     """Consent, ID, instructions and the practice item. Returns (session, log) on task T1."""
     session = log = None
     for trigger, kwargs in [
-        ("consent-clock", {"consented_at": CONSENTED_AT}),
+        ("consent-clock", _consent_kwargs()),
         ("participant-button", {"participant_id": "P01"}),
+        ("demographics-clock", {"demographics": DEMOGRAPHICS}),
         ("begin-button", {}),
         ("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1000.0}),
     ]:
@@ -984,7 +1034,10 @@ def database(monkeypatch, tmp_path):
             Database.written.append(record)
 
     Database.written = []
+    Database.consents = []
     monkeypatch.setattr(db, "insert_event", Database.insert)
+    # The consent record is written at the consent click, before an outage in these tests begins.
+    monkeypatch.setattr(db, "insert_consent", Database.consents.append)
     return Database
 
 
@@ -1008,8 +1061,9 @@ def _drive_with_spool(steps):
 
 def _full_session_steps():
     steps = [
-        ("consent-clock", {"consented_at": CONSENTED_AT}),
+        ("consent-clock", _consent_kwargs()),
         ("participant-button", {"participant_id": "P01"}),
+        ("demographics-clock", {"demographics": DEMOGRAPHICS}),
     ]
     for condition in range(2):
         steps.append(("begin-button", {}))
@@ -1018,7 +1072,7 @@ def _full_session_steps():
         steps += [("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1000.0})] * len(
             tasks.for_form("A")
         )
-        steps.append(("load-button", {"load": 5}))
+        steps.append(("survey-clock", SURVEY_KWARGS))
         if condition == 0:
             steps.append(("resume-button", {}))
     return steps
@@ -1044,9 +1098,15 @@ def test_a_session_completes_through_a_database_outage(database, tmp_path):
     assert len({record["event_uid"] for record in pending}) == len(pending)
 
     envelopes = database.breaker_module.read_spool(tmp_path / "spool")
-    assert [e["record"]["event_uid"] for e in envelopes] == [r["event_uid"] for r in pending], (
-        "the file copy must hold the same events, in the same order"
-    )
+    # Same events, and the same order within each session. Across the two sessions a shared clock
+    # tick can interleave them (see `read_spool`), which no analysis depends on.
+    for session_id in {r["session_id"] for r in pending}:
+        spooled = [
+            e["record"]["event_uid"] for e in envelopes if e["record"]["session_id"] == session_id
+        ]
+        held = [r["event_uid"] for r in pending if r["session_id"] == session_id]
+        assert spooled == held, "the file copy must hold the same events, in the same order"
+    assert len(envelopes) == len(pending)
 
 
 def test_an_outage_costs_retry_time_once_not_on_every_event(database):
@@ -1135,9 +1195,11 @@ const window = {
   performance: { now: () => 1234.5, timeOrigin: 1758000000000.25 },
   dash_clientside: { no_update: "NO_UPDATE", set_props: (id, props) => calls.push([id, props]) },
   setTimeout: (fn, ms) => timers.push([fn, ms]),
+  confirm: (message) => { calls.push(["confirm", message]); return window.confirmAnswer; },
 };
 const cases = JSON.parse(process.argv[1]);
-const out = cases.map(([source, arg, fireTimers, extra]) => {
+const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer]) => {
+  window.confirmAnswer = confirmAnswer !== false;
   const fn = eval("(" + source + ")");
   const result = fn(arg, ...(extra || []));
   if (fireTimers) { timers.forEach(([f]) => f()); }
@@ -1168,18 +1230,18 @@ def test_the_clock_stamps_carry_their_origin():
     task, submit, no_click = _run_js(
         [
             [app.CLOCK_JS, None, False],
-            [app.SUBMIT_CLOCK_JS, 1, False],
-            [app.SUBMIT_CLOCK_JS, 0, False],
+            [app.SUBMIT_JS, 1, False, ["1", "why"]],
+            [app.SUBMIT_JS, 0, False, ["1", "why"]],
         ]
     )
     assert {k: task["result"][k] for k in ("t", "origin")} == {
         "t": 1234.5,
         "origin": 1758000000000.25,
     }
-    assert submit["result"] == {"t": 1234.5, "origin": 1758000000000.25}
-    assert no_click["result"] == "NO_UPDATE"
+    assert submit["result"] == [{"t": 1234.5, "origin": 1758000000000.25}, True]
+    assert no_click["result"] == ["NO_UPDATE", "NO_UPDATE"]
     # The browser's stamps are exactly what the server subtracts.
-    assert app._elapsed(task["result"], submit["result"]) == (0.0, None)
+    assert app._elapsed(task["result"], submit["result"][0]) == (0.0, None)
 
 
 _SESSION = {"participant_id": "P01", "condition_index": 0, "stage": "task", "task_index": 2}
@@ -1228,23 +1290,72 @@ def test_a_reload_mid_task_is_recorded_as_a_clock_reset():
     on their origin, so the duration is absent and flagged rather than a quiet undercount."""
     kept = {"t": 800.0, "origin": 1758000000000.0, "screen": "P01/0/task/2"}
     after_reload, submitted = _run_js(
-        [[app.CLOCK_JS, None, False, [_SESSION, kept]], [app.SUBMIT_CLOCK_JS, 1, False]]
+        [[app.CLOCK_JS, None, False, [_SESSION, kept]], [app.SUBMIT_JS, 1, False, ["1", "x"]]]
     )
     assert after_reload["result"] == "NO_UPDATE"
-    assert app._elapsed(kept, submitted["result"]) == (None, "clock_reset")
+    assert app._elapsed(kept, submitted["result"][0]) == (None, "clock_reset")
 
 
 def test_submit_is_disabled_on_click_and_the_watchdog_re_enables_it():
-    (clicked,) = _run_js([[app.SUBMIT_DISABLE_JS, 1, True]])
-    assert clicked["result"] is True
+    (clicked,) = _run_js([[app.SUBMIT_JS, 1, True, ["1", "why"]]])
+    assert clicked["result"][1] is True
     assert clicked["timers"] == [15000]
-    assert clicked["calls"] == [["submit-button", {"disabled": False}]]
+    assert clicked["calls"] == [["submit-button", {"disabled": False}]], "no popup when complete"
 
 
 def test_an_unclicked_submit_is_not_disabled():
-    (initial,) = _run_js([[app.SUBMIT_DISABLE_JS, 0, True]])
-    assert initial["result"] == "NO_UPDATE"
+    (initial,) = _run_js([[app.SUBMIT_JS, 0, True, [None, None]]])
+    assert initial["result"] == ["NO_UPDATE", "NO_UPDATE"]
     assert initial["timers"] == []
+
+
+def test_a_skip_asks_for_confirmation_naming_what_is_missing():
+    (skipped,) = _run_js([[app.SUBMIT_JS, 1, False, [None, "  "], True]])
+    ((kind, message),) = [call for call in skipped["calls"] if call[0] == "confirm"]
+    assert "multiple-choice question" in message
+    assert "how you decided" in message
+    assert skipped["result"][0]["t"] == 1234.5, "a confirmed skip still submits"
+    assert skipped["result"][1] is True
+
+
+def test_cancelling_the_skip_popup_leaves_the_participant_on_the_task():
+    """No stamp, no disabled button: the task simply carries on."""
+    (cancelled,) = _run_js([[app.SUBMIT_JS, 1, True, ["1", ""], False]])
+    assert cancelled["result"] == ["NO_UPDATE", "NO_UPDATE"]
+    assert cancelled["timers"] == []
+
+
+def test_the_questionnaire_screens_confirm_skips_and_count_them():
+    source = app.confirm_js("load-button")
+    complete, partial, cancelled = _run_js(
+        [
+            [source, 1, False, [5, 6, 7, 1]],
+            [source, 1, False, [5, None, "", 1], True],
+            [source, 2, False, [None, 6, 7, 1], False],
+        ]
+    )
+    assert complete["result"][0]["skipped"] == 0
+    assert complete["result"][1] is True
+    assert partial["result"][0]["skipped"] == 2
+    assert ["confirm", "You have left 2 questions unanswered. Continue without answering?"] in (
+        partial["calls"]
+    )
+    assert cancelled["result"] == ["NO_UPDATE", "NO_UPDATE"]
+
+
+def test_the_signed_copy_downloads_from_the_browser():
+    clicked, empty = _run_js(
+        [
+            [app.COPY_DOWNLOAD_JS, 1, False, ["<html>copy</html>"]],
+            [app.COPY_DOWNLOAD_JS, 1, False, [None]],
+        ]
+    )
+    assert clicked["result"] == {
+        "content": "<html>copy</html>",
+        "filename": "signed-consent-form.html",
+        "type": "text/html",
+    }
+    assert empty["result"] == "NO_UPDATE"
 
 
 def test_a_refusal_re_enables_submit():
@@ -1332,9 +1443,195 @@ def test_the_new_stores_are_in_the_base_layout():
 def test_the_click_clocks_do_not_survive_a_reload():
     """A session store restores itself on mount, and Dash counts the restore as a change -- so a
     persisted click clock would re-fire its callback on every page load, with a stale stamp."""
+    clocks = {"consent-clock", "submit-clock", "demographics-clock", "survey-clock"}
     stores = {
         child.id: getattr(child, "storage_type", "memory")
         for child in app.create_app().layout.children
-        if getattr(child, "id", None) in {"consent-clock", "submit-clock"}
+        if getattr(child, "id", None) in clocks
     }
-    assert stores == {"consent-clock": "memory", "submit-clock": "memory"}
+    assert stores == dict.fromkeys(clocks, "memory")
+
+
+def test_the_signature_and_the_signed_copy_never_reach_session_storage():
+    """Identifying: they live only as long as the page, never in sessionStorage."""
+    layout_children = app.create_app().layout.children
+    stores = {
+        child.id: getattr(child, "storage_type", "memory")
+        for child in layout_children
+        if getattr(child, "id", None) in {"signature-strokes", "consent-copy"}
+    }
+    assert stores == {"signature-strokes": "memory", "consent-copy": "memory"}
+
+
+# --- IRB alignment: consent, decline, skipping, surveys, withdrawal (2026-09-21) -----------------
+
+
+def test_a_skipped_task_advances_and_is_recorded_as_a_skip(tmp_path):
+    """IRB form item 10: any question may be skipped. The popup confirms; the server records it."""
+    session, log = _through_practice(tmp_path)
+    session, log, _screen, error, _spool = app.step(
+        "submit-clock", session, log, log_dir=tmp_path, answer=None, justification="  "
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).task_index == 1, "a skip moves on to the next task"
+    answer = next(
+        e for e in _events(tmp_path) if e["event"] == "answer_submit" and e["task_id"] == "T1"
+    )
+    assert answer["payload"]["answer"] is None
+    assert answer["payload"]["justification"] is None
+    assert answer["payload"]["skipped"] == ["answer", "justification"]
+
+
+def test_a_skipped_survey_is_recorded_as_null_not_refused(tmp_path):
+    state = _state(Stage.LOAD)
+    session, _log, _screen, error, _spool = app.step(
+        "survey-clock",
+        state.to_dict(),
+        {"session_id": str(uuid.uuid4())},
+        log_dir=tmp_path,
+        load=None,
+        survey={"clarity": 3},
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).stage is Stage.BREAK
+    events = {e["event"]: e["payload"] for e in _events(tmp_path)}
+    assert events["load_rating"]["value"] is None
+    assert events["survey_rating"] == {
+        "scale": "likert7",
+        "clarity": 3,
+        "ease_of_use": None,
+        "confidence": None,
+    }
+
+
+def test_the_survey_is_logged_once_per_condition(tmp_path):
+    names = [e["event"] for e in _run_session(tmp_path)]
+    assert names.count("survey_rating") == 2
+    assert names.count("load_rating") == 2
+
+
+def test_demographics_are_logged_once_right_after_consent(tmp_path):
+    events = _run_session(tmp_path)
+    demographics = [e for e in events if e["event"] == "demographics"]
+    assert len(demographics) == 1
+    assert demographics[0]["payload"] == DEMOGRAPHICS
+    first = [e["event"] for e in events if e["session_id"] == demographics[0]["session_id"]]
+    assert first.index("consent") < first.index("demographics") < first.index("condition_start")
+
+
+def test_an_unrecognised_demographic_answer_is_refused(tmp_path):
+    _session, _log, _screen, error, _spool = app.step(
+        "demographics-clock",
+        _state(Stage.DEMOGRAPHICS).to_dict(),
+        {},
+        log_dir=tmp_path,
+        demographics={"age_range": "12"},
+    )
+    assert "Unrecognised answer" in error
+
+
+def test_declining_writes_nothing_anywhere(tmp_path):
+    """IRB form item 12B: the declined screen says no data was collected, so none may be."""
+    session, _log, screen, error, _spool = app.step("decline-button", None, None, log_dir=tmp_path)
+    assert error == ""
+    assert SessionState.from_dict(session).stage is Stage.DECLINED
+    assert "No data has been collected" in json.dumps(screen.to_plotly_json(), default=str)
+    assert list(tmp_path.rglob("*")) == []
+    session, _log, _screen, _error, _spool = app.step(
+        "reconsider-button", session, None, log_dir=tmp_path
+    )
+    assert SessionState.from_dict(session).stage is Stage.CONSENT
+
+
+def test_the_signed_record_is_stored_apart_from_the_study_log(tmp_path):
+    """IRB form items 15 and 17: the name and signature never enter the study data."""
+    events = _run_session(tmp_path)
+    log_text = json.dumps(events)
+    assert "Test Participant" not in log_text
+    assert "signature" not in json.dumps([e["payload"] for e in events if e["event"] != "consent"])
+    consent_event = next(e for e in events if e["event"] == "consent")
+    assert consent_event["payload"]["signature_method"] == "drawn"
+
+    (record,) = consent.read_local(tmp_path / "consent")
+    assert record["printed_name"] == "Test Participant"
+    assert record["signature"] == SIGNATURE
+    assert "participant_id" not in record, "the consent record must not be joinable to answers"
+
+
+def test_a_paper_signature_is_accepted_without_a_drawing(tmp_path):
+    session, _log, _screen, error, _spool = app.step(
+        "consent-clock",
+        None,
+        None,
+        log_dir=tmp_path,
+        **_consent_kwargs(signature=None, paper=True),
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).consent_method == "paper"
+    (record,) = consent.read_local(tmp_path / "consent")
+    assert record["signature"] is None
+
+
+def test_consent_is_refused_while_the_record_cannot_be_stored(database, monkeypatch):
+    """Nothing continues on a consent that was not recorded -- unlike an event, it never spools."""
+
+    def down(_record):
+        raise db.TransientDatabaseError("Neon compute is suspended")
+
+    monkeypatch.setattr(db, "insert_consent", down)
+    session, _log, _screen, error, _spool = app.step(
+        "consent-clock", None, None, **_consent_kwargs()
+    )
+    assert error == app.CONSENT_UNSAVED
+    assert session is no_update
+
+
+def test_the_participant_gets_their_signed_copy_only_once_it_is_stored(tmp_path):
+    kwargs = _consent_kwargs()
+    record = kwargs["consent_record"]
+    outputs = app.consent_step(
+        CONSENTED_AT,
+        record["printed_name"],
+        record["signed_date"],
+        [],
+        SIGNATURE,
+        None,
+        None,
+        None,
+        consent_dir=tmp_path,
+    )
+    copy = outputs[-1]
+    assert "Test Participant" in copy and "<svg" in copy
+    refused = app.consent_step(
+        CONSENTED_AT, "", "2026-09-16", [], SIGNATURE, None, None, None, consent_dir=tmp_path
+    )
+    assert refused[-1] is no_update
+
+
+def test_a_withdrawn_id_is_turned_away_with_a_message(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pw@host/db")
+
+    def withdrawn(_pid):
+        raise db.WithdrawnParticipantError("withdrawn")
+
+    monkeypatch.setattr(db, "register_participant", withdrawn)
+    _session, _log, _screen, error, _spool = app.step(
+        "participant-button",
+        _state(Stage.PARTICIPANT_ID, participant_id=None).to_dict(),
+        {},
+        participant_id="P01",
+    )
+    assert "can no longer be used" in error
+
+
+def test_the_final_screen_explains_withdrawal_with_the_participant_id():
+    """IRB form item 13 promises this reminder at the end of every session."""
+    text = json.dumps(app.render(_state(Stage.COMPLETE)).to_plotly_json(), default=str)
+    assert "two weeks" in text
+    assert "rebollar@oxy.edu" in text
+    assert "P01" in text
+
+
+def test_the_consent_screen_warns_until_the_form_is_approved():
+    text = json.dumps(app.render(_state(Stage.CONSENT)).to_plotly_json(), default=str)
+    assert ("PENDING HSRRC APPROVAL" in text) is (not consent.APPROVED)

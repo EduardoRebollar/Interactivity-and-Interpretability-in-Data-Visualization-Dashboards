@@ -20,6 +20,9 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 STUDY_LOGS_DIR = DATA_DIR / "study_logs"
+# Signed consent records from local runs (no database). Deliberately NOT under study_logs/: IRB form
+# items 15 and 17 require signed consent to be kept apart from the study data. Gitignored.
+CONSENT_DIR = DATA_DIR / "consent"
 
 
 def spool_dir() -> Path:

@@ -113,16 +113,33 @@ parquet cache stay gitignored as before.
   into a public artefact.
 - Vercel's Python versions are 3.12 (default), 3.13, 3.14. `requires-python = ">=3.11"` is not one of
   them, so Vercel falls back to 3.12. The suite is verified on 3.11 and 3.14, which brackets it.
-- Anything imported by `src/runtime_data.py`, `src/figures.py`, `src/layout.py`, `src/flow.py`,
-  `src/db.py`, or `src/app.py` ships to production. **Do not import pandas in those modules** —
+- Everything under `src/` except `data.py` and `contrast.py` ships to production: `app.py`,
+  `config.py`, `consent.py`, `db.py`, `figures.py`, `flow.py`, `layout.py`, `logging.py`,
+  `runtime_data.py`, `tasks.py`, and `assets/`. **Do not import pandas in those modules** —
   `tests/test_runtime_data.py` fails the build if you do.
+- `vercel.json` excludes `data/consent/**` and `irb/**` as well as `analysis/**`: local signed consent
+  records and the IRB paperwork carry names. `tests/test_scoring.py` asserts all three.
 
 ### Study instrumentation
 
 - The app logs interaction events (filter changes, legend/isolation clicks, sort actions), task
-  timings, and participant answers.
+  timings, participant answers (skips recorded as `null` plus `skipped`), the post-condition survey
+  (Paas + three Likert items), demographics, and a `consent` event. Hovers are **not** logged
+  (decided 2026-09-21).
+- **Names and signatures never enter the event log.** The signed consent record goes to its own
+  `consent_records` table (or `data/consent/` locally), which has no participant ID so it cannot be
+  joined to answers — IRB form items 15 and 17. `scripts/export_consents.py --purge` moves it to the
+  Oxy Drive and out of Neon.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v6 (2026-09-21).** Brought in line with the IRB submission. Any question may be skipped,
+so `answer_submit.answer`/`justification` and `load_rating.value` may be null, and `answer_submit`
+carries `skipped`. New events `survey_rating` (three 7-point Likert items, per condition) and
+`demographics` (once). `consent` gains `signature_method`. New table `consent_records` — **no
+participant ID, by design** — and `participants.withdrawn_at`, both added idempotently, so
+`scripts/init_db.py` upgrades a v5 database in place (verified against a v5 Postgres). Nothing
+collected, so no migration of data.
 
 **Schema v5 (2026-09-16).** No new column; what Postgres stores in `server_ts` changed. It is now the
 time the logger created the record (`db.insert_event` writes it, falling back to `now()`). Under v4
@@ -163,7 +180,12 @@ committed, `.env*` gitignored.
 ### Accessibility baseline
 
 - Color palette must meet WCAG 2.1 AA contrast ratios (4.5:1 for text, 3:1 for graphical elements).
-- All interactive controls keyboard-navigable.
+- All interactive controls keyboard-navigable. The one exception is the consent screen's
+  signature pad, which cannot be drawn with a keyboard. Its keyboard alternative is the
+  "signed a paper copy" checkbox, and IRB form item 12A already provides a paper form. Keep that
+  alternative whenever the consent screen changes.
+- Skip confirmations use the browser's own `window.confirm`, which is keyboard-operable. Don't
+  replace it with a custom modal unless the modal is keyboard-operable too.
 - Do not propose color choices without checking contrast.
 - Full screen-reader accessibility is explicitly out of scope; do not spend time on it, but do not
   add anything that makes it worse.
@@ -206,7 +228,8 @@ committed, `.env*` gitignored.
 
 ## Repo layout
 
-Every tracked file. `src/data.py` and `src/contrast.py` are the only modules under `src/` that do
+Every tracked file. `irb/` holds the IRB paperwork. It is gitignored and never tracked, so it is
+not in this list. `src/data.py` and `src/contrast.py` are the only modules under `src/` that do
 not ship to Vercel — see the import rule under Deployment above. `analysis/` never ships either: it is
 excluded in `vercel.json` and holds the answer key.
 
@@ -225,14 +248,16 @@ data/
   raw/                  # downloaded CSVs (gitignored, .gitkeep only)
   processed/            # cleaned parquet (gitignored, .gitkeep only)
   study_logs/           # JSONL sessions from local runs (gitignored, .gitkeep only)
+  consent/              # signed consent records from local runs (gitignored; created on demand)
   deploy/
     coverage.csv        # committed build artifact (named exemption)
 docs/
   visual-spec.md        # locked visual decisions (colors, chart types, layout)
-  study-design.md       # RQs, conditions, the 12 items, measures, rubric, draft consent
+  study-design.md       # RQs, conditions, the 12 items, measures, rubric, consent, withdrawal
 src/
   config.py             # INTERACTIVE flag (local default only), palette, scope
   data.py               # load + clean — pandas, local only
+  consent.py            # the consent form's text, the signed record, stored apart from study data
   contrast.py           # WCAG luminance/ratio maths; drives the palette script and its tests
   runtime_data.py       # stdlib csv loader; NO pandas
   db.py                 # Neon Postgres connection, DDL, and the 2x2 assignment rule
@@ -241,7 +266,9 @@ src/
   flow.py               # study flow state machine
   tasks.py              # the 12 items, forms A and B. NO answer key — it ships to the browser
   logging.py            # event/timing logger; Postgres or JSONL sink
-  app.py                # Dash app factory, callbacks, clientside timing and Submit guards
+  app.py                # Dash app factory, callbacks, clientside timing, Submit and skip guards
+  assets/
+    signature.js        # the consent screen's signature pad; Dash serves assets/ automatically
 analysis/               # offline scoring — NEVER ships; pandas allowed except in keys.py
   keys.py               # answer key derived from the deploy CSV, checked against study-design §4
   reshape.py            # events -> tidy task and participant x condition frames
@@ -257,6 +284,8 @@ scripts/
   init_db.py            # create tables
   export_logs.py        # pull study data out for analysis
   recover_spool.py      # replay spooled events into Postgres; dry run by default, idempotent
+  export_consents.py    # signed consent records -> printable copies (+PDF) for the Oxy Drive; --purge
+  withdraw_participant.py # IRB item 13: delete one ID's events everywhere; dry run by default
   derive_keys.py        # print the derived answer key; exits 1 if it disagrees with §4
   score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
   code_justifications.py # blind sheets, kappa, reasoning depth -> data/study_logs/coding/
@@ -278,11 +307,24 @@ tests/
   test_analysis.py      # real app sessions scored end to end; exclusions; coding harness; kappa
   test_viewer.py        # each health check trips on its fault; masking; download re-scores
   test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
+  test_consent.py       # the pinned consent text, the signed record, export and withdrawal scripts
 ```
 
 ### Study protocol
 
 - `docs/study-design.md` is the source of truth for the protocol. Change it before `src/tasks.py`.
+  **The IRB approval request form (`irb/`, local only) outranks it.** Where they disagree, change the
+  doc to match, or list the mismatch in `study-design.md` §10 so the IRB paperwork is amended.
+- **The consent text in `src/consent.py` is the HSRRC-submitted form, word for word.** Its hash is
+  pinned in `tests/test_consent.py`. Change the wording only to match an approved form, and re-pin
+  the hash when you do. `consent.APPROVED` stays False until HSRRC approves; while False, the screen
+  shows a "pending approval" banner.
+- **Every question may be skipped** (IRB form item 10), behind a confirmation popup. Only consent and
+  the participant ID are required. A skipped answer scores incorrect in the primary analysis and is
+  excluded in the pre-registered secondary (`study-design.md` §7).
+- **Withdrawal within two weeks** (IRB form item 13) goes through `scripts/withdraw_participant.py`.
+  It deletes the events, but marks the registration `withdrawn_at` rather than deleting it, so the
+  counterbalancing sequence stays explainable and the ID cannot be reused.
 - **Parallel forms A and B**: a participant sees one form per condition and never the same form
   twice. Plain order-counterbalancing cannot fix a memory effect — it only spreads it evenly.
 - Counterbalancing is **2×2**, assigned from a database sequence (`db.assignment_for`, `seq % 4`),
@@ -316,16 +358,11 @@ Verified 2026-09-08 on Windows 11, so future sessions don't re-derive it:
   constraint holds through the processed cache.
 - `src/` is not an installable package (`[tool.uv] package = false`); run via `uv run`.
 
-### Duplicate clone — be careful
+### Location
 
-This repo is cloned twice on this machine, both pointing at the same GitHub remote:
-
-- `…/Interactivity-and-Interpretability-in-Data-Visualization-Dashboards/` (outer, stale — only the
-  initial commit)
-- `…/Interactivity-and-Interpretability-in-Data-Visualization-Dashboards/Interactivity-and-Interpretability-in-Data-Visualization-Dashboards/`
-  (inner, **this is the working copy**)
-
-Confirm you are in the inner one before committing.
+The working copy is `C:\Users\Eduardo\Interactivity-and-Interpretability-in-Data-Visualization-Dashboards\`.
+Until 2026-09-21 it sat one level deeper, in a folder of the same name nested inside a stale clone;
+the stale clone was deleted and the working copy moved up. There is only one clone now.
 
 ## Working norms
 
@@ -353,7 +390,8 @@ no TODOs or stubs left in the production path. If something is blocked, say so �
 ### When in doubt
 
 Point to `docs/study-design.md` or `docs/visual-spec.md`. Those are the source of truth for the study
-and for the visual decisions. If those docs don't answer the question, ask.
+and for the visual decisions. The IRB approval request form in `irb/` outranks both on anything
+it covers. If none of them answers the question, ask.
 
 ## Anti-goals (things this project is not)
 
@@ -361,7 +399,8 @@ and for the visual decisions. If those docs don't answer the question, ask.
 - Not trying to be impressive. The two conditions looking identical is the point; a feature that
   makes only one of them nicer is a defect, not an improvement.
 - Not optimizing for performance. ~1,700 rows in memory, single user at a time.
-- Not building a public-facing site. Runs locally during study sessions.
+- Not building a public-facing site. It is deployed to one Vercel URL, but that URL is shared only
+  with recruited participants during in-person sessions (IRB form item 5B).
 
 ---
 
@@ -379,8 +418,8 @@ context cheap and the reports as long as they need to be.
 - 2026-09-15 — **The instrument is finished and verified end to end.** A full session runs from one
   URL; both conditions log a complete session; all four interactive controls work and record their
   events. 489 tests green.
-- **Blocked on IRB.** The consent text is a draft and says so on screen. No participant runs until
-  it is approved and `docs/study-design.md` §9's placeholders are filled.
+- **Blocked on IRB.** No participant runs until HSRRC approves. As of 2026-09-21 the app shows the
+  submitted consent form with a "pending approval" banner (`consent.APPROVED = False`).
 - 2026-09-16 — **Pre-pilot hardening done** (uncommitted at time of writing). A database outage no
   longer breaks a session or loses answers silently; consent is recorded; double-submit and
   reload-corrupted durations are handled; schema is v4. The offline scoring pipeline exists, with
@@ -389,8 +428,15 @@ context cheap and the reports as long as they need to be.
   full sessions in both orders, a DB outage mid-session with replay, and `verify_deployment.py`,
   which could never pass before (it miscounted events). The pytest suite calls `step()` directly
   and cannot see Dash-renderer failures — every button was dead in a browser while it was green.
+- 2026-09-21 — **Instrument aligned with the IRB submission** (uncommitted at time of writing):
+  the consent form verbatim with typed name, date and a drawn signature (or a paper-copy box), a
+  decline path, skippable questions behind a confirmation popup, demographics, the Likert survey
+  after each condition, and a two-week withdrawal script. Schema v6. 640 tests; a full session
+  driven in headless Chrome against both sinks and a throwaway Postgres upgraded from v5.
 - **Still to do before the pilot:** run `scripts/init_db.py` then `scripts/verify_deployment.py`
-  against **Neon**.
+  against **Neon**; fix the IRB wording mismatches listed in `study-design.md` §10; set
+  `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
+  changed.
 - Next after IRB: pilot, and check T6's form equivalence and A-T5's plateau (`study-design.md` §4).
 
 ## Decisions made
@@ -425,14 +471,30 @@ context cheap and the reports as long as they need to be.
   masked by default to protect the §7 coding blind.
 - 2026-09-16 — Resume is not built; the ID screen now asks for one sitting in one tab instead of
   promising it. Enter in the ID box submits it. `study-design.md` §8.
+- 2026-09-21 — The IRB approval request form outranks `study-design.md`. Signed consent goes to its
+  own table with no participant ID, exported to the Oxy Drive and purged. A skip scores incorrect
+  (primary), excluded (secondary). Demographics after the ID. Likert 7-point, after each condition
+  — the consent form says so, and one rating after both could not be split by condition. Hover
+  logging scrapped. Neon stays the collection store; Sheets would lose the sequence and the
+  one-answer index.
 
 ## Open questions
 
-- Whether the justification should stay required (`study-design.md` §10) — it may raise dropout on a
-  self-served web study.
+- Does HSRRC accept a drawn electronic signature? 45 CFR 46.117 allows electronic documentation;
+  confirm with hsrrc@oxy.edu. The paper-copy box is the fallback either way.
 
 ## Reports & external material
 
 <!-- e.g. - [Lit review draft](docs/lit-review.md) — 12 sources, interaction & cognitive load -->
 
--
+- `irb/COMP 490 APPROVAL REQUEST FORM FOR STUDIES INVOLVING HUMAN SUBJECTS.pdf` — the IRB
+  approval request form. **Gitignored; local only, never commit.** It **outranks
+  `docs/study-design.md`** (Eduardo, 2026-09-21): where they disagree, the form wins and the doc is
+  changed to match — or, if following the form would break the method, flag it so the form is
+  amended before submission rather than silently diverging. Read it before any decision on consent,
+  recruitment, data handling, tasks, or measures; what it requires is written into
+  `docs/study-design.md`, not into the form's folder. Extract text with `pdftotext` (poppler for the
+  Read tool is not installed).
+- `irb/COMP 490 Consent Form.pdf` — the informed consent form, pages 1–2, the text participants
+  sign. Also gitignored. `src/consent.py` transcribes it word for word, and the hash pinned in
+  `tests/test_consent.py` guards that transcription.

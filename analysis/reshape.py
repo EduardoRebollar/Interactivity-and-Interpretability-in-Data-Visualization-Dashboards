@@ -42,8 +42,13 @@ TASK_COLUMNS = [
     "duration_invalid",
     "correct",
     "correct_adjacent",
+    "skipped_answer",
+    "skipped_justification",
     *[f"n_{name}" for name in INTERACTION_EVENTS],
 ]
+
+# The three 7-point Likert items asked after each condition (study-design.md section 6.1).
+LIKERT_KEYS = tuple(tasks.LIKERT_ITEMS)
 
 
 class ReshapeError(ValueError):
@@ -93,7 +98,12 @@ def events_frame(records: Iterable[dict[str, Any]]) -> pd.DataFrame:
 
 
 def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFrame:
-    """One row per scored answer: participant x condition x task, with correctness attached."""
+    """One row per scored answer: participant x condition x task, with correctness attached.
+
+    A skipped answer is `None`, which never equals a key, so `correct` is False for it: the primary
+    rule in study-design.md section 7 scores a skip as incorrect. `skipped_answer` marks it, so the
+    pre-registered secondary (skips excluded) and the per-condition skip counts can be computed.
+    """
     key_table = key_table if key_table is not None else answer_keys.key_table()
 
     answers = events[(events["event"] == "answer_submit") & (events["task_id"] != PRACTICE_ID)]
@@ -121,9 +131,11 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
                 "correct_adjacent": answer_keys.is_correct_adjacent(
                     form, task_id, payload.get("answer"), key_table
                 ),
+                "skipped_answer": payload.get("answer") is None,
+                "skipped_justification": not (payload.get("justification") or "").strip(),
             }
         )
-    tasks_frame = pd.DataFrame(rows, columns=TASK_COLUMNS[:13])
+    tasks_frame = pd.DataFrame(rows, columns=TASK_COLUMNS[:15])
     tasks_frame["duration_ms"] = pd.to_numeric(tasks_frame["duration_ms"], errors="coerce")
 
     counts = _interaction_counts(events)
@@ -168,14 +180,30 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
         str(session): payload.get("value")
         for session, payload in zip(ratings["session_id"], ratings["payload"], strict=True)
     }
+    surveys = events[events["event"] == "survey_rating"]
+    likert = {
+        str(session): payload
+        for session, payload in zip(surveys["session_id"], surveys["payload"], strict=True)
+    }
     ended = set(events.loc[events["event"] == "session_end", "session_id"].astype(str))
     recovered = set(events.loc[events["event"] == "sink_recovered", "session_id"].astype(str))
 
     by_session = tasks_frame.groupby("session_id")
     sessions["paas"] = sessions["session_id"].map(paas)
+    for key in LIKERT_KEYS:
+        sessions[key] = sessions["session_id"].map(lambda s, k=key: (likert.get(s) or {}).get(k))
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
+    # Primary: skips count as incorrect, so the denominator is every scored answer.
     sessions["prop_correct"] = sessions["session_id"].map(by_session["correct"].mean())
+    # Secondary, pre-registered: among answered items only.
+    answered = tasks_frame[~tasks_frame["skipped_answer"].astype(bool)]
+    sessions["prop_correct_answered"] = sessions["session_id"].map(
+        answered.groupby("session_id")["correct"].mean()
+    )
+    sessions["n_skipped"] = (
+        sessions["session_id"].map(by_session["skipped_answer"].sum()).fillna(0).astype(int)
+    )
     sessions["ended"] = sessions["session_id"].isin(ended)
     sessions["degraded"] = sessions["session_id"].isin(recovered)
     return sessions.sort_values(["participant_id", "condition_order"]).reset_index(drop=True)

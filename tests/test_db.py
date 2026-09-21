@@ -122,7 +122,7 @@ def test_assignment_uses_the_short_connect_timeout(url, monkeypatch):
 
     class Returning(FakeConnection):
         def fetchone(self):
-            return (1,)
+            return (1, None)
 
     captured = _patch_connect(monkeypatch, Returning())
     db.register_participant("P01")
@@ -132,9 +132,15 @@ def test_assignment_uses_the_short_connect_timeout(url, monkeypatch):
 class Registry(FakeConnection):
     """Answers the participant lookup and insert like Postgres would, counting sequence draws."""
 
-    def __init__(self, known: dict[str, int] | None = None, race: bool = False):
+    def __init__(
+        self,
+        known: dict[str, int] | None = None,
+        race: bool = False,
+        withdrawn: set[str] | None = None,
+    ):
         super().__init__()
         self.known = dict(known or {})
+        self.withdrawn = set(withdrawn or ())
         self.next_seq = max(self.known.values(), default=0) + 1
         self.race = race
         self._row = None
@@ -143,7 +149,14 @@ class Registry(FakeConnection):
         super().execute(sql, params)
         (participant_id,) = params
         if sql.startswith("SELECT"):
-            self._row = (self.known[participant_id],) if participant_id in self.known else None
+            self._row = (
+                (
+                    self.known[participant_id],
+                    "2026-09-20" if participant_id in self.withdrawn else None,
+                )
+                if participant_id in self.known
+                else None
+            )
         else:
             # Postgres draws nextval before it checks the conflict: a conflicting insert burns one.
             seq, self.next_seq = self.next_seq, self.next_seq + 1
@@ -154,7 +167,7 @@ class Registry(FakeConnection):
                 self._row = None
             else:
                 self.known[participant_id] = seq
-                self._row = (seq,)
+                self._row = (seq, None)
         return self
 
     def fetchone(self):
@@ -184,6 +197,21 @@ def test_a_concurrent_registration_of_the_same_id_is_read_back(url, monkeypatch)
     registry = Registry(race=True)
     _patch_connect(monkeypatch, registry)
     assert db.register_participant("P01") == (99, *db.assignment_for(99))
+
+
+def test_a_withdrawn_id_cannot_start_a_new_session(url, monkeypatch):
+    """Their data was deleted at their request; a new session under the ID would undo that."""
+    registry = Registry(known={"P01": 5}, withdrawn={"P01"})
+    _patch_connect(monkeypatch, registry)
+    with pytest.raises(db.WithdrawnParticipantError):
+        db.register_participant("P01")
+    assert not [sql for sql, _ in registry.statements if sql.startswith("INSERT")]
+
+
+def test_a_withdrawn_id_is_not_a_transient_failure():
+    """The retry loop retries only transient errors; retrying a withdrawal cannot help."""
+    assert not issubclass(db.WithdrawnParticipantError, db.TransientDatabaseError)
+    assert issubclass(db.WithdrawnParticipantError, db.DatabaseError)
 
 
 def test_timeouts_are_whole_seconds():
@@ -307,3 +335,59 @@ def test_the_logger_produces_every_column_the_table_stores(tmp_path, monkeypatch
         record = log.event("line_isolate", entity="Brazil", isolated=True)
     assert set(db.EVENT_COLUMNS) <= set(record)
     assert record["event_uid"]
+
+
+# --- Consent records and withdrawal (schema v6) ------------------------------------------------
+
+
+def test_the_consent_table_cannot_be_joined_to_study_data():
+    """IRB form items 15 and 17: signed consent is kept apart from the study data."""
+    ddl = db.SCHEMA_SQL.split("CREATE TABLE IF NOT EXISTS consent_records")[1].split(");")[0]
+    assert "participant_id" not in ddl
+    assert "session_id" not in ddl
+    assert "participant_id" not in db.CONSENT_COLUMNS
+
+
+def test_new_columns_are_added_explicitly_for_existing_databases():
+    """CREATE TABLE IF NOT EXISTS is a no-op on an existing table; the column needs an ALTER."""
+    assert "ALTER TABLE participants ADD COLUMN IF NOT EXISTS withdrawn_at" in db.SCHEMA_SQL
+
+
+def test_insert_consent_is_idempotent_and_wraps_the_signature(url, monkeypatch):
+    connection = FakeConnection()
+    _patch_connect(monkeypatch, connection)
+    record = {column: f"value-{column}" for column in db.CONSENT_COLUMNS}
+    record["signature"] = [[[1, 2], [3, 4]]]
+    db.insert_consent(record)
+    ((sql, params),) = connection.statements
+    assert "ON CONFLICT (record_uid) DO NOTHING" in sql
+    assert params[db.CONSENT_COLUMNS.index("signature")].obj == [[[1, 2], [3, 4]]]
+
+
+class Withdrawal(FakeConnection):
+    def __init__(self, registered: bool):
+        super().__init__()
+        self.registered = registered
+        self.rowcount = 0
+
+    def execute(self, sql, params=None):
+        super().execute(sql, params)
+        self.rowcount = (1 if self.registered else 0) if sql.startswith("UPDATE") else 12
+        return self
+
+
+def test_withdrawal_marks_the_participant_then_deletes_their_events(url, monkeypatch):
+    connection = Withdrawal(registered=True)
+    _patch_connect(monkeypatch, connection)
+    assert db.withdraw_participant("P01") == 12
+    statements = [sql for sql, _ in connection.statements]
+    assert statements[0].startswith("UPDATE participants SET withdrawn_at")
+    assert statements[1].startswith("DELETE FROM study_events")
+    assert not any("DELETE FROM participants" in sql for sql in statements), "keep the row"
+
+
+def test_withdrawing_an_unknown_id_deletes_nothing(url, monkeypatch):
+    connection = Withdrawal(registered=False)
+    _patch_connect(monkeypatch, connection)
+    assert db.withdraw_participant("P99") is None
+    assert not any(sql.startswith("DELETE") for sql, _ in connection.statements)

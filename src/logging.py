@@ -59,6 +59,12 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v6 (2026-09-21): brought in line with the IRB submission. Any question may be skipped, so
+# `answer_submit.answer`, `justification` and `load_rating.value` may be null, and `answer_submit`
+# carries `skipped`, the parts left empty. New events `survey_rating` (the three Likert items) and
+# `demographics`. `consent` gains `signature_method`. The signature and name never enter this log;
+# they go to the separate consent record (src/consent.py).
+#
 # v5 (2026-09-16): the record shape is unchanged, but what Postgres stores in `server_ts` is not.
 # It is now the record's own creation time; under v4 it was the INSERT time, so an event spooled
 # through an outage carried its replay time. See `db.insert_event`.
@@ -69,7 +75,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -78,7 +84,11 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # exist earlier, because a record needs a participant ID and a condition. So `server_ts` is the
     # instructions-screen time; the true consent time is `consented_at`, from the browser clock.
     # `consent_version` is a hash of the wording shown, so a mid-study text change is detectable.
-    "consent": ("consented_at", "consent_version"),
+    # `signature_method` is "drawn" or "paper". The signature and the printed name are NOT here:
+    # they go to the consent record, which is kept apart from study data (IRB form items 15, 17).
+    "consent": ("consented_at", "consent_version", "signature_method"),
+    # Once per participant, right after `consent`. Any value may be null (skipped).
+    "demographics": ("age_range", "field", "chart_frequency", "dashboard_familiarity"),
     # Session lifecycle
     "session_start": ("interactive", "entities", "vaccines", "year_range"),
     "session_end": ("reason",),
@@ -91,9 +101,13 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # "missing", "clock_reset" (a reload restarted the browser clock) or "negative".
     "task_end": ("duration_ms", "duration_invalid"),
     # task_id lives in the record column, not the payload, like every other event.
-    "answer_submit": ("answer", "justification", "duration_ms", "duration_invalid"),
-    # Paas single-item mental effort, once per condition. The RQ3 measure.
+    # `answer` and `justification` are null when skipped; `skipped` lists which ("answer",
+    # "justification"), so a skip is explicit rather than inferred from a blank.
+    "answer_submit": ("answer", "justification", "skipped", "duration_ms", "duration_invalid"),
+    # Paas single-item mental effort, once per condition. The RQ3 measure. `value` null if skipped.
     "load_rating": ("scale", "value"),
+    # The three 7-point Likert items, once per condition, alongside load_rating. Null if skipped.
+    "survey_rating": ("scale", "clarity", "ease_of_use", "confidence"),
     # Interactive-only affordances
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
@@ -111,6 +125,14 @@ FORMS = ("A", "B")
 
 class LogError(RuntimeError):
     """Raised on invalid logger construction or an unknown event name."""
+
+
+def _check_scale(label: str, value: Any, top: int) -> None:
+    """A rating is None (skipped) or an integer 1..top. bool is refused: it is an int subclass."""
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= top:
+        raise LogError(f"{label} must be an integer 1-{top} or None, got {value!r}")
 
 
 class Sink(Protocol):
@@ -387,7 +409,12 @@ def spool_file(participant_id: str, condition: str, session_id: str) -> Path:
 
 
 def read_spool(directory: Path | None = None) -> list[dict[str, Any]]:
-    """Every spooled envelope under `directory`, oldest first. For scripts/recover_spool.py."""
+    """Every spooled envelope under `directory`, oldest first. For scripts/recover_spool.py.
+
+    Exact within a session: each session spools to its own file and the sort is stable. Across
+    sessions, records stamped in the same clock tick (Windows timestamps are ~1 ms coarse) fall back
+    to file-name order. Harmless: analysis groups by session, never by insert order across them.
+    """
     directory = directory or config.spool_dir()
     envelopes: list[dict[str, Any]] = []
     for path in sorted(directory.glob("*.spool.jsonl")):
@@ -574,33 +601,75 @@ class StudyLogger:
 
         Accuracy is scored offline against the rubric in docs/study-design.md; no answer key exists
         in the running app, where a participant could read it out of the page source.
+
+        Either part may be skipped (IRB form item 10). A blank is recorded as None, and `skipped`
+        names what was left empty, so analysis never has to guess whether "" meant a skip.
         """
+        if answer == "":
+            answer = None
+        justification = (justification or "").strip() or None
+        skipped = [
+            part
+            for part, value in (("answer", answer), ("justification", justification))
+            if value is None
+        ]
         return self.event(
             "answer_submit",
             task_id=task_id,
             answer=answer,
             justification=justification,
+            skipped=skipped,
             duration_ms=duration_ms,
             duration_invalid=duration_invalid,
             client_elapsed_ms=client_elapsed_ms,
         )
 
-    def rate_load(self, value: int, *, client_elapsed_ms: float | None = None) -> dict[str, Any]:
-        """Record the Paas mental-effort rating for the condition just finished (RQ3)."""
-        if not isinstance(value, int) or not 1 <= value <= 9:
-            raise LogError(f"Paas rating must be an integer 1-9, got {value!r}")
+    def rate_load(
+        self, value: int | None, *, client_elapsed_ms: float | None = None
+    ) -> dict[str, Any]:
+        """Record the Paas mental-effort rating for the condition just finished (RQ3).
+
+        None is a skipped rating; anything else must be on the scale.
+        """
+        _check_scale("Paas rating", value, 9)
         return self.event(
             "load_rating", scale="paas", value=value, client_elapsed_ms=client_elapsed_ms
         )
 
-    def record_consent(self, consented_at: str, consent_version: str) -> dict[str, Any]:
+    def rate_survey(self, ratings: dict[str, int | None]) -> dict[str, Any]:
+        """Record the three 7-point Likert items for the condition just finished.
+
+        Exactly the keys of `tasks.LIKERT_ITEMS`; each value 1-7, or None when skipped.
+        """
+        expected = set(EVENTS["survey_rating"]) - {"scale"}
+        if set(ratings) != expected:
+            raise LogError(f"Survey ratings must be {sorted(expected)}, got {sorted(ratings)}")
+        for key, value in ratings.items():
+            _check_scale(f"Likert rating {key!r}", value, 7)
+        return self.event("survey_rating", scale="likert7", **ratings)
+
+    def record_demographics(self, answers: dict[str, str | None]) -> dict[str, Any]:
+        """Record the demographic answers. Call once, on condition 1's logger, after consent."""
+        expected = set(EVENTS["demographics"])
+        if set(answers) != expected:
+            raise LogError(f"Demographics must be {sorted(expected)}, got {sorted(answers)}")
+        return self.event("demographics", **answers)
+
+    def record_consent(
+        self, consented_at: str, consent_version: str, signature_method: str | None = None
+    ) -> dict[str, Any]:
         """Record consent. Call once, on condition 1's logger, before anything else.
 
         `consented_at` is the browser's ISO timestamp from the moment "I agree" was pressed.
         """
         if not consented_at:
             raise LogError("consented_at is required; a consent record without a time is not one")
-        return self.event("consent", consented_at=consented_at, consent_version=consent_version)
+        return self.event(
+            "consent",
+            consented_at=consented_at,
+            consent_version=consent_version,
+            signature_method=signature_method,
+        )
 
     # --- Spool state, for the caller to carry between requests --------------------------------
 

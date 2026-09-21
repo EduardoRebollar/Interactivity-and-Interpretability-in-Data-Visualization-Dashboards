@@ -130,9 +130,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_five():
-    """v5: Postgres `server_ts` is the record's own time, not the insert time. Never pool them."""
-    assert SCHEMA_VERSION == 5
+def test_schema_version_is_six():
+    """v6: skips are recorded as null, plus the survey, demographics and signature method."""
+    assert SCHEMA_VERSION == 6
 
 
 def test_form_is_recorded_on_every_event():
@@ -158,11 +158,62 @@ def test_load_rating_records_the_paas_scale(logger):
     assert record["payload"] == {"scale": "paas", "value": 7}
 
 
-@pytest.mark.parametrize("bad", [0, 10, -1, 4.5, "7"])
+@pytest.mark.parametrize("bad", [0, 10, -1, 4.5, "7", True])
 def test_load_rating_rejects_out_of_scale_values(logger, bad):
     """A rating outside 1-9 is not a Paas score and would corrupt the RQ3 measure."""
     with pytest.raises(LogError, match="1-9"):
         logger.rate_load(bad)
+
+
+def test_a_skipped_load_rating_is_recorded_as_null(logger):
+    """IRB form item 10: any question may be skipped. Missing, never zero."""
+    assert logger.rate_load(None)["payload"] == {"scale": "paas", "value": None}
+
+
+def test_the_survey_records_all_three_likert_items(logger):
+    record = logger.rate_survey({"clarity": 6, "ease_of_use": None, "confidence": 2})
+    assert record["event"] == "survey_rating"
+    assert record["payload"] == {
+        "scale": "likert7",
+        "clarity": 6,
+        "ease_of_use": None,
+        "confidence": 2,
+    }
+
+
+@pytest.mark.parametrize(
+    "ratings",
+    [
+        {"clarity": 8, "ease_of_use": 1, "confidence": 1},
+        {"clarity": 0, "ease_of_use": 1, "confidence": 1},
+        {"clarity": 1, "ease_of_use": 1},
+        {"clarity": 1, "ease_of_use": 1, "confidence": 1, "fun": 3},
+    ],
+)
+def test_the_survey_rejects_off_scale_or_misnamed_items(logger, ratings):
+    with pytest.raises(LogError):
+        logger.rate_survey(ratings)
+
+
+def test_demographics_must_name_exactly_the_documented_items(logger):
+    answers = dict.fromkeys(EVENTS["demographics"])
+    assert logger.record_demographics(answers)["payload"] == answers
+    with pytest.raises(LogError):
+        logger.record_demographics({"age_range": "18–24"})
+
+
+def test_a_skipped_answer_is_null_and_named_in_skipped(logger):
+    """A blank is recorded as absent, and the record says which part was skipped."""
+    logger.start_task("T2")
+    record = logger.submit_answer("T2", answer="", justification="   ")
+    assert record["payload"]["answer"] is None
+    assert record["payload"]["justification"] is None
+    assert record["payload"]["skipped"] == ["answer", "justification"]
+    logger.end_task()
+    logger.start_task("T3")
+    answered = logger.submit_answer("T3", answer="Brazil", justification=" steepest ")
+    assert answered["payload"]["justification"] == "steepest"
+    assert answered["payload"]["skipped"] == []
 
 
 def test_answer_carries_its_justification(logger):
@@ -368,7 +419,15 @@ def test_consent_is_recorded_with_the_browser_timestamp(logger):
     assert record["payload"] == {
         "consented_at": "2026-09-16T10:00:00.000Z",
         "consent_version": "abc123",
+        "signature_method": None,
     }
+
+
+def test_consent_records_the_method_and_never_the_signature(logger):
+    """The name and signature live in the separate consent record (IRB form items 15 and 17)."""
+    record = logger.record_consent("2026-09-16T10:00:00.000Z", "abc123", "drawn")
+    assert record["payload"]["signature_method"] == "drawn"
+    assert set(record["payload"]) == {"consented_at", "consent_version", "signature_method"}
 
 
 def test_consent_without_a_timestamp_is_refused(logger):
@@ -386,7 +445,7 @@ def test_an_invalid_duration_is_recorded_absent_with_its_reason(logger):
 
 
 def test_new_events_are_documented():
-    assert EVENTS["consent"] == ("consented_at", "consent_version")
+    assert EVENTS["consent"] == ("consented_at", "consent_version", "signature_method")
     assert EVENTS["sink_recovered"] == ("spooled", "dropped")
     assert "duration_invalid" in EVENTS["answer_submit"]
     assert "duration_invalid" in EVENTS["task_end"]

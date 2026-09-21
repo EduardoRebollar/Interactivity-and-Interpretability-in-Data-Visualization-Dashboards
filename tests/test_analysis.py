@@ -16,7 +16,7 @@ import pytest
 
 from analysis import coding, exclusions, keys, reshape
 from analysis import report as study_report
-from src import app, db, flow, runtime_data, tasks
+from src import app, consent, db, flow, runtime_data, tasks
 from src import logging as study_logging
 from src.flow import SessionState, Stage
 
@@ -63,8 +63,12 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5)
         )
         assert error == "", error
 
-    click("consent-clock", consented_at="2026-09-16T10:00:00.000Z")
+    record = consent.build_record(
+        "2026-09-16T10:00:00.000Z", "Test Participant", "2026-09-16", [[[1, 1]] * 12]
+    )
+    click("consent-clock", consented_at=record["consented_at"], consent_record=record)
     click("participant-button", participant_id=participant_id)
+    click("demographics-clock", demographics={"age_range": "25–34"})
     for condition in range(2):
         click("begin-button")
         if condition == 0:
@@ -81,7 +85,7 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5)
                 if callable(duration_ms)
                 else duration_ms,
             )
-        click("load-button", load=load)
+        click("survey-clock", load=load, survey={"clarity": 5, "ease_of_use": 5, "confidence": 5})
         if condition == 0:
             click("resume-button")
     assert SessionState.from_dict(session).stage is Stage.COMPLETE
@@ -605,3 +609,50 @@ def test_the_report_renders_every_section(tmp_path):
     text = study_report.render(scored, conditions, excluded)
     for title in ("Exclusions", "Accuracy, RQ1", "T5 secondary", "Mental effort", "Time on task"):
         assert title in text
+
+
+# --- Skips and the survey (study-design.md sections 6.1 and 7, 2026-09-21) -----------------------
+
+
+def test_a_skip_is_incorrect_in_the_primary_and_excluded_from_the_secondary(tmp_path):
+    """Primary scores a skip as incorrect (out of six); the secondary drops it."""
+
+    def skip_t1(form, task_id):
+        return None if task_id == "T1" else correct_answer(form, task_id)
+
+    run_session(tmp_path, _participant_for("static", "A"), skip_t1)
+    _events, tasks_frame, conditions = _score(tmp_path)
+
+    skipped = tasks_frame[tasks_frame["task_id"] == "T1"]
+    assert skipped["skipped_answer"].all()
+    assert not skipped["correct"].any(), "a skip is incorrect under the primary rule"
+    assert len(tasks_frame) == 12, "a skip is still an answer record"
+    assert set(conditions["prop_correct"]) == {5 / 6}
+    assert set(conditions["prop_correct_answered"]) == {1.0}
+    assert set(conditions["n_skipped"]) == {1}
+
+
+def test_a_skipped_session_is_not_an_incomplete_one(tmp_path):
+    """A skip is a response, not an abandoned session: incomplete_session must not catch it."""
+    run_session(tmp_path, _participant_for("static", "A"), lambda form, task_id: None)
+    events, tasks_frame, conditions = _score(tmp_path)
+    marked, found = exclusions.apply(tasks_frame, conditions)
+    rule = next(e for e in found if e.rule == "incomplete_session")
+    assert not rule.ids
+
+
+def test_the_likert_survey_reaches_the_condition_frame(tmp_path):
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    _events, _tasks, conditions = _score(tmp_path)
+    for key in reshape.LIKERT_KEYS:
+        assert set(conditions[key]) == {5}
+
+
+def test_the_report_shows_the_secondary_accuracy_skips_and_survey(tmp_path):
+    run_session(tmp_path, _participant_for("static", "B"), correct_answer)
+    _events, tasks_frame, conditions = _score(tmp_path)
+    marked, found = exclusions.apply(tasks_frame, conditions)
+    text = study_report.render(marked, conditions, found)
+    assert "skips excluded" in text
+    assert "Skipped answers" in text
+    assert "clarity" in text
