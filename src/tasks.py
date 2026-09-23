@@ -21,10 +21,12 @@ from src.flow import Task
 CROSSING_BANDS = ("2004-2008", "2009-2012", "2013-2016", "2017-2020", "2021-2024")
 
 GAP_OPTIONS = (
-    "Coverage was not reported for those years",
     "Coverage was zero for those years",
     "Coverage was very low but above zero",
     "Coverage was high and steady",
+    # Last, not first: an option's position must carry no information about the answer
+    # (docs/study-design.md section 5).
+    "Coverage was not reported for those years",
 )
 
 COUNT_OPTIONS = ("0", "1", "2", "3", "4 or more")
@@ -45,17 +47,21 @@ PRACTICE = Task(
     options=("It rose", "It fell", "It stayed about level"),
 )
 
+# Entities are listed alphabetically, World last, and country options follow the same order. The
+# order also assigns each line its colour, so neither where the answer sits in the list nor which
+# colour its line gets depends on the answer (docs/study-design.md section 5).
+
 FORM_A: tuple[Task, ...] = (
     Task(
         task_id="T1",
         form="A",
         kind="reference",
         prompt=(
-            "The dashed black line is the world average. In 2010, how many of the countries shown "
+            "The dashed black line is the world average. In 2005, how many of the countries shown "
             "were above it?"
         ),
         vaccine="DTP3",
-        entities=("Brazil", "Nigeria", "Ethiopia", "India", "Indonesia", "World"),
+        entities=("China", "Ethiopia", "India", "Indonesia", "Nigeria", "World"),
         options=COUNT_OPTIONS,
     ),
     Task(
@@ -64,24 +70,29 @@ FORM_A: tuple[Task, ...] = (
         kind="trend",
         prompt="Between 2015 and 2021, which country's coverage fell the most?",
         vaccine="DTP3",
-        entities=("Brazil", "Indonesia", "India", "United States", "Nigeria", "World"),
-        options=("Brazil", "Indonesia", "India", "United States", "Nigeria"),
+        entities=("Brazil", "India", "Indonesia", "Nigeria", "United States", "World"),
+        options=("Brazil", "India", "Indonesia", "Nigeria", "United States"),
     ),
     Task(
         task_id="T3",
         form="A",
         kind="trend",
-        prompt="Between 2000 and 2012, which country improved the most?",
+        prompt="Between 2000 and 2012, which country's coverage rose the most?",
         vaccine="DTP3",
-        entities=("Ethiopia", "India", "China", "Indonesia", "Brazil", "World"),
-        options=("Ethiopia", "India", "China", "Indonesia", "Brazil"),
+        entities=("Brazil", "China", "Ethiopia", "India", "Indonesia", "World"),
+        options=("Brazil", "China", "Ethiopia", "India", "Indonesia"),
     ),
     Task(
         task_id="T4",
         form="A",
         kind="crossing",
-        prompt=("India's coverage overtook Brazil's at some point. Roughly when did that happen?"),
-        vaccine="DTP3",
+        prompt=(
+            "India's coverage became higher than Brazil's at some point. Roughly when did that "
+            "first happen?"
+        ),
+        # Polio3, not DTP3: on DTP3 these lines meet at 2016.14, drawn in 2016 but keyed 2017-2020.
+        # docs/study-design.md section 4.
+        vaccine="Polio3",
         entities=("Brazil", "India", "World"),
         options=CROSSING_BANDS,
     ),
@@ -89,9 +100,12 @@ FORM_A: tuple[Task, ...] = (
         task_id="T5",
         form="A",
         kind="crossing",
-        prompt="China's coverage overtook Brazil's at some point. Roughly when did that happen?",
+        prompt=(
+            "China's coverage became higher than the United Kingdom's at some point. Roughly when "
+            "did that first happen?"
+        ),
         vaccine="DTP3",
-        entities=("Brazil", "China", "World"),
+        entities=("China", "United Kingdom", "World"),
         options=CROSSING_BANDS,
     ),
     Task(
@@ -99,11 +113,12 @@ FORM_A: tuple[Task, ...] = (
         form="A",
         kind="gap",
         prompt=(
-            "Look at the United Kingdom's hepatitis B line before 2019. What can you say about "
-            "coverage in those years?"
+            "What does the chart tell you about the United Kingdom's hepatitis B coverage before "
+            "2019?"
         ),
         vaccine="HepB3",
-        entities=("United Kingdom", "United States", "Brazil", "World"),
+        # Not the United States: the UK's 2019-2024 segment lies within 2 points of it, hidden.
+        entities=("China", "Ukraine", "United Kingdom", "World"),
         options=GAP_OPTIONS,
     ),
 )
@@ -114,47 +129,53 @@ FORM_B: tuple[Task, ...] = (
         form="B",
         kind="reference",
         prompt=(
-            "The dashed black line is the world average. In 2020, how many of the countries shown "
+            "The dashed black line is the world average. In 2015, how many of the countries shown "
             "were above it?"
         ),
         vaccine="DTP3",
-        entities=("Brazil", "Nigeria", "Ethiopia", "India", "Indonesia", "World"),
+        entities=("Ethiopia", "Nigeria", "Pakistan", "Ukraine", "United Kingdom", "World"),
         options=COUNT_OPTIONS,
     ),
     Task(
         task_id="T2",
         form="B",
         kind="trend",
-        prompt="Between 2010 and 2014, which country's coverage fell the most?",
+        prompt="Between 2010 and 2015, which country's coverage fell the most?",
         vaccine="DTP3",
-        entities=("Ukraine", "Nigeria", "Brazil", "Pakistan", "India", "World"),
-        options=("Ukraine", "Nigeria", "Brazil", "Pakistan", "India"),
+        entities=("Brazil", "India", "Nigeria", "Pakistan", "Ukraine", "World"),
+        options=("Brazil", "India", "Nigeria", "Pakistan", "Ukraine"),
     ),
     Task(
         task_id="T3",
         form="B",
         kind="trend",
-        prompt="Between 2012 and 2024, which country improved the most?",
+        prompt="Between 2013 and 2024, which country's coverage rose the most?",
         vaccine="DTP3",
-        entities=("Nigeria", "Pakistan", "India", "Ethiopia", "Indonesia", "World"),
-        options=("Nigeria", "Pakistan", "India", "Ethiopia", "Indonesia"),
+        entities=("Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan", "World"),
+        options=("Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan"),
     ),
     Task(
         task_id="T4",
         form="B",
         kind="crossing",
-        prompt="India's coverage overtook Ukraine's at some point. Roughly when did that happen?",
+        prompt=(
+            "China's coverage became higher than Ukraine's at some point. Roughly when did that "
+            "first happen?"
+        ),
         vaccine="DTP3",
-        entities=("India", "Ukraine", "World"),
+        entities=("China", "Ukraine", "World"),
         options=CROSSING_BANDS,
     ),
     Task(
         task_id="T5",
         form="B",
         kind="crossing",
-        prompt="China's coverage overtook Ukraine's at some point. Roughly when did that happen?",
+        prompt=(
+            "China's coverage became higher than Brazil's at some point. Roughly when did that "
+            "first happen?"
+        ),
         vaccine="DTP3",
-        entities=("Ukraine", "China", "World"),
+        entities=("Brazil", "China", "World"),
         options=CROSSING_BANDS,
     ),
     Task(
@@ -162,11 +183,11 @@ FORM_B: tuple[Task, ...] = (
         form="B",
         kind="gap",
         prompt=(
-            "Look at the hepatitis B lines for Ethiopia, Nigeria and India in the early years. "
-            "What can you say about coverage before each line begins?"
+            "What does the chart tell you about hepatitis B coverage in Ethiopia, Nigeria and "
+            "India before each of their lines begins?"
         ),
         vaccine="HepB3",
-        entities=("Ethiopia", "Nigeria", "India", "Brazil", "World"),
+        entities=("Brazil", "Ethiopia", "India", "Nigeria", "World"),
         options=GAP_OPTIONS,
     ),
 )

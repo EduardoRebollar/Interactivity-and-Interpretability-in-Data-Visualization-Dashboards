@@ -35,7 +35,14 @@ uv run ruff check . && uv run ruff format --check .
 uv run python scripts/check_contrast.py     # WCAG ratios for the palette
 uv run python scripts/check_bundle.py       # app runs on the deployment subset alone
 uv run python scripts/derive_keys.py        # answer key, derived from the data, checked vs the docs
+uv run python scripts/export_questionnaire.py  # every screen -> irb/questionnaire.pdf (IRB item 18)
 ```
+
+`derive_keys.py` also enforces the item acceptance rule in `docs/study-design.md` §4. An item whose
+answer turns on a 2-point difference, or on reading a year one off, is refused. So is a crossing
+drawn at the edge of its answer band, or a gap line hidden behind another line.
+`export_questionnaire.py` renders the app's own screen functions, so the PDF says exactly what
+participants see. It needs Chrome or Edge to print; `--html-only` skips that.
 
 `check_bundle.py` builds a throwaway virtualenv from `requirements.txt` only and serves the app
 through it, proving the deployment works with pandas, numpy and pyarrow uninstalled. Those three are
@@ -68,8 +75,9 @@ vercel deploy --prod     # once the preview checks out
 `verify_deployment.py` writes a complete synthetic session, reads it back, checks every field
 survived including nested JSONB answers and null browser timings, confirms the database refuses a
 second answer for the same task and ignores a replayed event, then deletes exactly what it wrote.
-Run it against the real instance before collecting data — **no SQL in `src/db.py` has yet been
-executed against a real Postgres**, and the test suite does not do it either.
+It has passed against a local Postgres 16, on 2026-09-16 and again for schema v6 on 2026-09-21.
+**It has not yet run against Neon**, and the test suite executes no SQL at all, so run it against the
+real instance before collecting data.
 
 `init_db.py` also checks that every column the logger writes exists on the table. `CREATE TABLE IF
 NOT EXISTS` does nothing to a table created under an older schema, so a missed migration would
@@ -178,7 +186,8 @@ year-over-year change in the hover tooltip) with their interaction logging; the 
 record, kept apart from the study data, with export and a two-week withdrawal script;
 duplicate-submit protection; flagged rather than wrong durations after a reload; the Vercel entry
 point; and the offline scoring pipeline — derived answer key, pre-registered exclusions, blind RQ2
-coding and Cohen's kappa.
+coding and Cohen's kappa. The twelve items were audited against the chart as drawn and finalized on
+2026-09-22 (`docs/study-design.md` §4).
 
 **Not yet run with participants, and it must not be.** The consent form in `src/consent.py` is the
 one submitted to Occidental's HSRRC and is marked "pending approval" on screen until it is approved.
@@ -186,10 +195,12 @@ one submitted to Occidental's HSRRC and is marked "pending approval" on screen u
 
 Also open before piloting:
 
-- **Run `verify_deployment.py` against the real Neon database.** Nothing has exercised the SQL yet.
+- **Run `verify_deployment.py` against the real Neon database.** Only a local Postgres has run it.
+- **IRB request form item 18:** attach `irb/questionnaire.pdf` and enter the deployed URL.
 - T6's form equivalence, flagged in `docs/study-design.md` §4 — the UK's 19-year HepB3 gap has no
-  equal in the dataset, and form B substitutes three shorter ones.
-- A-T5 may not read as a crossing: China and Brazil sit at exactly 99.0 for three years. §4.
-- Session resume is promised on the participant-ID screen but not implemented. §8.
+  equal in the dataset, and form B substitutes three shorter ones. T6 is scored separately from
+  RQ1, so the pilot question is whether either form falls below ceiling.
+- B-T5 may not read as a crossing: China and Brazil sit at exactly 99.0 for three years. §4.
+- Session resume is not implemented; the participant-ID screen asks for one sitting in one tab. §8.
 - Hover and line isolation are mouse-only, so a keyboard-only participant in the interactive
   condition gets a chart that behaves like the static one.

@@ -287,6 +287,7 @@ scripts/
   export_consents.py    # signed consent records -> printable copies (+PDF) for the Oxy Drive; --purge
   withdraw_participant.py # IRB item 13: delete one ID's events everywhere; dry run by default
   derive_keys.py        # print the derived answer key; exits 1 if it disagrees with §4
+  export_questionnaire.py # every screen as irb/questionnaire.pdf, for IRB request form item 18
   score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
   code_justifications.py # blind sheets, kappa, reasoning depth -> data/study_logs/coding/
   view_data.py          # local data viewer on 127.0.0.1:8051; read-only
@@ -303,11 +304,12 @@ tests/
   test_logging.py       # event schema, both sinks, retry/spool/circuit breaker
   test_db.py            # failure classification, timeouts, schema migrations — no live database
   test_recover_spool.py # replay is dry by default, ordered, idempotent, never deletes
-  test_scoring.py       # derived keys match §4; each rule refuses an ill-posed item; key never ships
+  test_scoring.py       # derived keys match §4; each rule refuses an ill-posed or fragile item; no ship
   test_analysis.py      # real app sessions scored end to end; exclusions; coding harness; kappa
   test_viewer.py        # each health check trips on its fault; masking; download re-scores
   test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
   test_consent.py       # the pinned consent text, the signed record, export and withdrawal scripts
+  test_questionnaire.py # the IRB questionnaire carries every question and option, and no key
 ```
 
 ### Study protocol
@@ -335,6 +337,18 @@ tests/
   computed from `data/deploy/coverage.csv` by the rule the item states, then cross-checked against
   the table in `docs/study-design.md` §4; a disagreement fails the suite. §4's T1 key was wrong for
   days because a hand-written key has nothing checking it.
+- **Every item must pass the acceptance rule in `study-design.md` §4** (2026-09-22), and
+  `analysis/keys.py` refuses one that fails.
+  - No call closer than 5 points.
+  - No answer that a one-year misreading flips.
+  - Crossings drawn at least a year inside their band.
+  - No gap series hidden behind another line.
+
+  Seven of the thirteen items failed it before the task set was finalized. A new or changed item
+  must pass it.
+- **RQ1 accuracy is T1–T5.** T6's answer is printed in the gap caption in both conditions, so T6 is
+  scored and reported on its own (`study-design.md` §7). Options that are countries are
+  alphabetical, like the chart's entities. Their order used to put the key first in 7 of 12 items.
 - **`analysis/` must never ship.** Everything under `src/` is uploaded to Vercel, so the key cannot
   live there. `analysis/**` is in `vercel.json`'s `excludeFiles`, a test asserts that it stays there,
   and another asserts no runtime module imports it. pandas is allowed freely in `analysis/` —
@@ -433,11 +447,20 @@ context cheap and the reports as long as they need to be.
   decline path, skippable questions behind a confirmation popup, demographics, the Likert survey
   after each condition, and a two-week withdrawal script. Schema v6. 640 tests; a full session
   driven in headless Chrome against both sinks and a throwaway Postgres upgraded from v5.
-- **Still to do before the pilot:** run `scripts/init_db.py` then `scripts/verify_deployment.py`
-  against **Neon**; fix the IRB wording mismatches listed in `study-design.md` §10; set
-  `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
-  changed.
-- Next after IRB: pilot, and check T6's form equivalence and A-T5's plateau (`study-design.md` §4).
+- 2026-09-22 — **Task set finalized** (uncommitted at time of writing).
+  - Audited against the data and the chart as drawn. Seven of the thirteen items failed the new
+    acceptance rule and were replaced or repaired; the rule is enforced in `analysis/keys.py`.
+  - T6 is scored separately. End labels are spread apart (`visual-spec.md` §6).
+  - `irb/questionnaire.pdf` exported for IRB request form item 18.
+  - 712 tests. Four full sessions, one per counterbalancing cell, driven in headless Chrome: every
+    derived key matched what the app logged.
+- **Still to do before the pilot:**
+  - Run `scripts/init_db.py` then `scripts/verify_deployment.py` against **Neon**.
+  - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
+    and the URL for item 18.
+  - Set `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
+    changed.
+- Next after IRB: pilot, and check T6's form equivalence and B-T5's plateau (`study-design.md` §4).
 
 ## Decisions made
 
@@ -453,7 +476,7 @@ context cheap and the reports as long as they need to be.
 - 2026-09-16 — Answer keys are derived from the data and cross-checked against §4, never only
   transcribed. They live in `analysis/`, which does not ship.
 - 2026-09-16 — T5's keys sit on the last year of their bands: strict scoring is primary, adjacent-band
-  credit is a pre-registered secondary. `study-design.md` §4.
+  credit is a pre-registered secondary. `study-design.md` §4. (Extended to T4 on 2026-09-22.)
 - 2026-09-16 — On a DB failure: retry, then spool to browser session storage first and `/tmp` second.
   `/tmp` alone is not recoverable on Vercel. Interaction events never retry, because a retry inside
   the task window would inflate time-on-task in the interactive condition only.
@@ -477,6 +500,16 @@ context cheap and the reports as long as they need to be.
   — the consent form says so, and one rating after both could not be split by condition. Hover
   logging scrapped. Neon stays the collection store; Sheets would lose the sequence and the
   one-answer index.
+- 2026-09-22 — Task set finalized under an item acceptance rule (`study-design.md` §4).
+  - Four clean crossing items were not possible: DTP3 has only three clean crossing events. Eduardo
+    chose to keep two crossings per form, reassigned to the robust ones. A-T4 moved to Polio3; B-T5
+    keeps the China/Brazil tie and is flagged for the pilot.
+  - The adjacent-band secondary now covers T4 and T5.
+  - T6 is scored separately from RQ1.
+  - End labels are spread apart in the figure, identically in both conditions.
+  - The questions go to the IRB as a separate attachment, not into the consent text. Participants
+    read the consent form just before the tasks, so quoting the items there would show them both
+    forms' questions in advance.
 
 ## Open questions
 
@@ -487,8 +520,8 @@ context cheap and the reports as long as they need to be.
 
 <!-- e.g. - [Lit review draft](docs/lit-review.md) — 12 sources, interaction & cognitive load -->
 
-- `irb/COMP 490 APPROVAL REQUEST FORM FOR STUDIES INVOLVING HUMAN SUBJECTS.pdf` — the IRB
-  approval request form. **Gitignored; local only, never commit.** It **outranks
+- `irb/COMP 490 Request Form.pdf` — the IRB approval request form (renamed and revised
+  2026-09-21). **Gitignored; local only, never commit.** It **outranks
   `docs/study-design.md`** (Eduardo, 2026-09-21): where they disagree, the form wins and the doc is
   changed to match — or, if following the form would break the method, flag it so the form is
   amended before submission rather than silently diverging. Read it before any decision on consent,
@@ -496,5 +529,5 @@ context cheap and the reports as long as they need to be.
   `docs/study-design.md`, not into the form's folder. Extract text with `pdftotext` (poppler for the
   Read tool is not installed).
 - `irb/COMP 490 Consent Form.pdf` — the informed consent form, pages 1–2, the text participants
-  sign. Also gitignored. `src/consent.py` transcribes it word for word, and the hash pinned in
+  sign (revised 2026-09-21: counterbalanced order, two-week withdrawal, Neon named). Also gitignored. `src/consent.py` transcribes it word for word, and the hash pinned in
   `tests/test_consent.py` guards that transcription.

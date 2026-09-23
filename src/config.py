@@ -157,3 +157,7 @@ Y_RANGE = (0, 100)
 LINE_WIDTH = 2.5
 MARKER_SIZE = 5
 CHART_HEIGHT = 520
+# End labels closer than this, in percentage points, are spread apart (visual-spec.md section 6).
+# The plot area is CHART_HEIGHT minus 120 px of margins over Y_RANGE: 4 px a point, so 4.5 points
+# is 18 px, about what a FONT_SIZE_AXIS label needs.
+LABEL_MIN_GAP = 4.5

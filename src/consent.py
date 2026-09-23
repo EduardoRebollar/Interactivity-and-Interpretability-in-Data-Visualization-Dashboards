@@ -72,7 +72,7 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "same time-series data dashboard: one static version with no interactive controls, and one "
         "interactive version that allows filtering, sorting, and line isolation, and that displays "
         "directional (year-over-year) change indicators. The order in which you see the two "
-        "versions will be randomized. For each version, you will answer a short set of "
+        "versions will be counterbalanced. For each version, you will answer a short set of "
         "interpretation questions (such as identifying trends, comparing categories, or explaining "
         "what you notice in the data), followed by a brief survey with Likert-scale ratings of "
         "clarity, ease of use, confidence, and cognitive load, and short open-ended questions "
@@ -86,7 +86,11 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "Voluntary participation",
         "Participation in this study is voluntary. You may skip any questions that you do not want "
         "to answer or stop participating at any time. You are free to withdraw from the study at "
-        "any time without penalty, with no loss of benefits to which you were otherwise entitled.",
+        "any time without penalty, with no loss of benefits to which you were otherwise entitled. "
+        "You may also request that your data be withdrawn from the study up to two weeks after "
+        "your session by emailing me at rebollar@oxy.edu with your participant id. If two weeks "
+        "have surpassed, your responses will have been merged into the de-identified dataset and "
+        "can no longer be pulled out.",
     ),
     (
         "Risks and benefits",
@@ -106,9 +110,11 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
     (
         "Confidentiality",
         "Your responses will be kept confidential. You will not be identified by name in any "
-        "reported data. Each participant will be assigned a random participant id, and the file "
-        "linking ids to any identifying information (such as email addresses used for scheduling) "
-        "will be stored separately from the study data. Only the researcher and the faculty "
+        "reported data, as each participant will be assigned a random participant id. The study's "
+        "web application writes this data to an encrypted Neon (managed by PostgreSQL) database "
+        "hosted in the U.S. The file linking ids to any identifying information (such as email "
+        "addresses used for scheduling) will be stored in an encrypted file separate from the Neon "
+        "study database. Only the researcher and the faculty "
         "supervisor will have access to the data. All study data and signed consent forms will be "
         "kept on a password-protected computer and, where applicable, in a locked office at "
         "Occidental College. De-identified data will be shared in a public repository on GitHub. "

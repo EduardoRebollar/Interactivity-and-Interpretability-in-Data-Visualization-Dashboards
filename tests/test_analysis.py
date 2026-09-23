@@ -116,6 +116,7 @@ def test_a_real_session_scores_all_correct(tmp_path):
     assert set(tasks_frame["task_id"]) == {"T1", "T2", "T3", "T4", "T5", "T6"}
     assert len(conditions) == 2
     assert set(conditions["prop_correct"]) == {1.0}
+    assert set(conditions["t6_correct"]) == {1.0}
     assert set(conditions["paas"]) == {5}
     assert conditions["ended"].all()
 
@@ -607,7 +608,14 @@ def test_the_report_renders_every_section(tmp_path):
     _events, tasks_frame, conditions = _score(tmp_path)
     scored, excluded = exclusions.apply(tasks_frame, conditions)
     text = study_report.render(scored, conditions, excluded)
-    for title in ("Exclusions", "Accuracy, RQ1", "T5 secondary", "Mental effort", "Time on task"):
+    for title in (
+        "Exclusions",
+        "Accuracy, RQ1",
+        "Crossing items secondary",
+        "T6 gap check",
+        "Mental effort",
+        "Time on task",
+    ):
         assert title in text
 
 
@@ -615,7 +623,7 @@ def test_the_report_renders_every_section(tmp_path):
 
 
 def test_a_skip_is_incorrect_in_the_primary_and_excluded_from_the_secondary(tmp_path):
-    """Primary scores a skip as incorrect (out of six); the secondary drops it."""
+    """Primary scores a skip as incorrect (out of five, T1-T5); the secondary drops it."""
 
     def skip_t1(form, task_id):
         return None if task_id == "T1" else correct_answer(form, task_id)
@@ -627,9 +635,42 @@ def test_a_skip_is_incorrect_in_the_primary_and_excluded_from_the_secondary(tmp_
     assert skipped["skipped_answer"].all()
     assert not skipped["correct"].any(), "a skip is incorrect under the primary rule"
     assert len(tasks_frame) == 12, "a skip is still an answer record"
-    assert set(conditions["prop_correct"]) == {5 / 6}
+    assert set(conditions["prop_correct"]) == {4 / 5}
     assert set(conditions["prop_correct_answered"]) == {1.0}
     assert set(conditions["n_skipped"]) == {1}
+
+
+def test_t6_is_scored_but_kept_out_of_the_rq1_score(tmp_path):
+    """Section 7, 2026-09-22: T6's answer is on screen in both conditions, so it is reported on its
+    own. Getting it wrong must not move RQ1 accuracy, and must show on its own line."""
+
+    def wrong_t6(form, task_id):
+        return wrong_answer(form, task_id) if task_id == "T6" else correct_answer(form, task_id)
+
+    run_session(tmp_path, _participant_for("static", "A"), wrong_t6)
+    _events, tasks_frame, conditions = _score(tmp_path)
+
+    t6 = tasks_frame[tasks_frame["task_id"] == "T6"]
+    assert not t6["correct"].any(), "T6 is still scored"
+    assert (
+        not t6["rq1_item"].any()
+        and tasks_frame.loc[tasks_frame["task_id"] != "T6", "rq1_item"].all()
+    )
+    assert set(conditions["prop_correct"]) == {1.0}, "a wrong T6 must not lower RQ1 accuracy"
+    assert set(conditions["t6_correct"]) == {0.0}
+
+    scored, excluded = exclusions.apply(tasks_frame, conditions)
+    assert set(study_report.accuracy(scored)["mean"]) == {1.0}
+    assert set(study_report.gap_check(scored)["mean"]) == {0.0}
+
+
+def test_the_crossing_secondary_covers_t4_and_t5(tmp_path):
+    run_session(tmp_path, _participant_for("interactive", "B"), correct_answer)
+    _events, tasks_frame, conditions = _score(tmp_path)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    table = study_report.crossing_adjacent(scored)
+    assert set(table.index.get_level_values("task_id")) == {"T4", "T5"}
+    assert (table["correct_adjacent"] == 1.0).all()
 
 
 def test_a_skipped_session_is_not_an_incomplete_one(tmp_path):

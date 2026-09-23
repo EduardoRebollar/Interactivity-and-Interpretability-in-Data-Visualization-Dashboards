@@ -42,7 +42,7 @@ def _record(**overrides):
 
 def test_the_consent_text_is_pinned():
     """Changing the wording changes CONSENT_VERSION. It must match the HSRRC-approved form."""
-    assert consent.CONSENT_VERSION == "40452973d54e1f75"
+    assert consent.CONSENT_VERSION == "dc272a0a5568629c"
 
 
 @pytest.mark.parametrize(
@@ -55,6 +55,9 @@ def test_the_consent_text_is_pinned():
         "camarilloabad@oxy.edu",
         "hsrrc@oxy.edu",
         "I hereby agree to participate in this research project.",
+        "The order in which you see the two versions will be counterbalanced.",
+        "up to two weeks after your session by emailing me at rebollar@oxy.edu",
+        "encrypted Neon (managed by PostgreSQL) database hosted in the U.S.",
     ],
 )
 def test_the_form_says_what_the_irb_submission_says(phrase):

@@ -242,20 +242,36 @@ def _add_end_labels(
     vaccine: str,
     source: tuple[Row, ...],
 ) -> None:
-    """Label each series at its last observed point, so colour is never the only channel."""
+    """Label each series at its last observed point, so colour is never the only channel.
+
+    Labels that would overlap are spread apart vertically (`docs/visual-spec.md` section 6): many
+    countries end between 85 and 94, and two labels at the same height leave colour as the only
+    way to tell the lines apart -- exactly where the static condition cannot hover to check.
+    """
+    anchors = []
     for trace in figure.data:
-        entity = trace.name
         series = [
-            r for r in runtime_data.series(entity, vaccine, source) if r.coverage_pct is not None
+            r
+            for r in runtime_data.series(trace.name, vaccine, source)
+            if r.coverage_pct is not None
         ]
         if not series:
             # A series with no observations at all in range has nothing to anchor a label to.
             continue
-        last = series[-1]
+        anchors.append((series[-1].coverage_pct, series[-1].year, trace))
+
+    anchors.sort(key=lambda anchor: anchor[0])
+    heights = spread_labels(
+        [value for value, _year, _trace in anchors],
+        lower=config.Y_RANGE[0],
+        upper=config.Y_RANGE[1],
+        gap=config.LABEL_MIN_GAP,
+    )
+    for (_value, year, trace), height in zip(anchors, heights, strict=True):
         figure.add_annotation(
-            x=last.year,
-            y=last.coverage_pct,
-            text=entity,
+            x=year,
+            y=height,
+            text=trace.name,
             showarrow=False,
             xanchor="left",
             yanchor="middle",
@@ -266,3 +282,32 @@ def _add_end_labels(
                 "color": trace.line.color,
             },
         )
+
+
+def spread_labels(values: list[float], lower: float, upper: float, gap: float) -> list[float]:
+    """Heights for labels wanting to sit at `values` (ascending), at least `gap` apart.
+
+    Moves the labels as little as possible in total (least squares), keeps their order, and keeps
+    them within [lower, upper]. Labels already far enough apart do not move at all.
+
+    Writing each height as `w[i] + i * gap` turns "at least `gap` apart" into "`w` never
+    decreases", which is isotonic regression -- solved exactly by pooling adjacent violators. A
+    common bound on every `w` is then a clip, because clipping an isotonic fit to one interval
+    gives the best fit within it.
+    """
+    if not values:
+        return []
+    if (len(values) - 1) * gap > upper - lower:
+        raise FigureError(f"{len(values)} labels cannot sit {gap} apart within {lower}-{upper}")
+    targets = [value - index * gap for index, value in enumerate(values)]
+    blocks: list[list[float]] = []  # [mean, size] of each pooled run
+    for target in targets:
+        blocks.append([target, 1])
+        while len(blocks) > 1 and blocks[-2][0] > blocks[-1][0]:
+            mean, size = blocks.pop()
+            previous_mean, previous_size = blocks.pop()
+            pooled = previous_size + size
+            blocks.append([(previous_mean * previous_size + mean * size) / pooled, pooled])
+    fitted = [mean for mean, size in blocks for _ in range(int(size))]
+    ceiling = upper - (len(values) - 1) * gap
+    return [round(min(max(w, lower), ceiling) + index * gap, 3) for index, w in enumerate(fitted)]

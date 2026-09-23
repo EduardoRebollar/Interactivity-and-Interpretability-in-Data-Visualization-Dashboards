@@ -28,7 +28,18 @@ def main() -> int:
     for (form, task_id), key in sorted(table.items()):
         print(f"{form}-{task_id}  {key.kind:9}  {key.correct!r}")
         print(f"          rule: {key.rule}")
-        for name in ("above", "margin_pp", "runner_up", "cross_year", "not_below_year"):
+        for name in (
+            "above",
+            "closest_to_reference_pp",
+            "closest_pair_pp",
+            "margin_pp",
+            "runner_up",
+            "worst_misread_margin_pp",
+            "cross_year",
+            "not_below_year",
+            "intersection",
+            "band_inset_years",
+        ):
             if name in key.evidence:
                 print(f"          {name}: {key.evidence[name]}")
         if "missing_years" in key.evidence:

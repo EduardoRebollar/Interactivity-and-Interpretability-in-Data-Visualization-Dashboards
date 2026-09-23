@@ -243,6 +243,52 @@ def test_every_series_is_labelled_directly(rows):
     assert labelled == set(ENTITIES)
 
 
+def _label_heights(figure) -> list[float]:
+    return sorted(annotation.y for annotation in figure.layout.annotations)
+
+
+@pytest.mark.parametrize(
+    "task",
+    [tasks.PRACTICE, *tasks.FORM_A, *tasks.FORM_B],
+    ids=lambda t: f"{t.form}-{t.task_id}",
+)
+def test_end_labels_never_overlap_on_any_task_chart(rows, task):
+    """visual-spec.md section 6. Before 2026-09-22, labels collided on 9 of the 13 charts -- India
+    and the United States both end at 94 in A-T2 -- leaving colour as the only channel."""
+    figure = figures.build_figure(list(task.entities), task.vaccine, rows)
+    heights = _label_heights(figure)
+    gaps = [upper - lower for lower, upper in zip(heights, heights[1:], strict=False)]
+    assert min(gaps, default=config.LABEL_MIN_GAP) >= config.LABEL_MIN_GAP - 1e-9
+    for annotation in figure.layout.annotations:
+        reported = [
+            r
+            for r in runtime_data.series(annotation.text, task.vaccine, rows)
+            if r.coverage_pct is not None
+        ]
+        # Spread, not relocated: a label stays close enough to its line to read as its label.
+        assert abs(annotation.y - reported[-1].coverage_pct) <= 6.0, annotation.text
+        assert annotation.x == reported[-1].year
+    assert config.Y_RANGE[0] <= heights[0] and heights[-1] <= config.Y_RANGE[1]
+
+
+def test_spreading_leaves_well_separated_labels_where_they_are():
+    assert figures.spread_labels([10.0, 50.0, 90.0], 0, 100, 4.5) == [10.0, 50.0, 90.0]
+
+
+def test_spreading_moves_colliding_labels_apart_symmetrically():
+    assert figures.spread_labels([94.0, 94.0], 0, 100, 4.5) == [91.75, 96.25]
+
+
+def test_spreading_keeps_labels_inside_the_axis():
+    assert figures.spread_labels([98.0, 99.0, 100.0], 0, 100, 4.5) == [91.0, 95.5, 100.0]
+    assert figures.spread_labels([0.0, 1.0], 0, 100, 4.5) == [0.0, 4.5]
+
+
+def test_spreading_refuses_more_labels_than_fit():
+    with pytest.raises(FigureError, match="cannot sit"):
+        figures.spread_labels([50.0] * 30, 0, 100, 4.5)
+
+
 def test_legend_is_hidden_because_lines_are_labelled(rows):
     assert figures.build_figure(ENTITIES, VACCINE, rows).layout.showlegend is False
 

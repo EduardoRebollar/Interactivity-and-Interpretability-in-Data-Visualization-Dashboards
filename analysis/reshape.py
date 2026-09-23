@@ -6,7 +6,8 @@ returns `payload` as a dict (psycopg decodes JSONB); `scripts/export_logs.py` wr
 routes produce identical frames -- otherwise a CSV-based analysis and a database-based one could
 silently disagree.
 
-The unscored practice item (`P0`) is dropped here, per study-design.md section 8.
+The unscored practice item (`P0`) is dropped here, per study-design.md section 8. T6 is kept and
+scored, but flagged out of the RQ1 accuracy score (`rq1_item`), per section 7.
 """
 
 from __future__ import annotations
@@ -23,12 +24,16 @@ from analysis import keys as answer_keys
 from src import tasks
 
 PRACTICE_ID = tasks.PRACTICE.task_id
+# Scored like every other item but reported on its own, never in the RQ1 accuracy score: T6's
+# answer is on screen in both conditions, so it cannot differ by condition (study-design.md
+# sections 4 and 7).
+SEPARATELY_REPORTED = frozenset({"T6"})
 INTERACTION_EVENTS = ("filter_change", "line_isolate", "sort_change", "view_change")
 # The events only the interactive condition's controls can produce. `view_change` is not among them:
 # the schema documents it as possible in both conditions (src/logging.py EVENTS).
 INTERACTIVE_ONLY_EVENTS = ("filter_change", "line_isolate", "sort_change")
 
-TASK_COLUMNS = [
+BASE_COLUMNS = [
     "participant_id",
     "session_id",
     "condition",
@@ -44,8 +49,9 @@ TASK_COLUMNS = [
     "correct_adjacent",
     "skipped_answer",
     "skipped_justification",
-    *[f"n_{name}" for name in INTERACTION_EVENTS],
+    "rq1_item",
 ]
+TASK_COLUMNS = [*BASE_COLUMNS, *[f"n_{name}" for name in INTERACTION_EVENTS]]
 
 # The three 7-point Likert items asked after each condition (study-design.md section 6.1).
 LIKERT_KEYS = tuple(tasks.LIKERT_ITEMS)
@@ -133,9 +139,10 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
                 ),
                 "skipped_answer": payload.get("answer") is None,
                 "skipped_justification": not (payload.get("justification") or "").strip(),
+                "rq1_item": task_id not in SEPARATELY_REPORTED,
             }
         )
-    tasks_frame = pd.DataFrame(rows, columns=TASK_COLUMNS[:15])
+    tasks_frame = pd.DataFrame(rows, columns=BASE_COLUMNS)
     tasks_frame["duration_ms"] = pd.to_numeric(tasks_frame["duration_ms"], errors="coerce")
 
     counts = _interaction_counts(events)
@@ -189,17 +196,25 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
     recovered = set(events.loc[events["event"] == "sink_recovered", "session_id"].astype(str))
 
     by_session = tasks_frame.groupby("session_id")
+    rq1 = tasks_frame[~tasks_frame["task_id"].isin(SEPARATELY_REPORTED)]
     sessions["paas"] = sessions["session_id"].map(paas)
     for key in LIKERT_KEYS:
         sessions[key] = sessions["session_id"].map(lambda s, k=key: (likert.get(s) or {}).get(k))
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
-    # Primary: skips count as incorrect, so the denominator is every scored answer.
-    sessions["prop_correct"] = sessions["session_id"].map(by_session["correct"].mean())
-    # Secondary, pre-registered: among answered items only.
-    answered = tasks_frame[~tasks_frame["skipped_answer"].astype(bool)]
+    # Primary: skips count as incorrect, so the denominator is every RQ1 answer (T1-T5).
+    sessions["prop_correct"] = sessions["session_id"].map(
+        rq1.groupby("session_id")["correct"].mean()
+    )
+    # Secondary, pre-registered: among answered RQ1 items only.
+    answered = rq1[~rq1["skipped_answer"].astype(bool)]
     sessions["prop_correct_answered"] = sessions["session_id"].map(
         answered.groupby("session_id")["correct"].mean()
+    )
+    # T6 on its own line: the proportion of the session's gap items answered correctly.
+    separate = tasks_frame[tasks_frame["task_id"].isin(SEPARATELY_REPORTED)]
+    sessions["t6_correct"] = sessions["session_id"].map(
+        separate.groupby("session_id")["correct"].mean()
     )
     sessions["n_skipped"] = (
         sessions["session_id"].map(by_session["skipped_answer"].sum()).fillna(0).astype(int)

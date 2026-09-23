@@ -544,10 +544,17 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
     included = set(tasks_frame.loc[tasks_frame["use_accuracy"], "participant_id"].astype(str))
     by_condition = [
         (
-            "Accuracy, RQ1 primary: proportion correct per participant",
+            "Accuracy, RQ1 primary: proportion correct per participant, T1-T5",
             study_report.accuracy(tasks_frame),
         ),
-        ("T5 secondary: strict vs adjacent-band credit", study_report.t5_adjacent(tasks_frame)),
+        (
+            "Crossing items secondary: strict vs adjacent-band credit",
+            study_report.crossing_adjacent(tasks_frame),
+        ),
+        (
+            "T6 gap check, reported separately: proportion correct",
+            study_report.gap_check(tasks_frame),
+        ),
         ("Mental effort, RQ3: Paas 1-9", study_report.mental_effort(conditions, included)),
         ("Time on task (ms), timing-usable rows only", study_report.time_on_task(tasks_frame)),
     ]
@@ -608,16 +615,18 @@ def participant_overview(
     *,
     now: datetime | None = None,
 ) -> pd.DataFrame:
-    """One row per participant: cell, progress, Paas and accuracy per condition, exclusions."""
+    """One row per participant: cell, progress, Paas and accuracy per condition, exclusions.
+
+    Accuracy is the RQ1 score, over T1-T5; T6 is reported separately (study-design.md section 7).
+    """
     now = now or datetime.now(UTC)
     grouped = sessions(records)
     people = _by_participant(grouped)
     excluded = _excluded_by_participant(scoring, grouped) if scoring.ok else {}
     accuracy = {}
     if scoring.ok and not scoring.tasks.empty:
-        accuracy = (
-            scoring.tasks.groupby(["participant_id", "condition"])["correct"].mean().to_dict()
-        )
+        rq1 = scoring.tasks[~scoring.tasks["task_id"].isin(reshape.SEPARATELY_REPORTED)]
+        accuracy = rq1.groupby(["participant_id", "condition"])["correct"].mean().to_dict()
 
     rows = []
     for participant, items in people.items():

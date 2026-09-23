@@ -9,7 +9,7 @@ between static and interactive is a defect, not a variation.
 
 Status: **settled, 2026-09-15.** Every section is decided and built; the three formerly OPEN items
 are resolved in place, with the reasoning kept in §9. A change to any of §1–8 needs this document
-edited first, then the code.
+edited first, then the code. Amended 2026-09-22: end-label spacing (§6).
 
 ---
 
@@ -149,6 +149,16 @@ finished page is unchanged.
 - **Maximum 5 entities plus the World reference on one chart.**
 - Colour is never the only channel: every series is **directly labelled at the right end of its
   line**, so identification does not depend on matching a swatch to a legend entry.
+- **End labels never overlap (added 2026-09-22).** Each label sits at its series' last reported
+  point, in the series colour.
+  - Where two labels would be closer than **18 px** (4.5 points; a 13 px label needs about that
+    much), they are spread apart vertically. The spread is the smallest that separates them, keeps
+    their order and stays inside the 0–100 axis.
+  - Before this, labels collided on 9 of the 13 task charts. In A-T2, India and the United States
+    both end at 94. That left colour as the only channel, which the rule above forbids, and a static
+    participant cannot hover to check.
+  - The spread is computed in `build_figure`, which takes no `interactive` argument, so both
+    conditions get identical labels.
 
 **RESOLVED (2026-09-15) — the same fixed set per task, in both conditions.** If interactive
 participants could filter to any of the 17 entities while static participants saw a fixed 5, then

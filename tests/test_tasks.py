@@ -122,6 +122,31 @@ def test_no_task_asks_for_an_exact_value():
         assert not any(phrase in lowered for phrase in banned), task.task_id
 
 
+@pytest.mark.parametrize("task", _all_tasks(), ids=lambda t: f"{t.form}-{t.task_id}")
+def test_entities_are_alphabetical_with_world_last(task):
+    """docs/study-design.md section 5. Entity order sets each line's colour, so an order chosen by
+    the answer puts the answer on the same colour every time."""
+    countries = [e for e in task.entities if e != "World"]
+    assert countries == sorted(countries), task.task_id
+    if "World" in task.entities:
+        assert task.entities[-1] == "World", task.task_id
+
+
+def test_country_options_are_alphabetical():
+    """They used to be sorted by effect size, which put the correct answer first in every trend
+    item (section 5)."""
+    for form in FORMS:
+        for task in tasks.for_form(form):
+            if task.kind == "trend":
+                assert list(task.options) == sorted(task.options), task.task_id
+                assert set(task.options) == set(task.entities) - {"World"}, task.task_id
+
+
+def test_ordinal_options_stay_in_their_natural_order():
+    assert list(tasks.CROSSING_BANDS) == sorted(tasks.CROSSING_BANDS)
+    assert tasks.COUNT_OPTIONS == ("0", "1", "2", "3", "4 or more")
+
+
 def test_crossing_options_are_bands_not_years():
     """Same reason: a precise crossing year is not readable without hover."""
     for form in FORMS:

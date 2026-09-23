@@ -490,9 +490,9 @@ def test_the_world_reference_is_never_filterable():
 
 def test_the_world_reference_stays_on_the_chart_when_countries_are_hidden(tmp_path):
     (figure, _options, _value, _ctl), _events = _interact(
-        "entity-filter.value", tmp_path, selected=["Brazil"]
+        "entity-filter.value", tmp_path, selected=["China"]
     )
-    assert {t.name for t in figure.data if t.visible} == {"Brazil", "World"}
+    assert {t.name for t in figure.data if t.visible} == {"China", "World"}
 
 
 def test_sorting_reorders_the_control_list_and_logs_it(tmp_path):
@@ -560,7 +560,7 @@ def test_clicking_the_world_reference_does_nothing(tmp_path):
 
 def test_show_all_restores_everything_and_logs_it(tmp_path):
     task = _first_task()
-    narrowed = _view(selected=["Brazil"], isolated="Nigeria")
+    narrowed = _view(selected=["China"], isolated="Nigeria")
     (figure, _options, _value, control), events = _interact(
         "reset-view.n_clicks", tmp_path, control_state=narrowed
     )
@@ -625,7 +625,7 @@ def test_re_rendering_a_task_does_not_log_a_phantom_filter_change(tmp_path):
 
 
 def test_every_interaction_event_is_attributed_to_the_task_it_happened_on(tmp_path):
-    _result, events = _interact("entity-filter.value", tmp_path, selected=["Brazil"])
+    _result, events = _interact("entity-filter.value", tmp_path, selected=["China"])
     assert events[0]["task_id"] == _first_task().task_id
     assert events[0]["condition"] == "interactive"
 
@@ -638,7 +638,7 @@ def test_the_controls_do_nothing_off_a_task_screen(tmp_path):
             _state(stage, first_condition="interactive").to_dict(),
             {},
             None,
-            selected=["Brazil"],
+            selected=["China"],
             log_dir=tmp_path,
         )
         assert result == (no_update,) * 5, f"{stage.value} has no chart to control"
@@ -648,11 +648,11 @@ def test_a_stale_control_state_from_the_previous_task_is_discarded(tmp_path):
     """Entities from the previous task must not leak into this one's filter or chart."""
     stale = {"selected": ["Ukraine", "Pakistan"], "isolated": "Ukraine"}
     (figure, _options, _value, control), _events = _interact(
-        "entity-filter.value", tmp_path, control_state=stale, selected=["Brazil", "India"]
+        "entity-filter.value", tmp_path, control_state=stale, selected=["China", "India"]
     )
     assert control["isolated"] is None, "an isolation on an absent series must not survive"
-    assert control["selected"] == ["Brazil", "India"]
-    assert {t.name for t in figure.data if t.visible} == {"Brazil", "India", "World"}
+    assert control["selected"] == ["China", "India"]
+    assert {t.name for t in figure.data if t.visible} == {"China", "India", "World"}
 
 
 def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_path):
@@ -663,7 +663,7 @@ def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_pa
     """
     task = _first_task()
     for screen in ("0/P0", f"1/{task.task_id}", None):
-        leftover = {"screen": screen, "selected": ["Brazil"], "isolated": task.entities[0]}
+        leftover = {"screen": screen, "selected": ["China"], "isolated": task.entities[0]}
         (figure, _options, _value, control), events = _interact(
             "chart.clickData",
             tmp_path,
@@ -1175,10 +1175,10 @@ def test_a_control_still_updates_the_chart_when_logging_fails(database, monkeypa
         _task_state(),
         {"session_id": str(uuid.uuid4())},
         None,
-        selected=["Brazil"],
+        selected=["China"],
     )
     assert figure is not no_update
-    assert value == ["Brazil"]
+    assert value == ["China"]
     assert [r["event"] for r in spool["pending"]] == ["filter_change"]
 
 

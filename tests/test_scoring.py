@@ -5,6 +5,9 @@ The key is the study's ground truth. These guard the two ways it goes wrong sile
 - **It is wrong.** `docs/study-design.md` said T1's answer was 2 for days; the data says 1. Every
   key here is derived from the deploy CSV and must agree with the transcribed table, and each rule
   refuses an item that has stopped being well-posed (a tie, a double crossing, a zero in a gap).
+- **It is fragile.** A key that is right only for a reader who can see exact values measures hover,
+  not interpretation. Each rule also enforces the item acceptance rule in section 4: a close call,
+  a one-year slip that changes the answer, a crossing drawn at a band edge, a hidden gap series.
 - **It ships.** `src/` is uploaded to Vercel and much of it reaches the browser. The key lives in
   `analysis/`, which must stay excluded from the bundle and unimported by any runtime module.
 """
@@ -79,14 +82,15 @@ def test_trend_margins_match_study_design():
     """Section 4's form matching rests on these margins; a data refresh must not move them."""
     table = keys.key_table()
     margins = {item: table[item].evidence["margin_pp"] for item in table if item[1] in ("T2", "T3")}
-    assert margins == {("A", "T2"): 11, ("A", "T3"): 7, ("B", "T2"): 16, ("B", "T3"): 8}
+    assert margins == {("A", "T2"): 11, ("A", "T3"): 7, ("B", "T2"): 15, ("B", "T3"): 6}
 
 
 @needs_data
-def test_the_a_t5_plateau_is_detected_and_both_rules_agree_on_the_band():
+def test_the_b_t5_plateau_is_detected_and_both_rules_agree_on_the_band():
     """China and Brazil are both exactly 99.0 in 2009-2011. The two definitions of the crossing year
-    disagree (2012 vs 2009) and the key is only safe because both land in 2009-2012."""
-    evidence = keys.key_table()[("A", "T5")].evidence
+    disagree (2012 vs 2009) and the key is only safe because both land in 2009-2012. This item was
+    A-T5 until 2026-09-22."""
+    evidence = keys.key_table()[("B", "T5")].evidence
     assert evidence["cross_year"] == 2012
     assert evidence["not_below_year"] == 2009
     assert keys.band_for(2012) == keys.band_for(2009) == "2009-2012"
@@ -106,15 +110,42 @@ def test_t6_gaps_are_unreported_not_zero():
 
 
 @needs_data
-def test_t5_keys_sit_on_the_last_year_of_their_band():
-    """The band-edge asymmetry ruled on in section 4. If this stops being true, the secondary
-    analysis pre-registered for T5 no longer targets the right item; the ruling needs revisiting."""
+def test_crossing_keys_sit_where_the_band_edge_ruling_says():
+    """The band-edge positions ruled on in section 4 (revised 2026-09-22). If these stop being true,
+    the ruling -- and the adjacent-band secondary it justifies -- needs revisiting."""
     table = keys.key_table()
     for form in ("A", "B"):
         t4_year = table[(form, "T4")].evidence["cross_year"]
-        t5_year = table[(form, "T5")].evidence["cross_year"]
-        assert keys.band_for(t4_year).startswith(str(t4_year)), "T4 keys are first-year"
-        assert keys.band_for(t5_year).endswith(str(t5_year)), "T5 keys are last-year"
+        assert keys.band_for(t4_year).endswith(str(t4_year)), "T4 keys are last-year in both forms"
+    a_t5 = table[("A", "T5")].evidence["cross_year"]
+    assert not keys.band_for(a_t5).startswith(str(a_t5)), "A-T5 is mid-band"
+    assert not keys.band_for(a_t5).endswith(str(a_t5)), "A-T5 is mid-band"
+    b_t5 = table[("B", "T5")].evidence["cross_year"]
+    assert keys.band_for(b_t5).endswith(str(b_t5)), "B-T5 closes its band"
+
+
+@needs_data
+def test_every_crossing_is_drawn_at_least_a_year_inside_its_band():
+    """Section 4: T4 A and B are matched at about 1.05 years; the rule's floor is 1."""
+    table = keys.key_table()
+    insets = {
+        item: key.evidence["band_inset_years"]
+        for item, key in table.items()
+        if key.kind == "crossing"
+    }
+    assert insets == {("A", "T4"): 1.04, ("A", "T5"): 2.3, ("B", "T4"): 1.08, ("B", "T5"): 1.5}
+
+
+@needs_data
+def test_no_answer_position_holds_more_than_a_third_of_the_keys():
+    """Section 5. The trend options were once sorted by effect size, which put the key first in 7 of
+    the 12 items; a participant who noticed could score without reading a chart."""
+    positions = []
+    for (form, task_id), key in keys.key_table().items():
+        task = next(t for t in tasks.for_form(form) if t.task_id == task_id)
+        positions.append(task.options.index(key.correct))
+    most = max(positions.count(p) for p in set(positions))
+    assert most <= len(positions) / 3, f"one position holds {most} of {len(positions)} keys"
 
 
 # --- Bands --------------------------------------------------------------------------------------
@@ -141,9 +172,11 @@ def test_a_year_outside_every_band_is_refused(year):
         keys.band_for(year)
 
 
-def test_adjacent_band_credit_for_the_t5_keys():
+def test_adjacent_band_credit_for_the_crossing_keys():
+    assert keys.adjacent_bands(2016) == {"2013-2016", "2017-2020"}
     assert keys.adjacent_bands(2012) == {"2009-2012", "2013-2016"}
     assert keys.adjacent_bands(2008) == {"2004-2008", "2009-2012"}
+    assert keys.adjacent_bands(2006) == {"2004-2008"}, "a mid-band key gains nothing"
 
 
 def test_adjacent_bands_ignore_years_outside_every_band():
@@ -152,6 +185,14 @@ def test_adjacent_bands_ignore_years_outside_every_band():
 
 def test_strict_and_adjacent_scoring():
     table = {
+        ("A", "T4"): keys.DerivedKey(
+            "T4",
+            "A",
+            "crossing",
+            "2013-2016",
+            "rule",
+            {"adjacent_bands": ["2013-2016", "2017-2020"]},
+        ),
         ("A", "T5"): keys.DerivedKey(
             "T5",
             "A",
@@ -159,12 +200,14 @@ def test_strict_and_adjacent_scoring():
             "2009-2012",
             "rule",
             {"adjacent_bands": ["2009-2012", "2013-2016"]},
-        )
+        ),
+        ("A", "T2"): keys.DerivedKey("T2", "A", "trend", "Brazil", "rule", {}),
     }
     assert keys.is_correct("A", "T5", "2013-2016", table) is False
     assert keys.is_correct_adjacent("A", "T5", "2013-2016", table) is True
     assert keys.is_correct_adjacent("A", "T5", "2017-2020", table) is False
-    assert keys.is_correct_adjacent("A", "T4", "2017-2020", table) is None, "T5 only"
+    assert keys.is_correct_adjacent("A", "T4", "2017-2020", table) is True, "T4 is a crossing too"
+    assert keys.is_correct_adjacent("A", "T2", "Brazil", table) is None, "crossing items only"
     assert keys.is_correct("A", "P0", "It fell", table) is None, "practice is unscored"
 
 
@@ -178,13 +221,13 @@ def params(monkeypatch):
     return table
 
 
-def test_reference_counts_strictly_above_and_treats_a_tie_as_not_above(params):
+def test_reference_counts_the_countries_strictly_above(params):
     params[("Z", "T1")] = {"year": 2010}
     rows = _rows(
         {
             ("World", "DTP3"): {2010: 80.0},
             ("A", "DTP3"): {2010: 90.0},
-            ("B", "DTP3"): {2010: 80.0},
+            ("B", "DTP3"): {2010: 60.0},
             ("C", "DTP3"): {2010: 70.0},
         }
     )
@@ -192,6 +235,44 @@ def test_reference_counts_strictly_above_and_treats_a_tie_as_not_above(params):
     key = keys.derive(task, rows)
     assert key.correct == "1"
     assert key.evidence["above"] == ["A"]
+    assert key.evidence["closest_to_reference_pp"] == 10.0
+
+
+@pytest.mark.parametrize("value", [80.0, 82.0, 76.0], ids=["tie", "2 above", "4 below"])
+def test_reference_refuses_a_close_call(params, value):
+    """A tie, or anything under 5 points either way: overlapping markers, not a reading."""
+    params[("Z", "T1")] = {"year": 2010}
+    rows = _rows(
+        {("World", "DTP3"): {2010: 80.0}, ("A", "DTP3"): {2010: 95.0}, ("B", "DTP3"): {2010: value}}
+    )
+    task = _task("T1", "reference", ("A", "B", "World"), tasks.COUNT_OPTIONS)
+    with pytest.raises(keys.KeyDerivationError, match="close call"):
+        keys.derive(task, rows)
+
+
+def test_reference_refuses_a_count_that_changes_a_year_either_side(params):
+    """B is well below the line in 2010 but well above it in 2011: a slip of a year flips it."""
+    params[("Z", "T1")] = {"year": 2010}
+    rows = _rows(
+        {
+            ("World", "DTP3"): {2009: 80.0, 2010: 80.0, 2011: 80.0},
+            ("A", "DTP3"): {2009: 95.0, 2010: 95.0, 2011: 95.0},
+            ("B", "DTP3"): {2009: 60.0, 2010: 60.0, 2011: 88.0},
+        }
+    )
+    task = _task("T1", "reference", ("A", "B", "World"), tasks.COUNT_OPTIONS)
+    with pytest.raises(keys.KeyDerivationError, match="one off"):
+        keys.derive(task, rows)
+
+
+def test_reference_refuses_lines_too_close_to_count_apart(params):
+    params[("Z", "T1")] = {"year": 2010}
+    rows = _rows(
+        {("World", "DTP3"): {2010: 60.0}, ("A", "DTP3"): {2010: 90.0}, ("B", "DTP3"): {2010: 87.0}}
+    )
+    task = _task("T1", "reference", ("A", "B", "World"), tasks.COUNT_OPTIONS)
+    with pytest.raises(keys.KeyDerivationError, match="counted separately"):
+        keys.derive(task, rows)
 
 
 def test_reference_refuses_a_missing_value(params):
@@ -226,6 +307,35 @@ def test_trend_direction_decides_the_winner(params):
     assert keys.derive(_task("T3", "trend", ("A", "B"), ("A", "B")), rows).correct == "A"
 
 
+def test_trend_refuses_a_winner_that_a_one_year_slip_overturns(params):
+    """B-T2 as it was: Ukraine's line was 76 in 2013 and 23 in 2014, so reading the end one year
+    early handed the answer to the runner-up."""
+    params[("Z", "T2")] = {"window": (2010, 2014), "direction": "fall"}
+    rows = _rows(
+        {
+            ("A", "DTP3"): {2009: 70.0, 2010: 52.0, 2011: 50.0, 2013: 76.0, 2014: 23.0, 2015: 23.0},
+            ("B", "DTP3"): {2009: 63.0, 2010: 56.0, 2011: 53.0, 2013: 39.0, 2014: 43.0, 2015: 42.0},
+        }
+    )
+    task = _task("T2", "trend", ("A", "B"), ("A", "B"))
+    with pytest.raises(keys.KeyDerivationError, match="one-year slip"):
+        keys.derive(task, rows)
+
+
+def test_trend_records_its_worst_margin_under_a_slip(params):
+    params[("Z", "T3")] = {"window": (2010, 2014), "direction": "rise"}
+    rows = _rows(
+        {
+            ("A", "DTP3"): {y: 50.0 + 10 * (y - 2009) for y in range(2009, 2016)},
+            ("B", "DTP3"): {y: 50.0 + 2 * (y - 2009) for y in range(2009, 2016)},
+        }
+    )
+    key = keys.derive(_task("T3", "trend", ("A", "B"), ("A", "B")), rows)
+    assert key.correct == "A"
+    assert key.evidence["margin_pp"] == 32.0
+    assert key.evidence["worst_misread_margin_pp"] == 16.0, "2011 to 2013: +20 against +4"
+
+
 def _crossing_rows(differences: dict[int, float]) -> tuple[Row, ...]:
     return _rows(
         {
@@ -253,6 +363,27 @@ def test_crossing_refuses_a_plateau_that_spans_two_bands(params):
         keys.derive(task, _crossing_rows(differences))
 
 
+def test_crossing_refuses_lines_that_meet_at_a_band_edge(params):
+    """A-T4 on DTP3: 1 point below in 2016, 6 above in 2017. The lines meet at 2016.14, drawn in
+    2013-2016, but the first year above keys 2017-2020."""
+    params[("Z", "T4")] = {"overtaker": "Up", "overtaken": "Down"}
+    differences = {y: -10.0 for y in range(2000, 2016)} | {2016: -1.0}
+    differences |= {y: 6.0 for y in range(2017, 2025)}
+    task = _task("T4", "crossing", ("Up", "Down"), tasks.CROSSING_BANDS)
+    with pytest.raises(keys.KeyDerivationError, match="2016.14"):
+        keys.derive(task, _crossing_rows(differences))
+
+
+def test_crossing_records_where_the_lines_meet(params):
+    params[("Z", "T4")] = {"overtaker": "Up", "overtaken": "Down"}
+    differences = {y: -5.0 for y in range(2000, 2011)} | {y: 5.0 for y in range(2011, 2025)}
+    task = _task("T4", "crossing", ("Up", "Down"), tasks.CROSSING_BANDS)
+    key = keys.derive(task, _crossing_rows(differences))
+    assert key.correct == "2009-2012"
+    assert key.evidence["intersection"] == 2010.5
+    assert key.evidence["band_inset_years"] == 2.0
+
+
 def test_crossing_refuses_a_series_that_never_overtakes(params):
     params[("Z", "T4")] = {"overtaker": "Up", "overtaken": "Down"}
     task = _task("T4", "crossing", ("Up", "Down"), tasks.CROSSING_BANDS)
@@ -274,6 +405,29 @@ def test_gap_refuses_a_series_with_no_gap(params):
     task = _task("T6", "gap", ("A",), tasks.GAP_OPTIONS, vaccine="HepB3")
     with pytest.raises(keys.KeyDerivationError, match="no gap"):
         keys.derive(task, _rows({("A", "HepB3"): {y: 90.0 for y in range(2000, 2025)}}))
+
+
+def test_gap_refuses_a_series_hidden_behind_another_line(params):
+    """A-T6 as it was: the UK's reported segment ran within 2 points of the United States line."""
+    params[("Z", "T6")] = {"series": ("A",), "before": 2019}
+    rows = _rows(
+        {
+            ("A", "HepB3"): {y: 92.0 for y in range(2019, 2025)},
+            ("B", "HepB3"): {y: 91.0 for y in range(2000, 2025)},
+        }
+    )
+    task = _task("T6", "gap", ("A", "B"), tasks.GAP_OPTIONS, vaccine="HepB3")
+    with pytest.raises(keys.KeyDerivationError, match="hidden"):
+        keys.derive(task, rows)
+
+
+def test_gap_accepts_a_series_that_only_touches_another_line(params):
+    """Close in a minority of its years is a crossing line, not a hidden one."""
+    params[("Z", "T6")] = {"series": ("A",), "before": 2019}
+    touching = {y: 60.0 for y in range(2019, 2023)} | {2023: 92.0, 2024: 92.0}
+    rows = _rows({("A", "HepB3"): touching, ("B", "HepB3"): {y: 91.0 for y in range(2000, 2025)}})
+    task = _task("T6", "gap", ("A", "B"), tasks.GAP_OPTIONS, vaccine="HepB3")
+    assert keys.derive(task, rows).correct == keys.NOT_REPORTED
 
 
 def test_a_key_that_is_not_an_option_is_refused(params):
