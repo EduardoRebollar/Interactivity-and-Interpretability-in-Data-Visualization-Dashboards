@@ -75,9 +75,10 @@ vercel deploy --prod     # once the preview checks out
 `verify_deployment.py` writes a complete synthetic session, reads it back, checks every field
 survived including nested JSONB answers and null browser timings, confirms the database refuses a
 second answer for the same task and ignores a replayed event, then deletes exactly what it wrote.
-It has passed against a local Postgres 16, on 2026-09-16 and again for schema v6 on 2026-09-21.
-**It has not yet run against Neon**, and the test suite executes no SQL at all, so run it against the
-real instance before collecting data.
+It passed against a local Postgres 16 on 2026-09-16, and again for schema v6 on 2026-09-21. On
+2026-09-22 it passed against the production Neon database, after `init_db.py` had upgraded that
+database from v5 in place. The test suite executes no SQL at all, so re-run the script after any
+schema change.
 
 `init_db.py` also checks that every column the logger writes exists on the table. `CREATE TABLE IF
 NOT EXISTS` does nothing to a table created under an older schema, so a missed migration would
@@ -195,7 +196,6 @@ one submitted to Occidental's HSRRC and is marked "pending approval" on screen u
 
 Also open before piloting:
 
-- **Run `verify_deployment.py` against the real Neon database.** Only a local Postgres has run it.
 - **IRB request form item 18:** attach `irb/questionnaire.pdf` and enter the deployed URL.
 - T6's form equivalence, flagged in `docs/study-design.md` §4 — the UK's 19-year HepB3 gap has no
   equal in the dataset, and form B substitutes three shorter ones. T6 is scored separately from

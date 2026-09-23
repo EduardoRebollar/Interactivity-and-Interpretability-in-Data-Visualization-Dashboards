@@ -454,8 +454,16 @@ context cheap and the reports as long as they need to be.
   - `irb/questionnaire.pdf` exported for IRB request form item 18.
   - 712 tests. Four full sessions, one per counterbalancing cell, driven in headless Chrome: every
     derived key matched what the app logged.
+- 2026-09-22 — **Neon verified.**
+  - Neon was still on schema v5, with no `consent_records` table, so the live site could not have
+    recorded consent. `init_db.py` upgraded it in place.
+  - `verify_deployment.py` passed every check.
+  - Deleted the leftover `test` participant and its 7 v5 events; mixed schema versions would block
+    scoring.
+  - Region us-east-1, pooled, `sslmode=require`.
+  - Tables are empty and the sequence is at 8, so the first real participant is seq 9 (static, A).
+  - Production at https://interactivity-and-interpretability.vercel.app serves the current commit.
 - **Still to do before the pilot:**
-  - Run `scripts/init_db.py` then `scripts/verify_deployment.py` against **Neon**.
   - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
     and the URL for item 18.
   - Set `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
