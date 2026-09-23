@@ -1,125 +1,170 @@
 """The task set. Implements `docs/study-design.md` section 4. No pandas — this ships to production.
 
-Two isomorphic forms, A and B: same six task types in the same order, matched effect sizes, over
-different data. A participant sees one form per condition and never the same form twice, so nobody
-answers a question they have already answered.
+Two isomorphic forms, A and B: the same six item types in the same order, on the same chart types,
+with matched margins, over different data. A participant sees one form per condition and never the
+same form twice, so nobody answers a question they have already answered.
+
+Each item pairs one chart type with the interactive affordance that makes it quicker to read
+(section 4): isolating a line in a tangle, the tooltip's year-over-year change, sorting bars,
+hovering a dot or a cell, and filtering a map by coverage. Every item can still be answered from the
+static chart, because every key clears the acceptance rule in section 4.
 
 **No correct answers live in this module.** It is serialised to the browser, where an answer key
-would be readable in the page source. Scoring happens offline against the rubric in
-`docs/study-design.md` section 7.
+would be readable in the page source. Scoring happens offline, in `analysis/keys.py`.
 
-Every value referenced in a prompt was verified against `data/deploy/coverage.csv`. Change the
-design document first, then this file.
+Every value an item turns on was verified against `data/deploy/coverage.csv`. Change the design
+document first, then this file.
 """
 
 from __future__ import annotations
 
 from src.flow import Task
 
-# Answer options shared by the two crossing items. Bands rather than years, because the static
-# condition has no hover and an exact crossing year is not readable from the chart.
-CROSSING_BANDS = ("2004-2008", "2009-2012", "2013-2016", "2017-2020", "2021-2024")
-
-GAP_OPTIONS = (
-    "Coverage was zero for those years",
-    "Coverage was very low but above zero",
-    "Coverage was high and steady",
-    # Last, not first: an option's position must carry no information about the answer
-    # (docs/study-design.md section 5).
-    "Coverage was not reported for those years",
-)
-
 COUNT_OPTIONS = ("0", "1", "2", "3", "4 or more")
 
-# The practice item is identical in both forms and is not scored. Ukraine's collapse is unmissable,
-# so it teaches the interface rather than the concept. It deliberately shows NO missing data, so it
-# cannot contaminate T6, which is the item that tests gap reasoning.
+# The heatmap's columns: every fifth year, and the last.
+HEATMAP_YEARS = (2000, 2005, 2010, 2015, 2020, 2024)
+
+# The scatter plots compare the first and last years of the range.
+SCATTER_YEARS = (2000, 2024)
+
+# The practice item is identical in both forms and is not scored. It teaches the interface, so it is
+# a line chart, the one chart type with every control, and its change is unmissable. Brazil, because
+# no scored item asks about Brazil: the old practice, Ukraine's collapse, would have primed A-T1.
 PRACTICE = Task(
     task_id="P0",
     form="both",
     kind="practice",
     prompt=(
-        "Practice (not scored). Look at Ukraine's line. Did coverage rise, fall, or stay level "
-        "between 2008 and 2016?"
+        "Practice (not scored). Look at Brazil's line. Did coverage rise, fall, or stay level "
+        "between 2015 and 2021?"
     ),
     vaccine="DTP3",
-    entities=("Ukraine", "World"),
+    entities=("Brazil", "World"),
     options=("It rose", "It fell", "It stayed about level"),
 )
 
 # Entities are listed alphabetically, World last, and country options follow the same order. The
-# order also assigns each line its colour, so neither where the answer sits in the list nor which
-# colour its line gets depends on the answer (docs/study-design.md section 5).
+# order also assigns each line and dot its colour, so neither where the answer sits in the list nor
+# which colour it gets depends on the answer (docs/study-design.md section 5). Year options run in
+# calendar order. Which options are offered is the one free choice, and it is used to spread the key
+# across positions: no position holds more than three of the twelve keys.
 
 FORM_A: tuple[Task, ...] = (
     Task(
         task_id="T1",
         form="A",
-        kind="reference",
-        prompt=(
-            "The dashed black line is the world average. In 2005, how many of the countries shown "
-            "were above it?"
-        ),
+        kind="lowest",
+        prompt="Focus on Ukraine's line. In which year was its coverage at its lowest point?",
         vaccine="DTP3",
-        entities=("China", "Ethiopia", "India", "Indonesia", "Nigeria", "World"),
-        options=COUNT_OPTIONS,
+        # Eight countries and World: the tangle the isolation control cuts through.
+        entities=(
+            "Brazil",
+            "China",
+            "Ethiopia",
+            "India",
+            "Indonesia",
+            "Nigeria",
+            "Pakistan",
+            "Ukraine",
+            "World",
+        ),
+        # Not 2010 or 2013: Ukraine is 23 in 2014 and 2015, too close to its low of 19 in 2016 to
+        # tell apart, and both years sit nearer 2013 than 2016. docs/study-design.md section 4.
+        options=("2008", "2016", "2019", "2022", "2024"),
     ),
     Task(
         task_id="T2",
         form="A",
-        kind="trend",
-        prompt="Between 2015 and 2021, which country's coverage fell the most?",
+        kind="rise",
+        prompt=(
+            "Focus on Pakistan's line. In which single year did its coverage rise the most over "
+            "the year before?"
+        ),
         vaccine="DTP3",
-        entities=("Brazil", "India", "Indonesia", "Nigeria", "United States", "World"),
-        options=("Brazil", "India", "Indonesia", "Nigeria", "United States"),
+        entities=("Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan", "World"),
+        options=("2005", "2011", "2015", "2018", "2021"),
     ),
     Task(
         task_id="T3",
         form="A",
-        kind="trend",
-        prompt="Between 2000 and 2012, which country's coverage rose the most?",
+        kind="rank",
+        chart="bar",
+        years=(2017,),
+        prompt="The bars show coverage in 2017. Which country had the third-highest coverage?",
         vaccine="DTP3",
-        entities=("Brazil", "China", "Ethiopia", "India", "Indonesia", "World"),
-        options=("Brazil", "China", "Ethiopia", "India", "Indonesia"),
+        entities=("Brazil", "China", "Ethiopia", "India", "Nigeria", "Pakistan", "Vietnam"),
+        options=("Brazil", "China", "Ethiopia", "India", "Vietnam"),
     ),
     Task(
         task_id="T4",
         form="A",
-        kind="crossing",
+        kind="improved",
+        chart="scatter",
+        years=SCATTER_YEARS,
         prompt=(
-            "India's coverage became higher than Brazil's at some point. Roughly when did that "
-            "first happen?"
+            "Each dot is an African country, placed by its coverage in 2000 (across) and in 2024 "
+            "(up). The dashed diagonal means no change. Which country improved the most — the dot "
+            "furthest above the diagonal?"
         ),
-        # Polio3, not DTP3: on DTP3 these lines meet at 2016.14, drawn in 2016 but keyed 2017-2020.
-        # docs/study-design.md section 4.
-        vaccine="Polio3",
-        entities=("Brazil", "India", "World"),
-        options=CROSSING_BANDS,
+        vaccine="DTP3",
+        # Not Angola or DR Congo: their dots sit within 2 points of Nigeria's and would hide it.
+        entities=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger", "Nigeria"),
+        options=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger"),
     ),
     Task(
         task_id="T5",
         form="A",
-        kind="crossing",
+        kind="cell",
+        chart="heatmap",
+        years=HEATMAP_YEARS,
         prompt=(
-            "China's coverage became higher than the United Kingdom's at some point. Roughly when "
-            "did that first happen?"
+            "Rows are countries and columns are years. Darker cells mean lower coverage. Which "
+            "country's row contains the single lowest cell?"
         ),
         vaccine="DTP3",
-        entities=("China", "United Kingdom", "World"),
-        options=CROSSING_BANDS,
+        entities=(
+            "Burkina Faso",
+            "Cambodia",
+            "Central African Republic",
+            "Chad",
+            "India",
+            "Indonesia",
+            "Mali",
+            "Pakistan",
+        ),
+        options=("Burkina Faso", "Central African Republic", "Chad", "Mali", "Pakistan"),
     ),
     Task(
         task_id="T6",
         form="A",
-        kind="gap",
+        kind="threshold",
+        chart="map",
+        years=(2013,),
         prompt=(
-            "What does the chart tell you about the United Kingdom's hepatitis B coverage before "
-            "2019?"
+            "The map colours 13 countries in sub-Saharan Africa by their coverage in 2013. "
+            "How many of those countries had coverage below 50%?"
         ),
-        vaccine="HepB3",
-        # Not the United States: the UK's 2019-2024 segment lies within 2 points of it, hidden.
-        entities=("China", "Ukraine", "United Kingdom", "World"),
-        options=GAP_OPTIONS,
+        vaccine="DTP3",
+        # Every country at least 10 points from 50% in 2013. Somalia (44), South Sudan (53), Angola
+        # (54) and Ethiopia (59) are left uncoloured: their side of the line is a colour judgement
+        # too fine to make without hover. docs/study-design.md section 4.
+        entities=(
+            "Cameroon",
+            "Central African Republic",
+            "Chad",
+            "Democratic Republic of Congo",
+            "Kenya",
+            "Madagascar",
+            "Mali",
+            "Mozambique",
+            "Niger",
+            "Nigeria",
+            "Tanzania",
+            "Uganda",
+            "Zambia",
+        ),
+        options=COUNT_OPTIONS,
     ),
 )
 
@@ -127,68 +172,119 @@ FORM_B: tuple[Task, ...] = (
     Task(
         task_id="T1",
         form="B",
-        kind="reference",
-        prompt=(
-            "The dashed black line is the world average. In 2015, how many of the countries shown "
-            "were above it?"
-        ),
+        kind="lowest",
+        prompt="Focus on Myanmar's line. In which year was its coverage at its lowest point?",
         vaccine="DTP3",
-        entities=("Ethiopia", "Nigeria", "Pakistan", "Ukraine", "United Kingdom", "World"),
-        options=COUNT_OPTIONS,
+        entities=(
+            "Brazil",
+            "China",
+            "Ethiopia",
+            "India",
+            "Indonesia",
+            "Myanmar",
+            "Nigeria",
+            "Pakistan",
+            "World",
+        ),
+        options=("2009", "2013", "2017", "2021", "2024"),
     ),
     Task(
         task_id="T2",
         form="B",
-        kind="trend",
-        prompt="Between 2010 and 2015, which country's coverage fell the most?",
+        kind="rise",
+        prompt=(
+            "Focus on Bangladesh's line. In which single year did its coverage rise the most over "
+            "the year before?"
+        ),
         vaccine="DTP3",
-        entities=("Brazil", "India", "Nigeria", "Pakistan", "Ukraine", "World"),
-        options=("Brazil", "India", "Nigeria", "Pakistan", "Ukraine"),
+        entities=("Bangladesh", "Ethiopia", "India", "Nigeria", "Vietnam", "World"),
+        options=("2004", "2009", "2013", "2018", "2022"),
     ),
     Task(
         task_id="T3",
         form="B",
-        kind="trend",
-        prompt="Between 2013 and 2024, which country's coverage rose the most?",
+        kind="rank",
+        chart="bar",
+        years=(2024,),
+        prompt="The bars show coverage in 2024. Which country had the third-highest coverage?",
         vaccine="DTP3",
-        entities=("Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan", "World"),
-        options=("Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan"),
+        entities=(
+            "Cambodia",
+            "Colombia",
+            "Egypt",
+            "Ethiopia",
+            "Indonesia",
+            "Nigeria",
+            "United States",
+        ),
+        options=("Cambodia", "Colombia", "Egypt", "Ethiopia", "United States"),
     ),
     Task(
         task_id="T4",
         form="B",
-        kind="crossing",
+        kind="improved",
+        chart="scatter",
+        years=SCATTER_YEARS,
         prompt=(
-            "China's coverage became higher than Ukraine's at some point. Roughly when did that "
-            "first happen?"
+            "Each dot is an Asian country, placed by its coverage in 2000 (across) and in 2024 "
+            "(up). The dashed diagonal means no change. Which country improved the most — the dot "
+            "furthest above the diagonal?"
         ),
         vaccine="DTP3",
-        entities=("China", "Ukraine", "World"),
-        options=CROSSING_BANDS,
+        # Not Afghanistan: its +35 all but ties India's +36.
+        entities=("Bangladesh", "Cambodia", "India", "Indonesia", "Nepal", "Pakistan"),
+        options=("Bangladesh", "Cambodia", "India", "Nepal", "Pakistan"),
     ),
     Task(
         task_id="T5",
         form="B",
-        kind="crossing",
+        kind="cell",
+        chart="heatmap",
+        years=HEATMAP_YEARS,
         prompt=(
-            "China's coverage became higher than Brazil's at some point. Roughly when did that "
-            "first happen?"
+            "Rows are countries and columns are years. Darker cells mean lower coverage. Which "
+            "country's row contains the single lowest cell?"
         ),
         vaccine="DTP3",
-        entities=("Brazil", "China", "World"),
-        options=CROSSING_BANDS,
+        entities=(
+            "Afghanistan",
+            "Madagascar",
+            "Mali",
+            "Myanmar",
+            "Nepal",
+            "Niger",
+            "Pakistan",
+            "Uganda",
+        ),
+        options=("Afghanistan", "Mali", "Niger", "Pakistan", "Uganda"),
     ),
     Task(
         task_id="T6",
         form="B",
-        kind="gap",
+        kind="threshold",
+        chart="map",
+        years=(2007,),
         prompt=(
-            "What does the chart tell you about hepatitis B coverage in Ethiopia, Nigeria and "
-            "India before each of their lines begins?"
+            "The map colours 11 countries in sub-Saharan Africa by their coverage in 2007. "
+            "How many of those countries had coverage below 50%?"
         ),
-        vaccine="HepB3",
-        entities=("Brazil", "Ethiopia", "India", "Nigeria", "World"),
-        options=GAP_OPTIONS,
+        vaccine="DTP3",
+        # Every country at least 10 points from 50% in 2007. Nigeria (42), Angola (43), the Central
+        # African Republic (48), Ethiopia (50) and Niger (58) are too close to colour.
+        entities=(
+            "Cameroon",
+            "Chad",
+            "Democratic Republic of Congo",
+            "Kenya",
+            "Madagascar",
+            "Mali",
+            "Mozambique",
+            "Somalia",
+            "Tanzania",
+            "Uganda",
+            "Zambia",
+        ),
+        options=COUNT_OPTIONS,
     ),
 )
 

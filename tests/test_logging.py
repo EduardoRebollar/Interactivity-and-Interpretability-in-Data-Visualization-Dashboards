@@ -130,9 +130,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_six():
-    """v6: skips are recorded as null, plus the survey, demographics and signature method."""
-    assert SCHEMA_VERSION == 6
+def test_schema_version_is_seven():
+    """v7: the task bank was replaced, so T1-T6 name new items; the map's filter logs a range."""
+    assert SCHEMA_VERSION == 7
 
 
 def test_form_is_recorded_on_every_event():

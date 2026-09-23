@@ -42,6 +42,8 @@ from plotly.offline import get_plotlyjs  # noqa: E402
 from src import config, consent, figures, layout, runtime_data, tasks  # noqa: E402
 
 DEFAULT_OUT = ROOT / "irb"
+# The map's country shapes, which the app serves from src/assets (scripts/vendor_map_geometry.py).
+GEOMETRY = ROOT / "src" / "assets" / "geo_africa.js"
 # US Letter with half-inch margins leaves 720 CSS px; each screen keeps its own 24 px padding.
 PRINT_WIDTH = 640
 EXAMPLE_ID = "P07"
@@ -149,6 +151,14 @@ class Renderer:
             )
         if kind == "Textarea":
             return f"<textarea disabled{style}></textarea>"
+        if kind == "RangeSlider":
+            # A slider draws itself in the browser; on paper it is described instead.
+            low, high = props.get("value") or (props.get("min"), props.get("max"))
+            return (
+                '<div class="slider">[Slider with two handles and a box for each, set to '
+                f"{low}% and {high}%. Either handle can be dragged, or a value typed, "
+                f"anywhere from {props.get('min')}% to {props.get('max')}%.]</div>"
+            )
         return self.render(props.get("children"))
 
 
@@ -158,6 +168,32 @@ def _hover_example() -> str:
     labels = dict(zip([r.year for r in series], figures.change_labels(series), strict=True))
     value = next(r.coverage_pct for r in series if r.year == 2017)
     return f"India / 2017: {value:.0f}% / {labels[2017]}"
+
+
+# What the interactive version adds to each chart type (visual-spec.md section 7), for the notes
+# beside its example screen. Hover is described, not shown: a tooltip value could be an item's key.
+INTERACTIVE_NOTES = {
+    "line": (
+        "The interactive version adds the controls above it, which filter, sort and isolate "
+        "countries, and hovering a point shows its value and the change from the year before."
+    ),
+    "bar": (
+        "The interactive version adds the Order control above it, which sorts the bars by "
+        "coverage, and hovering a bar shows its exact value."
+    ),
+    "scatter": (
+        "The interactive version adds only the line of text above it: hovering a dot shows the "
+        "country's name and its two values."
+    ),
+    "heatmap": (
+        "The interactive version adds only the line of text above it: hovering a cell shows its "
+        "exact value."
+    ),
+    "map": (
+        "The interactive version adds the coverage slider above it: countries outside the chosen "
+        "range fade. Hovering a country shows its name and exact value."
+    ),
+}
 
 
 def _screens() -> list[tuple[str, str, object]]:
@@ -210,16 +246,21 @@ def _screens() -> list[tuple[str, str, object]]:
                     layout.task_screen(task, False, index=index, total=len(items)),
                 )
             )
-    example = tasks.for_form("A")[0]
-    screens.append(
-        (
-            "The interactive version of a question",
-            "The chart is identical in both versions. The interactive version adds these controls "
-            "above it, and hovering a point shows its value and the change from the year before, "
-            f'for example "{_hover_example()}".',
-            layout.task_screen(example, True, index=1, total=len(tasks.for_form("A"))),
-        )
-    )
+    items = tasks.for_form("A")
+    for index, task in enumerate(items, start=1):
+        if task.chart in INTERACTIVE_NOTES and not any(
+            earlier.chart == task.chart for earlier in items[: index - 1]
+        ):
+            note = INTERACTIVE_NOTES[task.chart]
+            if task.chart == "line":
+                note += f' For example: "{_hover_example()}".'
+            screens.append(
+                (
+                    f"The interactive version of a question: {task.chart} chart",
+                    "The chart is identical in both versions. " + note,
+                    layout.task_screen(task, True, index=index, total=len(items)),
+                )
+            )
     screens += [
         (
             "Survey after each half",
@@ -248,6 +289,8 @@ section { break-before: page; }
 /* Scaled as a whole, so proportions stay as on screen: a question with its chart fits one page. */
 .screen { border: 1px solid #B3B3B3; border-radius: 6px; zoom: 0.82; }
 .screen button { opacity: 1; }
+.slider { font-size: 13px; color: #595959; border: 1px solid #B3B3B3; border-radius: 4px;
+          padding: 6px 10px; margin: 6px 0; max-width: 560px; }
 .popup { border: 1px solid #404040; border-radius: 6px; padding: 12px 16px; margin: 8px 0;
          font-size: 14px; max-width: 520px; }
 """
@@ -289,17 +332,21 @@ web application, in the order they are shown.</p>
 <li>informed consent (attached separately), then a participant ID and four background
 questions;</li>
 <li>instructions, one practice question, six questions, and a short survey, using one version of
-the chart;</li>
+the charts;</li>
 <li>a break;</li>
 <li>instructions, six different questions, and the same survey, using the other version.</li>
 </ol>
-<p>Every question may be skipped. The two versions show identical charts; the interactive one adds
-filtering, sorting, line isolation and hover tooltips. Each participant answers form A with one
-version and form B with the other, in one of four counterbalanced orders.</p>
+<p>Every question may be skipped. Each half asks about five kinds of chart: line charts, a bar
+chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;
+the interactive one adds hover tooltips to every chart, and controls to some: filtering, sorting and
+line isolation on the line charts, sorting on the bar chart, and a coverage range on the map. Each
+participant answers form A with one version and form B with the other, in one of four
+counterbalanced orders.</p>
 <p class="note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the
 application's own screen code. Consent text version {consent.CONSENT_VERSION}.</p>
 </div>"""
     payload = json.dumps(renderer.figures).replace("</", "<\\/")
+    geometry = GEOMETRY.read_text(encoding="utf-8").replace("</", "<\\/")
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <title>Study questionnaire</title>
@@ -307,6 +354,7 @@ application's own screen code. Consent text version {consent.CONSENT_VERSION}.</
 </head><body>
 {cover}
 {"".join(sections)}
+<script>{geometry}</script>
 <script>{get_plotlyjs()}</script>
 <script type="application/json" id="figures">{payload}</script>
 <script>

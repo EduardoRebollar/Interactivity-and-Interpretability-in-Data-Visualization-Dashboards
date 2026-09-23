@@ -58,15 +58,31 @@ def test_every_survey_and_background_question_is_in_it(page):
 
 def test_both_versions_of_the_instructions_are_in_it(page):
     """They differ only in what the chart can do; the IRB sees both."""
-    assert html.escape("The charts are images: read the values against the gridlines.") in page
-    assert html.escape("You can hover a line to read its exact value") in page
+    assert html.escape("The charts are images: read values against the gridlines") in page
+    assert html.escape("You can hover over any line, bar, dot, cell or country") in page
     assert html.escape(layout.SKIP_NOTE) in page
 
 
 def test_every_chart_is_drawn(page):
-    """Practice, twelve items, and the interactive example: fourteen charts."""
-    assert page.count('class="chart"') == 1 + 12 + 1
+    """Practice, twelve items, and one interactive example per chart type: eighteen charts."""
+    assert page.count('class="chart"') == 1 + 12 + 5
     assert "Plotly.newPlot" in page
+
+
+def test_every_chart_types_interactive_version_is_shown(page):
+    for chart in ("line", "bar", "scatter", "heatmap", "map"):
+        assert f"The interactive version of a question: {chart} chart" in page
+
+
+def test_the_coverage_slider_is_described_on_paper(page):
+    """A slider draws itself in the browser; printed, it would otherwise vanish."""
+    assert page.count('class="slider"') == 1
+    assert "set to 0% and 100%" in page
+
+
+def test_the_map_prints_without_fetching_its_shapes(page):
+    """The page embeds the geometry the app serves, so printing needs no call to Plotly's CDN."""
+    assert 'window.PlotlyGeoAssets.topojson["africa_110m"]' in page
 
 
 def test_the_interactive_controls_are_shown_once(page):

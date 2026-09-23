@@ -544,16 +544,12 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
     included = set(tasks_frame.loc[tasks_frame["use_accuracy"], "participant_id"].astype(str))
     by_condition = [
         (
-            "Accuracy, RQ1 primary: proportion correct per participant, T1-T5",
+            "Accuracy, RQ1 primary: proportion correct per participant, T1-T6",
             study_report.accuracy(tasks_frame),
         ),
         (
-            "Crossing items secondary: strict vs adjacent-band credit",
-            study_report.crossing_adjacent(tasks_frame),
-        ),
-        (
-            "T6 gap check, reported separately: proportion correct",
-            study_report.gap_check(tasks_frame),
+            "Accuracy and time by item and chart type (descriptive, not tested)",
+            study_report.by_item(tasks_frame),
         ),
         ("Mental effort, RQ3: Paas 1-9", study_report.mental_effort(conditions, included)),
         ("Time on task (ms), timing-usable rows only", study_report.time_on_task(tasks_frame)),
@@ -617,7 +613,7 @@ def participant_overview(
 ) -> pd.DataFrame:
     """One row per participant: cell, progress, Paas and accuracy per condition, exclusions.
 
-    Accuracy is the RQ1 score, over T1-T5; T6 is reported separately (study-design.md section 7).
+    Accuracy is the RQ1 score, over T1-T6 (study-design.md section 7).
     """
     now = now or datetime.now(UTC)
     grouped = sessions(records)
@@ -625,8 +621,9 @@ def participant_overview(
     excluded = _excluded_by_participant(scoring, grouped) if scoring.ok else {}
     accuracy = {}
     if scoring.ok and not scoring.tasks.empty:
-        rq1 = scoring.tasks[~scoring.tasks["task_id"].isin(reshape.SEPARATELY_REPORTED)]
-        accuracy = rq1.groupby(["participant_id", "condition"])["correct"].mean().to_dict()
+        accuracy = (
+            scoring.tasks.groupby(["participant_id", "condition"])["correct"].mean().to_dict()
+        )
 
     rows = []
     for participant, items in people.items():
@@ -691,12 +688,22 @@ def participant_overview(
     return frame.sort_values("first event", na_position="last").reset_index(drop=True)
 
 
-def _prompt(form: str | None, task_id: str | None) -> str:
+def _task(form: str | None, task_id: str | None):
     if task_id == PRACTICE_ID:
-        return tasks.PRACTICE.prompt
+        return tasks.PRACTICE
     if form not in tasks.FORMS:
-        return ""
-    return next((t.prompt for t in tasks.for_form(form) if t.task_id == task_id), "")
+        return None
+    return next((t for t in tasks.for_form(form) if t.task_id == task_id), None)
+
+
+def _prompt(form: str | None, task_id: str | None) -> str:
+    task = _task(form, task_id)
+    return task.prompt if task else ""
+
+
+def _chart(form: str | None, task_id: str | None) -> str | None:
+    task = _task(form, task_id)
+    return task.chart if task else None
 
 
 ANSWER_COLUMNS = [
@@ -706,11 +713,11 @@ ANSWER_COLUMNS = [
     "condition_order",
     "form",
     "task_id",
+    "chart",
     "prompt",
     "answer",
     "justification",
     "correct",
-    "correct_adjacent",
     "duration_ms",
     "duration_invalid",
     *INTERACTION_COUNT_COLUMNS,
@@ -729,12 +736,10 @@ def answers(
         for r in records
         if r["event"] in reshape.INTERACTION_EVENTS
     )
-    correctness: dict[tuple[str, str], tuple[Any, Any]] = {}
+    correctness: dict[tuple[str, str], Any] = {}
     if scoring.ok:
         for row in scoring.tasks.to_dict("records"):
-            correctness.setdefault(
-                (str(row["session_id"]), row["task_id"]), (row["correct"], row["correct_adjacent"])
-            )
+            correctness.setdefault((str(row["session_id"]), row["task_id"]), row["correct"])
 
     rows = []
     for record in records:
@@ -742,7 +747,7 @@ def answers(
             continue
         payload = record["payload"]
         session_id, task_id = str(record["session_id"]), record["task_id"]
-        correct, adjacent = correctness.get((session_id, task_id), (None, None))
+        correct = correctness.get((session_id, task_id))
         rows.append(
             {
                 "participant_id": record["participant_id"],
@@ -751,11 +756,11 @@ def answers(
                 "condition_order": record["condition_order"],
                 "form": record["form"],
                 "task_id": task_id,
+                "chart": _chart(record["form"], task_id),
                 "prompt": _prompt(record["form"], task_id),
                 "answer": payload.get("answer"),
                 "justification": mask(payload.get("justification"), show_justifications),
                 "correct": "practice" if task_id == PRACTICE_ID else correct,
-                "correct_adjacent": adjacent,
                 "duration_ms": payload.get("duration_ms"),
                 "duration_invalid": payload.get("duration_invalid"),
                 **{

@@ -64,18 +64,24 @@ class FlowError(RuntimeError):
 class Task:
     """One task presented to a participant.
 
-    `answer_kind` drives which input is rendered; `options` is used by choice kinds.
+    `kind` names the item type, which is what `analysis/keys.py` scores by; `chart` names the chart
+    it is asked about; `options` are the multiple-choice answers. `years` are the years the chart
+    shows: empty for a line chart, which always spans the whole range; one for a bar chart or map;
+    the two axes of a scatter; the columns of a heatmap.
+
     Correct answers are deliberately NOT stored here — scoring happens offline against the rubric,
     so the answer key is never shipped to the browser where a participant could read it.
     """
 
     task_id: str
-    form: str  # "A" | "B"
-    kind: str  # "reference" | "trend" | "crossing" | "gap" | "practice"
+    form: str  # "A" | "B" | "both"
+    kind: str  # "lowest" | "rise" | "rank" | "improved" | "cell" | "threshold" | "practice"
     prompt: str
     vaccine: str
     entities: tuple[str, ...]
     options: tuple[str, ...] = ()
+    chart: str = "line"  # "line" | "bar" | "scatter" | "heatmap" | "map"
+    years: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

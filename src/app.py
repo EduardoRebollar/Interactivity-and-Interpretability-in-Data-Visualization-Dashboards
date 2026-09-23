@@ -501,12 +501,15 @@ def _open_task(
 
 # --- The interactive controls ---------------------------------------------------------------------
 #
-# Filtering, sorting, line isolation and zoom/pan. These exist ONLY in the interactive condition —
-# the static condition never renders the controls, and `staticPlot: True` means its chart can be
-# neither clicked nor zoomed — so every event below is, by construction, an interactive-condition
-# event. The static chart does still send Plotly's render-time relayout, which carries no axis range
-# and is ignored below exactly as it is in the interactive condition.
-# That is the study's independent variable, and this is where it gets recorded.
+# Filtering, sorting and line isolation on line charts; sorting bars; filtering the map by a
+# coverage range; zoom/pan. These exist ONLY in the interactive condition — the static condition
+# never renders the controls, and `staticPlot: True` means its chart can be neither clicked nor
+# zoomed — so every event below is, by construction, an interactive-condition event. The static
+# chart does still send Plotly's render-time relayout, which carries no axis range and is ignored
+# below exactly as it is in the interactive condition.
+# That is the study's independent variable, and this is where it gets recorded. Hovers are not
+# logged (decided 2026-09-21), so the scatter and heatmap items, whose affordance is hover, leave
+# no interaction record.
 
 # Zoom and pan arrive as axis-range keys. Plotly also sends relayout on resize and on render, which
 # is not a participant action and must not be logged as one.
@@ -538,6 +541,38 @@ def _clicked_entity(click_data: dict[str, Any] | None, task) -> str | None:
     return task.entities[index]
 
 
+def _band(raw: Any) -> list[int] | None:
+    """A coverage range from the slider, as [low, high] within 0-100, or None if it is not one."""
+    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+        return None
+    try:
+        low, high = (round(float(value)) for value in raw)
+    except (TypeError, ValueError):
+        return None
+    if not layout.BAND_FULL[0] <= low <= high <= layout.BAND_FULL[1]:
+        return None
+    return [low, high]
+
+
+def _view_figure(task, control: dict[str, Any]):
+    """The task's figure with the participant's current view applied.
+
+    Built fresh and then hidden, sorted or faded -- never rebuilt from a shorter list, which would
+    recolour what remains. The view functions in `src/figures.py` say why.
+    """
+    figure = figures.task_figure(task)
+    if task.chart == "line":
+        shown = [control["isolated"]] if control["isolated"] else list(control["selected"])
+        if "World" in task.entities:
+            shown.append("World")
+        figures.set_visible(figure, shown)
+    elif task.chart == "bar":
+        figures.sort_bars(figure, by_coverage=control["sort"] == "coverage")
+    elif task.chart == "map":
+        figures.set_band(figure, *control["band"])
+    return figure
+
+
 def control_step(
     triggered: str | None,
     stored: dict[str, Any] | None,
@@ -548,12 +583,16 @@ def control_step(
     sort_key: str | None = None,
     click_data: dict[str, Any] | None = None,
     relayout: dict[str, Any] | None = None,
+    band: list[float] | None = None,
     spool: dict[str, Any] | None = None,
     log_dir: Path | None = None,
 ) -> tuple[Any, Any, Any, Any, Any]:
     """Apply one control interaction.
 
-    Returns (figure, filter options, filter value, control state, spool).
+    Returns (figure, control options, control value, control state, spool). On a line chart the
+    middle two are the filter checklist's options and ticked values. On the map they are
+    `no_update` and the slider's range, which Show all has to move back. Elsewhere they are
+    `no_update`.
 
     `triggered` is a Dash **prop id** — "chart.clickData", not "chart". The chart raises two
     different inputs and the component id alone cannot tell them apart: `clickData` stays set on the
@@ -578,16 +617,26 @@ def control_step(
     # the previous task, the same task id in the other condition, or none -- is discarded, which is
     # what gives every task the fresh view its screen was rendered with.
     screen = f"{state.condition_index}/{task.task_id}"
-    control = {"selected": list(options), "sort": "listed", "isolated": None, "screen": screen}
+    control = {
+        "selected": list(options),
+        "sort": "listed",
+        "isolated": None,
+        "band": list(layout.BAND_FULL),
+        "screen": screen,
+    }
     if (control_state or {}).get("screen") == screen:
         control.update(control_state)
     # A stale store from the previous task would name entities this one does not have.
     control["selected"] = [e for e in control["selected"] if e in options] or list(options)
     if control["isolated"] not in task.entities:
         control["isolated"] = None
+    control["band"] = _band(control["band"]) or list(layout.BAND_FULL)
 
     unchanged: tuple[Any, ...] = (no_update,) * 5
     event: tuple[str, dict[str, Any]] | None = None
+    # What the triggering control's own value must become. Only Show all on the map sets one: it
+    # has to move the slider's handles back to the ends.
+    control_value: Any = no_update
 
     if triggered == "entity-filter.value":
         chosen = [e for e in options if e in (selected or [])]
@@ -634,8 +683,50 @@ def control_step(
         control["selected"] = list(options)
         control["isolated"] = None
 
+    elif triggered == "bar-sort.value":
+        # Logged as the line chart's sort is, with the same payload: `task_id` says which chart.
+        if task.chart != "bar" or sort_key not in layout.SORT_KEYS or sort_key == control["sort"]:
+            return unchanged
+        event = (
+            "sort_change",
+            {"key": sort_key, "direction": "desc" if sort_key == "coverage" else "none"},
+        )
+        control["sort"] = sort_key
+
+    elif triggered == "coverage-band.value":
+        chosen = _band(band)
+        if task.chart != "map" or chosen is None or chosen == control["band"]:
+            return unchanged
+        # A filter, so a `filter_change` -- whose `value` here is the range, not a list of names.
+        event = (
+            "filter_change",
+            {
+                "control": "coverage-band",
+                "action": "band",
+                "value": chosen,
+                "previous": list(control["band"]),
+            },
+        )
+        control["band"] = chosen
+
+    elif triggered == "band-reset.n_clicks":
+        if task.chart != "map" or control["band"] == layout.BAND_FULL:
+            return unchanged
+        event = (
+            "filter_change",
+            {
+                "control": "band-reset",
+                "action": "show",
+                "value": list(layout.BAND_FULL),
+                "previous": list(control["band"]),
+            },
+        )
+        control["band"] = list(layout.BAND_FULL)
+        control_value = list(layout.BAND_FULL)
+
     elif triggered == "chart.clickData":
-        entity = _clicked_entity(click_data, task)
+        # Only a line can be isolated. A click on a bar, dot, cell or country does nothing.
+        entity = _clicked_entity(click_data, task) if task.chart == "line" else None
         # World is the reference every task is read against; isolating to it alone would hide the
         # very series the question is about.
         if entity is None or entity == "World":
@@ -652,20 +743,22 @@ def control_step(
     else:
         return unchanged
 
-    shown = [control["isolated"]] if control["isolated"] else list(control["selected"])
-    if "World" in task.entities:
-        shown.append("World")
-
-    figure = figures.set_visible(figures.build_figure(list(task.entities), task.vaccine), shown)
-    ordered = layout.sorted_entities(options, task.vaccine, control["sort"])
-    values = layout.latest_values(ordered, task.vaccine) if control["sort"] == "coverage" else {}
-    filter_options = [
-        {
-            "label": layout.control_label(entity, values.get(entity), control["sort"]),
-            "value": entity,
-        }
-        for entity in ordered
-    ]
+    figure = _view_figure(task, control)
+    if task.chart == "line":
+        ordered = layout.sorted_entities(options, task.vaccine, control["sort"])
+        values = (
+            layout.latest_values(ordered, task.vaccine) if control["sort"] == "coverage" else {}
+        )
+        filter_options: Any = [
+            {
+                "label": layout.control_label(entity, values.get(entity), control["sort"]),
+                "value": entity,
+            }
+            for entity in ordered
+        ]
+        control_value = list(control["selected"])
+    else:
+        filter_options = no_update
 
     # Logged AFTER the figure is built. Logged first, a database failure left the participant's
     # click with no visible effect -- the chart simply did not change.
@@ -682,7 +775,7 @@ def control_step(
         except db.DatabaseError as exc:
             print(f"[study] could not log {name}: {exc}", file=sys.stderr)
         carried.take(logger)
-    return figure, filter_options, list(control["selected"]), control, carried.output()
+    return figure, filter_options, control_value, control, carried.output()
 
 
 # --- Callbacks ------------------------------------------------------------------------------------
@@ -903,6 +996,61 @@ def _register_callbacks(app: dash.Dash) -> None:
             spool=spool,
         )
 
+    # The bar chart's sort and the map's coverage range, each in a callback of its own. Every Input
+    # of a callback must be on the page together or the browser renderer refuses to run it, so a
+    # control that exists on one chart type cannot share a callback with another type's controls.
+    @app.callback(
+        Output("chart", "figure", allow_duplicate=True),
+        Output("control-state", "data", allow_duplicate=True),
+        Output("spool-state", "data", allow_duplicate=True),
+        Input("bar-sort", "value"),
+        State("session-state", "data"),
+        State("log-state", "data"),
+        State("control-state", "data"),
+        State("spool-state", "data"),
+        prevent_initial_call=True,
+    )
+    def bar_sort(sort_key, stored, log, control_state, spool):
+        """Thin wrapper over `control_step` for the bar chart's Order control."""
+        fired = callback_context.triggered
+        figure, _options, _value, control, spool_out = control_step(
+            fired[0]["prop_id"] if fired else None,
+            stored,
+            log,
+            control_state,
+            sort_key=sort_key,
+            spool=spool,
+        )
+        return figure, control, spool_out
+
+    # Writes the slider it reads: Show all has to move the handles back. Dash allows a property to
+    # be both an Input and an Output of one callback, and does not re-fire it on its own write.
+    @app.callback(
+        Output("chart", "figure", allow_duplicate=True),
+        Output("coverage-band", "value"),
+        Output("control-state", "data", allow_duplicate=True),
+        Output("spool-state", "data", allow_duplicate=True),
+        Input("coverage-band", "value"),
+        Input("band-reset", "n_clicks"),
+        State("session-state", "data"),
+        State("log-state", "data"),
+        State("control-state", "data"),
+        State("spool-state", "data"),
+        prevent_initial_call=True,
+    )
+    def coverage_band(band, _reset, stored, log, control_state, spool):
+        """Thin wrapper over `control_step` for the map's coverage range and its Show all."""
+        fired = callback_context.triggered
+        figure, _options, value, control, spool_out = control_step(
+            fired[0]["prop_id"] if fired else None,
+            stored,
+            log,
+            control_state,
+            band=band,
+            spool=spool,
+        )
+        return figure, value, control, spool_out
+
     # The chart's own events, in a callback of their own. The chart is rendered in BOTH conditions,
     # so everything this callback touches must be too: were it wired to the interactive-only
     # controls, the renderer would refuse it on every static screen with a console ReferenceError.
@@ -1071,7 +1219,10 @@ CLOCK_JS = """function(_, session, previous) {
 #
 # The watchdog re-enables the button if no response ever arrives (a killed function, a dropped
 # connection), so a lost request can never strand a participant. By the time it fires on a
-# successful step the screen has been replaced, and re-enabling a fresh button is harmless.
+# successful step the screen has been replaced, and re-enabling a fresh button is harmless -- but
+# only if there is one. After the sixth task the survey is on screen, with no Submit, and the
+# renderer threw on `set_props` for a missing id (found in headless Chrome, 2026-09-23). So every
+# watchdog checks that its button is still on the page first.
 SUBMIT_JS = """function(n, answer, justification) {
     var no = window.dash_clientside.no_update;
     if (!n) { return [no, no]; }
@@ -1089,7 +1240,9 @@ SUBMIT_JS = """function(n, answer, justification) {
         return [no, no];
     }
     window.setTimeout(function () {
-        window.dash_clientside.set_props("submit-button", {disabled: false});
+        if (document.getElementById("submit-button")) {
+            window.dash_clientside.set_props("submit-button", {disabled: false});
+        }
     }, 15000);
     return [stamp, true];
 }"""
@@ -1117,7 +1270,9 @@ def confirm_js(button: str) -> str:
         return [no, no];
     }}
     window.setTimeout(function () {{
-        window.dash_clientside.set_props("{button}", {{disabled: false}});
+        if (document.getElementById("{button}")) {{
+            window.dash_clientside.set_props("{button}", {{disabled: false}});
+        }}
     }}, 15000);
     return [{{n: n, skipped: skipped, at: Date.now()}}, true];
 }}"""
@@ -1138,7 +1293,9 @@ SUBMIT_ENABLE_JS = """function(message) {
 PARTICIPANT_DISABLE_JS = """function(n, nSubmit) {
     if (!n && !nSubmit) { return window.dash_clientside.no_update; }
     window.setTimeout(function () {
-        window.dash_clientside.set_props("participant-button", {disabled: false});
+        if (document.getElementById("participant-button")) {
+            window.dash_clientside.set_props("participant-button", {disabled: false});
+        }
     }, 25000);
     return true;
 }"""

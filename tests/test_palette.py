@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from src import config
+from src import config, contrast
 from src.contrast import (
     GRAPHIC_MIN,
     TEXT_MIN,
@@ -127,3 +127,90 @@ def test_gridline_exemption_is_declared_and_bounded():
 def test_y_range_is_pinned_full_scale():
     """A y-axis that rescales would change apparent steepness between tasks or conditions."""
     assert config.Y_RANGE == (0, 100)
+
+
+# --- Colour-vision deficiency (visual-spec.md section 4, 2026-09-23) -----------------------------
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "expected"),
+    [
+        ((50.0, 2.6772, -79.7751), (50.0, 0.0, -82.7485), 2.0425),
+        ((50.0, 0.0, 0.0), (50.0, -1.0, 2.0), 2.3669),
+        ((50.0, 2.5, 0.0), (73.0, 25.0, -18.0), 27.1492),
+    ],
+)
+def test_ciede2000_matches_the_published_test_data(first, second, expected):
+    """Pairs 1, 7 and 17 of Sharma, Wu and Dalal (2005). A floor measured with a wrong formula
+    would hold nothing."""
+    assert contrast.delta_e2000(first, second) == pytest.approx(expected, abs=1e-4)
+
+
+@pytest.mark.parametrize("vision", list(contrast.CVD_MATRICES))
+def test_simulation_leaves_a_neutral_grey_neutral(vision):
+    """Each Machado row sums to 1, so a grey is seen as the same grey."""
+    grey = contrast.simulate("#777777", vision)
+    assert max(grey) - min(grey) == pytest.approx(0.0, abs=1e-5)
+
+
+def test_series_colors_stay_apart_under_colour_vision_deficiency():
+    """WCAG contrast says each colour stands out from white, not that two colours can be told
+    apart. The floor holds in normal vision and under simulated deuteranopia and protanopia."""
+    distance, first, second = contrast.weakest_pair(config.SERIES_COLORS)
+    assert distance >= config.MIN_CVD_DISTANCE, (
+        f"{first} and {second} are {distance:.1f} dE apart; the floor is {config.MIN_CVD_DISTANCE}"
+    )
+
+
+def test_the_dropped_orange_was_indistinguishable_from_vermillion():
+    """Why the five-colour palette lost its darkened Okabe-Ito orange (2026-09-23)."""
+    assert contrast.cvd_distance("#9C6C00", "#D55E00", ("protan",)) < 2.0
+    assert "#9C6C00" not in config.SERIES_COLORS
+
+
+def test_no_series_colour_can_be_mistaken_for_the_world_reference():
+    for color in config.SERIES_COLORS:
+        distance = contrast.cvd_distance(color, config.REFERENCE_COLOR)
+        assert distance >= config.MIN_CVD_DISTANCE, f"{color} is {distance:.1f} dE from black"
+
+
+def test_marker_symbols_give_every_scatter_series_its_own_shape():
+    """The scatter's second channel: colour is never the only one (visual-spec.md section 6)."""
+    assert len(config.MARKER_SYMBOLS) >= config.MAX_SERIES
+    assert len(set(config.MARKER_SYMBOLS)) == len(config.MARKER_SYMBOLS)
+
+
+# --- The sequential scale (heatmap and map) ------------------------------------------------------
+
+
+def _lightness(color: str, vision: str = "normal") -> float:
+    return contrast.to_lab(contrast.simulate(color, vision))[0]
+
+
+@pytest.mark.parametrize("vision", ["normal", "deutan", "protan"])
+def test_the_sequential_scale_is_dark_for_low_coverage_and_lightens_steadily(vision):
+    """The prompts say darker means lower. That must stay true, step by step, with colour-vision
+    deficiency too: cividis was chosen because it does."""
+    stops = [color for _position, color in config.SEQUENTIAL_SCALE]
+    lightness = [_lightness(color, vision) for color in stops]
+    assert lightness == sorted(lightness)
+    assert len(set(lightness)) == len(lightness)
+
+
+def test_the_sequential_scale_runs_the_full_range():
+    positions = [position for position, _color in config.SEQUENTIAL_SCALE]
+    assert positions[0] == 0.0 and positions[-1] == 1.0
+    assert positions == sorted(positions)
+
+
+def test_the_sequential_exemption_is_declared_and_bounded():
+    """The light end is below 3:1 on white on purpose (visual-spec.md section 4). What must hold
+    instead: the white borders between countries stand out from every fill a country below 50%
+    can have, which are the countries the map question counts."""
+    assert config.SEQUENTIAL_EXEMPT
+    lightest = config.SEQUENTIAL_SCALE[-1][1]
+    assert contrast_ratio(lightest, BG) < GRAPHIC_MIN, "the scale now passes; drop the exemption"
+    for position, color in config.SEQUENTIAL_SCALE:
+        if position <= 0.5:
+            ratio = contrast_ratio(config.MAP_BORDER_COLOR, color)
+            assert ratio >= GRAPHIC_MIN, f"border vs {color}: {ratio:.2f}:1"

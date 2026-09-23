@@ -6,8 +6,8 @@ returns `payload` as a dict (psycopg decodes JSONB); `scripts/export_logs.py` wr
 routes produce identical frames -- otherwise a CSV-based analysis and a database-based one could
 silently disagree.
 
-The unscored practice item (`P0`) is dropped here, per study-design.md section 8. T6 is kept and
-scored, but flagged out of the RQ1 accuracy score (`rq1_item`), per section 7.
+The unscored practice item (`P0`) is dropped here, per study-design.md section 8. Every scored item,
+T1-T6, counts towards the RQ1 accuracy score (section 7).
 """
 
 from __future__ import annotations
@@ -24,10 +24,6 @@ from analysis import keys as answer_keys
 from src import tasks
 
 PRACTICE_ID = tasks.PRACTICE.task_id
-# Scored like every other item but reported on its own, never in the RQ1 accuracy score: T6's
-# answer is on screen in both conditions, so it cannot differ by condition (study-design.md
-# sections 4 and 7).
-SEPARATELY_REPORTED = frozenset({"T6"})
 INTERACTION_EVENTS = ("filter_change", "line_isolate", "sort_change", "view_change")
 # The events only the interactive condition's controls can produce. `view_change` is not among them:
 # the schema documents it as possible in both conditions (src/logging.py EVENTS).
@@ -41,15 +37,14 @@ BASE_COLUMNS = [
     "form",
     "task_id",
     "kind",
+    "chart",
     "answer",
     "justification",
     "duration_ms",
     "duration_invalid",
     "correct",
-    "correct_adjacent",
     "skipped_answer",
     "skipped_justification",
-    "rq1_item",
 ]
 TASK_COLUMNS = [*BASE_COLUMNS, *[f"n_{name}" for name in INTERACTION_EVENTS]]
 
@@ -111,6 +106,7 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
     pre-registered secondary (skips excluded) and the per-condition skip counts can be computed.
     """
     key_table = key_table if key_table is not None else answer_keys.key_table()
+    charts = {(t.form, t.task_id): t.chart for form in tasks.FORMS for t in tasks.for_form(form)}
 
     answers = events[(events["event"] == "answer_submit") & (events["task_id"] != PRACTICE_ID)]
     rows = []
@@ -129,17 +125,16 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
                 "form": form,
                 "task_id": task_id,
                 "kind": key.kind,
+                # The chart type, so a per-affordance summary does not have to re-derive it. Each
+                # type carries one item per form: descriptive only, never a powered comparison.
+                "chart": charts.get((form, task_id)),
                 "answer": payload.get("answer"),
                 "justification": payload.get("justification"),
                 "duration_ms": payload.get("duration_ms"),
                 "duration_invalid": payload.get("duration_invalid"),
                 "correct": answer_keys.is_correct(form, task_id, payload.get("answer"), key_table),
-                "correct_adjacent": answer_keys.is_correct_adjacent(
-                    form, task_id, payload.get("answer"), key_table
-                ),
                 "skipped_answer": payload.get("answer") is None,
                 "skipped_justification": not (payload.get("justification") or "").strip(),
-                "rq1_item": task_id not in SEPARATELY_REPORTED,
             }
         )
     tasks_frame = pd.DataFrame(rows, columns=BASE_COLUMNS)
@@ -196,25 +191,17 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
     recovered = set(events.loc[events["event"] == "sink_recovered", "session_id"].astype(str))
 
     by_session = tasks_frame.groupby("session_id")
-    rq1 = tasks_frame[~tasks_frame["task_id"].isin(SEPARATELY_REPORTED)]
     sessions["paas"] = sessions["session_id"].map(paas)
     for key in LIKERT_KEYS:
         sessions[key] = sessions["session_id"].map(lambda s, k=key: (likert.get(s) or {}).get(k))
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
-    # Primary: skips count as incorrect, so the denominator is every RQ1 answer (T1-T5).
-    sessions["prop_correct"] = sessions["session_id"].map(
-        rq1.groupby("session_id")["correct"].mean()
-    )
-    # Secondary, pre-registered: among answered RQ1 items only.
-    answered = rq1[~rq1["skipped_answer"].astype(bool)]
+    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T6).
+    sessions["prop_correct"] = sessions["session_id"].map(by_session["correct"].mean())
+    # Secondary, pre-registered: among answered items only.
+    answered = tasks_frame[~tasks_frame["skipped_answer"].astype(bool)]
     sessions["prop_correct_answered"] = sessions["session_id"].map(
         answered.groupby("session_id")["correct"].mean()
-    )
-    # T6 on its own line: the proportion of the session's gap items answered correctly.
-    separate = tasks_frame[tasks_frame["task_id"].isin(SEPARATELY_REPORTED)]
-    sessions["t6_correct"] = sessions["session_id"].map(
-        separate.groupby("session_id")["correct"].mean()
     )
     sessions["n_skipped"] = (
         sessions["session_id"].map(by_session["skipped_answer"].sum()).fillna(0).astype(int)

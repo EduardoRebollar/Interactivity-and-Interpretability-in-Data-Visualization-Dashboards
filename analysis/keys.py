@@ -4,9 +4,9 @@ Each item's correct option is **computed** from `data/deploy/coverage.csv` by th
 states, then compared against `EXPECTED`, a table transcribed by hand from `docs/study-design.md`
 section 4. The two must agree or `check()` reports it, and `tests/test_scoring.py` fails.
 
-That duplication is the point. `docs/study-design.md` carried a wrong key for T1 (it said 2; the
-data says 1) and nothing noticed, because a hand-written key has nothing checking it. A derived key
-alone would not catch a rule implemented wrongly; a transcribed key alone would not catch a wrong
+That duplication is the point. `docs/study-design.md` once carried a wrong key (it said 2; the data
+said 1) and nothing noticed, because a hand-written key has nothing checking it. A derived key alone
+would not catch a rule implemented wrongly; a transcribed key alone would not catch a wrong
 transcription or a data refresh. Together, either kind of error fails loudly.
 
 **Stdlib and `src.runtime_data` only -- no pandas here**, unlike the rest of `analysis/`. The key
@@ -14,20 +14,23 @@ must come from the same bytes, through the same loader, as the chart each partic
 A second read path for the CSV would reopen the class of bug the loader-agreement test exists to
 close.
 
-Item parameters live in `PARAMS`, not in parsed prompt text: parsing English would couple the key
-to the wording of the question.
+The years an item shows come from the task itself (`task.years`), the same field the chart is drawn
+from. What the chart does not need -- the country a line item is about, the rank asked for, the
+threshold -- lives in `PARAMS`, not in parsed prompt text: parsing English would couple the key to
+the wording of the question.
 
 **Each rule also enforces the item acceptance rule** (`docs/study-design.md` section 4). A key that
 is right only for a reader who can see exact values measures whether hover exists, not how well
 someone interprets a chart, so every item must survive the reading errors a participant without
-hover makes: a slip of one year along the x axis, and a few points along y. An item that fails is
-refused here, the same way a wrong key is, so a fragile item cannot reach a participant.
+hover makes: a slip of one year along the x axis, a few points along a value axis, and more than a
+few points on a colour scale. An item that fails is refused here, the same way a wrong key is, so a
+fragile item cannot reach a participant.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from itertools import combinations, product
+from itertools import combinations
 from typing import Any
 
 from src import config, runtime_data, tasks
@@ -39,61 +42,51 @@ class KeyDerivationError(ValueError):
     """An item whose key cannot be derived -- which means the item itself is not well-posed."""
 
 
-# Trend items need a clear winner. A data refresh that brings the runner-up within this many
-# percentage points would make two options defensible; that must fail, not quietly score.
-MIN_TREND_MARGIN_PP = 5.0
-
 # --- The item acceptance rule (study-design.md section 4) ---------------------------------------
-# One point is 4 px on the chart and a marker is 10 px across, so two values 2 points apart draw
-# overlapping markers. 5 points (20 px) is the smallest gap that reads unaided.
+# On the line and bar charts one point is 4 px, so two values 5 points apart are 20 px apart, the
+# smallest gap that reads unaided. Every position judgement must clear it.
 MIN_SEPARATION_PP = 5.0
-# A crossing must be drawn at least this far inside its answer band, so a reading one year off
-# still lands in the right band.
-MIN_BAND_INSET_YEARS = 1.0
-# A gap series must be distinguishable from every other line: within this many points of another
-# line in more than half its reported years, and it is hidden behind that line.
-MIN_LINE_SEPARATION_PP = 4.0
+# The heatmap and the map carry value as colour. On the sequential scale one point moves lightness
+# by 0.73-0.86 L* (measured along config.SEQUENTIAL_SCALE), and colour is judged less precisely than
+# position, between patches that are not side by side. Twice the position floor: 10 points is at
+# least 7.3 L*.
+MIN_COLOUR_SEPARATION_PP = 10.0
+# Scatter dots are 12 px across at 4 px a point. Centres closer than 4 points (16 px) overlap enough
+# that one dot hides another.
+MIN_DOT_DISTANCE_PP = 4.0
 
-REFERENCE = "World"
-
-# (form, task_id) -> the parameters each rule runs on.
+# (form, task_id) -> what the rule needs that the chart does not.
 PARAMS: dict[tuple[str, str], dict[str, Any]] = {
-    ("A", "T1"): {"year": 2005},
-    ("A", "T2"): {"window": (2015, 2021), "direction": "fall"},
-    ("A", "T3"): {"window": (2000, 2012), "direction": "rise"},
-    ("A", "T4"): {"overtaker": "India", "overtaken": "Brazil"},
-    ("A", "T5"): {"overtaker": "China", "overtaken": "United Kingdom"},
-    ("A", "T6"): {"series": ("United Kingdom",), "before": 2019},
-    ("B", "T1"): {"year": 2015},
-    ("B", "T2"): {"window": (2010, 2015), "direction": "fall"},
-    ("B", "T3"): {"window": (2013, 2024), "direction": "rise"},
-    ("B", "T4"): {"overtaker": "China", "overtaken": "Ukraine"},
-    ("B", "T5"): {"overtaker": "China", "overtaken": "Brazil"},
-    # "before each line begins": the gap is each series' own leading run of unreported years.
-    ("B", "T6"): {"series": ("Ethiopia", "Nigeria", "India"), "before": None},
+    ("A", "T1"): {"entity": "Ukraine"},
+    ("A", "T2"): {"entity": "Pakistan"},
+    ("A", "T3"): {"rank": 3},
+    ("A", "T4"): {},
+    ("A", "T5"): {},
+    ("A", "T6"): {"threshold": 50},
+    ("B", "T1"): {"entity": "Myanmar"},
+    ("B", "T2"): {"entity": "Bangladesh"},
+    ("B", "T3"): {"rank": 3},
+    ("B", "T4"): {},
+    ("B", "T5"): {},
+    ("B", "T6"): {"threshold": 50},
 }
 
 # Transcribed BY HAND from docs/study-design.md section 4. Deliberately duplicated: a cross-check
 # that reads its own answer is not a check. Never generate this from `derive()`.
 EXPECTED: dict[tuple[str, str], str] = {
-    ("A", "T1"): "1",
-    ("A", "T2"): "Brazil",
-    ("A", "T3"): "Ethiopia",
-    ("A", "T4"): "2013-2016",
-    ("A", "T5"): "2004-2008",
-    ("A", "T6"): "Coverage was not reported for those years",
-    ("B", "T1"): "1",
-    ("B", "T2"): "Ukraine",
-    ("B", "T3"): "Nigeria",
-    ("B", "T4"): "2004-2008",
-    ("B", "T5"): "2009-2012",
-    ("B", "T6"): "Coverage was not reported for those years",
+    ("A", "T1"): "2016",
+    ("A", "T2"): "2011",
+    ("A", "T3"): "India",
+    ("A", "T4"): "Niger",
+    ("A", "T5"): "Chad",
+    ("A", "T6"): "3",
+    ("B", "T1"): "2021",
+    ("B", "T2"): "2004",
+    ("B", "T3"): "Colombia",
+    ("B", "T4"): "India",
+    ("B", "T5"): "Afghanistan",
+    ("B", "T6"): "2",
 }
-
-# The option asserting the gap is "not reported". `derive` proves it rather than assuming it, and
-# refuses the key if this text stops being one of the options. Looked up by wording, not position:
-# option order is chosen so the key does not sit in the same place every time (section 5).
-NOT_REPORTED = "Coverage was not reported for those years"
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,298 +109,301 @@ def _value(entity: str, vaccine: str, year: int, rows: tuple[Row, ...]) -> float
     raise KeyDerivationError(f"No row for {entity} {vaccine} {year}")
 
 
-def _required(entity: str, vaccine: str, year: int, rows: tuple[Row, ...]) -> float:
-    value = _value(entity, vaccine, year, rows)
+def _required(task: Task, entity: str, year: int, rows: tuple[Row, ...]) -> float:
+    """A value the item cannot do without: a bar, a dot, a cell or a country with nothing to show
+    would leave the chart unreadable at exactly the point the question is about."""
+    value = _value(entity, task.vaccine, year, rows)
     if value is None:
         raise KeyDerivationError(
-            f"{entity} {vaccine} {year} is not reported; the item has no answer"
+            f"{task.form}-{task.task_id}: {entity} {task.vaccine} {year} is not reported; the "
+            "chart would have nothing to show there"
         )
     return value
 
 
-# --- Bands --------------------------------------------------------------------------------------
+def _reported(entity: str, vaccine: str, rows: tuple[Row, ...]) -> dict[int, float]:
+    return {
+        r.year: r.coverage_pct
+        for r in runtime_data.series(entity, vaccine, rows)
+        if r.coverage_pct is not None
+    }
 
 
-def _parse_band(band: str) -> tuple[int, int]:
-    start, end = band.split("-")
-    return int(start), int(end)
+def _focus(task: Task, params: dict[str, Any]) -> str:
+    entity = params["entity"]
+    if entity not in task.entities:
+        raise KeyDerivationError(f"{task.form}-{task.task_id}: {entity} is not on the chart")
+    return entity
 
 
-def band_for(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> str:
-    """The option band containing `year`. Bands are inclusive at both ends.
-
-    Raises for a year no band covers, rather than picking the nearest: an item whose crossing falls
-    outside every option cannot be answered correctly by anyone.
-    """
-    for band in bands:
-        start, end = _parse_band(band)
-        if start <= year <= end:
-            return band
-    raise KeyDerivationError(f"No answer band contains {year}; bands are {bands}")
+# --- Years read one off -------------------------------------------------------------------------
 
 
-def adjacent_bands(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> set[str]:
-    """The key band plus the bands containing year - 1 and year + 1.
+def _nearest_option(year: int, options: list[int]) -> int | None:
+    """The option year closest to `year`, or None on a tie: a reading halfway between two options
+    could go either way, so it cannot be counted on to reach the key."""
+    ranked = sorted((abs(year - option), option) for option in options)
+    if len(ranked) > 1 and ranked[0][0] == ranked[1][0]:
+        return None
+    return ranked[0][1]
 
-    The pre-registered SECONDARY scoring for the crossing items, T4 and T5 (study-design.md
-    sections 4 and 7). A key on the last year of its band -- both T4 keys, and B-T5's -- sends a
-    one-year-late reading into the next band.
-    """
-    accepted = {band_for(year, bands)}
-    for neighbour in (year - 1, year + 1):
-        try:
-            accepted.add(band_for(neighbour, bands))
-        except KeyDerivationError:
-            continue
-    return accepted
+
+def _check_years_reach_key(task: Task, key: int, years: list[int], what: str) -> None:
+    """Every year in `years`, read one off either way, must be nearest the key option."""
+    options = [int(option) for option in task.options]
+    for year in sorted(set(years)):
+        for reading in (year - 1, year, year + 1):
+            if not config.YEAR_MIN <= reading <= config.YEAR_MAX:
+                continue
+            nearest = _nearest_option(reading, options)
+            if nearest != key:
+                raise KeyDerivationError(
+                    f"{task.form}-{task.task_id}: {what} {year}, read as {reading}, is nearest "
+                    f"{'no single option' if nearest is None else nearest}, not {key}"
+                )
 
 
 # --- Rules --------------------------------------------------------------------------------------
 
 
-def _misreadings(year: int) -> list[int]:
-    """The year itself and the years either side that are on the chart: a one-year slip."""
-    return [y for y in (year - 1, year, year + 1) if config.YEAR_MIN <= y <= config.YEAR_MAX]
+def _lowest(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T1: the year of a line's lowest point.
 
-
-def _reference(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    year = params["year"]
-    world = _required(REFERENCE, task.vaccine, year, rows)
-    countries = [e for e in task.entities if e != REFERENCE]
-    values = {c: _required(c, task.vaccine, year, rows) for c in countries}
-    above = sorted(c for c, v in values.items() if v > world)
-    count = len(above)
-    correct = str(count) if count < 4 else "4 or more"
-
-    # Acceptance: the count must not depend on a close call, at the year asked or a year either
-    # side of it. A year with an unreported value is skipped: there is no point there to misread.
-    closest = closest_pair = float("inf")
-    for y in _misreadings(year):
-        at = {e: _value(e, task.vaccine, y, rows) for e in (*countries, REFERENCE)}
-        if any(v is None for v in at.values()):
-            continue
-        for country in countries:
-            margin = at[country] - at[REFERENCE]
-            closest = min(closest, abs(margin))
-            if abs(margin) < MIN_SEPARATION_PP:
-                raise KeyDerivationError(
-                    f"{task.form}-{task.task_id}: {country} is {margin:+g} pts from {REFERENCE} "
-                    f"in {y}; closer than {MIN_SEPARATION_PP:g} pts, above or below is a close call"
-                )
-        if sum(at[c] > at[REFERENCE] for c in countries) != count:
-            raise KeyDerivationError(
-                f"{task.form}-{task.task_id}: the count in {y} differs from {year}'s; reading the "
-                f"year one off changes the answer"
-            )
-        # Counting needs every line to be told apart from the others where it is counted.
-        for a, b in combinations(countries, 2):
-            closest_pair = min(closest_pair, abs(at[a] - at[b]))
-            if abs(at[a] - at[b]) < MIN_SEPARATION_PP:
-                raise KeyDerivationError(
-                    f"{task.form}-{task.task_id}: {a} and {b} are {abs(at[a] - at[b]):g} pts apart "
-                    f"in {y}; their lines cannot be counted separately"
-                )
+    Acceptance: the participant finds the low point and reads its year. Every year within 5 points
+    of the minimum could be taken for it, and any of them may be read a year off, so every such
+    reading must be nearer the key option than any other.
+    """
+    entity = _focus(task, params)
+    values = _reported(entity, task.vaccine, rows)
+    lowest = min(values.values())
+    at_lowest = sorted(year for year, value in values.items() if value == lowest)
+    if len(at_lowest) > 1:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {entity} is at its lowest ({lowest:g}) in {at_lowest}"
+        )
+    key = at_lowest[0]
+    near = sorted(year for year, value in values.items() if value - lowest < MIN_SEPARATION_PP)
+    _check_years_reach_key(task, key, near, f"{entity}'s near-lowest year")
+    others = {int(o): values.get(int(o)) for o in task.options if int(o) != key}
+    margin = min(value - lowest for value in others.values() if value is not None)
     return DerivedKey(
         task.task_id,
         task.form,
         task.kind,
-        correct,
-        f"countries shown strictly above {REFERENCE} in {year}; a tie is not above",
+        str(key),
+        f"year of {entity}'s lowest reported value",
+        {
+            "entity": entity,
+            "lowest": (key, lowest),
+            "near_lowest_years": near,
+            "option_values": others,
+            "margin_pp": margin,
+        },
+    )
+
+
+def _rise(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T2: the year a line rose the most over the year before.
+
+    Acceptance: the largest one-year change beats every other by at least 5 points, so the steepest
+    segment stands out without the tooltip. The segment spans two years and either end may be taken
+    for "the year", read one off, so the four years around it must all be nearest the key option.
+    """
+    entity = _focus(task, params)
+    values = _reported(entity, task.vaccine, rows)
+    changes = {year: values[year] - values[year - 1] for year in values if year - 1 in values}
+    ranked = sorted(changes.items(), key=lambda item: item[1], reverse=True)
+    (key, top), (second_year, second) = ranked[0], ranked[1]
+    margin = top - second
+    if margin < MIN_SEPARATION_PP:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {entity}'s rise of {top:+g} in {key} beats "
+            f"{second:+g} in {second_year} by only {margin:g} pts"
+        )
+    _check_years_reach_key(task, key, [key - 1, key], f"{entity}'s steepest rise, at")
+    return DerivedKey(
+        task.task_id,
+        task.form,
+        task.kind,
+        str(key),
+        f"year with {entity}'s largest one-year rise over the year before",
+        {
+            "entity": entity,
+            "rise": (key, top),
+            "runner_up": (second_year, second),
+            "margin_pp": margin,
+        },
+    )
+
+
+def _rank(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T3: the country ranked `rank` among the bars.
+
+    Acceptance: the key's bar is at least 5 points from the bars ranked just above and below it, so
+    the three can be told apart by height without sorting.
+    """
+    rank = params["rank"]
+    (year,) = task.years
+    values = {entity: _required(task, entity, year, rows) for entity in task.entities}
+    ordered = sorted(values, key=values.get, reverse=True)
+    key = ordered[rank - 1]
+    neighbours = {}
+    if rank > 1:
+        neighbours["above"] = ordered[rank - 2]
+    if rank < len(ordered):
+        neighbours["below"] = ordered[rank]
+    gaps = {side: abs(values[other] - values[key]) for side, other in neighbours.items()}
+    for side, gap in gaps.items():
+        if gap < MIN_SEPARATION_PP:
+            raise KeyDerivationError(
+                f"{task.form}-{task.task_id}: {key} ({values[key]:g}) is {gap:g} pts from "
+                f"{neighbours[side]}, the bar ranked {side} it; bars that close cannot be ranked "
+                "by eye"
+            )
+    return DerivedKey(
+        task.task_id,
+        task.form,
+        task.kind,
+        key,
+        f"country with the {_ordinal(rank)}-highest coverage in {year}",
         {
             "year": year,
-            "world": world,
             "values": values,
-            "above": above,
-            "closest_to_reference_pp": closest,
-            "closest_pair_pp": closest_pair,
+            "neighbours": neighbours,
+            "gaps_pp": gaps,
         },
     )
 
 
-def _trend(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    start, end = params["window"]
-    direction = params["direction"]
-    deltas = {
-        c: _required(c, task.vaccine, end, rows) - _required(c, task.vaccine, start, rows)
-        for c in task.options
-    }
-    # Largest fall is the most negative change; largest rise the most positive.
-    ranked = sorted(deltas, key=deltas.get, reverse=direction == "rise")
-    winner, runner_up = ranked[0], ranked[1]
-    margin = abs(deltas[winner] - deltas[runner_up])
-    if margin < MIN_TREND_MARGIN_PP:
-        raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {winner} leads {runner_up} by only {margin:g} pp; "
-            f"two options are defensible"
-        )
+def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T4: the dot furthest above the no-change diagonal.
 
-    # Acceptance: reading either end of the window one year off must not change the winner. The
-    # item asks about a trend; an answer that hinges on one year's dip is a precision task.
-    worst = margin
-    for a, b in product(_misreadings(start), _misreadings(end)):
-        if a >= b:
-            continue
-        at = {
-            c: (_value(c, task.vaccine, a, rows), _value(c, task.vaccine, b, rows))
-            for c in task.options
-        }
-        if any(v is None for pair in at.values() for v in pair):
-            continue
-        shifted = {c: later - earlier for c, (earlier, later) in at.items()}
-        order = sorted(shifted, key=shifted.get, reverse=direction == "rise")
-        if order[0] != winner:
-            raise KeyDerivationError(
-                f"{task.form}-{task.task_id}: read as {a} to {b}, {order[0]} "
-                f"({shifted[order[0]]:+g}) beats {winner} ({shifted[winner]:+g}); a one-year slip "
-                f"changes the answer"
-            )
-        worst = min(worst, abs(shifted[order[0]] - shifted[order[1]]))
+    Acceptance: its improvement beats every other dot's by at least 5 points, and no two dots sit
+    within 4 points of each other, where one would hide the other.
+    """
+    first, last = task.years
+    points = {
+        entity: (_required(task, entity, first, rows), _required(task, entity, last, rows))
+        for entity in task.entities
+    }
+    improvement = {entity: late - early for entity, (early, late) in points.items()}
+    ranked = sorted(improvement, key=improvement.get, reverse=True)
+    key, runner_up = ranked[0], ranked[1]
+    margin = improvement[key] - improvement[runner_up]
+    if margin < MIN_SEPARATION_PP:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {key} improved {improvement[key]:+g}, only {margin:g} "
+            f"pts more than {runner_up}"
+        )
+    closest = min(
+        (
+            ((points[a][0] - points[b][0]) ** 2 + (points[a][1] - points[b][1]) ** 2) ** 0.5,
+            a,
+            b,
+        )
+        for a, b in combinations(task.entities, 2)
+    )
+    if closest[0] < MIN_DOT_DISTANCE_PP:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: the dots for {closest[1]} and {closest[2]} are "
+            f"{closest[0]:.1f} pts apart; one hides the other"
+        )
     return DerivedKey(
         task.task_id,
         task.form,
         task.kind,
-        winner,
-        f"largest {direction} in coverage from {start} to {end}, in percentage points",
+        key,
+        f"country whose coverage rose most from {first} to {last}",
         {
-            "window": (start, end),
-            "deltas": deltas,
+            "points": points,
+            "improvement": improvement,
             "runner_up": runner_up,
             "margin_pp": margin,
-            "worst_misread_margin_pp": worst,
+            "closest_dots_pp": round(closest[0], 2),
         },
     )
 
 
-def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    overtaker, overtaken = params["overtaker"], params["overtaken"]
-    years = sorted({r.year for r in runtime_data.series(overtaker, task.vaccine, rows)})
-    differences = {}
-    for year in years:
-        a = _value(overtaker, task.vaccine, year, rows)
-        b = _value(overtaken, task.vaccine, year, rows)
-        if a is not None and b is not None:
-            differences[year] = a - b
-    ordered = sorted(differences)
+def _cell(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T5: the row holding the heatmap's lowest cell.
 
-    def first(predicate) -> int:
-        for previous, year in zip(ordered, ordered[1:], strict=False):
-            if predicate(differences[previous], differences[year]):
-                return year
+    Acceptance: that cell is at least 10 points below the lowest cell of every other row. Colour is
+    the only channel here, and the rule for colour is twice the rule for position.
+    """
+    minima = {}
+    for entity in task.entities:
+        cells = {year: _required(task, entity, year, rows) for year in task.years}
+        year = min(cells, key=cells.get)
+        minima[entity] = (cells[year], year)
+    ranked = sorted(minima, key=lambda entity: minima[entity][0])
+    key, runner_up = ranked[0], ranked[1]
+    margin = minima[runner_up][0] - minima[key][0]
+    if margin < MIN_COLOUR_SEPARATION_PP:
         raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {overtaker} never overtakes {overtaken}"
-        )
-
-    strictly_above = first(lambda before, now: before <= 0 < now)
-    not_below = first(lambda before, now: before < 0 <= now)
-
-    # Well-posed only if it is ONE overtaking: once above, the overtaker must stay above. Otherwise
-    # "when did it overtake" has more than one true answer.
-    back_below = [y for y in ordered if y > strictly_above and differences[y] <= 0]
-    if back_below:
-        raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {overtaker} falls back to or below {overtaken} in "
-            f"{back_below}; the item has more than one crossing"
-        )
-
-    correct = band_for(strictly_above)
-    # A plateau of exact ties before the crossing (B-T5: 99.0 == 99.0 for 2009-2011) means two
-    # reasonable definitions of the crossing year disagree. The key is safe only while they agree
-    # at the level participants answer at: the band.
-    if band_for(not_below) != correct:
-        raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: the crossing is {strictly_above} by 'strictly above' "
-            f"but {not_below} by 'no longer below', and those fall in different bands"
-        )
-
-    # Acceptance: what a participant sees is where the two lines meet, not the first year of a
-    # rule. That point must sit far enough inside the key band that a reading one year off still
-    # lands in it. A drawn crossing at 2016.1 keyed to 2017-2020 is scored wrong for everyone who
-    # reads the chart correctly.
-    previous = ordered[ordered.index(strictly_above) - 1]
-    before, after = differences[previous], differences[strictly_above]
-    intersection = previous + (0 - before) / (after - before) * (strictly_above - previous)
-    start, end = _parse_band(correct)
-    inset = min(intersection - (start - 0.5), (end + 0.5) - intersection)
-    if inset < MIN_BAND_INSET_YEARS:
-        raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: the lines meet at {intersection:.2f}, only {inset:.2f} "
-            f"years inside {correct}; a reading one year off lands in another band"
+            f"{task.form}-{task.task_id}: {key}'s lowest cell ({minima[key][0]:g}) is only "
+            f"{margin:g} pts below {runner_up}'s; that close, the two colours cannot be told apart"
         )
     return DerivedKey(
         task.task_id,
         task.form,
         task.kind,
-        correct,
-        f"band containing the first year {overtaker} is strictly above {overtaken}",
+        key,
+        "country whose row holds the lowest cell",
         {
-            "cross_year": strictly_above,
-            "not_below_year": not_below,
-            "intersection": round(intersection, 2),
-            "band_inset_years": round(inset, 2),
-            "differences": differences,
-            "adjacent_bands": sorted(adjacent_bands(strictly_above)),
+            "row_minima": minima,
+            "runner_up": runner_up,
+            "margin_pp": margin,
         },
     )
 
 
-def _gap(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    missing: dict[str, list[int]] = {}
-    for entity in params["series"]:
-        observations = runtime_data.series(entity, task.vaccine, rows)
-        if params["before"] is not None:
-            window = [r for r in observations if r.year < params["before"]]
-        else:
-            # The leading run of unreported years, up to where the line begins.
-            first_reported = next(
-                (r.year for r in observations if r.coverage_pct is not None), None
-            )
-            if first_reported is None:
-                raise KeyDerivationError(f"{entity} {task.vaccine} is never reported")
-            window = [r for r in observations if r.year < first_reported]
-        if not window:
-            raise KeyDerivationError(
-                f"{task.form}-{task.task_id}: {entity} has no gap to ask about"
-            )
-        # The distinction the item exists to test: absent is not zero. A recorded 0.0 would make
-        # "coverage was zero" the true answer instead.
-        reported = [(r.year, r.coverage_pct) for r in window if r.coverage_pct is not None]
-        if reported:
-            raise KeyDerivationError(
-                f"{task.form}-{task.task_id}: {entity} has reported values inside the gap window: "
-                f"{reported}"
-            )
-        missing[entity] = [r.year for r in window]
+def _threshold(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T6: how many coloured countries are below a threshold.
 
-        # Acceptance: the line the question is about must be findable. A gap series drawn on top
-        # of another line for most of its reported span is hidden, and only a participant who can
-        # filter the other line away can see it -- an item that measures the filter, not reading.
-        reported_years = [r.year for r in observations if r.coverage_pct is not None]
-        for other in task.entities:
-            if other == entity:
-                continue
-            close = 0
-            for year in reported_years:
-                theirs = _value(other, task.vaccine, year, rows)
-                ours = _value(entity, task.vaccine, year, rows)
-                if theirs is not None and abs(theirs - ours) < MIN_LINE_SEPARATION_PP:
-                    close += 1
-            if close * 2 > len(reported_years):
-                raise KeyDerivationError(
-                    f"{task.form}-{task.task_id}: {entity}'s line is within "
-                    f"{MIN_LINE_SEPARATION_PP:g} pts of {other} in {close} of its "
-                    f"{len(reported_years)} reported years; it is hidden behind that line"
-                )
+    Acceptance: every coloured country is at least 10 points from the threshold, so which side of
+    it each one falls is a colour judgement a static reader can make against the key.
+    """
+    threshold = params["threshold"]
+    (year,) = task.years
+    values = {entity: _required(task, entity, year, rows) for entity in task.entities}
+    closest = min(values, key=lambda entity: abs(values[entity] - threshold))
+    distance = abs(values[closest] - threshold)
+    if distance < MIN_COLOUR_SEPARATION_PP:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {closest} ({values[closest]:g}) is only {distance:g} "
+            f"pts from {threshold}%; which side it falls is too fine a colour judgement"
+        )
+    below = sorted(entity for entity, value in values.items() if value < threshold)
+    count = len(below)
     return DerivedKey(
         task.task_id,
         task.form,
         task.kind,
-        NOT_REPORTED,
-        "every year in the window is unreported (None), not recorded as zero",
-        {"missing_years": missing},
+        str(count) if count < 4 else "4 or more",
+        f"number of coloured countries strictly below {threshold}% in {year}",
+        {
+            "year": year,
+            "threshold": threshold,
+            "below": below,
+            "closest": (closest, values[closest]),
+            "closest_pp": distance,
+            "values": values,
+        },
     )
 
 
-_RULES = {"reference": _reference, "trend": _trend, "crossing": _crossing, "gap": _gap}
+def _ordinal(n: int) -> str:
+    return {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth"}.get(n, f"{n}th")
+
+
+_RULES = {
+    "lowest": _lowest,
+    "rise": _rise,
+    "rank": _rank,
+    "improved": _improved,
+    "cell": _cell,
+    "threshold": _threshold,
+}
 
 
 # --- Public API -----------------------------------------------------------------------------
@@ -469,20 +465,9 @@ def check(
 
 
 def is_correct(form: str, task_id: str, answer: Any, keys: dict | None = None) -> bool | None:
-    """Primary (strict) scoring. None for the unscored practice item or an unknown item."""
+    """Strict scoring, the only kind. None for the unscored practice item or an unknown item."""
     keys = keys if keys is not None else key_table()
     key = keys.get((form, task_id))
     if key is None:
         return None
     return answer == key.correct
-
-
-def is_correct_adjacent(
-    form: str, task_id: str, answer: Any, keys: dict | None = None
-) -> bool | None:
-    """Secondary scoring: adjacent-band credit for the crossing items (T4, T5). None otherwise."""
-    keys = keys if keys is not None else key_table()
-    key = keys.get((form, task_id))
-    if key is None or key.kind != "crossing":
-        return None
-    return answer in set(key.evidence["adjacent_bands"])

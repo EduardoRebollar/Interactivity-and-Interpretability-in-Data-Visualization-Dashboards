@@ -43,7 +43,15 @@ PROMPT_STYLE = {
 MUTED_STYLE = {"color": config.TEXT_MUTED, "fontSize": f"{config.FONT_SIZE_AXIS}px"}
 
 
-def chart(entities: list[str], vaccine: str, interactive: bool, element_id: str = "chart"):
+def chart(
+    entities: list[str],
+    vaccine: str,
+    interactive: bool,
+    element_id: str = "chart",
+    *,
+    chart_type: str = "line",
+    years: tuple[int, ...] = (),
+):
     """The coverage chart. The figure is condition-independent; only the config differs.
 
     Wrapped in a container that holds the chart's height before Plotly has loaded. `dcc.Graph`
@@ -55,7 +63,7 @@ def chart(entities: list[str], vaccine: str, interactive: bool, element_id: str 
     return html.Div(
         dcc.Graph(
             id=element_id,
-            figure=figures.build_figure(entities, vaccine),
+            figure=figures.build_figure(entities, vaccine, chart_type=chart_type, years=years),
             config=figures.graph_config(interactive),
             # Keeps the rendered size identical across conditions rather than letting the
             # modebar's presence shift the layout.
@@ -195,11 +203,136 @@ def entity_controls(task, sort_key: str, selected: list[str]) -> html.Div:
     )
 
 
-def gap_note(entities: list[str], vaccine: str) -> html.P | None:
+def _small_button(label: str, element_id: str) -> html.Button:
+    """The quiet button beside a control, like Show all. Native, so keyboard-navigable."""
+    return html.Button(
+        label,
+        id=element_id,
+        n_clicks=0,
+        style={
+            "fontFamily": config.FONT_FAMILY,
+            "fontSize": f"{config.FONT_SIZE_AXIS}px",
+            "padding": "4px 10px",
+            "marginLeft": "12px",
+            "color": config.TEXT_PRIMARY,
+            "backgroundColor": config.BACKGROUND,
+            "border": f"1px solid {config.AXIS_COLOR}",
+            "borderRadius": "4px",
+            "cursor": "pointer",
+        },
+    )
+
+
+def _hint(text: str) -> html.P:
+    return html.P(text, style={**MUTED_STYLE, "margin": "6px 0 0 0"})
+
+
+def bar_controls(sort_key: str) -> html.Div:
+    """Sort the bars. Rendered ONLY in the interactive condition, above a bar chart.
+
+    Its own id, not `entity-sort`: a Dash callback whose Inputs are only partly on the page is dead
+    in the browser, so the bar chart's control cannot share a callback with the line chart's three.
+    """
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.Span("Order:", style={**MUTED_STYLE, "marginRight": "8px"}),
+                    dcc.RadioItems(
+                        id="bar-sort",
+                        options=[
+                            {"label": "as listed", "value": "listed"},
+                            {"label": "by coverage", "value": "coverage"},
+                        ],
+                        value=sort_key,
+                        labelStyle={"display": "inline-block", "marginRight": "16px"},
+                        inputStyle={"marginRight": "6px"},
+                        style={"display": "inline-block"},
+                    ),
+                ]
+            ),
+            _hint(
+                "Order by coverage to sort the bars, highest first. Hover a bar to read its value."
+            ),
+        ],
+        style={"marginBottom": "12px"},
+    )
+
+
+BAND_FULL = [0, 100]
+
+
+def band_controls(band: list[int]) -> html.Div:
+    """Show only the countries within a coverage range. Rendered ONLY in the interactive condition.
+
+    The participant sets the range. A preset "below 50%" button was rejected (2026-09-23): it names
+    the question's own threshold and would answer the item in one click. The slider's number boxes
+    make it usable from the keyboard as well.
+    """
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.Span(
+                        "Show countries with coverage between:",
+                        style={**MUTED_STYLE, "marginRight": "8px"},
+                    ),
+                    _small_button("Show all", "band-reset"),
+                ]
+            ),
+            html.Div(
+                dcc.RangeSlider(
+                    id="coverage-band",
+                    min=BAND_FULL[0],
+                    max=BAND_FULL[1],
+                    step=1,
+                    value=list(band),
+                    marks={value: f"{value}%" for value in range(0, 101, 10)},
+                    allowCross=False,
+                ),
+                style={"maxWidth": "640px", "marginTop": "6px"},
+            ),
+            _hint("Countries outside the range fade. Hover a country to read its name and value."),
+        ],
+        style={"marginBottom": "12px"},
+    )
+
+
+HOVER_HINTS = {
+    "scatter": "Hover a dot to see which country it is and its values.",
+    "heatmap": "Hover a cell to read its value.",
+}
+
+
+def task_controls(task) -> html.Div | None:
+    """The interactive condition's controls for this task's chart, or None if it has none.
+
+    One control set per chart type (visual-spec.md section 7). The scatter and the heatmap have no
+    controls; their affordance is hover, which only a one-line hint announces.
+    """
+    if task.chart == "line":
+        # Rendered fresh with every task. The view they act on lives in the app's `control-state`
+        # store, which `app.control_step` keys to the task, so no task inherits the previous one's
+        # filtering, sorting or isolation.
+        return entity_controls(task, sort_key="listed", selected=filterable(list(task.entities)))
+    if task.chart == "bar":
+        return bar_controls("listed")
+    if task.chart == "map":
+        return band_controls(BAND_FULL)
+    if task.chart in HOVER_HINTS:
+        return html.Div(_hint(HOVER_HINTS[task.chart]), style={"marginBottom": "12px"})
+    return None
+
+
+def gap_note(
+    entities: list[str], vaccine: str, years: tuple[int, ...] = (), chart_type: str = "line"
+) -> html.P | None:
     """Name any series with unreported years, so absence is not read as zero coverage.
 
     The static condition has no tooltip to explain a gap, so this caption is the only channel
     available — and it must therefore appear in BOTH conditions to keep them identical.
+
+    `years` limits the check to the years the chart shows; empty means all of them, as on a line.
     """
     from src import runtime_data
 
@@ -207,15 +340,24 @@ def gap_note(entities: list[str], vaccine: str) -> html.P | None:
     incomplete = []
     for entity in entities:
         series = runtime_data.series(entity, vaccine, rows)
-        missing = [r.year for r in series if r.coverage_pct is None]
+        missing = [
+            r.year for r in series if r.coverage_pct is None and (not years or r.year in years)
+        ]
         if missing:
             incomplete.append(f"{entity} ({_year_ranges(missing)})")
 
     if not incomplete:
         return None
+    absence = {
+        "line": "A break in a line",
+        "bar": "A missing bar",
+        "scatter": "A missing dot",
+        "heatmap": "An empty cell",
+        "map": "An uncoloured country",
+    }[chart_type]
     return html.P(
-        f"No data reported for: {'; '.join(incomplete)}. A break in a line means the value was "
-        "not reported, which is not the same as zero coverage.",
+        f"No data reported for: {'; '.join(incomplete)}. {absence} means the value was not "
+        "reported, which is not the same as zero coverage.",
         style=MUTED_STYLE,
     )
 
@@ -550,14 +692,19 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
     interactive version second would otherwise never learn the controls exist.
     """
     shared = (
-        "You will see line charts of childhood vaccination coverage and answer a question about "
-        "each. After each question you will be asked, in one sentence, how you decided."
+        "You will see charts of childhood vaccination coverage — line charts, a bar chart, a "
+        "scatter plot, a grid of coloured cells and a map — and answer a question about each. "
+        "After each question you will be asked, in one sentence, how you decided."
     )
     specific = (
-        "You can hover a line to read its exact value and its change from the year before, and use "
-        "the controls above the chart to filter, sort and isolate countries."
+        "You can hover over any line, bar, dot, cell or country to read its exact value; on a "
+        "line chart you also see its change from the year before. Some charts have controls "
+        "above them: on line charts you can filter, sort and isolate countries, on the bar chart "
+        "you can sort the bars, and on the map you can show only the countries within a coverage "
+        "range."
         if interactive
-        else "The charts are images: read the values against the gridlines."
+        else "The charts are images: read values against the gridlines, or against the colour "
+        "key where there is one."
     )
     intro = (
         []
@@ -602,18 +749,23 @@ def task_screen(
 
     # The controls are the interactive condition's whole point, and the static condition renders
     # nothing in their place. The CHART is identical either way: at first render every series is
-    # shown, so both conditions open on the same picture.
+    # shown, in the listed order, unfiltered, so both conditions open on the same picture.
     if interactive:
-        # Rendered fresh with every task. The view they act on lives in the app's `control-state`
-        # store, which `app.control_step` keys to the task, so no task inherits the previous one's
-        # filtering, sorting or isolation.
-        children.append(
-            entity_controls(task, sort_key="listed", selected=filterable(list(task.entities)))
+        controls = task_controls(task)
+        if controls is not None:
+            children.append(controls)
+
+    children.append(
+        chart(
+            list(task.entities),
+            task.vaccine,
+            interactive,
+            chart_type=task.chart,
+            years=task.years,
         )
+    )
 
-    children.append(chart(list(task.entities), task.vaccine, interactive))
-
-    note = gap_note(list(task.entities), task.vaccine)
+    note = gap_note(list(task.entities), task.vaccine, task.years, task.chart)
     if note is not None:
         children.append(note)
 

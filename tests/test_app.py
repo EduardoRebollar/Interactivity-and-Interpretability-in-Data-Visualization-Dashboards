@@ -23,7 +23,7 @@ import pytest
 from dash import no_update
 from dash.exceptions import PreventUpdate
 
-from src import app, consent, db, flow, layout, runtime_data, tasks
+from src import app, consent, db, figures, flow, layout, runtime_data, tasks
 from src.flow import SessionState, Stage
 from src.logging import SCHEMA_VERSION
 
@@ -180,13 +180,25 @@ def test_the_break_does_not_reuse_the_begin_button():
 
 
 def _every_screen():
-    """Every distinct screen a participant can see: each stage, in each condition, in each half."""
+    """Every distinct screen a participant can see: each stage, in each condition, in each half --
+    and, at the task stage, every item of both forms. The bar chart and the map carry controls no
+    other screen has, so a check that saw only the first task would never see their callbacks."""
     for stage in Stage:
         for condition in ("static", "interactive"):
             for index in (0, 1):
-                state = _state(stage, first_condition=condition, condition_index=index)
-                shown = "interactive" if flow.is_interactive(state) else "static"
-                yield f"{stage.value}/{shown}/{index}", app.render(state)
+                forms = ("A", "B") if stage is Stage.TASK else ("A",)
+                for form in forms:
+                    positions = range(len(tasks.for_form(form))) if stage is Stage.TASK else (0,)
+                    for position in positions:
+                        state = _state(
+                            stage,
+                            first_condition=condition,
+                            first_form=form,
+                            condition_index=index,
+                            task_index=position,
+                        )
+                        shown = "interactive" if flow.is_interactive(state) else "static"
+                        yield f"{stage.value}/{shown}/{index}/{form}{position}", app.render(state)
 
 
 def test_no_callback_is_dead_on_the_screens_that_trigger_it():
@@ -705,6 +717,155 @@ def test_the_chart_callback_changes_nothing_on_a_static_render(tmp_path):
     assert _events(tmp_path) == []
 
 
+# --- The bar chart's sort and the map's coverage range ------------------------------------------
+
+
+def _position(chart: str) -> int:
+    return next(i for i, task in enumerate(tasks.for_form("A")) if task.chart == chart)
+
+
+def _view_at(chart: str, **kwargs):
+    """A control state belonging to form A's `chart` item, first half."""
+    return {"screen": f"0/{tasks.for_form('A')[_position(chart)].task_id}", **kwargs}
+
+
+def _interact_on(chart, triggered, tmp_path, control_state=None, **kwargs):
+    """Run one control interaction on form A's `chart` item. Returns (all five outputs, events)."""
+    state = _state(Stage.TASK, first_condition="interactive", task_index=_position(chart))
+    result = app.control_step(
+        triggered,
+        state.to_dict(),
+        {"session_id": str(uuid.uuid4())},
+        control_state,
+        log_dir=tmp_path,
+        **kwargs,
+    )
+    return result, [e for e in _events(tmp_path) if e["event"] != "session_start"]
+
+
+def test_sorting_the_bars_reorders_them_and_logs_it(tmp_path):
+    (figure, options, value, control, _spool), events = _interact_on(
+        "bar", "bar-sort.value", tmp_path, sort_key="coverage"
+    )
+    assert [e["event"] for e in events] == ["sort_change"]
+    assert events[0]["payload"] == {"key": "coverage", "direction": "desc"}
+    assert events[0]["task_id"] == tasks.for_form("A")[_position("bar")].task_id
+    values = dict(zip(figure.data[0].x, figure.data[0].y, strict=True))
+    order = list(figure.layout.xaxis.categoryarray)
+    assert order == sorted(order, key=lambda name: -values[name])
+    assert control["sort"] == "coverage"
+    assert options is no_update and value is no_update, "the bar screen has no filter list"
+
+
+def test_sorting_the_bars_back_restores_the_listed_order(tmp_path):
+    task = tasks.for_form("A")[_position("bar")]
+    (figure, *_rest), events = _interact_on(
+        "bar",
+        "bar-sort.value",
+        tmp_path,
+        control_state=_view_at("bar", sort="coverage"),
+        sort_key="listed",
+    )
+    assert list(figure.layout.xaxis.categoryarray) == list(task.entities)
+    assert events[0]["payload"] == {"key": "listed", "direction": "none"}
+
+
+def test_a_freshly_rendered_bar_sort_logs_nothing(tmp_path):
+    """Dash fires the radio's callback when each bar screen is built. That is not a sort."""
+    result, events = _interact_on("bar", "bar-sort.value", tmp_path, sort_key="listed")
+    assert result == (no_update,) * 5
+    assert events == []
+
+
+def test_narrowing_the_coverage_range_fades_the_map_and_logs_it(tmp_path):
+    (figure, _options, value, control, _spool), events = _interact_on(
+        "map", "coverage-band.value", tmp_path, band=[0, 49]
+    )
+    assert [e["event"] for e in events] == ["filter_change"]
+    assert events[0]["payload"] == {
+        "control": "coverage-band",
+        "action": "band",
+        "value": [0, 49],
+        "previous": [0, 100],
+    }
+    assert control["band"] == [0, 49]
+    assert value is no_update, "the slider already shows what the participant set"
+    shown = [z for z, kept in zip(figure.data[0].z, figures.in_band(figure), strict=True) if kept]
+    assert shown and all(z <= 49 for z in shown)
+
+
+def test_show_all_on_the_map_moves_the_slider_back_and_logs_it(tmp_path):
+    (figure, _options, value, control, _spool), events = _interact_on(
+        "map", "band-reset.n_clicks", tmp_path, control_state=_view_at("map", band=[0, 49])
+    )
+    assert value == [0, 100], "Show all must move the handles back to the ends"
+    assert control["band"] == [0, 100]
+    assert events[0]["payload"]["control"] == "band-reset"
+    assert events[0]["payload"]["previous"] == [0, 49]
+    assert all(figures.in_band(figure))
+
+
+def test_the_slider_moving_back_after_show_all_is_not_a_second_event(tmp_path):
+    """Show all writes the slider, and Dash then reports the slider's new value. Logged again, one
+    click would count as two interactions."""
+    result, events = _interact_on(
+        "map",
+        "coverage-band.value",
+        tmp_path,
+        control_state=_view_at("map", band=[0, 100]),
+        band=[0, 100],
+    )
+    assert result == (no_update,) * 5
+    assert events == []
+
+
+def test_show_all_on_an_unfiltered_map_logs_nothing(tmp_path):
+    result, events = _interact_on("map", "band-reset.n_clicks", tmp_path)
+    assert result == (no_update,) * 5
+    assert events == []
+
+
+@pytest.mark.parametrize("band", [None, [60, 40], [0], ["a", "b"], [-5, 200]])
+def test_a_malformed_range_is_ignored(tmp_path, band):
+    result, events = _interact_on("map", "coverage-band.value", tmp_path, band=band)
+    assert result == (no_update,) * 5
+    assert events == []
+
+
+@pytest.mark.parametrize("chart", ["bar", "scatter", "heatmap", "map"])
+def test_a_click_on_anything_but_a_line_isolates_nothing(tmp_path, chart):
+    result, events = _interact_on(
+        chart, "chart.clickData", tmp_path, click_data={"points": [{"curveNumber": 0}]}
+    )
+    assert result == (no_update,) * 5
+    assert events == []
+
+
+@pytest.mark.parametrize("chart", ["line", "scatter", "heatmap"])
+def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
+    """A sort or range arriving on a screen whose chart has no such control is not an action."""
+    for triggered, kwargs in (
+        ("bar-sort.value", {"sort_key": "coverage"}),
+        ("coverage-band.value", {"band": [0, 40]}),
+        ("band-reset.n_clicks", {}),
+    ):
+        result, events = _interact_on(chart, triggered, tmp_path, **kwargs)
+        assert result == (no_update,) * 5, triggered
+        assert events == [], triggered
+
+
+def test_the_bar_and_map_controls_have_callbacks_of_their_own():
+    """Each set of Inputs lives on one chart type's screen, so each needs its own callback."""
+    callbacks = {
+        tuple(sorted(f"{i['id']}.{i['property']}" for i in callback["inputs"])): callback
+        for callback in app.create_app().callback_map.values()
+    }
+    assert ("bar-sort.value",) in callbacks
+    band = callbacks[("band-reset.n_clicks", "coverage-band.value")]
+    outputs = {f"{o.component_id}.{o.component_property}" for o in band["output"]}
+    assert "coverage-band.value" in outputs, "Show all has to move the slider back"
+
+
 # --- Validation refuses rather than advancing -----------------------------------------------------
 
 
@@ -1197,9 +1358,12 @@ const window = {
   setTimeout: (fn, ms) => timers.push([fn, ms]),
   confirm: (message) => { calls.push(["confirm", message]); return window.confirmAnswer; },
 };
+// Every id is on the page unless a case lists it as gone, as when the screen has moved on.
+const document = { getElementById: (id) => (window.gone.includes(id) ? null : { id }) };
 const cases = JSON.parse(process.argv[1]);
-const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer]) => {
+const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer, gone]) => {
   window.confirmAnswer = confirmAnswer !== false;
+  window.gone = gone || [];
   const fn = eval("(" + source + ")");
   const result = fn(arg, ...(extra || []));
   if (fireTimers) { timers.forEach(([f]) => f()); }
@@ -1301,6 +1465,21 @@ def test_submit_is_disabled_on_click_and_the_watchdog_re_enables_it():
     assert clicked["result"][1] is True
     assert clicked["timers"] == [15000]
     assert clicked["calls"] == [["submit-button", {"disabled": False}]], "no popup when complete"
+
+
+def test_a_watchdog_whose_button_has_gone_leaves_the_page_alone():
+    """After the sixth task the survey is on screen and Submit is gone. Re-enabling a missing id
+    made the Dash renderer throw (headless Chrome, 2026-09-23), in every participant's session."""
+    # One harness run each: the harness fires every timer armed so far, so cases would mix.
+    cases = [
+        [app.SUBMIT_JS, 1, True, ["1", "why"], True, ["submit-button"]],
+        [app.confirm_js("load-button"), 1, True, [5], True, ["load-button"]],
+        [app.PARTICIPANT_DISABLE_JS, 1, True, [None], True, ["participant-button"]],
+    ]
+    for case in cases:
+        (fired,) = _run_js([case])
+        assert fired["timers"], "the watchdog is still armed"
+        assert not [call for call in fired["calls"] if call[0] != "confirm"]
 
 
 def test_an_unclicked_submit_is_not_disabled():

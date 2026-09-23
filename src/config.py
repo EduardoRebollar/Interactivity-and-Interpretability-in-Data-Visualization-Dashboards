@@ -10,7 +10,7 @@ from pathlib import Path
 
 # --- Condition toggle -------------------------------------------------------------------------
 # The ONLY difference between the two study conditions. Interactive-only features: filtering,
-# sorting, line isolation, year-over-year directional change indicators.
+# sorting, line isolation, year-over-year directional change indicators, and hover everywhere.
 INTERACTIVE: bool = False
 
 # --- Paths ------------------------------------------------------------------------------------
@@ -76,6 +76,31 @@ COUNTRIES: list[str] = [
     # polio-endemic countries, China the largest high-coverage system.
     "Pakistan",
     "China",
+    # Added 2026-09-23 for the redesigned task bank (docs/study-design.md section 4): the bar,
+    # scatter, heatmap and map items need countries the original ten do not provide. Every one is
+    # used by at least one item; none is here for completeness.
+    "Afghanistan",
+    "Bangladesh",
+    "Burkina Faso",
+    "Cambodia",
+    "Cameroon",
+    "Central African Republic",
+    "Chad",
+    "Colombia",
+    "Democratic Republic of Congo",
+    "Egypt",
+    "Kenya",
+    "Madagascar",
+    "Mali",
+    "Mozambique",
+    "Myanmar",
+    "Nepal",
+    "Niger",
+    "Somalia",
+    "Tanzania",
+    "Uganda",
+    "Vietnam",
+    "Zambia",
 ]
 
 # Aggregate reference series.
@@ -95,24 +120,27 @@ ENTITIES: list[str] = COUNTRIES + AGGREGATES
 
 BACKGROUND = "#FFFFFF"
 
-# Derived from Okabe-Ito, which is built for color-vision deficiency. Four are unmodified, keeping
-# Okabe-Ito's validated separability intact; only orange is darkened, and to a level chosen for
-# luminance spread rather than to the bare floor.
+# Eight colours, extended 2026-09-23 from five (docs/visual-spec.md section 4). The first four are
+# Okabe-Ito, unmodified. The other four were chosen by search: every candidate >=3:1 on white and
+# >=0.02 from every other colour in luminance, picking the four that keep every pair furthest apart
+# (CIEDE2000) under normal vision and simulated deuteranopia and protanopia (`src/contrast.py`).
 #
-# Three swatches were dropped, each for a measured reason:
-#   yellow    #F0E442  1.32:1 — the passing form (#9F972C) reads as olive and collides with green
-#   sky blue  #56B4E9  2.31:1 — any passing form lands at L~0.291, indistinguishable from purple
-#   black     #000000         — reserved for the World reference series
+# The five-colour palette this replaces had a defect the extension exposed: Okabe-Ito orange,
+# darkened to #9C6C00 to pass contrast, sat 1.1 dE from vermillion under simulated protanopia --
+# the same colour. It was dropped. The weakest pair now is 12.2 dE (blue and reddish purple, both
+# unmodified Okabe-Ito, under protanopia); `tests/test_palette.py` holds that floor.
 #
-# Colors are separated in LUMINANCE as well as hue (min gap 0.025). Darkening several colors to the
-# same contrast target makes them luminance-identical, which defeats greyscale printing and severe
-# color-vision deficiency; ordering below is light-to-dark by luminance.
+# Order matters: colour is assigned by position, so a chart with k series uses the first k. The four
+# Okabe-Ito colours come first; each later colour is the one furthest from those before it.
 SERIES_COLORS: list[str] = [
-    "#0072B2",  # blue            5.19:1   L 0.153
-    "#9C6C00",  # orange          4.61:1   L 0.178  (darkened from #E69F00, 2.25:1)
-    "#D55E00",  # vermillion      3.87:1   L 0.222
-    "#009E73",  # bluish green    3.42:1   L 0.257
-    "#CC79A7",  # reddish purple  3.06:1   L 0.293
+    "#0072B2",  # blue            5.19:1   L 0.152   Okabe-Ito
+    "#D55E00",  # vermillion      3.87:1   L 0.222   Okabe-Ito
+    "#009E73",  # bluish green    3.42:1   L 0.257   Okabe-Ito
+    "#CC79A7",  # reddish purple  3.06:1   L 0.293   Okabe-Ito
+    "#960600",  # dark red        9.04:1   L 0.066
+    "#062AA8",  # royal blue     11.03:1   L 0.045
+    "#246648",  # forest green    6.84:1   L 0.103
+    "#845472",  # mauve           6.01:1   L 0.125
 ]
 
 # The aggregate reference series ("World") is black and dashed, so it reads as a baseline rather
@@ -120,12 +148,14 @@ SERIES_COLORS: list[str] = [
 REFERENCE_COLOR = "#000000"  # 21.00:1
 REFERENCE_DASH = "dash"
 
-# Hard ceiling on simultaneous series, excluding the World reference. Five is not a style choice: it
-# is the largest set that is simultaneously >=3:1 on white, color-blind separable, and separated in
-# luminance. A sixth color collides with an existing one on at least one of those three axes. Beyond
-# this, reading the legend becomes the task instead of reading the data.
+# Hard ceiling on colour-coded series (line and scatter charts), excluding the World reference.
+# It is the size of the palette: the largest set found that is >=3:1 on white, separated in
+# luminance, and at least MIN_CVD_DISTANCE apart under simulated colour-vision deficiency.
 MAX_SERIES = len(SERIES_COLORS)
 MIN_LUMINANCE_GAP = 0.02
+# The weakest pair in SERIES_COLORS, in CIEDE2000, under normal vision, deuteranopia and
+# protanopia. A floor, not a target: the test fails if an edit lowers it.
+MIN_CVD_DISTANCE = 12.0
 
 TEXT_PRIMARY = "#1A1A1A"  # 17.40:1
 TEXT_MUTED = "#595959"  # 7.00:1
@@ -161,3 +191,66 @@ CHART_HEIGHT = 520
 # The plot area is CHART_HEIGHT minus 120 px of margins over Y_RANGE: 4 px a point, so 4.5 points
 # is 18 px, about what a FONT_SIZE_AXIS label needs.
 LABEL_MIN_GAP = 4.5
+# How far above 100 an end label may sit, in the empty top margin to the right of the plot. One
+# label's worth. Eight countries ending between 67 and 97 (A-T1) could not all be labelled below 100
+# without pushing World's label 7.5 points off its line; with this, no label moves more than 5.44.
+LABEL_HEADROOM = LABEL_MIN_GAP
+
+# --- Chart types beyond the line chart (docs/visual-spec.md section 1) --------------------------
+
+# The scatter plot's second channel. Colour is never the only way to tell series apart
+# (visual-spec.md section 6); the scatter has no end labels, so each series also has its own shape.
+MARKER_SYMBOLS: list[str] = [
+    "circle",
+    "square",
+    "diamond",
+    "triangle-up",
+    "x",
+    "triangle-down",
+    "cross",
+    "star",
+]
+SCATTER_MARKER_SIZE = 12
+
+# Bars carry no series identity -- each is labelled on the x axis -- so they share one colour.
+BAR_COLOR = SERIES_COLORS[0]
+
+# The heatmap and the map encode value as colour, on this sequential scale: cividis, designed to
+# read the same under deuteranopia and protanopia, and uniform in lightness. Dark is LOW
+# coverage, as the prompts say. Stops are written out, not referenced by name, so a Plotly
+# upgrade cannot change it.
+#
+# DELIBERATE EXEMPTION from the 3:1 floor, like the gridline: the light end (#FEE838) is 1.25:1 on
+# white. No sequential scale can put every step at 3:1 on white and still span enough lightness to
+# read differences in. No cell or country is found by its colour alone: heatmap cells sit on a grid
+# labelled by country and year, and map countries are named on hover and bounded by white borders.
+# See visual-spec.md section 4.
+SEQUENTIAL_SCALE: list[tuple[float, str]] = [
+    (0.0, "#00224E"),
+    (0.111, "#123570"),
+    (0.222, "#3B496C"),
+    (0.333, "#575D6D"),
+    (0.444, "#707173"),
+    (0.556, "#8A8678"),
+    (0.667, "#A59C74"),
+    (0.778, "#C3B369"),
+    (0.889, "#E1CC55"),
+    (1.0, "#FEE838"),
+]
+SEQUENTIAL_EXEMPT = True
+# Colour-key ticks, every 10 points so 50% is marked.
+COLOR_KEY_DTICK = 10
+
+# The map. Countries the question is not about are plain grey land, so the ones it is about are the
+# coloured ones. Borders are white: the question counts DARK countries, and two adjacent dark
+# countries (CAR and Chad) need a border that contrasts with dark fills -- white is 15.69:1 against
+# the darkest step, where AXIS_COLOR would be 1.51:1.
+MAP_LAND_COLOR = "#EFEFEF"
+MAP_BORDER_COLOR = "#FFFFFF"
+MAP_COAST_COLOR = GRIDLINE_COLOR
+# 26 N, not the Sahel: Mali reaches 25 N, and a crop through a coloured country hides part of it.
+MAP_LAT_RANGE = (-36, 26)
+MAP_LON_RANGE = (-20, 53)
+# A country the coverage filter excludes fades rather than disappears (visual-spec.md section 7.4),
+# so the map keeps its shape and nothing else moves.
+MAP_FADED_OPACITY = 0.15

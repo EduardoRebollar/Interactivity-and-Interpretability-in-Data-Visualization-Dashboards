@@ -17,7 +17,7 @@ Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 ```bash
 uv sync
 uv run python scripts/download_data.py      # fetch from Our World in Data
-uv run python -m src.data                   # clean and cache -> 1700 rows
+uv run python -m src.data                   # clean and cache -> 3900 rows
 uv run python scripts/export_deploy_data.py # write data/deploy/coverage.csv
 uv run python -m src.app                    # http://127.0.0.1:8050
 ```
@@ -32,15 +32,18 @@ in the same cell).
 ```bash
 uv run pytest                               # full suite
 uv run ruff check . && uv run ruff format --check .
-uv run python scripts/check_contrast.py     # WCAG ratios for the palette
+uv run python scripts/check_contrast.py     # WCAG ratios and colour-blind separation
 uv run python scripts/check_bundle.py       # app runs on the deployment subset alone
 uv run python scripts/derive_keys.py        # answer key, derived from the data, checked vs the docs
 uv run python scripts/export_questionnaire.py  # every screen -> irb/questionnaire.pdf (IRB item 18)
 ```
 
-`derive_keys.py` also enforces the item acceptance rule in `docs/study-design.md` §4. An item whose
-answer turns on a 2-point difference, or on reading a year one off, is refused. So is a crossing
-drawn at the edge of its answer band, or a gap line hidden behind another line.
+`derive_keys.py` also enforces the item acceptance rule in `docs/study-design.md` §4. An item is
+refused if its answer turns on:
+- a difference under 5 points on an axis, or under 10 on a colour scale;
+- a year read one off landing on another option;
+- a scatter dot hidden behind another;
+- a missing value.
 `export_questionnaire.py` renders the app's own screen functions, so the PDF says exactly what
 participants see. It needs Chrome or Edge to print; `--html-only` skips that.
 
@@ -180,15 +183,26 @@ URL: a signed consent form (or a decline), participant ID, a few demographic que
 practice, six tasks, a short survey, a break, then the second condition in the other version and the
 other form. Any question may be skipped, after a confirmation.
 
-Built and tested: data layer; event logger (schema v6, Postgres or JSONL) with retry and spooling
-through a database outage; chart rendering on a verified-contrast palette; the session flow state
-machine; the study screens; the interactive controls (filter, sort, line isolation, and
-year-over-year change in the hover tooltip) with their interaction logging; the signed consent
-record, kept apart from the study data, with export and a two-week withdrawal script;
-duplicate-submit protection; flagged rather than wrong durations after a reload; the Vercel entry
-point; and the offline scoring pipeline — derived answer key, pre-registered exclusions, blind RQ2
-coding and Cohen's kappa. The twelve items were audited against the chart as drawn and finalized on
-2026-09-22 (`docs/study-design.md` §4).
+Built and tested:
+- the data layer;
+- the event logger (schema v7, Postgres or JSONL), with retry and spooling through a database outage;
+- five chart types (line, bar, scatter, heatmap, map) on a palette checked for contrast and for
+  colour-blind separation;
+- the session flow state machine and the study screens;
+- the interactive controls, with their interaction logging:
+  - on line charts: filter, sort, line isolation, and year-over-year change in the tooltip;
+  - sorting the bar chart;
+  - a coverage range on the map;
+  - hover on every chart;
+- the signed consent record, kept apart from the study data, with export and a two-week withdrawal
+  script;
+- duplicate-submit protection, and flagged rather than wrong durations after a reload;
+- the Vercel entry point;
+- the offline scoring pipeline: derived answer key, pre-registered exclusions, blind RQ2 coding and
+  Cohen's kappa.
+
+The twelve items were replaced on 2026-09-23 by a bank that pairs each chart type with one
+interactive affordance (`docs/study-design.md` §4).
 
 **Not yet run with participants, and it must not be.** The consent form in `src/consent.py` is the
 one submitted to Occidental's HSRRC and is marked "pending approval" on screen until it is approved.
@@ -197,10 +211,10 @@ one submitted to Occidental's HSRRC and is marked "pending approval" on screen u
 Also open before piloting:
 
 - **IRB request form item 18:** attach `irb/questionnaire.pdf` and enter the deployed URL.
-- T6's form equivalence, flagged in `docs/study-design.md` §4 — the UK's 19-year HepB3 gap has no
-  equal in the dataset, and form B substitutes three shorter ones. T6 is scored separately from
-  RQ1, so the pilot question is whether either form falls below ceiling.
-- B-T5 may not read as a crossing: China and Brazil sit at exactly 99.0 for three years. §4.
+- The pilot checks in `docs/study-design.md` §10. The bar, heatmap and map items sit at the
+  acceptance floor on purpose, so check static accuracy there. Check form equivalence on T1 and
+  B-T4. Check whether participants find the bar sort and the map's coverage range at all.
 - Session resume is not implemented; the participant-ID screen asks for one sitting in one tab. §8.
 - Hover and line isolation are mouse-only, so a keyboard-only participant in the interactive
-  condition gets a chart that behaves like the static one.
+  condition meets the scatter and heatmap items with no affordance. The bar sort and the map's range
+  work from the keyboard.

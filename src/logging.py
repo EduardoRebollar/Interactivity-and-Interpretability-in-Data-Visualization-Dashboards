@@ -59,6 +59,13 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v7 (2026-09-23): the task bank was replaced (docs/study-design.md section 4). Task ids T1-T6 now
+# name different items on five chart types, so a v6 answer scored against a v7 key would be scored
+# against the wrong question -- the version is what stops that. `filter_change` also comes from the
+# map's coverage range (`control` "coverage-band" or "band-reset"), whose `value` and `previous`
+# are a [low, high] range rather than a list of entities; `sort_change` also comes from the bar
+# chart's sort. No new event and no new key. Nothing has been collected, so no migration.
+#
 # v6 (2026-09-21): brought in line with the IRB submission. Any question may be skipped, so
 # `answer_submit.answer`, `justification` and `load_rating.value` may be null, and `answer_submit`
 # carries `skipped`, the parts left empty. New events `survey_rating` (the three Likert items) and
@@ -75,7 +82,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -108,7 +115,8 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "load_rating": ("scale", "value"),
     # The three 7-point Likert items, once per condition, alongside load_rating. Null if skipped.
     "survey_rating": ("scale", "clarity", "ease_of_use", "confidence"),
-    # Interactive-only affordances
+    # Interactive-only affordances. On the map, `filter_change.value` is a [low, high] coverage
+    # range, not a list of entities; `control` says which (see v7 above).
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
     "sort_change": ("key", "direction"),
