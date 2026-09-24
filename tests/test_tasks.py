@@ -15,9 +15,9 @@ from src import config, figures, runtime_data, tasks
 from src.flow import Task
 
 FORMS = ("A", "B")
-EXPECTED_KINDS = ("lowest", "rise", "rank", "improved", "cell", "threshold")
+EXPECTED_KINDS = ("lowest", "rise", "rank", "improved", "cell", "threshold", "crossing")
 # One affordance per item, each on the chart type it helps most (study-design.md section 4).
-EXPECTED_CHARTS = ("line", "line", "bar", "scatter", "heatmap", "map")
+EXPECTED_CHARTS = ("line", "line", "bar", "scatter", "heatmap", "map", "line")
 # The options are countries for these kinds, years for the line items, counts for the map.
 COUNTRY_OPTION_KINDS = ("rank", "improved", "cell")
 YEAR_OPTION_KINDS = ("lowest", "rise")
@@ -27,8 +27,8 @@ YEAR_OPTION_KINDS = ("lowest", "rise")
 
 
 @pytest.mark.parametrize("form", FORMS)
-def test_each_form_has_six_scored_tasks(form):
-    assert len(tasks.for_form(form)) == 6
+def test_each_form_has_seven_scored_tasks(form):
+    assert len(tasks.for_form(form)) == 7
 
 
 def test_both_forms_cover_the_same_types_on_the_same_charts_in_the_same_order():
@@ -42,7 +42,7 @@ def test_matched_items_share_task_ids_across_forms():
     """T2 in form A must be the counterpart of T2 in form B, so analysis can pair them."""
     a_ids = [t.task_id for t in tasks.for_form("A")]
     b_ids = [t.task_id for t in tasks.for_form("B")]
-    assert a_ids == b_ids == ["T1", "T2", "T3", "T4", "T5", "T6"]
+    assert a_ids == b_ids == ["T1", "T2", "T3", "T4", "T5", "T6", "T7"]
 
 
 def test_matched_items_offer_the_same_number_of_options():
@@ -51,6 +51,15 @@ def test_matched_items_offer_the_same_number_of_options():
         assert len(a.options) == len(b.options), (
             f"{a.task_id}: {len(a.options)} vs {len(b.options)}"
         )
+
+
+def test_matched_items_draw_the_same_number_of_entities():
+    """A chart with more lines, dots, bars or rows is a harder read. The map is the exception:
+    each form colours the countries clear of the threshold in its own year (study-design.md
+    section 4)."""
+    for a, b in zip(tasks.for_form("A"), tasks.for_form("B"), strict=True):
+        if a.chart != "map":
+            assert len(a.entities) == len(b.entities), a.task_id
 
 
 def test_forms_never_ask_the_same_question_of_the_same_chart():
@@ -62,7 +71,8 @@ def test_forms_never_ask_the_same_question_of_the_same_chart():
     """
     for a, b in zip(tasks.for_form("A"), tasks.for_form("B"), strict=True):
         assert (a.prompt, a.entities, a.years) != (b.prompt, b.entities, b.years), a.task_id
-        assert a.options != b.options or a.kind == "threshold", a.task_id
+        # Counts and year bands are the same options in both forms by design.
+        assert a.options != b.options or a.kind in ("threshold", "crossing"), a.task_id
 
 
 @pytest.mark.parametrize("form", FORMS)
@@ -192,10 +202,30 @@ def test_counts_stay_in_their_natural_order():
                 assert task.options == tasks.COUNT_OPTIONS, task.task_id
 
 
+def test_crossing_options_are_the_bands_in_calendar_order():
+    """Contiguous, inclusive at both ends, and running to the last year of the data, so every
+    crossing year after 2003 has exactly one band."""
+    spans = [tuple(int(y) for y in band.split("-")) for band in tasks.CROSSING_BANDS]
+    assert all(start <= end for start, end in spans)
+    assert all(nxt[0] == prev[1] + 1 for prev, nxt in zip(spans, spans[1:], strict=False))
+    assert spans[-1][1] == config.YEAR_MAX
+    for form in FORMS:
+        for task in tasks.for_form(form):
+            if task.kind == "crossing":
+                assert task.options == tasks.CROSSING_BANDS, task.task_id
+
+
 def test_line_items_ask_about_a_country_on_the_chart():
     for form in FORMS:
         for task in tasks.for_form(form):
-            if task.chart == "line":
+            if task.kind == "crossing":
+                named = re.match(
+                    r"(.+)'s coverage became higher than (?:the )?(.+)'s at some point\.",
+                    task.prompt,
+                )
+                assert named, task.task_id
+                assert set(named.groups()) <= set(task.entities), task.task_id
+            elif task.chart == "line":
                 named = re.match(r"Focus on (.+)'s line\.", task.prompt)
                 assert named and named.group(1) in task.entities, task.task_id
 

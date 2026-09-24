@@ -22,9 +22,13 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from src import tasks as task_bank
+
 MIN_TASK_MS = 3_000
 TOP_TRIM_QUANTILE = 0.99
-SCORED_TASKS = 6
+# Scored items per session, from the task bank itself, so adding an item cannot leave every
+# session looking incomplete. Both forms have the same number (tests/test_tasks.py).
+SCORED_TASKS = len(task_bank.for_form("A"))
 CONDITIONS_PER_PARTICIPANT = 2
 
 
@@ -39,7 +43,7 @@ class Exclusion:
 
 
 def incomplete_participants(tasks: pd.DataFrame, conditions: pd.DataFrame) -> set[str]:
-    """Participants without exactly two ended sessions of six scored answers each.
+    """Participants without exactly two ended sessions of `SCORED_TASKS` answers each.
 
     More than two sessions is incomplete too: it is the signature of a participant who closed the
     tab and restarted, which leaves overlapping runs under one ID that need manual inspection.
@@ -75,7 +79,7 @@ def apply(tasks: pd.DataFrame, conditions: pd.DataFrame) -> tuple[pd.DataFrame, 
             "participant",
             int(mask.sum()),
             tuple(sorted(incomplete)),
-            "did not finish two sessions of six answers each",
+            f"did not finish two sessions of {SCORED_TASKS} answers each",
         )
     )
     frame.loc[mask, ["use_accuracy", "use_timing"]] = False

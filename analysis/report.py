@@ -1,8 +1,9 @@
 """The descriptive numbers `docs/study-design.md` section 7 asks for, and nothing more.
 
-Per condition: accuracy (the RQ1 primary outcome over T1-T6, as the mean of per-participant
-proportions, a skip scored incorrect), the pre-registered secondary (skips excluded), skip counts,
-accuracy item by item, Paas mental effort (RQ3), the Likert survey, and time on task. Plus the
+Per condition: accuracy (the RQ1 primary outcome over T1-T7, as the mean of per-participant
+proportions, a skip scored incorrect), the pre-registered secondaries (skips excluded; adjacent-band
+credit on the crossing item), skip counts, accuracy item by item, Paas mental effort (RQ3), the
+Likert survey, and time on task. Plus the
 exclusion table section 7 requires. Inferential tests are deliberately absent: they belong in the
 analysis notebook, run once, on the frames this package produces.
 """
@@ -15,7 +16,7 @@ from analysis.exclusions import Exclusion
 
 
 def accuracy(tasks: pd.DataFrame) -> pd.DataFrame:
-    """Proportion correct over T1-T6 per participant per condition, summarised by condition."""
+    """Proportion correct over T1-T7 per participant per condition, summarised by condition."""
     usable = tasks[tasks["use_accuracy"]]
     per_participant = (
         usable.groupby(["condition", "participant_id"])["correct"].mean().rename("prop_correct")
@@ -62,6 +63,18 @@ def survey(conditions: pd.DataFrame, included: set[str]) -> pd.DataFrame:
     return rated.groupby("condition")[columns].agg(["count", "mean", "std"])
 
 
+def crossing_adjacent(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Secondary: the crossing item (T7) under strict and adjacent-band scoring (section 7)."""
+    crossings = tasks[tasks["use_accuracy"] & (tasks["kind"] == "crossing")]
+    scored = crossings.assign(
+        correct=crossings["correct"].astype(float),
+        correct_adjacent=crossings["correct_adjacent"].astype(float),
+    )
+    return scored.groupby(["condition", "task_id"])[["correct", "correct_adjacent"]].agg(
+        ["count", "mean"]
+    )
+
+
 def mental_effort(conditions: pd.DataFrame, included: set[str]) -> pd.DataFrame:
     rated = conditions[conditions["participant_id"].astype(str).isin(included)]
     return rated.groupby("condition")["paas"].agg(["count", "mean", "std"])
@@ -91,8 +104,9 @@ def render(tasks: pd.DataFrame, conditions: pd.DataFrame, exclusions: list[Exclu
     included = set(tasks.loc[tasks["use_accuracy"], "participant_id"].astype(str))
     sections = [
         ("Exclusions (study-design.md section 7)", exclusion_table(exclusions)),
-        ("Accuracy, RQ1 primary: proportion correct per participant, T1-T6", accuracy(tasks)),
+        ("Accuracy, RQ1 primary: proportion correct per participant, T1-T7", accuracy(tasks)),
         ("Accuracy, secondary: answered items only, skips excluded", accuracy_answered(tasks)),
+        ("Crossing item, secondary: strict vs adjacent-band credit", crossing_adjacent(tasks)),
         ("Skipped answers and justifications", skips(tasks)),
         ("Accuracy and time by item and chart type (descriptive, not tested)", by_item(tasks)),
         ("Mental effort, RQ3: Paas 1-9", mental_effort(conditions, included)),

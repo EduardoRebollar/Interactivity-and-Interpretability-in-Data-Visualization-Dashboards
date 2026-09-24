@@ -16,8 +16,8 @@ close.
 
 The years an item shows come from the task itself (`task.years`), the same field the chart is drawn
 from. What the chart does not need -- the country a line item is about, the rank asked for, the
-threshold -- lives in `PARAMS`, not in parsed prompt text: parsing English would couple the key to
-the wording of the question.
+threshold, which line overtakes which -- lives in `PARAMS`, not in parsed prompt text: parsing
+English would couple the key to the wording of the question.
 
 **Each rule also enforces the item acceptance rule** (`docs/study-design.md` section 4). A key that
 is right only for a reader who can see exact values measures whether hover exists, not how well
@@ -29,6 +29,7 @@ fragile item cannot reach a participant.
 
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass, field
 from itertools import combinations
 from typing import Any
@@ -54,6 +55,9 @@ MIN_COLOUR_SEPARATION_PP = 10.0
 # Scatter dots are 12 px across at 4 px a point. Centres closer than 4 points (16 px) overlap enough
 # that one dot hides another.
 MIN_DOT_DISTANCE_PP = 4.0
+# A crossing must be drawn at least this far inside its answer band, so a reading one year off
+# still lands in the right band.
+MIN_BAND_INSET_YEARS = 1.0
 
 # (form, task_id) -> what the rule needs that the chart does not.
 PARAMS: dict[tuple[str, str], dict[str, Any]] = {
@@ -63,12 +67,14 @@ PARAMS: dict[tuple[str, str], dict[str, Any]] = {
     ("A", "T4"): {},
     ("A", "T5"): {},
     ("A", "T6"): {"threshold": 50},
+    ("A", "T7"): {"overtaker": "Ethiopia", "overtaken": "Central African Republic"},
     ("B", "T1"): {"entity": "Myanmar"},
     ("B", "T2"): {"entity": "Bangladesh"},
     ("B", "T3"): {"rank": 3},
     ("B", "T4"): {},
     ("B", "T5"): {},
     ("B", "T6"): {"threshold": 50},
+    ("B", "T7"): {"overtaker": "Pakistan", "overtaken": "Mozambique"},
 }
 
 # Transcribed BY HAND from docs/study-design.md section 4. Deliberately duplicated: a cross-check
@@ -80,12 +86,14 @@ EXPECTED: dict[tuple[str, str], str] = {
     ("A", "T4"): "Niger",
     ("A", "T5"): "Chad",
     ("A", "T6"): "3",
+    ("A", "T7"): "2004-2008",
     ("B", "T1"): "2021",
     ("B", "T2"): "2004",
     ("B", "T3"): "Colombia",
     ("B", "T4"): "India",
     ("B", "T5"): "Afghanistan",
     ("B", "T6"): "2",
+    ("B", "T7"): "2017-2020",
 }
 
 
@@ -134,6 +142,41 @@ def _focus(task: Task, params: dict[str, Any]) -> str:
     if entity not in task.entities:
         raise KeyDerivationError(f"{task.form}-{task.task_id}: {entity} is not on the chart")
     return entity
+
+
+# --- Bands -------------------------------------------------------------------------------------
+
+
+def _parse_band(band: str) -> tuple[int, int]:
+    start, end = band.split("-")
+    return int(start), int(end)
+
+
+def band_for(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> str:
+    """The option band containing `year`. Bands are inclusive at both ends.
+
+    Raises for a year no band covers, rather than picking the nearest: an item whose crossing falls
+    outside every option cannot be answered correctly by anyone.
+    """
+    for band in bands:
+        start, end = _parse_band(band)
+        if start <= year <= end:
+            return band
+    raise KeyDerivationError(f"No answer band contains {year}; bands are {bands}")
+
+
+def adjacent_bands(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> set[str]:
+    """The key band plus the bands containing year - 1 and year + 1.
+
+    The pre-registered SECONDARY scoring for the crossing item, T7 (study-design.md sections 4 and
+    7). A key year on the edge of its band sends a one-year misreading into the next band.
+    """
+    accepted = {band_for(year, bands)}
+    for neighbour in (year - 1, year + 1):
+        # Off the end of the bands there is nothing to credit.
+        with suppress(KeyDerivationError):
+            accepted.add(band_for(neighbour, bands))
+    return accepted
 
 
 # --- Years read one off -------------------------------------------------------------------------
@@ -392,6 +435,123 @@ def _threshold(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Der
     )
 
 
+def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T7: the band in which one line first rises above another.
+
+    The key is the band containing the first year the overtaker is strictly above, having not been
+    above the year before. Acceptance:
+    - one crossing only: the overtaker trails in every year before it and leads in every year
+      after, so "when did that first happen" has one true answer;
+    - the lines part by at least 5 points somewhere on each side, so it reads as a crossing, not a
+      touch;
+    - "strictly above" and "no longer below" fall in the same band, so a tie before the crossing
+      cannot move the key;
+    - the point where the lines meet on the chart sits at least a year inside the key band, so a
+      reading one year off still lands in it;
+    - no other line on the chart passes within 5 points of that point, where it would be taken for
+      one of the two.
+    """
+    overtaker, overtaken = params["overtaker"], params["overtaken"]
+    for entity in (overtaker, overtaken):
+        if entity not in task.entities:
+            raise KeyDerivationError(f"{task.form}-{task.task_id}: {entity} is not on the chart")
+    ahead = _reported(overtaker, task.vaccine, rows)
+    behind = _reported(overtaken, task.vaccine, rows)
+    # Only years both lines report: elsewhere one of them is not drawn, so nothing crosses there.
+    differences = {year: ahead[year] - behind[year] for year in sorted(set(ahead) & set(behind))}
+    ordered = sorted(differences)
+
+    def first(predicate) -> int:
+        for previous, year in zip(ordered, ordered[1:], strict=False):
+            if predicate(differences[previous], differences[year]):
+                return year
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {overtaker} never overtakes {overtaken}"
+        )
+
+    strictly_above = first(lambda before, now: before <= 0 < now)
+    not_below = first(lambda before, now: before < 0 <= now)
+
+    led_before = [year for year in ordered if year < strictly_above and differences[year] > 0]
+    if led_before:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {overtaker} is already above {overtaken} in "
+            f"{led_before}; the item has more than one crossing"
+        )
+    back_below = [year for year in ordered if year > strictly_above and differences[year] <= 0]
+    if back_below:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {overtaker} falls back to or below {overtaken} in "
+            f"{back_below}; the item has more than one crossing"
+        )
+
+    trailed_by = max(-differences[year] for year in ordered if year < strictly_above)
+    led_by = max(differences[year] for year in ordered if year >= strictly_above)
+    for side, gap in (("behind before", trailed_by), ("ahead after", led_by)):
+        if gap < MIN_SEPARATION_PP:
+            raise KeyDerivationError(
+                f"{task.form}-{task.task_id}: {overtaker} is never more than {gap:g} pts {side} "
+                "the crossing; the lines touch rather than cross"
+            )
+
+    correct = band_for(strictly_above)
+    if band_for(not_below) != correct:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: the crossing is {strictly_above} by 'strictly above' "
+            f"but {not_below} by 'no longer below', and those fall in different bands"
+        )
+
+    # What a participant sees is where the two lines meet, not the first year of a rule. That point
+    # must sit far enough inside the key band that a reading one year off still lands in it.
+    previous = ordered[ordered.index(strictly_above) - 1]
+    before, after = differences[previous], differences[strictly_above]
+    fraction = (0 - before) / (after - before)
+    intersection = previous + fraction * (strictly_above - previous)
+    start, end = _parse_band(correct)
+    inset = min(intersection - (start - 0.5), (end + 0.5) - intersection)
+    if inset < MIN_BAND_INSET_YEARS:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: the lines meet at {intersection:.2f}, only {inset:.2f} "
+            f"years inside {correct}; a reading one year off lands in another band"
+        )
+
+    meeting = ahead[previous] + fraction * (ahead[strictly_above] - ahead[previous])
+    clearance: dict[str, float] = {}
+    for other in task.entities:
+        if other in (overtaker, overtaken):
+            continue
+        values = _reported(other, task.vaccine, rows)
+        if previous not in values or strictly_above not in values:
+            continue  # not drawn through the crossing
+        at_meeting = values[previous] + fraction * (values[strictly_above] - values[previous])
+        clearance[other] = abs(at_meeting - meeting)
+        if clearance[other] < MIN_SEPARATION_PP:
+            raise KeyDerivationError(
+                f"{task.form}-{task.task_id}: {other}'s line passes {clearance[other]:.1f} pts "
+                f"from where {overtaker} and {overtaken} meet; it would be taken for one of them"
+            )
+
+    return DerivedKey(
+        task.task_id,
+        task.form,
+        task.kind,
+        correct,
+        f"band containing the first year {overtaker} is strictly above {overtaken}",
+        {
+            "cross_year": strictly_above,
+            "not_below_year": not_below,
+            "intersection": round(intersection, 2),
+            "band_inset_years": round(inset, 2),
+            "trailed_by_pp": trailed_by,
+            "led_by_pp": led_by,
+            "meeting_pp": round(meeting, 2),
+            "other_lines_clearance_pp": {k: round(v, 2) for k, v in clearance.items()},
+            "differences": differences,
+            "adjacent_bands": sorted(adjacent_bands(strictly_above)),
+        },
+    )
+
+
 def _ordinal(n: int) -> str:
     return {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth"}.get(n, f"{n}th")
 
@@ -403,6 +563,7 @@ _RULES = {
     "improved": _improved,
     "cell": _cell,
     "threshold": _threshold,
+    "crossing": _crossing,
 }
 
 
@@ -465,9 +626,24 @@ def check(
 
 
 def is_correct(form: str, task_id: str, answer: Any, keys: dict | None = None) -> bool | None:
-    """Strict scoring, the only kind. None for the unscored practice item or an unknown item."""
+    """Strict scoring, the primary. None for the unscored practice item or an unknown item."""
     keys = keys if keys is not None else key_table()
     key = keys.get((form, task_id))
     if key is None:
         return None
     return answer == key.correct
+
+
+def is_correct_adjacent(
+    form: str, task_id: str, answer: Any, keys: dict | None = None
+) -> bool | None:
+    """Secondary scoring: adjacent-band credit for the crossing item (T7). None for any other item.
+
+    Pre-registered in study-design.md section 7, and reported beside the strict score, never in its
+    place.
+    """
+    keys = keys if keys is not None else key_table()
+    key = keys.get((form, task_id))
+    if key is None or key.kind != "crossing":
+        return None
+    return answer in set(key.evidence["adjacent_bands"])

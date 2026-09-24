@@ -94,7 +94,7 @@ def test_the_margins_are_the_ones_study_design_records():
     margins = {
         item: key.evidence.get("margin_pp", key.evidence.get("closest_pp"))
         for item, key in table.items()
-        if key.kind != "rank"
+        if key.kind not in ("rank", "crossing")
     }
     assert margins == {
         ("A", "T1"): 54.0,
@@ -110,6 +110,11 @@ def test_the_margins_are_the_ones_study_design_records():
     }
     for form in ("A", "B"):
         assert table[(form, "T3")].evidence["gaps_pp"] == {"above": 5.0, "below": 6.0}, form
+    # T7's margin is in years: how far inside the key band the two lines meet.
+    assert table[("A", "T7")].evidence["intersection"] == 2006.71
+    assert table[("A", "T7")].evidence["band_inset_years"] == 1.79
+    assert table[("B", "T7")].evidence["intersection"] == 2019.1
+    assert table[("B", "T7")].evidence["band_inset_years"] == 1.4
 
 
 @needs_data
@@ -444,10 +449,172 @@ def test_a_key_that_is_not_an_option_is_refused(params):
         keys.derive(task, rows)
 
 
+# --- T7: the crossing ---------------------------------------------------------------------------
+
+
+def _rising(start: float, slope: float) -> dict[int, float]:
+    return {year: start + slope * (year - 2000) for year in range(2000, 2025)}
+
+
+FLAT_50 = {year: 50.0 for year in range(2000, 2025)}
+
+
+def _crossing_task(entities=("A", "B")) -> Task:
+    return _task("crossing", entities, tasks.CROSSING_BANDS)
+
+
+@pytest.fixture
+def race(params):
+    """A overtakes B, the parameters every crossing test below uses."""
+    params[("Z", "T1")] = {"overtaker": "A", "overtaken": "B"}
+    return params
+
+
+def test_crossing_finds_the_band_of_the_first_year_above(race):
+    """A rises 2 points a year from 37 against a flat 50: 49 in 2006, 51 in 2007."""
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50})
+    key = keys.derive(_crossing_task(), rows)
+    assert key.correct == "2004-2008"
+    assert key.evidence["cross_year"] == 2007
+    assert key.evidence["intersection"] == 2006.5
+    assert key.evidence["band_inset_years"] == 2.0
+    assert key.evidence["trailed_by_pp"] == 13.0
+    assert key.evidence["adjacent_bands"] == ["2004-2008"]
+
+
+def test_crossing_keys_a_tie_to_the_year_after(race):
+    """Level in 2006, above in 2007: strictly above is 2007, no longer below 2006. One band."""
+    rows = _rows({"A": _rising(38.0, 2.0), "B": FLAT_50})
+    key = keys.derive(_crossing_task(), rows)
+    assert (key.evidence["cross_year"], key.evidence["not_below_year"]) == (2007, 2006)
+    assert key.correct == "2004-2008"
+
+
+def test_crossing_refuses_a_plateau_of_ties_across_two_bands(race):
+    """Level with B through 2007 and 2008, above from 2009: 2007 and 2009 are different bands."""
+    a = {year: 40.0 if year < 2007 else 50.0 if year < 2009 else 60.0 for year in range(2000, 2025)}
+    rows = _rows({"A": a, "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="different bands"):
+        keys.derive(_crossing_task(), rows)
+
+
+def test_crossing_refuses_lines_that_meet_near_a_band_edge(race):
+    """2 behind in 2009, 8 ahead in 2010: they meet at 2009.2, 0.7 years into 2009-2012."""
+    a = {year: 45.0 if year < 2009 else 58.0 for year in range(2000, 2025)} | {2009: 48.0}
+    rows = _rows({"A": a, "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="only 0.70 years inside 2009-2012"):
+        keys.derive(_crossing_task(), rows)
+
+
+def test_crossing_refuses_a_second_crossing(race):
+    rows = _rows({"A": _rising(37.0, 2.0) | {2015: 45.0}, "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="falls back"):
+        keys.derive(_crossing_task(), rows)
+
+
+def test_crossing_refuses_a_line_that_led_before(race):
+    """Above in 2000, then below, then above again: when did it "first" happen? In 2000."""
+    rows = _rows({"A": _rising(37.0, 2.0) | {2000: 60.0}, "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="already above"):
+        keys.derive(_crossing_task(), rows)
+
+
+def test_crossing_refuses_lines_that_touch_rather_than_cross(race):
+    """Never more than 3 points apart: two lines drawn on top of each other, not a crossing."""
+    a = {year: 47.0 if year < 2007 else 53.0 for year in range(2000, 2025)}
+    rows = _rows({"A": a, "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="touch rather than cross"):
+        keys.derive(_crossing_task(), rows)
+
+
+def test_crossing_refuses_a_line_that_never_overtakes(race):
+    rows = _rows({"A": {year: 40.0 for year in range(2000, 2025)}, "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="never overtakes"):
+        keys.derive(_crossing_task(), rows)
+
+
+def test_crossing_refuses_a_third_line_through_the_meeting_point(race):
+    """B-T7 with World: a third line 2 points from the crossing would be taken for one of them."""
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50, "C": {y: 52.0 for y in range(2000, 2025)}})
+    with pytest.raises(keys.KeyDerivationError, match="C's line passes 2.0 pts"):
+        keys.derive(_crossing_task(("A", "B", "C")), rows)
+
+
+def test_crossing_allows_a_third_line_well_clear(race):
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50, "C": {y: 80.0 for y in range(2000, 2025)}})
+    key = keys.derive(_crossing_task(("A", "B", "C")), rows)
+    assert key.evidence["other_lines_clearance_pp"] == {"C": 30.0}
+
+
+def test_crossing_refuses_a_line_not_on_the_chart(race):
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50})
+    with pytest.raises(keys.KeyDerivationError, match="B is not on the chart"):
+        keys.derive(_crossing_task(("A",)), rows)
+
+
+def test_crossing_is_judged_only_on_years_both_lines_report(race):
+    """B unreported in 2006: the lines are drawn from 2005 to 2007 there, and meet in between."""
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50 | {2006: None}})
+    key = keys.derive(_crossing_task(), rows)
+    assert 2006 not in key.evidence["differences"]
+    assert key.evidence["intersection"] == 2006.5
+    assert key.correct == "2004-2008"
+
+
+@needs_data
+def test_b_t7_is_refused_with_the_world_line_and_a_t7_is_not(params):
+    """Why neither T7 chart draws World (study-design.md section 4): in B it runs through the
+    crossing. In A it would pass, and is left out so the two forms draw the same chart."""
+    params[("Z", "T1")] = {"overtaker": "Pakistan", "overtaken": "Mozambique"}
+    with pytest.raises(keys.KeyDerivationError, match="World's line passes 2.1 pts"):
+        keys.derive(_crossing_task(("Mozambique", "Pakistan", "World")))
+    params[("Z", "T1")] = {"overtaker": "Ethiopia", "overtaken": "Central African Republic"}
+    key = keys.derive(_crossing_task(("Central African Republic", "Ethiopia", "World")))
+    assert key.evidence["other_lines_clearance_pp"]["World"] > 25
+
+
+def test_band_for_refuses_a_year_no_band_covers():
+    assert keys.band_for(2004) == "2004-2008"
+    assert keys.band_for(2024) == "2021-2024"
+    with pytest.raises(keys.KeyDerivationError, match="No answer band contains 2003"):
+        keys.band_for(2003)
+
+
+@pytest.mark.parametrize(
+    ("year", "accepted"),
+    [
+        (2007, {"2004-2008"}),
+        (2020, {"2017-2020", "2021-2024"}),
+        (2013, {"2009-2012", "2013-2016"}),
+        (2004, {"2004-2008"}),
+        (2024, {"2021-2024"}),
+    ],
+    ids=["mid-band", "band end", "band start", "first year", "last year"],
+)
+def test_adjacent_bands_credit_the_band_a_year_either_side(year, accepted):
+    assert keys.adjacent_bands(year) == accepted
+
+
+def test_adjacent_scoring_applies_to_the_crossing_item_only():
+    """The pre-registered secondary (section 7). B-T7's key year, 2020, closes its band."""
+    evidence = {"adjacent_bands": ["2017-2020", "2021-2024"]}
+    table = {
+        ("B", "T7"): keys.DerivedKey("T7", "B", "crossing", "2017-2020", "rule", evidence),
+        ("B", "T3"): keys.DerivedKey("T3", "B", "rank", "Colombia", "rule", {}),
+    }
+    assert keys.is_correct_adjacent("B", "T7", "2017-2020", table) is True
+    assert keys.is_correct_adjacent("B", "T7", "2021-2024", table) is True
+    assert keys.is_correct("B", "T7", "2021-2024", table) is False, "strict stays strict"
+    assert keys.is_correct_adjacent("B", "T7", "2013-2016", table) is False
+    assert keys.is_correct_adjacent("B", "T7", None, table) is False, "a skip is still incorrect"
+    assert keys.is_correct_adjacent("B", "T3", "Colombia", table) is None
+    assert keys.is_correct_adjacent("B", "P0", "It fell", table) is None
+
+
 def test_an_unknown_kind_has_no_rule(params):
     params[("Z", "T1")] = {}
     with pytest.raises(keys.KeyDerivationError, match="No scoring rule"):
-        keys.derive(_task("crossing", "A", "A"), _rows({"A": {}}))
+        keys.derive(_task("gap", "A", "A"), _rows({"A": {}}))
 
 
 # --- It never ships -----------------------------------------------------------------------------

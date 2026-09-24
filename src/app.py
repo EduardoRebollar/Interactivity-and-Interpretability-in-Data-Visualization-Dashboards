@@ -1220,7 +1220,7 @@ CLOCK_JS = """function(_, session, previous) {
 # The watchdog re-enables the button if no response ever arrives (a killed function, a dropped
 # connection), so a lost request can never strand a participant. By the time it fires on a
 # successful step the screen has been replaced, and re-enabling a fresh button is harmless -- but
-# only if there is one. After the sixth task the survey is on screen, with no Submit, and the
+# only if there is one. After the last task the survey is on screen, with no Submit, and the
 # renderer threw on `set_props` for a missing id (found in headless Chrome, 2026-09-23). So every
 # watchdog checks that its button is still on the page first.
 SUBMIT_JS = """function(n, answer, justification) {

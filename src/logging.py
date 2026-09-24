@@ -65,6 +65,8 @@ from src import config, db
 # map's coverage range (`control` "coverage-band" or "band-reset"), whose `value` and `previous`
 # are a [low, high] range rather than a list of entities; `sort_change` also comes from the bar
 # chart's sort. No new event and no new key. Nothing has been collected, so no migration.
+# T7, a crossing item, was added the same day, still before any collection: T1-T6 kept their
+# meaning, so no v7 record can be scored against the wrong question, and the version stayed.
 #
 # v6 (2026-09-21): brought in line with the IRB submission. Any question may be skipped, so
 # `answer_submit.answer`, `justification` and `load_rating.value` may be null, and `answer_submit`

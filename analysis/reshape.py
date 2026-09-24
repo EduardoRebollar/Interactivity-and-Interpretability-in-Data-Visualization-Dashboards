@@ -7,7 +7,9 @@ routes produce identical frames -- otherwise a CSV-based analysis and a database
 silently disagree.
 
 The unscored practice item (`P0`) is dropped here, per study-design.md section 8. Every scored item,
-T1-T6, counts towards the RQ1 accuracy score (section 7).
+T1-T7, counts towards the RQ1 accuracy score (section 7). The crossing item, T7, also carries its
+pre-registered secondary score, adjacent-band credit (`correct_adjacent`); every other item has None
+there.
 """
 
 from __future__ import annotations
@@ -43,6 +45,7 @@ BASE_COLUMNS = [
     "duration_ms",
     "duration_invalid",
     "correct",
+    "correct_adjacent",
     "skipped_answer",
     "skipped_justification",
 ]
@@ -126,13 +129,17 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
                 "task_id": task_id,
                 "kind": key.kind,
                 # The chart type, so a per-affordance summary does not have to re-derive it. Each
-                # type carries one item per form: descriptive only, never a powered comparison.
+                # type carries one item per form, the line chart three: descriptive only, never a
+                # powered comparison.
                 "chart": charts.get((form, task_id)),
                 "answer": payload.get("answer"),
                 "justification": payload.get("justification"),
                 "duration_ms": payload.get("duration_ms"),
                 "duration_invalid": payload.get("duration_invalid"),
                 "correct": answer_keys.is_correct(form, task_id, payload.get("answer"), key_table),
+                "correct_adjacent": answer_keys.is_correct_adjacent(
+                    form, task_id, payload.get("answer"), key_table
+                ),
                 "skipped_answer": payload.get("answer") is None,
                 "skipped_justification": not (payload.get("justification") or "").strip(),
             }
@@ -196,7 +203,7 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
         sessions[key] = sessions["session_id"].map(lambda s, k=key: (likert.get(s) or {}).get(k))
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
-    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T6).
+    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T7).
     sessions["prop_correct"] = sessions["session_id"].map(by_session["correct"].mean())
     # Secondary, pre-registered: among answered items only.
     answered = tasks_frame[~tasks_frame["skipped_answer"].astype(bool)]

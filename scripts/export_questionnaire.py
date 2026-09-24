@@ -331,10 +331,10 @@ web application, in the order they are shown.</p>
 <ol>
 <li>informed consent (attached separately), then a participant ID and four background
 questions;</li>
-<li>instructions, one practice question, six questions, and a short survey, using one version of
+<li>instructions, one practice question, seven questions, and a short survey, using one version of
 the charts;</li>
 <li>a break;</li>
-<li>instructions, six different questions, and the same survey, using the other version.</li>
+<li>instructions, seven different questions, and the same survey, using the other version.</li>
 </ol>
 <p>Every question may be skipped. Each half asks about five kinds of chart: line charts, a bar
 chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;

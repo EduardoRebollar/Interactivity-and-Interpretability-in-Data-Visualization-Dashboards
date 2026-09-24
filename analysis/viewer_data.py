@@ -412,7 +412,7 @@ def health(
         Check(
             "Completeness",
             WARN,
-            "Not two sessions of six answers each. §7 excludes these participants.",
+            f"Not two sessions of {SCORED_TASKS} answers each. §7 excludes these participants.",
             tuple(short),
         )
         if short
@@ -544,8 +544,12 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
     included = set(tasks_frame.loc[tasks_frame["use_accuracy"], "participant_id"].astype(str))
     by_condition = [
         (
-            "Accuracy, RQ1 primary: proportion correct per participant, T1-T6",
+            "Accuracy, RQ1 primary: proportion correct per participant, T1-T7",
             study_report.accuracy(tasks_frame),
+        ),
+        (
+            "Crossing item, secondary: strict vs adjacent-band credit",
+            study_report.crossing_adjacent(tasks_frame),
         ),
         (
             "Accuracy and time by item and chart type (descriptive, not tested)",
@@ -613,7 +617,7 @@ def participant_overview(
 ) -> pd.DataFrame:
     """One row per participant: cell, progress, Paas and accuracy per condition, exclusions.
 
-    Accuracy is the RQ1 score, over T1-T6 (study-design.md section 7).
+    Accuracy is the RQ1 score, over T1-T7 (study-design.md section 7).
     """
     now = now or datetime.now(UTC)
     grouped = sessions(records)
@@ -718,6 +722,7 @@ ANSWER_COLUMNS = [
     "answer",
     "justification",
     "correct",
+    "correct_adjacent",
     "duration_ms",
     "duration_invalid",
     *INTERACTION_COUNT_COLUMNS,
@@ -736,10 +741,12 @@ def answers(
         for r in records
         if r["event"] in reshape.INTERACTION_EVENTS
     )
-    correctness: dict[tuple[str, str], Any] = {}
+    correctness: dict[tuple[str, str], tuple[Any, Any]] = {}
     if scoring.ok:
         for row in scoring.tasks.to_dict("records"):
-            correctness.setdefault((str(row["session_id"]), row["task_id"]), row["correct"])
+            correctness.setdefault(
+                (str(row["session_id"]), row["task_id"]), (row["correct"], row["correct_adjacent"])
+            )
 
     rows = []
     for record in records:
@@ -747,7 +754,8 @@ def answers(
             continue
         payload = record["payload"]
         session_id, task_id = str(record["session_id"]), record["task_id"]
-        correct = correctness.get((session_id, task_id))
+        # correct_adjacent is None except on the crossing item, its only pre-registered use.
+        correct, adjacent = correctness.get((session_id, task_id), (None, None))
         rows.append(
             {
                 "participant_id": record["participant_id"],
@@ -761,6 +769,7 @@ def answers(
                 "answer": payload.get("answer"),
                 "justification": mask(payload.get("justification"), show_justifications),
                 "correct": "practice" if task_id == PRACTICE_ID else correct,
+                "correct_adjacent": adjacent,
                 "duration_ms": payload.get("duration_ms"),
                 "duration_invalid": payload.get("duration_invalid"),
                 **{

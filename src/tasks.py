@@ -1,13 +1,14 @@
 """The task set. Implements `docs/study-design.md` section 4. No pandas — this ships to production.
 
-Two isomorphic forms, A and B: the same six item types in the same order, on the same chart types,
-with matched margins, over different data. A participant sees one form per condition and never the
-same form twice, so nobody answers a question they have already answered.
+Two isomorphic forms, A and B: the same seven item types in the same order, on the same chart
+types, with matched margins, over different data. A participant sees one form per condition and
+never the same form twice, so nobody answers a question they have already answered.
 
 Each item pairs one chart type with the interactive affordance that makes it quicker to read
 (section 4): isolating a line in a tangle, the tooltip's year-over-year change, sorting bars,
-hovering a dot or a cell, and filtering a map by coverage. Every item can still be answered from the
-static chart, because every key clears the acceptance rule in section 4.
+hovering a dot or a cell, filtering a map by coverage, and hovering two lines where they cross.
+Every item can still be answered from the static chart, because every key clears the acceptance
+rule in section 4.
 
 **No correct answers live in this module.** It is serialised to the browser, where an answer key
 would be readable in the page source. Scoring happens offline, in `analysis/keys.py`.
@@ -21,6 +22,10 @@ from __future__ import annotations
 from src.flow import Task
 
 COUNT_OPTIONS = ("0", "1", "2", "3", "4 or more")
+
+# The crossing item's options. Bands rather than years, because the static condition has no hover
+# and an exact crossing year cannot be read from the chart. Inclusive at both ends, contiguous.
+CROSSING_BANDS = ("2004-2008", "2009-2012", "2013-2016", "2017-2020", "2021-2024")
 
 # The heatmap's columns: every fifth year, and the last.
 HEATMAP_YEARS = (2000, 2005, 2010, 2015, 2020, 2024)
@@ -48,7 +53,7 @@ PRACTICE = Task(
 # order also assigns each line and dot its colour, so neither where the answer sits in the list nor
 # which colour it gets depends on the answer (docs/study-design.md section 5). Year options run in
 # calendar order. Which options are offered is the one free choice, and it is used to spread the key
-# across positions: no position holds more than three of the twelve keys.
+# across positions: no position holds more than four of the fourteen keys.
 
 FORM_A: tuple[Task, ...] = (
     Task(
@@ -165,6 +170,20 @@ FORM_A: tuple[Task, ...] = (
             "Zambia",
         ),
         options=COUNT_OPTIONS,
+    ),
+    Task(
+        task_id="T7",
+        form="A",
+        kind="crossing",
+        prompt=(
+            "Ethiopia's coverage became higher than the Central African Republic's at some point. "
+            "Roughly when did that first happen?"
+        ),
+        vaccine="DTP3",
+        # No World line, to match B-T7, where World runs through the crossing.
+        # docs/study-design.md section 4.
+        entities=("Central African Republic", "Ethiopia"),
+        options=CROSSING_BANDS,
     ),
 )
 
@@ -286,6 +305,20 @@ FORM_B: tuple[Task, ...] = (
         ),
         options=COUNT_OPTIONS,
     ),
+    Task(
+        task_id="T7",
+        form="B",
+        kind="crossing",
+        prompt=(
+            "Pakistan's coverage became higher than Mozambique's at some point. Roughly when did "
+            "that first happen?"
+        ),
+        vaccine="DTP3",
+        # No World line: it runs within 2 points of both lines at the 2019 crossing, and Pakistan
+        # crosses it too, in 2021. docs/study-design.md section 4.
+        entities=("Mozambique", "Pakistan"),
+        options=CROSSING_BANDS,
+    ),
 )
 
 FORMS: dict[str, tuple[Task, ...]] = {"A": FORM_A, "B": FORM_B}
@@ -356,7 +389,7 @@ DEMOGRAPHIC_ITEMS: dict[str, tuple[str, tuple[str, ...]]] = {
 
 
 def for_form(form: str) -> tuple[Task, ...]:
-    """The six scored tasks for one form, in presentation order."""
+    """The seven scored tasks for one form, in presentation order."""
     if form not in FORMS:
         raise KeyError(f"Unknown form {form!r}; expected one of {sorted(FORMS)}")
     return FORMS[form]

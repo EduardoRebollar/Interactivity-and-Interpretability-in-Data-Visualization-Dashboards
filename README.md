@@ -43,6 +43,8 @@ refused if its answer turns on:
 - a difference under 5 points on an axis, or under 10 on a colour scale;
 - a year read one off landing on another option;
 - a scatter dot hidden behind another;
+- a crossing that happens more than once, sits near the edge of its answer band, or has a third
+  line running through it;
 - a missing value.
 `export_questionnaire.py` renders the app's own screen functions, so the PDF says exactly what
 participants see. It needs Chrome or Edge to print; `--html-only` skips that.
@@ -180,7 +182,7 @@ only; `.env` and `.env.*` are gitignored. See [.env.example](.env.example).
 
 **The instrument is complete and runs end to end.** A participant can take the whole session from one
 URL: a signed consent form (or a decline), participant ID, a few demographic questions, instructions,
-practice, six tasks, a short survey, a break, then the second condition in the other version and the
+practice, seven tasks, a short survey, a break, then the second condition in the other version and the
 other form. Any question may be skipped, after a confirmation.
 
 Built and tested:
@@ -202,7 +204,8 @@ Built and tested:
   Cohen's kappa.
 
 The twelve items were replaced on 2026-09-23 by a bank that pairs each chart type with one
-interactive affordance (`docs/study-design.md` §4).
+interactive affordance, plus one crossing item (T7) that asks when one country's line overtakes
+another's (`docs/study-design.md` §4).
 
 **Not yet run with participants, and it must not be.** The consent form in `src/consent.py` is the
 one submitted to Occidental's HSRRC and is marked "pending approval" on screen until it is approved.
@@ -212,9 +215,10 @@ Also open before piloting:
 
 - **IRB request form item 18:** attach `irb/questionnaire.pdf` and enter the deployed URL.
 - The pilot checks in `docs/study-design.md` §10. The bar, heatmap and map items sit at the
-  acceptance floor on purpose, so check static accuracy there. Check form equivalence on T1 and
-  B-T4. Check whether participants find the bar sort and the map's coverage range at all.
+  acceptance floor on purpose, so check static accuracy there. Check form equivalence on T1,
+  B-T4 and T7, and T7's strict score against its adjacent-band secondary. Check whether
+  participants find the bar sort and the map's coverage range at all.
 - Session resume is not implemented; the participant-ID screen asks for one sitting in one tab. §8.
 - Hover and line isolation are mouse-only, so a keyboard-only participant in the interactive
-  condition meets the scatter and heatmap items with no affordance. The bar sort and the map's range
-  work from the keyboard.
+  condition meets the scatter, heatmap and crossing items with no affordance. The bar sort and the
+  map's range work from the keyboard.

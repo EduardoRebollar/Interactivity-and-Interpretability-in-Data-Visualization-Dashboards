@@ -23,7 +23,7 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 | Type | Items | Encoding |
 |---|---|---|
-| Line | T1, T2, practice | Coverage over 2000–2024, one line per entity, World dashed |
+| Line | T1, T2, T7, practice | Coverage over 2000–2024, one line per entity, World dashed where shown (T7 draws two countries and no World line) |
 | Bar | T3 | One year's coverage, one bar per country, in the listed order |
 | Scatter | T4 | Each country a dot: coverage in 2000 across, in 2024 up, with a dashed no-change diagonal |
 | Heatmap | T5 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as colour |

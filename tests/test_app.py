@@ -1468,7 +1468,7 @@ def test_submit_is_disabled_on_click_and_the_watchdog_re_enables_it():
 
 
 def test_a_watchdog_whose_button_has_gone_leaves_the_page_alone():
-    """After the sixth task the survey is on screen and Submit is gone. Re-enabling a missing id
+    """After the last task the survey is on screen and Submit is gone. Re-enabling a missing id
     made the Dash renderer throw (headless Chrome, 2026-09-23), in every participant's session."""
     # One harness run each: the harness fires every timer armed so far, so cases would mix.
     cases = [

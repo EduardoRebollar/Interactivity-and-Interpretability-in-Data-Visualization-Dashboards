@@ -75,7 +75,8 @@ class Task:
 
     task_id: str
     form: str  # "A" | "B" | "both"
-    kind: str  # "lowest" | "rise" | "rank" | "improved" | "cell" | "threshold" | "practice"
+    kind: str  # "lowest" | "rise" | "rank" | "improved" | "cell" | "threshold" | "crossing"
+    #            | "practice"
     prompt: str
     vaccine: str
     entities: tuple[str, ...]
