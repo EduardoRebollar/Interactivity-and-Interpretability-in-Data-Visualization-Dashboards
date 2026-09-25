@@ -111,9 +111,9 @@ def test_a_real_session_scores_all_correct(tmp_path):
     run_session(tmp_path, _participant_for("static", "A"), correct_answer)
     _events, tasks_frame, conditions = _score(tmp_path)
 
-    assert len(tasks_frame) == 14, "seven scored answers per condition, practice dropped"
+    assert len(tasks_frame) == 12, "six scored answers per condition, practice dropped"
     assert tasks_frame["correct"].all()
-    assert set(tasks_frame["task_id"]) == {"T1", "T2", "T3", "T4", "T5", "T6", "T7"}
+    assert set(tasks_frame["task_id"]) == {"T1", "T2", "T3", "T4", "T5", "T6"}
     assert len(conditions) == 2
     assert set(conditions["prop_correct"]) == {1.0}
     assert set(conditions["paas"]) == {5}
@@ -323,7 +323,7 @@ def test_a_session_that_never_ended_is_incomplete():
 
 
 def test_too_fast_is_a_strict_threshold():
-    durations = [[2999.0, 3000.0] + [5000.0] * 5, [5000.0] * 7]
+    durations = [[2999.0, 3000.0] + [5000.0] * 4, [5000.0] * 6]
     tasks_frame, conditions = _frames(*_complete("P1", durations))
     scored, report = exclusions.apply(tasks_frame, conditions)
     assert list(scored.loc[scored["duration_ms"] == 2999.0, "use_accuracy"]) == [False]
@@ -333,7 +333,7 @@ def test_too_fast_is_a_strict_threshold():
 
 def test_a_missing_duration_is_not_counted_as_too_fast():
     """Unknown is not fast. Sweeping nulls into too_fast would throw away answers that are fine."""
-    durations = [[None] + [5000.0] * 6, [5000.0] * 7]
+    durations = [[None] + [5000.0] * 5, [5000.0] * 6]
     tasks_frame, conditions = _frames(*_complete("P1", durations))
     scored, report = exclusions.apply(tasks_frame, conditions)
     missing = scored[scored["duration_ms"].isna()]
@@ -381,7 +381,7 @@ def test_the_duration_trim_is_pooled_across_conditions():
 
 
 def test_each_row_is_counted_by_one_rule_only():
-    durations = [[1000.0] + [5000.0] * 6, [None] + [5000.0] * 6]
+    durations = [[1000.0] + [5000.0] * 5, [None] + [5000.0] * 5]
     tasks_frame, conditions = _frames(*_complete("P1", durations))
     _scored, report = exclusions.apply(tasks_frame, conditions)
     rows_named = [row for e in report if e.kind != "report" for row in e.ids if ":" in row]
@@ -573,7 +573,7 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
     assert "Exclusions" in printed and "Accuracy, RQ1" in printed and "Paas" in printed
 
     scored = pd.read_csv(derived / "tasks.csv", dtype={"participant_id": str})
-    assert len(scored) == 28
+    assert len(scored) == 24
     by_participant = scored.groupby("participant_id")["correct"].mean().to_dict()
     assert by_participant == {
         _participant_for("static", "A"): 1.0,
@@ -597,7 +597,7 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
     assert "undefined (no variance)" in capsys.readouterr().out
     assert code.main(["depth", *tasks_arg]) == 0
     depth = pd.read_csv(coding_dir / "depth.csv")
-    assert len(depth) == 28
+    assert len(depth) == 24
     assert set(depth["depth"]) <= {1, 2}
 
 
@@ -628,7 +628,7 @@ def test_the_report_renders_every_section(tmp_path):
 
 
 def test_a_skip_is_incorrect_in_the_primary_and_excluded_from_the_secondary(tmp_path):
-    """Primary scores a skip as incorrect (out of seven, T1-T7); the secondary drops it."""
+    """Primary scores a skip as incorrect (out of six, T1-T6); the secondary drops it."""
 
     def skip_t1(form, task_id):
         return None if task_id == "T1" else correct_answer(form, task_id)
@@ -639,15 +639,15 @@ def test_a_skip_is_incorrect_in_the_primary_and_excluded_from_the_secondary(tmp_
     skipped = tasks_frame[tasks_frame["task_id"] == "T1"]
     assert skipped["skipped_answer"].all()
     assert not skipped["correct"].any(), "a skip is incorrect under the primary rule"
-    assert len(tasks_frame) == 14, "a skip is still an answer record"
-    assert set(conditions["prop_correct"]) == {6 / 7}
+    assert len(tasks_frame) == 12, "a skip is still an answer record"
+    assert set(conditions["prop_correct"]) == {5 / 6}
     assert set(conditions["prop_correct_answered"]) == {1.0}
     assert set(conditions["n_skipped"]) == {1}
 
 
 def test_every_item_counts_towards_the_rq1_score(tmp_path):
-    """Section 7, 2026-09-23: with the gap item gone, all seven items are RQ1 items. T6 used to be
-    reported on its own; a wrong T6 now lowers accuracy like any other item."""
+    """Section 7: every item is an RQ1 item. The old bank's gap item was reported on its own; the
+    crossing item, T6, has a secondary score too, but a wrong T6 lowers accuracy like any other."""
 
     def wrong_t6(form, task_id):
         return wrong_answer(form, task_id) if task_id == "T6" else correct_answer(form, task_id)
@@ -655,17 +655,17 @@ def test_every_item_counts_towards_the_rq1_score(tmp_path):
     run_session(tmp_path, _participant_for("static", "A"), wrong_t6)
     _events, tasks_frame, conditions = _score(tmp_path)
 
-    assert set(conditions["prop_correct"]) == {6 / 7}
+    assert set(conditions["prop_correct"]) == {5 / 6}
     scored, _excluded = exclusions.apply(tasks_frame, conditions)
-    assert set(study_report.accuracy(scored)["mean"]) == {6 / 7}
+    assert set(study_report.accuracy(scored)["mean"]) == {5 / 6}
 
 
 def test_the_crossing_item_carries_its_adjacent_band_secondary(tmp_path):
-    """Section 7: T7 is also scored with adjacent-band credit, beside the strict score and never in
-    the RQ1 proportion. B-T7's key year, 2020, closes its band, so 2021-2024 earns the credit."""
+    """Section 7: T6 is also scored with adjacent-band credit, beside the strict score and never in
+    the RQ1 proportion. B-T6's key year, 2020, closes its band, so 2021-2024 earns the credit."""
 
     def late_crossing(form, task_id):
-        if (form, task_id) == ("B", "T7"):
+        if (form, task_id) == ("B", "T6"):
             return "2021-2024"
         return correct_answer(form, task_id)
 
@@ -678,13 +678,13 @@ def test_the_crossing_item_carries_its_adjacent_band_secondary(tmp_path):
     others = tasks_frame[tasks_frame["kind"] != "crossing"]
     assert others["correct_adjacent"].isna().all(), "the secondary is for the crossing item only"
     by_form = conditions.set_index("form")["prop_correct"].to_dict()
-    assert by_form == {"A": 1.0, "B": 6 / 7}, "the strict score is the one in the RQ1 proportion"
+    assert by_form == {"A": 1.0, "B": 5 / 6}, "the strict score is the one in the RQ1 proportion"
 
     scored, _excluded = exclusions.apply(tasks_frame, conditions)
     table = study_report.crossing_adjacent(scored)
-    assert table.loc[("static", "T7"), ("correct", "mean")] == 0.0
-    assert table.loc[("static", "T7"), ("correct_adjacent", "mean")] == 1.0
-    assert table.loc[("interactive", "T7"), ("correct", "mean")] == 1.0
+    assert table.loc[("static", "T6"), ("correct", "mean")] == 0.0
+    assert table.loc[("static", "T6"), ("correct_adjacent", "mean")] == 1.0
+    assert table.loc[("interactive", "T6"), ("correct", "mean")] == 1.0
     assert "Crossing item, secondary" in study_report.render(scored, conditions, _excluded)
 
 

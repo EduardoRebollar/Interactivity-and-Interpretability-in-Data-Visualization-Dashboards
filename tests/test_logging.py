@@ -130,9 +130,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_seven():
-    """v7: the task bank was replaced, so T1-T7 name new items; the map's filter logs a range."""
-    assert SCHEMA_VERSION == 7
+def test_schema_version_is_eight():
+    """v8: the largest-rise item was dropped and T2-T6 renumbered, so they name new items."""
+    assert SCHEMA_VERSION == 8
 
 
 def test_form_is_recorded_on_every_event():

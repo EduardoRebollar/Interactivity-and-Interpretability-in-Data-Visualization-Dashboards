@@ -544,7 +544,7 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
     included = set(tasks_frame.loc[tasks_frame["use_accuracy"], "participant_id"].astype(str))
     by_condition = [
         (
-            "Accuracy, RQ1 primary: proportion correct per participant, T1-T7",
+            "Accuracy, RQ1 primary: proportion correct per participant, T1-T6",
             study_report.accuracy(tasks_frame),
         ),
         (
@@ -617,7 +617,7 @@ def participant_overview(
 ) -> pd.DataFrame:
     """One row per participant: cell, progress, Paas and accuracy per condition, exclusions.
 
-    Accuracy is the RQ1 score, over T1-T7 (study-design.md section 7).
+    Accuracy is the RQ1 score, over T1-T6 (study-design.md section 7).
     """
     now = now or datetime.now(UTC)
     grouped = sessions(records)

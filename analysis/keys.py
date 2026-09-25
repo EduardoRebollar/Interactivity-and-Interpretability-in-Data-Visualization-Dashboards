@@ -62,38 +62,34 @@ MIN_BAND_INSET_YEARS = 1.0
 # (form, task_id) -> what the rule needs that the chart does not.
 PARAMS: dict[tuple[str, str], dict[str, Any]] = {
     ("A", "T1"): {"entity": "Ukraine"},
-    ("A", "T2"): {"entity": "Pakistan"},
-    ("A", "T3"): {"rank": 3},
+    ("A", "T2"): {"rank": 3},
+    ("A", "T3"): {},
     ("A", "T4"): {},
-    ("A", "T5"): {},
-    ("A", "T6"): {"threshold": 50},
-    ("A", "T7"): {"overtaker": "Ethiopia", "overtaken": "Central African Republic"},
+    ("A", "T5"): {"threshold": 50},
+    ("A", "T6"): {"overtaker": "Ethiopia", "overtaken": "Central African Republic"},
     ("B", "T1"): {"entity": "Myanmar"},
-    ("B", "T2"): {"entity": "Bangladesh"},
-    ("B", "T3"): {"rank": 3},
+    ("B", "T2"): {"rank": 3},
+    ("B", "T3"): {},
     ("B", "T4"): {},
-    ("B", "T5"): {},
-    ("B", "T6"): {"threshold": 50},
-    ("B", "T7"): {"overtaker": "Pakistan", "overtaken": "Mozambique"},
+    ("B", "T5"): {"threshold": 50},
+    ("B", "T6"): {"overtaker": "Pakistan", "overtaken": "Mozambique"},
 }
 
 # Transcribed BY HAND from docs/study-design.md section 4. Deliberately duplicated: a cross-check
 # that reads its own answer is not a check. Never generate this from `derive()`.
 EXPECTED: dict[tuple[str, str], str] = {
     ("A", "T1"): "2016",
-    ("A", "T2"): "2011",
-    ("A", "T3"): "India",
-    ("A", "T4"): "Niger",
-    ("A", "T5"): "Chad",
-    ("A", "T6"): "3",
-    ("A", "T7"): "2004-2008",
+    ("A", "T2"): "India",
+    ("A", "T3"): "Niger",
+    ("A", "T4"): "Chad",
+    ("A", "T5"): "3",
+    ("A", "T6"): "2004-2008",
     ("B", "T1"): "2021",
-    ("B", "T2"): "2004",
-    ("B", "T3"): "Colombia",
-    ("B", "T4"): "India",
-    ("B", "T5"): "Afghanistan",
-    ("B", "T6"): "2",
-    ("B", "T7"): "2017-2020",
+    ("B", "T2"): "Colombia",
+    ("B", "T3"): "India",
+    ("B", "T4"): "Afghanistan",
+    ("B", "T5"): "2",
+    ("B", "T6"): "2017-2020",
 }
 
 
@@ -168,7 +164,7 @@ def band_for(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> str:
 def adjacent_bands(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> set[str]:
     """The key band plus the bands containing year - 1 and year + 1.
 
-    The pre-registered SECONDARY scoring for the crossing item, T7 (study-design.md sections 4 and
+    The pre-registered SECONDARY scoring for the crossing item, T6 (study-design.md sections 4 and
     7). A key year on the edge of its band sends a one-year misreading into the next band.
     """
     accepted = {band_for(year, bands)}
@@ -245,42 +241,8 @@ def _lowest(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Derive
     )
 
 
-def _rise(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T2: the year a line rose the most over the year before.
-
-    Acceptance: the largest one-year change beats every other by at least 5 points, so the steepest
-    segment stands out without the tooltip. The segment spans two years and either end may be taken
-    for "the year", read one off, so the four years around it must all be nearest the key option.
-    """
-    entity = _focus(task, params)
-    values = _reported(entity, task.vaccine, rows)
-    changes = {year: values[year] - values[year - 1] for year in values if year - 1 in values}
-    ranked = sorted(changes.items(), key=lambda item: item[1], reverse=True)
-    (key, top), (second_year, second) = ranked[0], ranked[1]
-    margin = top - second
-    if margin < MIN_SEPARATION_PP:
-        raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {entity}'s rise of {top:+g} in {key} beats "
-            f"{second:+g} in {second_year} by only {margin:g} pts"
-        )
-    _check_years_reach_key(task, key, [key - 1, key], f"{entity}'s steepest rise, at")
-    return DerivedKey(
-        task.task_id,
-        task.form,
-        task.kind,
-        str(key),
-        f"year with {entity}'s largest one-year rise over the year before",
-        {
-            "entity": entity,
-            "rise": (key, top),
-            "runner_up": (second_year, second),
-            "margin_pp": margin,
-        },
-    )
-
-
 def _rank(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T3: the country ranked `rank` among the bars.
+    """T2: the country ranked `rank` among the bars.
 
     Acceptance: the key's bar is at least 5 points from the bars ranked just above and below it, so
     the three can be told apart by height without sorting.
@@ -319,7 +281,7 @@ def _rank(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedK
 
 
 def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T4: the dot furthest above the no-change diagonal.
+    """T3: the dot furthest above the no-change diagonal.
 
     Acceptance: its improvement beats every other dot's by at least 5 points, and no two dots sit
     within 4 points of each other, where one would hide the other.
@@ -368,7 +330,7 @@ def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
 
 
 def _cell(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T5: the row holding the heatmap's lowest cell.
+    """T4: the row holding the heatmap's lowest cell.
 
     Acceptance: that cell is at least 10 points below the lowest cell of every other row. Colour is
     the only channel here, and the rule for colour is twice the rule for position.
@@ -401,7 +363,7 @@ def _cell(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedK
 
 
 def _threshold(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T6: how many coloured countries are below a threshold.
+    """T5: how many coloured countries are below a threshold.
 
     Acceptance: every coloured country is at least 10 points from the threshold, so which side of
     it each one falls is a colour judgement a static reader can make against the key.
@@ -436,7 +398,7 @@ def _threshold(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Der
 
 
 def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T7: the band in which one line first rises above another.
+    """T6: the band in which one line first rises above another.
 
     The key is the band containing the first year the overtaker is strictly above, having not been
     above the year before. Acceptance:
@@ -558,7 +520,6 @@ def _ordinal(n: int) -> str:
 
 _RULES = {
     "lowest": _lowest,
-    "rise": _rise,
     "rank": _rank,
     "improved": _improved,
     "cell": _cell,
@@ -637,7 +598,7 @@ def is_correct(form: str, task_id: str, answer: Any, keys: dict | None = None) -
 def is_correct_adjacent(
     form: str, task_id: str, answer: Any, keys: dict | None = None
 ) -> bool | None:
-    """Secondary scoring: adjacent-band credit for the crossing item (T7). None for any other item.
+    """Secondary scoring: adjacent-band credit for the crossing item (T6). None for any other item.
 
     Pre-registered in study-design.md section 7, and reported beside the strict score, never in its
     place.

@@ -23,11 +23,11 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 | Type | Items | Encoding |
 |---|---|---|
-| Line | T1, T2, T7, practice | Coverage over 2000–2024, one line per entity, World dashed where shown (T7 draws two countries and no World line) |
-| Bar | T3 | One year's coverage, one bar per country, in the listed order |
-| Scatter | T4 | Each country a dot: coverage in 2000 across, in 2024 up, with a dashed no-change diagonal |
-| Heatmap | T5 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as colour |
-| Map | T6 | One year's coverage as colour on the countries of sub-Saharan Africa the item names |
+| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, World dashed where shown (T6 draws two countries and no World line) |
+| Bar | T2 | One year's coverage, one bar per country, in the listed order |
+| Scatter | T3 | Each country a dot: coverage in 2000 across, in 2024 up, with a dashed no-change diagonal |
+| Heatmap | T4 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as colour |
+| Map | T5 | One year's coverage as colour on the countries of sub-Saharan Africa the item names |
 
 **Line.** Multi-series, x year 2000–2024 (linear, integer ticks), y coverage. Markers on every
 observed point, radius 5. Markers are not decoration: after a gap, a lone observation with no
@@ -60,7 +60,7 @@ Plotly's CDN in each participant's browser mid-task.
 | Colour scale (heatmap, map) | **fixed 0–100** (`zmin`/`zmax`) | For the same reason: a scale fitted to the data would give the same colour to different values on different tasks. |
 | Line x range | 2000–2024 | Locked scope. |
 | Coverage ticks | every 10 | Fine enough to estimate against without hover, coarse enough to stay readable. |
-| Colour-key ticks | every 10 | So 50% is marked, the threshold T6 asks about. |
+| Colour-key ticks | every 10 | So 50% is marked, the threshold T5 asks about. |
 | Axis line & tick labels | `#404040`, 10.37:1 | Well above the 4.5:1 text floor. |
 | Gridlines (line, bar, scatter) | `#B3B3B3`, 2.10:1 | See §4 — a documented exemption. |
 | Names and years on category axes | no gridlines | The categories are labelled; a grid would add nothing. |
@@ -173,7 +173,7 @@ difference in. No cell or country is *found* by its colour:
 - map countries are separated by white borders and named on hover.
 
 What must hold instead is enforced: **white borders reach 3:1 against every fill up to 50%**, the
-dark countries T6 asks participants to count. That is 15.69:1 at 0% and 4.89:1 at 44%.
+dark countries T5 asks participants to count. That is 15.69:1 at 0% and 4.89:1 at 44%.
 (`AXIS_COLOR` borders were rejected: 1.51:1 against the darkest fill, so two adjacent dark
 countries, such as CAR and Chad, would merge.)
 
@@ -350,7 +350,7 @@ and `as listed` puts them back. A bar with no value would sort last.
 
 - Control: a range slider, 0–100% in steps of 1, with a number box at each end, and *Show all*. The
   participant sets the range. A preset "below 50%" button was rejected: it would name the
-  question's own threshold and answer T6 in one click.
+  question's own threshold and answer T5 in one click.
 - **Countries outside the range fade to 0.15 opacity.** They keep their colour and their place, and
   the ends of the range are included.
 - Drawn as a **selection**. The countries in the range are selected and the rest take the trace's

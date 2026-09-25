@@ -59,6 +59,11 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v8 (2026-09-25): the largest-rise item was dropped and the items after it renumbered, so T2-T6
+# name different items than in v7 (docs/study-design.md section 4). A v7 answer scored against a v8
+# key would be scored against the wrong question. The record shape is unchanged: no new event, key
+# or table. Nothing has been collected, so no migration and no init_db.py re-run.
+#
 # v7 (2026-09-23): the task bank was replaced (docs/study-design.md section 4). Task ids T1-T6 now
 # name different items on five chart types, so a v6 answer scored against a v7 key would be scored
 # against the wrong question -- the version is what stops that. `filter_change` also comes from the
@@ -84,7 +89,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

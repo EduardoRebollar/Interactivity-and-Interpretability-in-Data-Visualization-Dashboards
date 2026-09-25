@@ -178,7 +178,7 @@ def test_an_ended_session_short_of_answers_is_incomplete(complete_records):
     records = [r for r in records if r is not t3]
     checks = _checks(records)
     assert checks["Completeness"].status == vd.WARN
-    assert any("6/7" in item for item in checks["Completeness"].ids)
+    assert any("5/6" in item for item in checks["Completeness"].ids)
 
 
 def test_a_participant_with_one_session_is_incomplete(complete_records):
@@ -257,7 +257,7 @@ def test_a_failed_manipulation_check_is_returned_not_raised(complete_records):
     assert "manipulation check" in scoring.error
 
     table = vd.answers(records, scoring)
-    assert len(table) == 30, "two participants x (14 scored + 1 practice), still visible"
+    assert len(table) == 26, "two participants x (12 scored + 1 practice), still visible"
     assert table["correct"].replace("practice", None).isna().all()
     assert vd.report_tables(scoring) == []
 
@@ -276,7 +276,7 @@ def test_the_overview_shows_progress_accuracy_and_paas(complete_records):
     assert list(overview.columns) == vd.OVERVIEW_COLUMNS
     assert set(overview["status"]) == {"complete"}
     assert overview.loc[right, "cell"] == "static first, form A"
-    assert overview.loc[right, "static answers"] == "7/7"
+    assert overview.loc[right, "static answers"] == "6/6"
     assert overview.loc[right, "static accuracy"] == 1.0
     assert overview.loc[wrong, "interactive accuracy"] == 0.0
     assert overview.loc[right, "static Paas"] == 5
@@ -329,18 +329,9 @@ def test_the_participant_detail_has_one_block_per_session_in_order(complete_reco
         "Condition 1: interactive, form B",
         "Condition 2: static, form A",
     ]
-    assert list(details[0].answers["task_id"]) == [
-        "P0",
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-        "T5",
-        "T6",
-        "T7",
-    ]
+    assert list(details[0].answers["task_id"]) == ["P0", "T1", "T2", "T3", "T4", "T5", "T6"]
     assert details[1].answers["prompt"].str.len().gt(0).all()
-    assert "7/7 scored answers" in details[0].summary
+    assert "6/6 scored answers" in details[0].summary
 
 
 def test_the_report_tables_are_the_section_7_ones(complete_records):

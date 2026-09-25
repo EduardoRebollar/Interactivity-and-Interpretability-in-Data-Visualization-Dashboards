@@ -64,8 +64,8 @@ def test_both_versions_of_the_instructions_are_in_it(page):
 
 
 def test_every_chart_is_drawn(page):
-    """Practice, fourteen items, and one interactive example per chart type: twenty charts."""
-    assert page.count('class="chart"') == 1 + 14 + 5
+    """Practice, twelve items, and one interactive example per chart type: eighteen charts."""
+    assert page.count('class="chart"') == 1 + 12 + 5
     assert "Plotly.newPlot" in page
 
 

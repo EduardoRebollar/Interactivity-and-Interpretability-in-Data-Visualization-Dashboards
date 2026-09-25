@@ -7,7 +7,7 @@ routes produce identical frames -- otherwise a CSV-based analysis and a database
 silently disagree.
 
 The unscored practice item (`P0`) is dropped here, per study-design.md section 8. Every scored item,
-T1-T7, counts towards the RQ1 accuracy score (section 7). The crossing item, T7, also carries its
+T1-T6, counts towards the RQ1 accuracy score (section 7). The crossing item, T6, also carries its
 pre-registered secondary score, adjacent-band credit (`correct_adjacent`); every other item has None
 there.
 """
@@ -203,7 +203,7 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
         sessions[key] = sessions["session_id"].map(lambda s, k=key: (likert.get(s) or {}).get(k))
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
-    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T7).
+    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T6).
     sessions["prop_correct"] = sessions["session_id"].map(by_session["correct"].mean())
     # Secondary, pre-registered: among answered items only.
     answered = tasks_frame[~tasks_frame["skipped_answer"].astype(bool)]

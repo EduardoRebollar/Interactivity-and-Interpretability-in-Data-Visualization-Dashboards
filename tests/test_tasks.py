@@ -15,20 +15,20 @@ from src import config, figures, runtime_data, tasks
 from src.flow import Task
 
 FORMS = ("A", "B")
-EXPECTED_KINDS = ("lowest", "rise", "rank", "improved", "cell", "threshold", "crossing")
+EXPECTED_KINDS = ("lowest", "rank", "improved", "cell", "threshold", "crossing")
 # One affordance per item, each on the chart type it helps most (study-design.md section 4).
-EXPECTED_CHARTS = ("line", "line", "bar", "scatter", "heatmap", "map", "line")
+EXPECTED_CHARTS = ("line", "bar", "scatter", "heatmap", "map", "line")
 # The options are countries for these kinds, years for the line items, counts for the map.
 COUNTRY_OPTION_KINDS = ("rank", "improved", "cell")
-YEAR_OPTION_KINDS = ("lowest", "rise")
+YEAR_OPTION_KINDS = ("lowest",)
 
 
 # --- Form equivalence ----------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("form", FORMS)
-def test_each_form_has_seven_scored_tasks(form):
-    assert len(tasks.for_form(form)) == 7
+def test_each_form_has_six_scored_tasks(form):
+    assert len(tasks.for_form(form)) == 6
 
 
 def test_both_forms_cover_the_same_types_on_the_same_charts_in_the_same_order():
@@ -42,7 +42,7 @@ def test_matched_items_share_task_ids_across_forms():
     """T2 in form A must be the counterpart of T2 in form B, so analysis can pair them."""
     a_ids = [t.task_id for t in tasks.for_form("A")]
     b_ids = [t.task_id for t in tasks.for_form("B")]
-    assert a_ids == b_ids == ["T1", "T2", "T3", "T4", "T5", "T6", "T7"]
+    assert a_ids == b_ids == ["T1", "T2", "T3", "T4", "T5", "T6"]
 
 
 def test_matched_items_offer_the_same_number_of_options():

@@ -1,12 +1,12 @@
 """The task set. Implements `docs/study-design.md` section 4. No pandas — this ships to production.
 
-Two isomorphic forms, A and B: the same seven item types in the same order, on the same chart
+Two isomorphic forms, A and B: the same six item types in the same order, on the same chart
 types, with matched margins, over different data. A participant sees one form per condition and
 never the same form twice, so nobody answers a question they have already answered.
 
 Each item pairs one chart type with the interactive affordance that makes it quicker to read
-(section 4): isolating a line in a tangle, the tooltip's year-over-year change, sorting bars,
-hovering a dot or a cell, filtering a map by coverage, and hovering two lines where they cross.
+(section 4): isolating a line in a tangle, sorting bars, hovering a dot or a cell, filtering a
+map by coverage, and hovering two lines where they cross.
 Every item can still be answered from the static chart, because every key clears the acceptance
 rule in section 4.
 
@@ -53,7 +53,7 @@ PRACTICE = Task(
 # order also assigns each line and dot its colour, so neither where the answer sits in the list nor
 # which colour it gets depends on the answer (docs/study-design.md section 5). Year options run in
 # calendar order. Which options are offered is the one free choice, and it is used to spread the key
-# across positions: no position holds more than four of the fourteen keys.
+# across positions: no position holds more than a third of the twelve keys.
 
 FORM_A: tuple[Task, ...] = (
     Task(
@@ -81,18 +81,6 @@ FORM_A: tuple[Task, ...] = (
     Task(
         task_id="T2",
         form="A",
-        kind="rise",
-        prompt=(
-            "Focus on Pakistan's line. In which single year did its coverage rise the most over "
-            "the year before?"
-        ),
-        vaccine="DTP3",
-        entities=("Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan", "World"),
-        options=("2005", "2011", "2015", "2018", "2021"),
-    ),
-    Task(
-        task_id="T3",
-        form="A",
         kind="rank",
         chart="bar",
         years=(2017,),
@@ -102,7 +90,7 @@ FORM_A: tuple[Task, ...] = (
         options=("Brazil", "China", "Ethiopia", "India", "Vietnam"),
     ),
     Task(
-        task_id="T4",
+        task_id="T3",
         form="A",
         kind="improved",
         chart="scatter",
@@ -118,7 +106,7 @@ FORM_A: tuple[Task, ...] = (
         options=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger"),
     ),
     Task(
-        task_id="T5",
+        task_id="T4",
         form="A",
         kind="cell",
         chart="heatmap",
@@ -141,7 +129,7 @@ FORM_A: tuple[Task, ...] = (
         options=("Burkina Faso", "Central African Republic", "Chad", "Mali", "Pakistan"),
     ),
     Task(
-        task_id="T6",
+        task_id="T5",
         form="A",
         kind="threshold",
         chart="map",
@@ -172,7 +160,7 @@ FORM_A: tuple[Task, ...] = (
         options=COUNT_OPTIONS,
     ),
     Task(
-        task_id="T7",
+        task_id="T6",
         form="A",
         kind="crossing",
         prompt=(
@@ -180,7 +168,7 @@ FORM_A: tuple[Task, ...] = (
             "Roughly when did that first happen?"
         ),
         vaccine="DTP3",
-        # No World line, to match B-T7, where World runs through the crossing.
+        # No World line, to match B-T6, where World runs through the crossing.
         # docs/study-design.md section 4.
         entities=("Central African Republic", "Ethiopia"),
         options=CROSSING_BANDS,
@@ -210,18 +198,6 @@ FORM_B: tuple[Task, ...] = (
     Task(
         task_id="T2",
         form="B",
-        kind="rise",
-        prompt=(
-            "Focus on Bangladesh's line. In which single year did its coverage rise the most over "
-            "the year before?"
-        ),
-        vaccine="DTP3",
-        entities=("Bangladesh", "Ethiopia", "India", "Nigeria", "Vietnam", "World"),
-        options=("2004", "2009", "2013", "2018", "2022"),
-    ),
-    Task(
-        task_id="T3",
-        form="B",
         kind="rank",
         chart="bar",
         years=(2024,),
@@ -239,7 +215,7 @@ FORM_B: tuple[Task, ...] = (
         options=("Cambodia", "Colombia", "Egypt", "Ethiopia", "United States"),
     ),
     Task(
-        task_id="T4",
+        task_id="T3",
         form="B",
         kind="improved",
         chart="scatter",
@@ -255,7 +231,7 @@ FORM_B: tuple[Task, ...] = (
         options=("Bangladesh", "Cambodia", "India", "Nepal", "Pakistan"),
     ),
     Task(
-        task_id="T5",
+        task_id="T4",
         form="B",
         kind="cell",
         chart="heatmap",
@@ -278,7 +254,7 @@ FORM_B: tuple[Task, ...] = (
         options=("Afghanistan", "Mali", "Niger", "Pakistan", "Uganda"),
     ),
     Task(
-        task_id="T6",
+        task_id="T5",
         form="B",
         kind="threshold",
         chart="map",
@@ -306,7 +282,7 @@ FORM_B: tuple[Task, ...] = (
         options=COUNT_OPTIONS,
     ),
     Task(
-        task_id="T7",
+        task_id="T6",
         form="B",
         kind="crossing",
         prompt=(
@@ -389,7 +365,7 @@ DEMOGRAPHIC_ITEMS: dict[str, tuple[str, tuple[str, ...]]] = {
 
 
 def for_form(form: str) -> tuple[Task, ...]:
-    """The seven scored tasks for one form, in presentation order."""
+    """The six scored tasks for one form, in presentation order."""
     if form not in FORMS:
         raise KeyError(f"Unknown form {form!r}; expected one of {sorted(FORMS)}")
     return FORMS[form]

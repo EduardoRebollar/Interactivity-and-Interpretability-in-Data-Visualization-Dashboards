@@ -1013,7 +1013,8 @@ def test_gap_note_is_absent_when_nothing_is_missing():
 
 
 def test_the_practice_item_shows_no_gap_note():
-    """It must not teach gap reasoning, which is what T6 measures."""
+    """The practice teaches the interface on complete lines; a gap caption would need explaining
+    first."""
     assert layout.gap_note(list(tasks.PRACTICE.entities), tasks.PRACTICE.vaccine) is None
 
 

@@ -182,7 +182,7 @@ only; `.env` and `.env.*` are gitignored. See [.env.example](.env.example).
 
 **The instrument is complete and runs end to end.** A participant can take the whole session from one
 URL: a signed consent form (or a decline), participant ID, a few demographic questions, instructions,
-practice, seven tasks, a short survey, a break, then the second condition in the other version and the
+practice, six tasks, a short survey, a break, then the second condition in the other version and the
 other form. Any question may be skipped, after a confirmation.
 
 Built and tested:
@@ -204,7 +204,7 @@ Built and tested:
   Cohen's kappa.
 
 The twelve items were replaced on 2026-09-23 by a bank that pairs each chart type with one
-interactive affordance, plus one crossing item (T7) that asks when one country's line overtakes
+interactive affordance, plus one crossing item (T6) that asks when one country's line overtakes
 another's (`docs/study-design.md` §4).
 
 **Not yet run with participants, and it must not be.** The consent form in `src/consent.py` is the
@@ -216,7 +216,7 @@ Also open before piloting:
 - **IRB request form item 18:** attach `irb/questionnaire.pdf` and enter the deployed URL.
 - The pilot checks in `docs/study-design.md` §10. The bar, heatmap and map items sit at the
   acceptance floor on purpose, so check static accuracy there. Check form equivalence on T1,
-  B-T4 and T7, and T7's strict score against its adjacent-band secondary. Check whether
+  B-T3 and T6, and T6's strict score against its adjacent-band secondary. Check whether
   participants find the bar sort and the map's coverage range at all.
 - Session resume is not implemented; the participant-ID screen asks for one sitting in one tab. §8.
 - Hover and line isolation are mouse-only, so a keyboard-only participant in the interactive

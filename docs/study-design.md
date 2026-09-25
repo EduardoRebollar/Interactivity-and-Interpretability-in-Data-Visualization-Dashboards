@@ -6,9 +6,9 @@ before changing `src/tasks.py` or `src/flow.py`.
 
 Status: **draft, 2026-09-15; revised 2026-09-21 to match the IRB submission; task set finalized
 2026-09-22, then replaced 2026-09-23 by a redesigned task bank on five chart types, with a
-crossing item added the same day (§4).** The
-consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant
-until approved.
+crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4).** The consent
+text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until
+approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -33,15 +33,15 @@ suggest interactivity makes interpretation feel easier without making it better.
 
 **Out of scope.** Cross-platform generalisation. The second platform was cut (see CLAUDE.md);
 write-ups must not claim platform independence. So is any claim about a chart type as such: each type
-carries one item per form, the line chart three (§4, §7).
+carries one item per form, the line chart two (§4, §7).
 
 ## 2. Design
 
 Within-subjects, 2 (condition: static / interactive) × 2 (form: A / B), fully counterbalanced.
 Target n ≥ 25.
 
-Each participant completes **7 scored tasks per condition, 14 in total**, plus one unscored practice
-task. All seven make up the RQ1 accuracy score (§7). Expected duration 20–35 minutes, capped at one
+Each participant completes **6 scored tasks per condition, 12 in total**, plus one unscored practice
+task. All six make up the RQ1 accuracy score (§7). Expected duration 20–35 minutes, capped at one
 hour (IRB form items 5B and 10).
 
 ### Conditions
@@ -115,6 +115,10 @@ specified is recorded below, as kept or as changed). All items use DTP3. Every v
 `data/deploy/coverage.csv`. The spec's own values were right: they also match the Our World in Data
 export it cites, which agrees with this project's source for DTP3, 2000–2024, value for value.
 
+**Renumbered 2026-09-25.** The largest-rise item, then T2, was dropped, and the items after it moved
+up one: the old T3–T7 are T2–T6. Numbers below are the current ones, including where they describe
+the spec's own items.
+
 ### The design principle
 
 Each item isolates **one interactive affordance** and pairs it with a chart type where the static
@@ -123,18 +127,17 @@ read is costly and that affordance lowers the cost:
 | Item | Chart | Affordance | The static cost it lowers |
 |---|---|---|---|
 | T1 | line, 8 countries and World | isolating a line | tracing one line through a tangle of crossings |
-| T2 | line, 5 countries and World | the tooltip's year-over-year change | judging one-year slopes by eye |
-| T3 | bar | sorting the bars | ranking bars that stand in no order |
-| T4 | scatter | hovering a dot | matching a dot to its legend entry |
-| T5 | heatmap | hovering a cell | telling dark shades apart |
-| T6 | map | the coverage range | sorting every country's colour against the key |
-| T7 | line, 2 countries | hovering both lines where they meet | placing, by eye, the year two lines cross |
+| T2 | bar | sorting the bars | ranking bars that stand in no order |
+| T3 | scatter | hovering a dot | matching a dot to its legend entry |
+| T4 | heatmap | hovering a cell | telling dark shades apart |
+| T5 | map | the coverage range | sorting every country's colour against the key |
+| T6 | line, 2 countries | hovering both lines where they meet | placing, by eye, the year two lines cross |
 
 Chart type here is **variety** — evidence that an effect holds across formats — not a per-type
-claim. Each type carries one item per form, the line chart three, so per-chart-type differences
+claim. Each type carries one item per form, the line chart two, so per-chart-type differences
 are reported descriptively and never tested (§7).
 
-T1–T6 each read one series or one set of values: a line's own shape, a ranking, an extreme. T7 was
+T1–T5 each read one series or one set of values: a line's low point, a ranking, an extreme. T6 was
 added the same day, at Eduardo's request, as the one **relational** item: its answer is a relation
 between two series, when one overtakes the other.
 
@@ -161,17 +164,16 @@ L*, so 10 points is at least 7.3 L*.
 | Item | The key must survive... |
 |---|---|
 | T1 lowest point | Every year within **5 points** of the line's minimum could be taken for it, and any may be read **one year off**; every such reading must be nearer the key option than any other, with no ties. The minimum itself is unique. |
-| T2 largest rise | The largest one-year rise beats every other one-year change by at least **5 points**. Either end of that segment may be taken for "the year" and read one year off; all four readings must be nearest the key option. |
-| T3 rank | The key bar is at least **5 points** from the bars ranked just above and just below it. |
-| T4 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (12 px dots at 4 px a point: closer, and one hides the other). |
-| T5 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row. |
-| T6 count | Every coloured country is at least **10 points** from the threshold. |
-| T7 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet. |
+| T2 rank | The key bar is at least **5 points** from the bars ranked just above and just below it. |
+| T3 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (12 px dots at 4 px a point: closer, and one hides the other). |
+| T4 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row. |
+| T5 count | Every coloured country is at least **10 points** from the threshold. |
+| T6 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet. |
 
 A bar, dot, cell or country with no reported value is refused outright: the chart would have nothing
-to show exactly where the question looks. A crossing is judged only on years both lines report. An item that fails any part is refused by
-`analysis/keys.py` with `KeyDerivationError`, so a fragile item fails the test suite exactly as a
-wrong key does, including after a data refresh. `tests/test_scoring.py` also runs each spec item
+to show exactly where the question looks. A crossing is judged only on years both lines report. An
+item that fails any part is refused by `analysis/keys.py` with `KeyDerivationError`, so a fragile
+item fails the test suite exactly as a wrong key does, including after a data refresh. `tests/test_scoring.py` also runs each spec item
 that was changed on the real data and checks that it is still refused.
 
 ### T1 — Lowest point (line, isolation)
@@ -198,25 +200,7 @@ crosses all eight of them, 25 times in all, and Myanmar's crosses seven of eight
 > have been scored wrong for reading the chart correctly. 2010 and 2013 were replaced by 2008 and
 > 2024. B-T1 is as specified.
 
-### T2 — Largest one-year rise (line, year-over-year change)
-
-*Focus on {country}'s line. In which single year did its coverage rise the most over the year
-before?*
-
-| | Form A | Form B |
-|---|---|---|
-| Country | Pakistan | Bangladesh |
-| Largest rise | **2011**, +11 | **2004**, +12 |
-| Next-largest change | 2018, +5 | 2003, +4 |
-| Margin | 6 | 8 |
-| Options | 2005, 2011, 2015, 2018, 2021 | 2004, 2009, 2013, 2018, 2022 |
-| Other lines | Ethiopia, India, Indonesia, Nigeria, World | Ethiopia, India, Nigeria, Vietnam, World |
-| Key | **2011** | **2004** |
-
-As specified. The tooltip states each point's change from the year before ("+11 pts vs 2010").
-Without it, the steepest one-year segment has to be picked out by eye.
-
-### T3 — Third-highest bar (bar, sort)
+### T2 — Third-highest bar (bar, sort)
 
 *The bars show coverage in {year}. Which country had the third-highest coverage?*
 
@@ -232,12 +216,12 @@ The bars stand in alphabetical order, so the top three are not side by side. Sor
 The forms are matched exactly: the key is 89 in both, 5 points below the bar above and 6 above the
 bar below. Each form's options are the ranks 1, 2, 3, 4 and 6.
 
-> **Re-tuned from the spec.** The spec's A-T3 (2015) had China 99, Bangladesh 98, Vietnam 97 and
-> Brazil 96, and its B-T3 (2019) Egypt 95 against Colombia 94. Both keys were 1 point from a
+> **Re-tuned from the spec.** The spec's A-T2 (2015) had China 99, Bangladesh 98, Vietnam 97 and
+> Brazil 96, and its B-T2 (2019) Egypt 95 against Colombia 94. Both keys were 1 point from a
 > neighbour, which no one can rank by bar height. The new sets were found by search over the bank's
 > countries, for the tightest gaps that clear 5 points.
 
-### T4 — Most improved (scatter, hover)
+### T3 — Most improved (scatter, hover)
 
 *Each dot is an {African / Asian} country, placed by its coverage in 2000 (across) and in 2024 (up).
 The dashed diagonal means no change. Which country improved the most — the dot furthest above the
@@ -254,12 +238,12 @@ diagonal?*
 The dot is easy to find; the static cost is naming it, by matching its colour and shape to the
 legend. Hover names it directly.
 
-> **Changed from the spec.** A-T4 drops Angola (31 → 64) and DR Congo (30 → 65): their dots sat
-> 1.4 points apart, and within 3 of Nigeria's, so one dot hid another. B-T4 drops Laos, so both forms
-> show six dots, and keeps Afghanistan out as the spec warned: its +35 all but ties India's +36. A-T4
+> **Changed from the spec.** A-T3 drops Angola (31 → 64) and DR Congo (30 → 65): their dots sat
+> 1.4 points apart, and within 3 of Nigeria's, so one dot hid another. B-T3 drops Laos, so both forms
+> show six dots, and keeps Afghanistan out as the spec warned: its +35 all but ties India's +36. A-T3
 > offers Mali in place of Nigeria (+39 and +38), which moves the key off the fourth option.
 
-### T5 — Lowest cell (heatmap, hover)
+### T4 — Lowest cell (heatmap, hover)
 
 *Rows are countries and columns are years. Darker cells mean lower coverage. Which country's row
 contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024.
@@ -276,14 +260,14 @@ contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024.
 No number is written in a cell. Static participants compare shades against the colour key; hover
 gives the exact value.
 
-> **Re-tuned from the spec.** The spec's A-T5 lowest cell (Chad, 26) was 3 points from Nigeria's
-> (29), and its B-T5 (Afghanistan, 24) 5 points from Nigeria's — enough on a position axis, not in
+> **Re-tuned from the spec.** The spec's A-T4 lowest cell (Chad, 26) was 3 points from Nigeria's
+> (29), and its B-T4 (Afghanistan, 24) 5 points from Nigeria's — enough on a position axis, not in
 > colour. Nigeria (29), Ethiopia (30) and Angola (31) bottom out within 10 points of both keys, Niger
 > (34) within 10 of Chad's and Somalia (33) within 10 of Afghanistan's, so they left the grids. Form
 > B also traded India and Indonesia for rows form A does not show, so the two grids share only Mali
 > and Pakistan. The spec's keys, Chad and Afghanistan, stayed.
 
-### T6 — Countries below 50% (map, coverage range)
+### T5 — Countries below 50% (map, coverage range)
 
 *The map colours {n} countries in sub-Saharan Africa by their coverage in {year}. How many of those
 countries had coverage below 50%?*
@@ -302,12 +286,12 @@ The coloured countries are the spec's pool of large, easily seen countries, less
 points of the line in that year. Every other country is plain grey land, and the prompt states how
 many are coloured.
 
-> **Re-tuned from the spec.** The spec's A-T6 (2013, all 17 countries) had South Sudan at 53 and
-> Somalia at 44, and its B-T6 (2018) had Chad at 47 and Somalia at 53, all 3 points from the line.
+> **Re-tuned from the spec.** The spec's A-T5 (2013, all 17 countries) had South Sudan at 53 and
+> Somalia at 44, and its B-T5 (2018) had Chad at 47 and Somalia at 53, all 3 points from the line.
 > No single pool kept every country 10 points clear in two years with different counts, so each form
-> has its own. B-T6 moved to 2007: 2018 left only one country clear below the line.
+> has its own. B-T5 moved to 2007: 2018 left only one country clear below the line.
 
-### T7 — Crossing (line, hover)
+### T6 — Crossing (line, hover)
 
 *{Country}'s coverage became higher than {other country}'s at some point. Roughly when did that
 first happen?* Options, in calendar order: 2004-2008, 2009-2012, 2013-2016, 2017-2020, 2021-2024.
@@ -330,37 +314,37 @@ above** the other, having not been above the year before. The pairs were found b
 lines are both on A-T1's chart; Burkina Faso over Mozambique, only 1.17 years inside its band; and
 Niger over Madagascar, which ties in 2010 and leads by 2 points the next year.
 
-**Two lines, no World line.** In B-T7, World runs at 85–86 through 2014–2019, within 1 point of
+**Two lines, no World line.** In B-T6, World runs at 85–86 through 2014–2019, within 1 point of
 Mozambique, and at 2019 all three lines sit within 2 points of each other, exactly where the question
 looks. Pakistan also rises above World in 2021, a second crossing in the next band. The rule's last
-clause refuses that chart. A-T7 could keep World, which runs about 29 points above its crossing, but
+clause refuses that chart. A-T6 could keep World, which runs about 29 points above its crossing, but
 it is dropped there too, so both forms draw two lines.
 
 **The affordance is hover.** Line charts use the closest-point tooltip, so hovering either line
 near the crossing gives its exact value, and the tooltip's change from the year before shows which
 line is rising. The line controls and zoom work here as on every line chart.
 
-> **Adjacent-band credit, pre-registered as a secondary for T7** (§7). A reader who puts the
+> **Adjacent-band credit, pre-registered as a secondary for T6** (§7). A reader who puts the
 > crossing a year late or early lands in the key band in both forms, since the lines meet more than
 > a year inside it. The credit is for one step further: the key band, or the band containing the
-> key year ± 1. B-T7's key year, 2020, closes its band, so a reading of 2021 earns it. A-T7's,
+> key year ± 1. B-T6's key year, 2020, closes its band, so a reading of 2021 earns it. A-T6's,
 > 2007, is mid-band, so there the secondary is the strict score. It was
 > pre-registered for the crossing items of the 2026-09-22 bank, dropped with them, and is restored
 > with this one.
 
 ### Matching the forms
 
-| | T1 | T2 | T3 | T4 | T5 | T6 | T7 |
-|---|---|---|---|---|---|---|---|
-| Margin, form A | 54 | 6 | 5 / 6 | 6 | 11 | 11 | 1.79 years |
-| Margin, form B | 34 | 8 | 5 / 6 | 8 | 10 | 10 | 1.40 years |
-| Floor | 5 | 5 | 5 | 5 | 10 | 10 | 1 year |
+| | T1 | T2 | T3 | T4 | T5 | T6 |
+|---|---|---|---|---|---|---|
+| Margin, form A | 54 | 5 / 6 | 6 | 11 | 11 | 1.79 years |
+| Margin, form B | 34 | 5 / 6 | 8 | 10 | 10 | 1.40 years |
+| Floor | 5 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
 than quietly unbalancing the forms. Three known differences go to the pilot (§10):
 - T1's low point is a three-year trough in A and a one-year dip in B.
-- B-T4's closest dots sit on the 4-point floor.
-- The two T7 crossings are drawn differently. In A, two lines converge from opposite directions. In
+- B-T3's closest dots sit on the 4-point floor.
+- The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
   cross.
 
@@ -380,23 +364,35 @@ described in the instructions and by a line of text above each chart in the inte
 
 - **Six new item types** on five chart types, one affordance each (above), replacing the reference,
   trend, crossing and gap items.
-- **T7, a crossing item, added the same day**, so the bank has one item whose answer is a relation
+- **T6, a crossing item, added the same day**, so the bank has one item whose answer is a relation
   between two series. It follows the old bank's crossing rule, tightened (above).
-- **Kept from the spec as written:** A-T2, B-T1, B-T2, and every item's affordance, chart type and
-  question.
+- **Kept from the spec as written:** B-T1, and every item's affordance, chart type and question.
 - **Changed to pass the acceptance rule:**
   - A-T1's options;
-  - both T3 bar sets;
-  - both T5 grids;
-  - both T6 pools and B-T6's year;
-  - A-T4's dots.
-- **Changed for balance:** B-T4 drops Laos, so both scatters have six dots; option subsets were chosen
-  so no answer position holds more than three keys (§5).
-- **Gone with the old bank:** T6's separate reporting. No item asks about missing data now; the gap
+  - both T2 bar sets;
+  - both T4 grids;
+  - both T5 pools and B-T5's year;
+  - A-T3's dots.
+- **Changed for balance:** B-T3 drops Laos, so both scatters have six dots; option subsets were chosen
+  so no answer position holds more than a third of the keys (§5).
+- **Gone with the old bank:** the gap item's separate reporting. No item asks about missing data now; the gap
   caption stays for a data refresh (`docs/visual-spec.md` §3). The adjacent-band secondary went too,
-  and came back with T7 (§7).
+  and came back with T6 (§7).
 
-The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history.
+### Revision 2026-09-25: the largest-rise item dropped
+
+- **Dropped:** *In which single year did its coverage rise the most over the year before?*, on
+  Pakistan's line in form A and Bangladesh's in form B. With the crossing item added, line charts
+  carried three of seven items. Eduardo chose to keep two, the crossing item among them.
+- **Why this one and not T1.** T1 is the only item that needs the line controls — filter, sort and
+  isolate, which the IRB forms describe — and the only line item whose affordance use is logged
+  (§7). The rise item's affordance, the tooltip's change from the year before, is still on every
+  line chart, and T6's tooltip uses it.
+- **Renumbered.** The old T3–T7 are now T2–T6. A task id now names a different item than it did, so
+  the log schema moved to v8 (`src/logging.py`). Nothing had been collected.
+
+The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
+and so is the rise item, with its rule and its values.
 
 ## 5. Answer format
 
@@ -420,8 +416,8 @@ source. Scoring happens offline against §7.
   which also sets each line's and dot's colour and the order of bars and rows, with World always last.
 - Years and year bands run in calendar order; counts in their natural order.
 - Which options an item offers is the one free choice. It is used to spread the key: no position
-  holds more than four of the fourteen keys (first: 3, second: 3, third: 3, fourth: 4, fifth: 1).
-  T7 has no free choice, since it offers all five bands; its keys sit first and fourth.
+  holds more than a third of the twelve keys (first: 2, second: 2, third: 3, fourth: 4, fifth: 1).
+  T6 has no free choice, since it offers all five bands; its keys sit first and fourth.
   `tests/test_scoring.py` fails if any position holds more than a third.
 
 Before this rule, the country options were sorted by how much each changed, which put the correct
@@ -482,19 +478,18 @@ choosing an exclusion rule after seeing the data is a methodological problem how
 rule is. `analysis/` implements it; nothing is decided at analysis time.
 
 **Accuracy (RQ1).** Binary per task from the multiple choice. Primary outcome: proportion correct per
-participant per condition, **over T1–T7** (revised 2026-09-23: T6 was reported separately while it
-was a gap item whose answer was printed on screen; no item's answer is on screen now; T7 was added
-the same day).
+participant per condition, **over T1–T6** (revised 2026-09-23: the old bank's gap item was reported
+separately, since its answer was printed on screen, and no item's answer is on screen now).
 
 **A skipped answer scores as incorrect** in the primary analysis (ruled 2026-09-21), so every
-participant is scored out of seven per condition. Dropping skips instead would let a condition that
+participant is scored out of six per condition. Dropping skips instead would let a condition that
 provokes more skipping look more accurate than it is. *Secondary, pre-registered:* proportion correct
 among answered items only, skips excluded. The number of skips per condition is reported alongside
 both.
 
-*Secondary, pre-registered for the crossing item (T7):* accuracy on T7 recomputed with adjacent-band
+*Secondary, pre-registered for the crossing item (T6):* accuracy on T6 recomputed with adjacent-band
 credit — the key band, or the band containing the key year ± 1 (§4). Reported alongside the strict
-score, never in place of it, and never folded into the T1–T7 proportion.
+score, never in place of it, and never folded into the T1–T6 proportion.
 
 Scored by exact string equality against a key **derived from `data/deploy/coverage.csv`** by the
 rule each item states, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
@@ -504,7 +499,7 @@ was wrong — it said 2, the data said 1 — and nothing would have caught it.
 **By item and chart type — descriptive only (added 2026-09-23).** Proportion correct and median time
 per item, chart type and condition (`analysis/report.by_item`). Each item pairs one chart type with
 one affordance (§4), so this is where a difference can be traced to an affordance. But each type
-carries one item per form, the line chart three, so these are **never tested** and never reported
+carries one item per form, the line chart two, so these are **never tested** and never reported
 as per-chart-type effects.
 
 **Which affordance a participant used** is known only where it is logged. Hovers are not logged
@@ -513,14 +508,13 @@ as per-chart-type effects.
 | Item | Affordance | Logged? |
 |---|---|---|
 | T1 | isolating a line (also filter, sort, zoom) | yes — `line_isolate`, `filter_change`, `sort_change`, `view_change` |
-| T2 | the tooltip's change from the year before | no (the line controls are, if used) |
-| T3 | sorting the bars | yes — `sort_change` |
-| T4, T5 | hover | no |
-| T6 | the coverage range | yes — `filter_change` with `control` `coverage-band` or `band-reset` |
-| T7 | hover | no (the line controls are, if used) |
+| T2 | sorting the bars | yes — `sort_change` |
+| T3, T4 | hover | no |
+| T5 | the coverage range | yes — `filter_change` with `control` `coverage-band` or `band-reset` |
+| T6 | hover | no (the line controls are, if used) |
 
-For T2, T4, T5 and T7, an interactive participant who answers correctly may or may not have hovered.
-Analyses of affordance use are confined to T1, T3 and T6, and the write-up says so.
+For T3, T4 and T6, an interactive participant who answers correctly may or may not have hovered.
+Analyses of affordance use are confined to T1, T2 and T5, and the write-up says so.
 
 **Reasoning depth (RQ2).** Each justification coded on three binary features:
 
@@ -565,7 +559,7 @@ Two kinds, which the earlier flat list did not distinguish:
 
 | Rule | Definition |
 |---|---|
-| `incomplete_session` | The participant did not produce **two** log sessions each carrying a `session_end` and seven scored answers — a skipped item still counts, since a skip is a response rather than an abandoned session. Stated this way because `session_end` is written per *condition*, not once at the end of the study, so "reached `complete`" needed a precise test. |
+| `incomplete_session` | The participant did not produce **two** log sessions each carrying a `session_end` and six scored answers — a skipped item still counts, since a skip is a response rather than an abandoned session. Stated this way because `session_end` is written per *condition*, not once at the end of the study, so "reached `complete`" needed a precise test. |
 | `too_fast` | Task duration < 3000 ms — not read. A **null** duration is not "fast"; nulls are their own category and are never swept in here. |
 
 **Timing exclusions** — the answer stands, but the duration is not usable, so the row leaves
@@ -586,8 +580,8 @@ then `too_fast`, then the 1% trim computed on whatever survives.
 
 ## 8. Procedure
 
-`consent → participant ID → demographics → instructions → practice → 7 tasks → survey → break →
-instructions → 7 tasks → survey → complete`
+`consent → participant ID → demographics → instructions → practice → 6 tasks → survey → break →
+instructions → 6 tasks → survey → complete`
 
 Declining on the consent screen leads to a thank-you screen that confirms no data was collected (IRB
 form item 12B), with a button back to the consent form in case the choice was a mis-click. Nothing is
@@ -730,19 +724,19 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 
 - IRB approval, and the final consent wording.
 - **Pilot checks for the 2026-09-23 bank:**
-  - **Static accuracy on T3, T5 and T6.** Their margins sit at the floor on purpose (5, 10 and 10
+  - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in five) would
     mean the floor is too tight for that chart type.
   - **Form equivalence.** T1's low point is a three-year trough in form A and a one-year dip in form
-    B. B-T4's two closest dots sit exactly on the 4-point floor. The T7 crossings are drawn
+    B. B-T3's two closest dots sit exactly on the 4-point floor. The T6 crossings are drawn
     differently (§4).
-  - **T7 against its adjacent-band secondary.** If the two scores differ much, static readers are
+  - **T6 against its adjacent-band secondary.** If the two scores differ much, static readers are
     placing the crossing a band off, and the band edges are doing the work.
   - **Whether the interactive affordances are found at all.** Especially the map's coverage range
     and the bar sort, which the practice does not teach. The logs show both (§7).
-- **Hover is not logged**, so affordance use cannot be observed for T2, T4, T5 and T7 (§7).
+- **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover is mouse-only, so a keyboard-only participant in the
-  interactive condition meets T4, T5 and T7 with no affordance at all. The bar sort and the map's range
+  interactive condition meets T3, T4 and T6 with no affordance at all. The bar sort and the map's range
   work from the keyboard (`docs/visual-spec.md` §8).
 - ~~Whether the items can be answered without hover.~~ Resolved 2026-09-22 by the item acceptance
   rule, and kept for the 2026-09-23 bank, which was re-tuned to pass it (§4).

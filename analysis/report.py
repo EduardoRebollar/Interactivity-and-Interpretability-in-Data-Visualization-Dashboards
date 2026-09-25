@@ -1,6 +1,6 @@
 """The descriptive numbers `docs/study-design.md` section 7 asks for, and nothing more.
 
-Per condition: accuracy (the RQ1 primary outcome over T1-T7, as the mean of per-participant
+Per condition: accuracy (the RQ1 primary outcome over T1-T6, as the mean of per-participant
 proportions, a skip scored incorrect), the pre-registered secondaries (skips excluded; adjacent-band
 credit on the crossing item), skip counts, accuracy item by item, Paas mental effort (RQ3), the
 Likert survey, and time on task. Plus the
@@ -16,7 +16,7 @@ from analysis.exclusions import Exclusion
 
 
 def accuracy(tasks: pd.DataFrame) -> pd.DataFrame:
-    """Proportion correct over T1-T7 per participant per condition, summarised by condition."""
+    """Proportion correct over T1-T6 per participant per condition, summarised by condition."""
     usable = tasks[tasks["use_accuracy"]]
     per_participant = (
         usable.groupby(["condition", "participant_id"])["correct"].mean().rename("prop_correct")
@@ -64,7 +64,7 @@ def survey(conditions: pd.DataFrame, included: set[str]) -> pd.DataFrame:
 
 
 def crossing_adjacent(tasks: pd.DataFrame) -> pd.DataFrame:
-    """Secondary: the crossing item (T7) under strict and adjacent-band scoring (section 7)."""
+    """Secondary: the crossing item (T6) under strict and adjacent-band scoring (section 7)."""
     crossings = tasks[tasks["use_accuracy"] & (tasks["kind"] == "crossing")]
     scored = crossings.assign(
         correct=crossings["correct"].astype(float),
@@ -104,7 +104,7 @@ def render(tasks: pd.DataFrame, conditions: pd.DataFrame, exclusions: list[Exclu
     included = set(tasks.loc[tasks["use_accuracy"], "participant_id"].astype(str))
     sections = [
         ("Exclusions (study-design.md section 7)", exclusion_table(exclusions)),
-        ("Accuracy, RQ1 primary: proportion correct per participant, T1-T7", accuracy(tasks)),
+        ("Accuracy, RQ1 primary: proportion correct per participant, T1-T6", accuracy(tasks)),
         ("Accuracy, secondary: answered items only, skips excluded", accuracy_answered(tasks)),
         ("Crossing item, secondary: strict vs adjacent-band credit", crossing_adjacent(tasks)),
         ("Skipped answers and justifications", skips(tasks)),
