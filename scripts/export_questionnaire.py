@@ -37,6 +37,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 import plotly.graph_objects as go  # noqa: E402
+from dash.development.base_component import Component  # noqa: E402
 from plotly.offline import get_plotlyjs  # noqa: E402
 
 from src import config, consent, figures, layout, runtime_data, tasks  # noqa: E402
@@ -44,8 +45,8 @@ from src import config, consent, figures, layout, runtime_data, tasks  # noqa: E
 DEFAULT_OUT = ROOT / "irb"
 # The map's country shapes, which the app serves from src/assets (scripts/vendor_map_geometry.py).
 GEOMETRY = ROOT / "src" / "assets" / "geo_africa.js"
-# US Letter with half-inch margins leaves 720 CSS px; each screen keeps its own 24 px padding.
-PRINT_WIDTH = 640
+# Charts print at their own fixed width (visual-spec.md section 5); STYLE scales them to the page.
+PRINT_WIDTH = config.CHART_WIDTH
 EXAMPLE_ID = "P07"
 
 # What the browser's own confirmation popup says when a question is left unanswered. The text lives
@@ -139,26 +140,24 @@ class Renderer:
                     else (option,) * 2
                 )
                 checked = " checked" if value is not None and value in chosen else ""
+                # A chip's label is a flag and a name, as components; the name is what prints.
+                if isinstance(label, (list, Component)):
+                    text = self.render(label)
+                else:
+                    text = html.escape(str(label))
                 options.append(
                     f'<label{label_style}><input type="{kind_of_input}" disabled{checked}> '
-                    f"{html.escape(str(label))}</label>"
+                    f"{text}</label>"
                 )
             return f"<div{style}>{''.join(options)}</div>"
         if kind == "Input":
             return (
                 f"<input disabled{_attr('type', props.get('type', 'text'))}"
+                f"{_attr('value', props.get('value'))}"
                 f"{_attr('placeholder', props.get('placeholder'))}{style}>"
             )
         if kind == "Textarea":
             return f"<textarea disabled{style}></textarea>"
-        if kind == "RangeSlider":
-            # A slider draws itself in the browser; on paper it is described instead.
-            low, high = props.get("value") or (props.get("min"), props.get("max"))
-            return (
-                '<div class="slider">[Slider with two handles and a box for each, set to '
-                f"{low}% and {high}%. Either handle can be dragged, or a value typed, "
-                f"anywhere from {props.get('min')}% to {props.get('max')}%.]</div>"
-            )
         return self.render(props.get("children"))
 
 
@@ -174,24 +173,30 @@ def _hover_example() -> str:
 # beside its example screen. Hover is described, not shown: a tooltip value could be an item's key.
 INTERACTIVE_NOTES = {
     "line": (
-        "The interactive version adds the controls above it, which filter, sort and isolate "
-        "countries, and hovering a point shows its value and the change from the year before."
+        "The interactive version adds the controls under it: a button for each country, which "
+        "hides or shows its line; a View control, which lists the countries by coverage; Show "
+        "all; and Reset view. Clicking a line shows it alone. Clicking a name in the legend hides "
+        "or shows that line, and double-clicking shows it alone. Hovering a point shows its value "
+        "and the change from the year before."
     ),
     "bar": (
-        "The interactive version adds the Order control above it, which sorts the bars by "
-        "coverage, and hovering a bar shows its exact value."
+        "The interactive version adds the controls under it: a button for each country, which "
+        "fades or restores its bar; a Sort control (A-Z, High to low, Low to high), which reorders "
+        "the bars; and Reset view. Hovering a bar shows its exact value."
     ),
     "scatter": (
-        "The interactive version adds only the line of text above it: hovering a dot shows the "
-        "country's name and its two values."
+        "The interactive version adds a button for each country under it, which hides or shows its "
+        "dot, and Reset view. Hovering a dot shows the country's name and its two values."
     ),
     "heatmap": (
-        "The interactive version adds only the line of text above it: hovering a cell shows its "
-        "exact value."
+        "The interactive version adds the controls under it: a button for each country, which "
+        "fades or restores its row; a Sort rows control (Default, Lowest value, Average), which "
+        "reorders the rows; and Reset view. Hovering a cell shows its exact value."
     ),
     "map": (
-        "The interactive version adds the coverage slider above it: countries outside the chosen "
-        "range fade. Hovering a country shows its name and exact value."
+        "The interactive version adds the controls under it: a button for each country, which "
+        "fades or restores it; a Highlight box, which fades every country whose coverage is not "
+        "below the number typed; and Reset view. Hovering a country shows its name and exact value."
     ),
 }
 
@@ -303,8 +308,8 @@ section { break-before: page; }
 /* Scaled as a whole, so proportions stay as on screen: a question with its chart fits one page. */
 .screen { border: 1px solid #B3B3B3; border-radius: 6px; zoom: 0.82; }
 .screen button { opacity: 1; }
-.slider { font-size: 13px; color: #595959; border: 1px solid #B3B3B3; border-radius: 4px;
-          padding: 6px 10px; margin: 6px 0; max-width: 560px; }
+/* A chart is 1050 px wide on screen; scaled with its screen, this fits the page's 720 px. */
+.screen .chart { zoom: 0.83; }
 .popup { border: 1px solid #404040; border-radius: 6px; padding: 12px 16px; margin: 8px 0;
          font-size: 14px; max-width: 520px; }
 """
@@ -353,9 +358,10 @@ by two questions comparing the versions;</li>
 </ol>
 <p>Every question may be skipped. Each half asks about five kinds of chart: line charts, a bar
 chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;
-the interactive one adds hover tooltips to every chart, and controls to some: filtering, sorting and
-line isolation on the line charts, sorting on the bar chart, and a coverage range on the map. Each
-participant answers form A with one version and form B with the other, in one of four
+the interactive one adds hover tooltips to every chart and controls under each one: a button per
+country that hides or shows it, and Reset view; on the line charts a clickable legend, reordering,
+Show all and isolating a line; sorting on the bar chart and the grid; and a highlight on the map.
+Each participant answers form A with one version and form B with the other, in one of four
 counterbalanced orders.</p>
 <p class="note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the
 application's own screen code. Consent text version {consent.CONSENT_VERSION}.</p>

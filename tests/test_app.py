@@ -327,9 +327,10 @@ def test_no_callback_is_dead_on_the_screens_that_trigger_it():
     for name, screen in _every_screen():
         present = base | _ids(screen)
         for key, callback in instance.callback_map.items():
-            inputs = {i["id"] for i in callback["inputs"]}
-            # A pattern-matching State (`ALL`) collects whatever matches, none included, so it can
-            # never kill a callback. Dash writes its id as JSON; the survey and About you use them.
+            # A pattern-matching Input or State (`ALL`) collects whatever matches, none included,
+            # so it can never kill a callback. Dash writes its id as JSON. The survey, About you
+            # and the chart controls use them.
+            inputs = {i["id"] for i in callback["inputs"] if not i["id"].startswith("{")}
             states = {s["id"] for s in callback["state"] if not s["id"].startswith("{")}
             if not (inputs - base) & present:
                 continue  # nothing on this screen can trigger it
@@ -394,16 +395,20 @@ def test_the_id_screen_does_not_promise_a_resume_that_does_not_exist():
     assert "one sitting" in text
 
 
-def test_the_chart_holds_its_height_before_plotly_has_loaded():
+def test_the_chart_holds_its_size_before_plotly_has_loaded():
     """dcc.Graph renders at zero height until Plotly arrives; the page jumped 520 px under a click.
-    The container must reserve the height in both conditions, identically."""
+    The container reserves the chart's size, `.ui-chart` in study.css, in both conditions alike."""
     task = tasks.for_form("A")[0]
     containers = []
     for interactive in (False, True):
-        wrapper = layout.chart(list(task.entities), task.vaccine, interactive)
+        wrapper = layout.chart(task, interactive)
         assert wrapper.children.id == "chart"
-        containers.append(wrapper.style)
-    assert containers[0] == containers[1] == {"height": f"{layout.config.CHART_HEIGHT}px"}
+        assert wrapper.children.responsive is False
+        containers.append((wrapper.className, getattr(wrapper, "style", None)))
+    assert containers[0] == containers[1] == ("ui-chart", None)
+    css = (layout.config.PROJECT_ROOT / "src" / "assets" / "study.css").read_text(encoding="utf-8")
+    assert ".ui-chart { width: var(--chart-w); height: var(--chart-h);" in css
+    assert "--chart-w: 1050px; --chart-h: 520px;" in css
 
 
 def _items(component, kind: str) -> set[str]:
@@ -593,7 +598,7 @@ def test_answers_carry_their_justification_and_browser_timing(tmp_path):
 def test_no_interaction_events_are_logged_before_the_controls_exist(tmp_path):
     """Guards the claim in the other direction: unbuilt affordances must log nothing."""
     events = _run_session(tmp_path)
-    interaction = {"filter_change", "sort_change", "line_isolate"}
+    interaction = {"filter_change", "sort_change", "line_isolate", "view_reset", "view_change"}
     assert not (interaction & {e["event"] for e in events})
 
 
@@ -612,21 +617,25 @@ def _practice_state():
 
 
 def _interact(triggered, tmp_path, control_state=None, state=None, **kwargs):
-    """Run one control interaction and return (the four chart outputs, events logged by it).
+    """Run one control interaction and return (its `ControlResult`, the events logged by it).
 
-    The fifth output, the spool, is `no_update` whenever the database is healthy; the tests that
-    care about it call `control_step` directly.
+    The spool is `no_update` whenever the database is healthy; the tests that care about it call
+    `control_step` directly.
     """
     log_state = {"session_id": str(uuid.uuid4())}
     result = app.control_step(
         triggered, state or _task_state(), log_state, control_state, log_dir=tmp_path, **kwargs
     )
-    assert result[4] is no_update, "a healthy write must not touch the spool store"
-    return result[:4], [e for e in _events(tmp_path) if e["event"] != "session_start"]
+    assert result.spool is no_update, "a healthy write must not touch the spool store"
+    return result, [e for e in _events(tmp_path) if e["event"] != "session_start"]
 
 
 def _first_task():
     return tasks.for_form("A")[0]
+
+
+def _countries(task=None) -> list[str]:
+    return layout.filterable(list((task or _first_task()).entities))
 
 
 def _view(**kwargs):
@@ -634,31 +643,54 @@ def _view(**kwargs):
     return {"screen": f"0/{_first_task().task_id}", **kwargs}
 
 
-def test_filtering_hides_a_series_and_logs_it(tmp_path):
-    keep = [e for e in layout.filterable(list(_first_task().entities)) if e != "Nigeria"]
-    (figure, options, value, control), events = _interact(
-        "entity-filter.value", tmp_path, selected=keep
-    )
+def _drawn(figure) -> set[str]:
+    """The lines or dots on the chart. A hidden one is `legendonly`, which is truthy."""
+    return {trace.name for trace in figure.data if trace.visible in (True, None)}
+
+
+def _ticked(result) -> list[str]:
+    return [name for row in result.chips for name in row["value"]]
+
+
+def _chip_order(result) -> list[str]:
+    return [option["value"] for row in result.chips for option in row["options"]]
+
+
+def test_a_chip_hides_a_line_and_logs_it(tmp_path):
+    keep = [e for e in _countries() if e != "Nigeria"]
+    result, events = _interact("chips", tmp_path, chips=keep)
 
     assert [e["event"] for e in events] == ["filter_change"]
     payload = events[0]["payload"]
     # The keys are declared in src/logging.py; analysis reads them by name.
     assert set(payload) == {"control", "action", "value", "previous"}
+    assert payload["control"] == "chips"
     assert payload["action"] == "hide"
-    assert "Nigeria" not in payload["value"]
-    assert "Nigeria" in payload["previous"]
+    assert "Nigeria" not in payload["value"] and "Nigeria" in payload["previous"]
 
-    assert control["selected"] == keep
-    assert {t.name for t in figure.data if t.visible} == set(keep)
-    assert value == keep
-    assert [o["value"] for o in options] == layout.filterable(list(_first_task().entities))
+    assert result.control["selected"] == keep
+    assert _drawn(result.figure) == set(keep)
+    assert _ticked(result) == keep
+    assert _chip_order(result) == _countries()
+    assert result.sort is no_update and result.threshold is no_update
 
 
-def test_the_filter_cannot_empty_the_chart(tmp_path):
-    """build_figure refuses an empty entity list; the control must refuse before it gets there."""
-    result, events = _interact("entity-filter.value", tmp_path, selected=[])
-    assert result == (no_update,) * 4, "unchecking the last series keeps the previous view"
-    assert events == [], "refusing to empty the chart is not a participant action to log"
+def test_the_chips_split_into_two_rows_the_first_taking_the_extra_one(tmp_path):
+    result, _events = _interact("chips", tmp_path, chips=_countries()[:3])
+    first, second = result.chips
+    half = -(-len(_countries()) // 2)
+    assert [o["value"] for o in first["options"]] == _countries()[:half]
+    assert [o["value"] for o in second["options"]] == _countries()[half:]
+
+
+def test_unticking_the_last_chip_is_refused_and_the_chip_put_back(tmp_path):
+    """The chart cannot be emptied. The browser has already unticked the box, so the refusal ticks
+    it again rather than leaving the chips saying something the chart does not."""
+    result, events = _interact("chips", tmp_path, control_state=_view(selected=["China"]), chips=[])
+    assert _ticked(result) == ["China"]
+    assert _drawn(result.figure) == {"China"}
+    assert result.control["selected"] == ["China"]
+    assert events == [], "a refusal is not a participant action to log"
 
 
 def test_the_world_reference_is_never_filterable():
@@ -669,76 +701,85 @@ def test_the_world_reference_is_never_filterable():
 
 
 def test_the_world_reference_stays_on_the_chart_when_a_line_is_isolated(tmp_path):
-    (figure, _options, _value, _ctl), _events = _interact(
+    result, _events = _interact(
         "chart.clickData",
         tmp_path,
         state=_practice_state(),
         click_data={"points": [{"curveNumber": 0}]},
     )
-    assert {t.name for t in figure.data if t.visible} == {"Brazil", "World"}
+    assert _drawn(result.figure) == {"Brazil", "World"}
 
 
 def test_the_practice_offers_no_chip_for_world_and_keeps_its_one_country(tmp_path):
     """World cannot be hidden, and the filter never removes the last country."""
     assert layout.filterable(list(tasks.PRACTICE.entities)) == ["Brazil"]
-    result, events = _interact(
-        "entity-filter.value", tmp_path, state=_practice_state(), selected=[]
-    )
-    assert result == (no_update,) * 4
+    result, events = _interact("chips", tmp_path, state=_practice_state(), chips=[])
+    assert _ticked(result) == ["Brazil"]
     assert events == []
 
 
-def test_sorting_reorders_the_control_list_and_logs_it(tmp_path):
-    (figure, options, _value, control), events = _interact(
-        "entity-sort.value", tmp_path, sort_key="coverage"
-    )
+def test_view_by_coverage_reorders_the_chips_and_the_legend_and_logs_it(tmp_path):
+    result, events = _interact("sort", tmp_path, sort_key="coverage")
 
     assert [e["event"] for e in events] == ["sort_change"]
-    assert set(events[0]["payload"]) == {"key", "direction"}
     assert events[0]["payload"] == {"key": "coverage", "direction": "desc"}
-    assert control["sort"] == "coverage"
+    assert result.control["sort"] == "coverage"
 
-    ordered = [o["value"] for o in options]
+    ordered = _chip_order(result)
     values = layout.latest_values(ordered, _first_task().vaccine)
     assert ordered == sorted(ordered, key=lambda e: -(values[e] or 0))
-    assert all("%" in o["label"] for o in options), (
-        "sorting by coverage must show what it sorted on"
-    )
+    ranks = {trace.name: trace.legendrank for trace in result.figure.data}
+    assert sorted(ranks, key=lambda name: ranks[name]) == ordered
+    # The chips carry names alone, so a reorder moves nothing else (the handoff's state S5).
+    labels = [option["label"] for row in result.chips for option in row["options"]]
+    assert all("%" not in str(label) for label in labels)
 
 
-def test_sorting_does_not_change_which_series_are_shown(tmp_path):
-    """The chart is untouched by sorting; only the control list reorders."""
-    (figure, _options, _value, _ctl), _events = _interact(
-        "entity-sort.value", tmp_path, sort_key="coverage"
-    )
-    assert all(trace.visible for trace in figure.data)
+def test_the_view_does_not_change_which_lines_are_drawn_or_move_one(tmp_path):
+    """The lines are where the data puts them; only the chips and the legend reorder."""
+    result, _events = _interact("sort", tmp_path, sort_key="coverage")
+    assert _drawn(result.figure) == set(_countries())
+    before = figures.task_figure(_first_task())
+    assert [t.y for t in result.figure.data] == [t.y for t in before.data]
 
 
-def test_clicking_a_line_isolates_it_and_logs_it(tmp_path):
+def test_clicking_a_line_isolates_it_and_the_chips_follow(tmp_path):
     task = _first_task()
-    (figure, _options, _value, control), events = _interact(
+    result, events = _interact(
         "chart.clickData", tmp_path, click_data={"points": [{"curveNumber": 0}]}
     )
 
     assert [e["event"] for e in events] == ["line_isolate"]
     assert set(events[0]["payload"]) == {"entity", "isolated"}
     assert events[0]["payload"] == {"entity": task.entities[0], "isolated": True}
-    assert control["isolated"] == task.entities[0]
-    assert {t.name for t in figure.data if t.visible} == {task.entities[0]}
+    assert result.control["isolated"] == task.entities[0]
+    assert _drawn(result.figure) == {task.entities[0]}
+    assert _ticked(result) == [task.entities[0]]
 
 
 def test_clicking_an_isolated_line_again_releases_it(tmp_path):
     task = _first_task()
-    isolated = _view(selected=layout.filterable(list(task.entities)), isolated=task.entities[0])
-    (figure, _options, _value, control), events = _interact(
+    isolated = _view(selected=_countries(), isolated=task.entities[0])
+    result, events = _interact(
         "chart.clickData",
         tmp_path,
         control_state=isolated,
         click_data={"points": [{"curveNumber": 0}]},
     )
     assert events[0]["payload"] == {"entity": task.entities[0], "isolated": False}
-    assert control["isolated"] is None
-    assert all(trace.visible for trace in figure.data)
+    assert result.control["isolated"] is None
+    assert _drawn(result.figure) == set(_countries())
+
+
+def test_a_chip_ticked_during_an_isolation_ends_it(tmp_path):
+    task = _first_task()
+    isolated = _view(selected=_countries(), isolated=task.entities[0])
+    result, events = _interact(
+        "chips", tmp_path, control_state=isolated, chips=[task.entities[0], task.entities[1]]
+    )
+    assert events[0]["payload"]["action"] == "show"
+    assert result.control["isolated"] is None
+    assert _drawn(result.figure) == {task.entities[0], task.entities[1]}
 
 
 def test_clicking_the_world_reference_does_nothing(tmp_path):
@@ -749,32 +790,106 @@ def test_clicking_the_world_reference_does_nothing(tmp_path):
         state=_practice_state(),
         click_data={"points": [{"curveNumber": world_index}]},
     )
-    assert result == (no_update,) * 4
+    assert result == app.UNCHANGED
     assert events == []
 
 
-def test_show_all_restores_everything_and_logs_it(tmp_path):
-    task = _first_task()
+def test_show_all_brings_every_line_back_and_logs_it(tmp_path):
     narrowed = _view(selected=["China"], isolated="Nigeria")
-    (figure, _options, _value, control), events = _interact(
-        "reset-view.n_clicks", tmp_path, control_state=narrowed
-    )
+    result, events = _interact("show-all", tmp_path, control_state=narrowed)
 
     assert [e["event"] for e in events] == ["filter_change"]
-    assert events[0]["payload"]["control"] == "reset-view"
-    assert control["isolated"] is None
-    assert control["selected"] == layout.filterable(list(task.entities))
-    assert all(trace.visible for trace in figure.data)
+    assert events[0]["payload"] == {
+        "control": "show-all",
+        "action": "show",
+        "value": _countries(),
+        "previous": ["Nigeria"],
+    }
+    assert result.control["isolated"] is None
+    assert result.control["selected"] == _countries()
+    assert _drawn(result.figure) == set(_countries())
 
 
-def test_zoom_and_pan_are_logged_as_a_view_change(tmp_path):
-    _result, events = _interact(
+def test_show_all_with_every_line_showing_logs_nothing(tmp_path):
+    result, events = _interact("show-all", tmp_path)
+    assert result == app.UNCHANGED
+    assert events == []
+
+
+def test_reset_view_undoes_filtering_sorting_and_isolating_and_logs_what_it_undid(tmp_path):
+    changed = _view(selected=["China", "India"], isolated="India", sort="coverage")
+    result, events = _interact("reset", tmp_path, control_state=changed)
+
+    assert [e["event"] for e in events] == ["view_reset"]
+    assert events[0]["payload"] == {
+        "previous": {
+            "selected": ["India"],
+            "sort": "coverage",
+            "isolated": "India",
+            "threshold": None,
+        }
+    }
+    assert result.control["selected"] == _countries()
+    assert result.control["isolated"] is None and result.control["sort"] == "listed"
+    assert result.sort == "listed", "the View control is set back too"
+    assert _chip_order(result) == _countries() and _ticked(result) == _countries()
+    assert _drawn(result.figure) == set(_countries())
+
+
+def test_reset_view_on_an_untouched_chart_logs_nothing(tmp_path):
+    result, events = _interact("reset", tmp_path)
+    assert result == app.UNCHANGED
+    assert events == []
+
+
+def test_a_zoom_is_kept_in_the_view_and_every_redraw_keeps_it(tmp_path):
+    """visual-spec.md section 7.3: Reset view does not undo a zoom; the modebar's own reset does.
+    The range is kept in the view, because a redraw would otherwise put the axis back."""
+    zoom = {"xaxis.range[0]": 2005.0, "xaxis.range[1]": 2015.0}
+    zoomed, _events = _interact("chart.relayoutData", tmp_path, relayout=zoom)
+    assert zoomed.figure is no_update, "Plotly has drawn the zoom already"
+    assert zoomed.control["xrange"] == [2005.0, 2015.0]
+
+    chip, _events = _interact("chips", tmp_path, control_state=zoomed.control, chips=["China"])
+    assert list(chip.figure.layout.xaxis.range) == [2005.0, 2015.0]
+    reset, _events = _interact("reset", tmp_path, control_state=chip.control)
+    assert list(reset.figure.layout.xaxis.range) == [2005.0, 2015.0]
+    assert reset.control["xrange"] == [2005.0, 2015.0]
+
+    undone, _events = _interact(
+        "chart.relayoutData",
+        tmp_path,
+        control_state=reset.control,
+        relayout={"xaxis.autorange": True},
+    )
+    assert undone.control["xrange"] is None, "the modebar's reset undoes the zoom"
+    chip, _events = _interact("chips", tmp_path, control_state=undone.control, chips=["India"])
+    assert list(chip.figure.layout.xaxis.range) == list(
+        figures.task_figure(_first_task()).layout.xaxis.range
+    )
+
+
+@pytest.mark.parametrize(
+    "stored", [[2005], [2015, 2005], ["a", "b"], [True, 2010], [float("nan"), 2010], "2005"]
+)
+def test_a_malformed_stored_range_is_ignored(tmp_path, stored):
+    result, _events = _interact(
+        "chips", tmp_path, control_state=_view(xrange=stored), chips=["China"]
+    )
+    assert result.control["xrange"] is None
+
+
+def test_zoom_and_pan_are_logged_as_a_view_change_and_nothing_is_sent_back(tmp_path):
+    """Plotly has already drawn the zoom. A figure sent in reply put the axis back where it was,
+    so every zoom was undone as soon as it reached the server (headless Chrome, 2026-09-26)."""
+    result, events = _interact(
         "chart.relayoutData",
         tmp_path,
         relayout={"xaxis.range[0]": 2005.2, "xaxis.range[1]": 2015.8},
     )
     assert [e["event"] for e in events] == ["view_change"]
     assert set(events[0]["payload"]) == {"control", "value", "previous"}
+    assert result._replace(control=no_update) == app.UNCHANGED
 
 
 def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
@@ -785,10 +900,8 @@ def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
     a phantom `line_isolate` and silently un-isolated their chart. The prop id separates them.
     """
     task = _first_task()
-    already_isolated = _view(
-        selected=layout.filterable(list(task.entities)), isolated=task.entities[0]
-    )
-    (figure, _options, _value, control), events = _interact(
+    already_isolated = _view(selected=_countries(), isolated=task.entities[0])
+    result, events = _interact(
         "chart.relayoutData",
         tmp_path,
         control_state=already_isolated,
@@ -798,29 +911,35 @@ def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
     )
 
     assert [e["event"] for e in events] == ["view_change"]
-    assert control["isolated"] == task.entities[0], "a zoom must not release the isolation"
-    assert {t.name for t in figure.data if t.visible} == {task.entities[0]}
+    assert result.control["isolated"] == task.entities[0], "a zoom must not release the isolation"
+    assert result.figure is no_update
 
 
 def test_a_render_time_relayout_is_not_logged_as_an_interaction(tmp_path):
     """Plotly sends relayout on resize and on first paint. Neither is a participant action."""
     result, events = _interact("chart.relayoutData", tmp_path, relayout={"autosize": True})
-    assert result == (no_update,) * 4
+    assert result == app.UNCHANGED
     assert events == []
 
 
-def test_re_rendering_a_task_does_not_log_a_phantom_filter_change(tmp_path):
-    """Dash fires input callbacks when a component is recreated, which happens every task."""
-    options = layout.filterable(list(_first_task().entities))
-    result, events = _interact(
-        "entity-filter.value", tmp_path, control_state=_view(selected=options), selected=options
-    )
-    assert result == (no_update,) * 4
-    assert events == []
+def test_re_rendering_a_task_does_not_log_a_phantom_change(tmp_path):
+    """Dash fires every control's callback when a task screen is built, with the values it was
+    built with. None of them is a participant action."""
+    for triggered, kwargs in (
+        ("chips", {"chips": _countries()}),
+        ("sort", {"sort_key": "listed"}),
+        ("show-all", {}),
+        ("reset", {}),
+        ("chart.restyleData", {"restyle": None}),
+        ("chart.clickData", {"click_data": None}),
+    ):
+        result, events = _interact(triggered, tmp_path, **kwargs)
+        assert result == app.UNCHANGED, triggered
+        assert events == [], triggered
 
 
 def test_every_interaction_event_is_attributed_to_the_task_it_happened_on(tmp_path):
-    _result, events = _interact("entity-filter.value", tmp_path, selected=["China"])
+    _result, events = _interact("chips", tmp_path, chips=["China"])
     assert events[0]["task_id"] == _first_task().task_id
     assert events[0]["condition"] == "interactive"
 
@@ -829,25 +948,23 @@ def test_the_controls_do_nothing_off_a_task_screen(tmp_path):
     """No chart is showing at consent or the break, so nothing can be interacted with."""
     for stage in (Stage.CONSENT, Stage.INSTRUCTIONS, Stage.LOAD, Stage.BREAK, Stage.COMPLETE):
         result = app.control_step(
-            "entity-filter.value",
+            "chips",
             _state(stage, first_condition="interactive").to_dict(),
             {},
             None,
-            selected=["China"],
+            chips=["China"],
             log_dir=tmp_path,
         )
-        assert result == (no_update,) * 5, f"{stage.value} has no chart to control"
+        assert result == app.UNCHANGED, f"{stage.value} has no chart to control"
 
 
 def test_a_stale_control_state_from_the_previous_task_is_discarded(tmp_path):
     """Entities from the previous task must not leak into this one's filter or chart."""
     stale = {"selected": ["Ukraine", "Pakistan"], "isolated": "Ukraine"}
-    (figure, _options, _value, control), _events = _interact(
-        "entity-filter.value", tmp_path, control_state=stale, selected=["China", "India"]
-    )
-    assert control["isolated"] is None, "an isolation on an absent series must not survive"
-    assert control["selected"] == ["China", "India"]
-    assert {t.name for t in figure.data if t.visible} == {"China", "India"}
+    result, _events = _interact("chips", tmp_path, control_state=stale, chips=["China", "India"])
+    assert result.control["isolated"] is None, "an isolation on an absent series must not survive"
+    assert result.control["selected"] == ["China", "India"]
+    assert _drawn(result.figure) == {"China", "India"}
 
 
 def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_path):
@@ -859,7 +976,7 @@ def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_pa
     task = _first_task()
     for screen in ("0/P0", f"1/{task.task_id}", None):
         leftover = {"screen": screen, "selected": ["China"], "isolated": task.entities[0]}
-        (figure, _options, _value, control), events = _interact(
+        result, events = _interact(
             "chart.clickData",
             tmp_path,
             control_state=leftover,
@@ -867,23 +984,49 @@ def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_pa
         )
         # Fresh view, so the click isolates rather than releases.
         assert events[-1]["payload"] == {"entity": task.entities[0], "isolated": True}, screen
-        assert control["selected"] == layout.filterable(list(task.entities)), screen
-        assert control["screen"] == f"0/{task.task_id}"
+        assert result.control["selected"] == _countries(), screen
+        assert result.control["screen"] == f"0/{task.task_id}"
 
 
-def test_the_chart_callback_has_nothing_the_static_condition_lacks():
-    """The chart is rendered in both conditions, so its callback must be complete in both."""
+@pytest.mark.parametrize(
+    "stored",
+    [
+        {"sort": "desc"},
+        {"sort": 7},
+        {"threshold": 40},
+        {"isolated": "Ukraine"},
+        {"selected": "China"},
+    ],
+)
+def test_a_malformed_stored_view_falls_back_to_the_fresh_one(tmp_path, stored):
+    """The store is written by this app, but it lives in the browser. Whatever it says is checked
+    against the task: a line chart has no bar sort and no highlight."""
+    result, _events = _interact("chips", tmp_path, control_state=_view(**stored), chips=["China"])
+    assert result.control["sort"] == "listed"
+    assert result.control["threshold"] is None
+    assert result.control["isolated"] is None
+
+
+def test_the_view_callback_reads_the_controls_by_pattern_and_the_chart_by_name():
+    """Each chart type has its own controls and the static condition has none. Only a pattern
+    (`ALL`) can read a set that differs by screen; a named id absent from the page stops a callback
+    in the browser. The chart itself is on every task screen, in both conditions."""
     instance = app.create_app()
     base = _ids(instance.layout)
     static = _ids(app.render(_state(Stage.TASK, first_condition="static")))
-    for callback in instance.callback_map.values():
-        if "chart" in {i["id"] for i in callback["inputs"]}:
-            ids = {i["id"] for i in callback["inputs"]} | {s["id"] for s in callback["state"]}
-            assert ids <= base | static
-            assert not {"entity-filter", "entity-sort", "reset-view"} & ids
+    (view,) = [
+        callback
+        for callback in instance.callback_map.values()
+        if "chart" in {i["id"] for i in callback["inputs"]}
+    ]
+    named = {i["id"] for i in view["inputs"] if not i["id"].startswith("{")}
+    named |= {s["id"] for s in view["state"]}
+    assert named <= base | static, "everything named is on a static task screen too"
+    patterns = {json.loads(i["id"])["control"] for i in view["inputs"] if i["id"].startswith("{")}
+    assert patterns == set(app.CONTROLS)
 
 
-def test_the_chart_callback_changes_nothing_on_a_static_render(tmp_path):
+def test_the_chart_changes_nothing_on_a_static_render(tmp_path):
     """Plotly's render-time relayout reaches the server in the static condition too. It must be
     ignored there, as in the interactive condition: no event, no change to the chart."""
     static = _state(Stage.TASK, first_condition="static").to_dict()
@@ -896,123 +1039,285 @@ def test_the_chart_callback_changes_nothing_on_a_static_render(tmp_path):
             relayout=relayout,
             log_dir=tmp_path,
         )
-        assert result == (no_update,) * 5
+        assert result == app.UNCHANGED
     assert _events(tmp_path) == []
 
 
-# --- The bar chart's sort and the map's coverage range ------------------------------------------
+# --- The legend (line charts) ---------------------------------------------------------------------
+
+
+def _legend(indices, values):
+    """What Plotly sends as `restyleData` for a legend click."""
+    return [{"visible": values}, indices]
+
+
+def test_a_legend_click_hides_a_line_the_chips_follow_and_it_is_logged(tmp_path):
+    task = _first_task()
+    index = list(task.entities).index("Nigeria")
+    result, events = _interact(
+        "chart.restyleData", tmp_path, restyle=_legend([index], ["legendonly"])
+    )
+    assert [e["event"] for e in events] == ["filter_change"]
+    assert events[0]["payload"]["control"] == "legend"
+    assert events[0]["payload"]["action"] == "hide"
+    assert "Nigeria" not in _ticked(result)
+    assert _drawn(result.figure) == set(_countries()) - {"Nigeria"}
+
+
+def test_a_legend_click_on_a_hidden_line_shows_it(tmp_path):
+    task = _first_task()
+    index = list(task.entities).index("Nigeria")
+    hidden = _view(selected=[e for e in _countries() if e != "Nigeria"])
+    result, events = _interact(
+        "chart.restyleData", tmp_path, control_state=hidden, restyle=_legend([index], [True])
+    )
+    assert events[0]["payload"]["action"] == "show"
+    assert _drawn(result.figure) == set(_countries())
+
+
+def test_a_legend_double_click_shows_one_line_alone_and_a_second_brings_all_back(tmp_path):
+    task = _first_task()
+    indices = list(range(len(task.entities)))
+    only_first = [True] + ["legendonly"] * (len(indices) - 1)
+    result, events = _interact("chart.restyleData", tmp_path, restyle=_legend(indices, only_first))
+    assert events[0]["payload"]["action"] == "only"
+    assert events[0]["payload"]["value"] == [task.entities[0]]
+    assert _drawn(result.figure) == {task.entities[0]}
+
+    result, events = _interact(
+        "chart.restyleData",
+        tmp_path,
+        control_state=result.control,
+        restyle=_legend(indices, [True]),
+    )
+    # Each call logs to its own session file, read back in file-name order: compare as a set.
+    assert sorted(e["payload"]["action"] for e in events) == ["only", "show"]
+    assert _drawn(result.figure) == set(_countries())
+
+
+def test_a_legend_click_that_would_empty_the_chart_is_undone(tmp_path):
+    """Plotly has hidden the line by the time the click arrives. The figure sent back shows it
+    again, and the chip stays ticked."""
+    result, events = _interact(
+        "chart.restyleData",
+        tmp_path,
+        control_state=_view(selected=["China"]),
+        restyle=_legend([list(_first_task().entities).index("China")], ["legendonly"]),
+    )
+    assert events == []
+    assert _drawn(result.figure) == {"China"} and _ticked(result) == ["China"]
+    assert result.figure.layout.uirevision is None, "the figure is applied exactly as sent"
+
+
+def test_a_legend_double_click_that_hid_world_is_undone(tmp_path):
+    """World has no legend entry, but a double click elsewhere can hide it in the browser. It
+    changes no country, so nothing is logged and the chart is put back."""
+    world = list(tasks.PRACTICE.entities).index("World")
+    result, events = _interact(
+        "chart.restyleData",
+        tmp_path,
+        state=_practice_state(),
+        restyle=_legend([world], ["legendonly"]),
+    )
+    assert events == []
+    assert _drawn(result.figure) == {"Brazil", "World"}
+
+
+@pytest.mark.parametrize(
+    "restyle",
+    [
+        None,
+        [],
+        [{"line.width": [3]}, [0]],
+        [{"visible": [True, True]}, [0]],
+        [{"visible": [True]}, [99]],
+        [{"visible": [True]}, "0"],
+        "legend",
+    ],
+)
+def test_a_restyle_that_is_not_a_legend_click_is_ignored(tmp_path, restyle):
+    result, events = _interact("chart.restyleData", tmp_path, restyle=restyle)
+    assert result == app.UNCHANGED
+    assert events == []
+
+
+# --- The bar, heatmap, scatter and map controls --------------------------------------------------
 
 
 def _position(chart: str) -> int:
     return next(i for i, task in enumerate(tasks.for_form("A")) if task.chart == chart)
 
 
+def _task_at(chart: str):
+    return tasks.for_form("A")[_position(chart)]
+
+
 def _view_at(chart: str, **kwargs):
     """A control state belonging to form A's `chart` item, first half."""
-    return {"screen": f"0/{tasks.for_form('A')[_position(chart)].task_id}", **kwargs}
+    return {"screen": f"0/{_task_at(chart).task_id}", **kwargs}
 
 
 def _interact_on(chart, triggered, tmp_path, control_state=None, **kwargs):
-    """Run one control interaction on form A's `chart` item. Returns (all five outputs, events)."""
+    """Run one control interaction on form A's `chart` item. Returns (the result, events)."""
     state = _state(Stage.TASK, first_condition="interactive", task_index=_position(chart))
-    result = app.control_step(
-        triggered,
-        state.to_dict(),
-        {"session_id": str(uuid.uuid4())},
-        control_state,
-        log_dir=tmp_path,
-        **kwargs,
+    return _interact(
+        triggered, tmp_path, control_state=control_state, state=state.to_dict(), **kwargs
     )
-    return result, [e for e in _events(tmp_path) if e["event"] != "session_start"]
 
 
-def test_sorting_the_bars_reorders_them_and_logs_it(tmp_path):
-    (figure, options, value, control, _spool), events = _interact_on(
-        "bar", "bar-sort.value", tmp_path, sort_key="coverage"
-    )
+@pytest.mark.parametrize(("key", "direction", "sign"), [("desc", "desc", -1), ("asc", "asc", 1)])
+def test_sorting_the_bars_reorders_them_and_logs_it(tmp_path, key, direction, sign):
+    result, events = _interact_on("bar", "sort", tmp_path, sort_key=key)
     assert [e["event"] for e in events] == ["sort_change"]
-    assert events[0]["payload"] == {"key": "coverage", "direction": "desc"}
-    assert events[0]["task_id"] == tasks.for_form("A")[_position("bar")].task_id
-    values = dict(zip(figure.data[0].x, figure.data[0].y, strict=True))
-    order = list(figure.layout.xaxis.categoryarray)
-    assert order == sorted(order, key=lambda name: -values[name])
-    assert control["sort"] == "coverage"
-    assert options is no_update and value is no_update, "the bar screen has no filter list"
+    assert events[0]["payload"] == {"key": key, "direction": direction}
+    assert events[0]["task_id"] == _task_at("bar").task_id
+    values = dict(zip(result.figure.data[0].x, result.figure.data[0].y, strict=True))
+    order = list(result.figure.layout.xaxis.categoryarray)
+    assert order == sorted(order, key=lambda name: sign * values[name])
+    assert result.control["sort"] == key
+    assert _chip_order(result) == _countries(_task_at("bar")), "the chips stay in the listed order"
 
 
-def test_sorting_the_bars_back_restores_the_listed_order(tmp_path):
-    task = tasks.for_form("A")[_position("bar")]
-    (figure, *_rest), events = _interact_on(
-        "bar",
-        "bar-sort.value",
-        tmp_path,
-        control_state=_view_at("bar", sort="coverage"),
-        sort_key="listed",
+def test_sorting_the_bars_back_to_a_z_restores_the_listed_order(tmp_path):
+    result, events = _interact_on(
+        "bar", "sort", tmp_path, control_state=_view_at("bar", sort="desc"), sort_key="alpha"
     )
-    assert list(figure.layout.xaxis.categoryarray) == list(task.entities)
-    assert events[0]["payload"] == {"key": "listed", "direction": "none"}
+    assert list(result.figure.layout.xaxis.categoryarray) == list(_task_at("bar").entities)
+    assert events[0]["payload"] == {"key": "alpha", "direction": "none"}
 
 
-def test_a_freshly_rendered_bar_sort_logs_nothing(tmp_path):
-    """Dash fires the radio's callback when each bar screen is built. That is not a sort."""
-    result, events = _interact_on("bar", "bar-sort.value", tmp_path, sort_key="listed")
-    assert result == (no_update,) * 5
-    assert events == []
+def test_a_freshly_rendered_sort_logs_nothing(tmp_path):
+    """Dash fires the radio's callback when each screen is built. That is not a sort."""
+    for chart, key in (("bar", "alpha"), ("heatmap", "default")):
+        result, events = _interact_on(chart, "sort", tmp_path, sort_key=key)
+        assert result == app.UNCHANGED
+        assert events == []
 
 
-def test_narrowing_the_coverage_range_fades_the_map_and_logs_it(tmp_path):
-    (figure, _options, value, control, _spool), events = _interact_on(
-        "map", "coverage-band.value", tmp_path, band=[0, 49]
+def test_a_chip_fades_a_bar_in_place(tmp_path):
+    names = _countries(_task_at("bar"))
+    result, events = _interact_on("bar", "chips", tmp_path, chips=names[1:])
+    assert events[0]["payload"]["control"] == "chips"
+    assert list(result.figure.data[0].marker.opacity) == [layout.config.FADED_OPACITY] + [1.0] * (
+        len(names) - 1
     )
+    assert list(result.figure.data[0].x) == names
+
+
+@pytest.mark.parametrize("key", ["min", "mean"])
+def test_sorting_the_heatmap_rows_reorders_them_lowest_first_and_logs_it(tmp_path, key):
+    result, events = _interact_on("heatmap", "sort", tmp_path, sort_key=key)
+    assert events[0]["payload"] == {"key": key, "direction": "asc"}
+    cells = result.figure.data[0]
+    reported = {
+        name: [v for v in row if v is not None] for name, row in zip(cells.y, cells.z, strict=True)
+    }
+    statistic = min if key == "min" else (lambda values: sum(values) / len(values))
+    order = list(result.figure.layout.yaxis.categoryarray)
+    assert order == sorted(order, key=lambda name: statistic(reported[name]))
+
+
+def test_a_chip_fades_a_heatmap_row_where_it_is_drawn(tmp_path):
+    names = _countries(_task_at("heatmap"))
+    sorted_view = _view_at("heatmap", sort="min")
+    result, _events = _interact_on(
+        "heatmap", "chips", tmp_path, control_state=sorted_view, chips=names[1:]
+    )
+    (cover,) = result.figure.layout.shapes
+    position = list(result.figure.layout.yaxis.categoryarray).index(names[0])
+    assert (cover.y0, cover.y1) == (position - 0.5, position + 0.5)
+
+
+def test_a_chip_hides_a_scatter_dot_and_its_legend_entry_stays(tmp_path):
+    names = _countries(_task_at("scatter"))
+    result, events = _interact_on("scatter", "chips", tmp_path, chips=names[1:])
+    assert events[0]["payload"]["action"] == "hide"
+    visible = {trace.name: trace.visible for trace in result.figure.data}
+    assert visible[names[0]] == "legendonly"
+    assert _drawn(result.figure) == set(names[1:])
+
+
+def test_the_highlight_fades_countries_not_below_it_and_logs_it(tmp_path):
+    result, events = _interact_on("map", "threshold", tmp_path, threshold=50)
     assert [e["event"] for e in events] == ["filter_change"]
     assert events[0]["payload"] == {
-        "control": "coverage-band",
-        "action": "band",
-        "value": [0, 49],
-        "previous": [0, 100],
+        "control": "threshold",
+        "action": "highlight",
+        "value": 50,
+        "previous": None,
     }
-    assert control["band"] == [0, 49]
-    assert value is no_update, "the slider already shows what the participant set"
-    shown = [z for z, kept in zip(figure.data[0].z, figures.in_band(figure), strict=True) if kept]
-    assert shown and all(z <= 49 for z in shown)
+    assert result.control["threshold"] == 50
+    assert result.threshold is no_update, "the box already shows what the participant typed"
+    strong = figures.full_strength(result.figure)
+    assert strong == [z < 50 for z in result.figure.data[0].z]
 
 
-def test_show_all_on_the_map_moves_the_slider_back_and_logs_it(tmp_path):
-    (figure, _options, value, control, _spool), events = _interact_on(
-        "map", "band-reset.n_clicks", tmp_path, control_state=_view_at("map", band=[0, 49])
-    )
-    assert value == [0, 100], "Show all must move the handles back to the ends"
-    assert control["band"] == [0, 100]
-    assert events[0]["payload"]["control"] == "band-reset"
-    assert events[0]["payload"]["previous"] == [0, 49]
-    assert all(figures.in_band(figure))
-
-
-def test_the_slider_moving_back_after_show_all_is_not_a_second_event(tmp_path):
-    """Show all writes the slider, and Dash then reports the slider's new value. Logged again, one
-    click would count as two interactions."""
+@pytest.mark.parametrize("cleared", [None, "", 100])
+def test_emptying_the_box_or_typing_100_clears_the_highlight_and_logs_it(tmp_path, cleared):
     result, events = _interact_on(
-        "map",
-        "coverage-band.value",
-        tmp_path,
-        control_state=_view_at("map", band=[0, 100]),
-        band=[0, 100],
+        "map", "threshold", tmp_path, control_state=_view_at("map", threshold=50), threshold=cleared
     )
-    assert result == (no_update,) * 5
+    assert events[0]["payload"] == {
+        "control": "threshold",
+        "action": "clear",
+        "value": None,
+        "previous": 50,
+    }
+    assert all(figures.full_strength(result.figure))
+
+
+@pytest.mark.parametrize("unchanged", [None, 100, "100"])
+def test_a_box_at_rest_logs_nothing(tmp_path, unchanged):
+    """The box starts at 100, which highlights nothing; its render-time callback is no action."""
+    result, events = _interact_on("map", "threshold", tmp_path, threshold=unchanged)
+    assert result == app.UNCHANGED
     assert events == []
 
 
-def test_show_all_on_an_unfiltered_map_logs_nothing(tmp_path):
-    result, events = _interact_on("map", "band-reset.n_clicks", tmp_path)
-    assert result == (no_update,) * 5
-    assert events == []
+def test_a_decimal_is_rounded_to_the_boxs_step(tmp_path):
+    result, events = _interact_on("map", "threshold", tmp_path, threshold=49.6)
+    assert events[0]["payload"]["value"] == 50
 
 
-@pytest.mark.parametrize("band", [None, [60, 40], [0], ["a", "b"], [-5, 200]])
-def test_a_malformed_range_is_ignored(tmp_path, band):
-    result, events = _interact_on("map", "coverage-band.value", tmp_path, band=band)
-    assert result == (no_update,) * 5
+@pytest.mark.parametrize("typed", ["a", -5, 200, [50]])
+def test_a_highlight_that_is_not_a_number_from_0_to_100_is_refused_and_the_box_put_back(
+    tmp_path, typed
+):
+    result, events = _interact_on(
+        "map", "threshold", tmp_path, control_state=_view_at("map", threshold=40), threshold=typed
+    )
     assert events == []
+    assert result.threshold == 40, "the box is set back to what the map shows"
+    assert result.control["threshold"] == 40
+
+
+def test_a_chip_and_the_highlight_combine(tmp_path):
+    task = _task_at("map")
+    names = _countries(task)
+    result, _events = _interact_on(
+        "map", "chips", tmp_path, control_state=_view_at("map", threshold=100), chips=names[1:]
+    )
+    assert figures.full_strength(result.figure)[0] is False
+    result, _events = _interact_on(
+        "map",
+        "threshold",
+        tmp_path,
+        control_state=result.control,
+        threshold=99,
+    )
+    strong = figures.full_strength(result.figure)
+    assert strong[0] is False, "a country hidden by its chip stays faded under the highlight"
+
+
+def test_reset_view_on_the_map_empties_the_highlight_and_sets_the_box_back(tmp_path):
+    names = _countries(_task_at("map"))
+    changed = _view_at("map", threshold=50, selected=names[:3])
+    result, events = _interact_on("map", "reset", tmp_path, control_state=changed)
+    assert events[0]["event"] == "view_reset"
+    assert events[0]["payload"]["previous"]["threshold"] == 50
+    assert result.threshold == layout.THRESHOLD_START
+    assert result.sort is no_update, "the map has no sort control to set back"
+    assert all(figures.full_strength(result.figure))
 
 
 @pytest.mark.parametrize("chart", ["bar", "scatter", "heatmap", "map"])
@@ -1020,33 +1325,72 @@ def test_a_click_on_anything_but_a_line_isolates_nothing(tmp_path, chart):
     result, events = _interact_on(
         chart, "chart.clickData", tmp_path, click_data={"points": [{"curveNumber": 0}]}
     )
-    assert result == (no_update,) * 5
+    assert result == app.UNCHANGED
     assert events == []
 
 
-@pytest.mark.parametrize("chart", ["line", "scatter", "heatmap"])
+@pytest.mark.parametrize("chart", ["line", "bar", "scatter", "heatmap", "map"])
 def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
-    """A sort or range arriving on a screen whose chart has no such control is not an action."""
-    for triggered, kwargs in (
-        ("bar-sort.value", {"sort_key": "coverage"}),
-        ("coverage-band.value", {"band": [0, 40]}),
-        ("band-reset.n_clicks", {}),
-    ):
-        result, events = _interact_on(chart, triggered, tmp_path, **kwargs)
-        assert result == (no_update,) * 5, triggered
+    """A control arriving on a screen whose chart has no such control is not an action."""
+    foreign = {
+        "sort": {"sort_key": "coverage" if chart != "line" else "desc"},
+        "threshold": {"threshold": 40},
+        "show-all": {},
+        "chart.restyleData": {"restyle": [{"visible": ["legendonly"]}, [0]]},
+    }
+    own = {
+        "line": {"sort", "show-all", "chart.restyleData"},
+        "bar": {"sort"},
+        "heatmap": {"sort"},
+        "scatter": set(),
+        "map": {"threshold"},
+    }[chart]
+    for triggered, kwargs in foreign.items():
+        if triggered in own and triggered != "sort":
+            continue
+        state = _state(Stage.TASK, first_condition="interactive", task_index=_position(chart))
+        if chart == "line":
+            state = _state(Stage.TASK, first_condition="interactive")
+        result, events = _interact(triggered, tmp_path, state=state.to_dict(), **kwargs)
+        assert result == app.UNCHANGED, triggered
         assert events == [], triggered
 
 
-def test_the_bar_and_map_controls_have_callbacks_of_their_own():
-    """Each set of Inputs lives on one chart type's screen, so each needs its own callback."""
-    callbacks = {
-        tuple(sorted(f"{i['id']}.{i['property']}" for i in callback["inputs"])): callback
-        for callback in app.create_app().callback_map.values()
-    }
-    assert ("bar-sort.value",) in callbacks
-    band = callbacks[("band-reset.n_clicks", "coverage-band.value")]
-    outputs = {f"{o.component_id}.{o.component_property}" for o in band["output"]}
-    assert "coverage-band.value" in outputs, "Show all has to move the slider back"
+def test_the_chips_group_is_rebuilt_only_when_the_order_changes(tmp_path):
+    """Dash 4 loses a chip's flag-and-name label when options move between the two checklists, so
+    a reorder rebuilds the group and anything else only ticks or unticks (layout.chip_group)."""
+    ticked, _events = _interact("chips", tmp_path, chips=_countries()[:2])
+    assert ticked.group is no_update
+    reordered, _events = _interact("sort", tmp_path, sort_key="coverage")
+    rebuilt = [node for node in reordered.group if getattr(node, "id", None)]
+    assert [node.id for node in rebuilt] == [layout.control_id("chips", i) for i in (0, 1)]
+    assert [o["value"] for node in rebuilt for o in node.options] == _chip_order(reordered)
+    outputs = app.view_outputs(reordered, [1, 2, 1, 0])
+    assert outputs[1] == [reordered.group] and outputs[2] == [no_update, no_update]
+
+
+def test_the_practice_has_one_row_of_chips():
+    """Its second row would be empty; an empty checklist is left out."""
+    group = layout.chip_group(tasks.PRACTICE, ["Brazil"], ["Brazil"])
+    assert [getattr(node, "id", None) for node in group][1:] == [layout.control_id("chips", 0)]
+
+
+def test_every_pattern_output_is_a_list_one_entry_per_component(tmp_path):
+    """Dash 4 refuses a bare `no_update` for an `ALL` output with a server error. Every such
+    output is a list as long as the components it matched, whatever the result."""
+    changed, _events = _interact("chips", tmp_path, chips=_countries()[:2])
+    reordered, _events = _interact("sort", tmp_path, sort_key="coverage")
+    for result in (changed, changed._replace(chips=no_update), reordered):
+        for counts in ([2, 2, 1, 0], [1, 1, 0, 1], [0, 0, 0, 0]):
+            outputs = app.view_outputs(result, counts)
+            assert len(outputs) == 7
+            for output, count in zip(outputs[1:5], counts, strict=True):
+                assert isinstance(output, list) and len(output) == count
+
+
+def test_every_sort_key_has_a_direction():
+    keys = {value for _legend, options in layout.SORTS.values() for value, _label in options}
+    assert keys == set(app._SORT_DIRECTION)
 
 
 # --- Validation refuses rather than advancing -----------------------------------------------------
@@ -1522,16 +1866,16 @@ def test_a_control_still_updates_the_chart_when_logging_fails(database, monkeypa
         raise AssertionError("interaction events must never retry: it would inflate task time")
 
     monkeypatch.setattr(database.breaker_module.time, "sleep", no_sleeping)
-    figure, _options, value, _control, spool = app.control_step(
-        "entity-filter.value",
+    result = app.control_step(
+        "chips",
         _task_state(),
         {"session_id": str(uuid.uuid4())},
         None,
-        selected=["China"],
+        chips=["China"],
     )
-    assert figure is not no_update
-    assert value == ["China"]
-    assert [r["event"] for r in spool["pending"]] == ["filter_change"]
+    assert result.figure is not no_update
+    assert [name for row in result.chips for name in row["value"]] == ["China"]
+    assert [r["event"] for r in result.spool["pending"]] == ["filter_change"]
 
 
 # --- Clientside JavaScript ------------------------------------------------------------------------
@@ -1593,8 +1937,8 @@ def test_the_clock_stamps_carry_their_origin():
         "t": 1234.5,
         "origin": 1758000000000.25,
     }
-    assert submit["result"] == [{"t": 1234.5, "origin": 1758000000000.25}, True]
-    assert no_click["result"] == ["NO_UPDATE", "NO_UPDATE"]
+    assert submit["result"] == [{"t": 1234.5, "origin": 1758000000000.25}, True, "true"]
+    assert no_click["result"] == ["NO_UPDATE", "NO_UPDATE", "NO_UPDATE"]
     # The browser's stamps are exactly what the server subtracts.
     assert app._elapsed(task["result"], submit["result"][0]) == (0.0, None)
 
@@ -1653,9 +1997,11 @@ def test_a_reload_mid_task_is_recorded_as_a_clock_reset():
 
 def test_submit_is_disabled_on_click_and_the_watchdog_re_enables_it():
     (clicked,) = _run_js([[app.SUBMIT_JS, 1, True, ["1", "why"]]])
-    assert clicked["result"][1] is True
+    assert clicked["result"][1:] == [True, "true"], "disabled, and marked busy while it saves"
     assert clicked["timers"] == [15000]
-    assert clicked["calls"] == [["submit-button", {"disabled": False}]], "no popup when complete"
+    assert clicked["calls"] == [["submit-button", {"disabled": False, "aria-busy": "false"}]], (
+        "no popup when complete"
+    )
 
 
 def test_a_watchdog_whose_button_has_gone_leaves_the_page_alone():
@@ -1675,7 +2021,7 @@ def test_a_watchdog_whose_button_has_gone_leaves_the_page_alone():
 
 def test_an_unclicked_submit_is_not_disabled():
     (initial,) = _run_js([[app.SUBMIT_JS, 0, True, [None, None]]])
-    assert initial["result"] == ["NO_UPDATE", "NO_UPDATE"]
+    assert initial["result"] == ["NO_UPDATE", "NO_UPDATE", "NO_UPDATE"]
     assert initial["timers"] == []
 
 
@@ -1691,7 +2037,7 @@ def test_a_skip_asks_for_confirmation_naming_what_is_missing():
 def test_cancelling_the_skip_popup_leaves_the_participant_on_the_task():
     """No stamp, no disabled button: the task simply carries on."""
     (cancelled,) = _run_js([[app.SUBMIT_JS, 1, True, ["1", ""], False]])
-    assert cancelled["result"] == ["NO_UPDATE", "NO_UPDATE"]
+    assert cancelled["result"] == ["NO_UPDATE", "NO_UPDATE", "NO_UPDATE"]
     assert cancelled["timers"] == []
 
 
@@ -1757,6 +2103,20 @@ def test_a_refusal_re_enables_submit():
     )
     assert refused["result"] is False
     assert succeeded["result"] == "NO_UPDATE"
+
+
+def test_a_refusal_re_enables_submit_and_clears_its_busy_mark():
+    """Submit is disabled and marked busy while it saves (the handoff's S1). A refusal lifts both,
+    or the saving fill would stay on a button that is not saving anything."""
+    refused, succeeded = _run_js(
+        [
+            [app.SUBMIT_REFUSED_JS, "Please choose an answer.", False],
+            [app.SUBMIT_REFUSED_JS, "", False],
+        ]
+    )
+    assert refused["result"] == [False, "false"]
+    assert succeeded["result"] == ["NO_UPDATE", "NO_UPDATE"]
+    assert _wired("submit-button.aria-busy", "flow-error.children")
 
 
 def test_continue_is_disabled_on_click_or_enter_and_the_watchdog_re_enables_it():

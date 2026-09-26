@@ -101,27 +101,34 @@ def test_the_task_screen_opens_on_the_same_chart_in_both_conditions(rows, task):
     assert _figure_on(static).to_json() == _figure_on(interactive).to_json()
 
 
-# Each chart type's controls (visual-spec.md section 7). The scatter and heatmap have none: their
-# affordance is hover.
+# Each chart type's controls (visual-spec.md section 7), by the `control` of their pattern ids:
+# chips (in their group) and Reset view on every chart, a sort on three, Show all on the line, the
+# map a highlight.
+_EVERY_CHART = {"chip-group", "chips", "reset"}
 CONTROL_IDS = {
-    "line": {"entity-filter", "entity-sort", "reset-view"},
-    "bar": {"bar-sort"},
-    "scatter": set(),
-    "heatmap": set(),
-    "map": {"coverage-band", "band-reset"},
+    "line": _EVERY_CHART | {"sort", "show-all"},
+    "bar": _EVERY_CHART | {"sort"},
+    "scatter": _EVERY_CHART,
+    "heatmap": _EVERY_CHART | {"sort"},
+    "map": _EVERY_CHART | {"threshold"},
 }
-EVERY_CONTROL = set().union(*CONTROL_IDS.values())
+
+
+def _controls(screen) -> set[str]:
+    return {
+        node.id["control"]
+        for node in _walk(screen)
+        if isinstance(getattr(node, "id", None), dict) and "control" in node.id
+    }
 
 
 @pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
 def test_only_the_interactive_condition_renders_controls(rows, task):
-    static_ids = {getattr(n, "id", None) for n in _walk(layout.task_screen(task, False, 1, 6))}
-    live_ids = {getattr(n, "id", None) for n in _walk(layout.task_screen(task, True, 1, 6))}
+    static = _controls(layout.task_screen(task, False, 1, 6))
+    live = _controls(layout.task_screen(task, True, 1, 6))
     # `control-state` is not here: it is a store in the app's base layout, present in both.
-    assert not (EVERY_CONTROL & static_ids), "the static condition must have no controls"
-    assert EVERY_CONTROL & live_ids == CONTROL_IDS[task.chart], (
-        "each chart type gets its own controls and no other type's"
-    )
+    assert not static, "the static condition must have no controls"
+    assert live == CONTROL_IDS[task.chart], "each chart type gets its own controls and no other's"
 
 
 # --- Year-over-year change, carried in the hover layer --------------------------------------------
@@ -195,11 +202,12 @@ def test_hiding_a_series_leaves_the_others_their_colour(rows):
     assert after == before, "colour is assigned by position and must not shift when filtering"
 
 
-def test_hidden_series_are_invisible_and_visible_ones_are_not(rows):
+def test_hidden_series_are_legend_only_and_visible_ones_are_not(rows):
+    """Hidden, not removed from the legend: its greyed entry is how a click brings it back."""
     figure = figures.build_figure(["Nigeria", "India", "World"], VACCINE, rows)
     figures.set_visible(figure, ["India", "World"])
     by_name = {trace.name: trace.visible for trace in figure.data}
-    assert by_name == {"Nigeria": False, "India": True, "World": True}
+    assert by_name == {"Nigeria": "legendonly", "India": True, "World": True}
 
 
 def test_hiding_a_series_also_removes_its_end_label(rows):
@@ -313,8 +321,49 @@ def test_spreading_refuses_more_labels_than_fit():
         figures.spread_labels([50.0] * 30, 0, 100, 4.5)
 
 
-def test_legend_is_hidden_because_lines_are_labelled(rows):
-    assert figures.build_figure(ENTITIES, VACCINE, rows).layout.showlegend is False
+def test_a_line_chart_has_a_legend_beyond_its_end_labels_and_none_for_world(rows):
+    """The legend is a control in the interactive condition; the end labels stay, for the static
+    reader. World cannot be hidden, so it has no entry (visual-spec.md section 6)."""
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    assert figure.layout.showlegend is True
+    assert figure.layout.legend.x > 1 and figure.layout.legend.xanchor == "left"
+    assert figure.layout.legend.itemclick == "toggle"
+    assert figure.layout.legend.itemdoubleclick == "toggleothers"
+    entries = {trace.name for trace in figure.data if trace.showlegend is not False}
+    assert entries == set(ENTITIES) - {"World"}
+    assert {annotation.text for annotation in figure.layout.annotations} == set(ENTITIES)
+
+
+def test_the_line_plot_keeps_4_px_a_point_and_640_px_across(rows):
+    """visual-spec.md section 5: the acceptance rule's floors rest on 4 px a coverage point."""
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    margin = figure.layout.margin
+    assert (figure.layout.height - margin.t - margin.b) / 100 == 4
+    assert figure.layout.width - margin.l - margin.r == 640
+
+
+@pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
+def test_every_chart_is_fixed_at_1050_by_520(rows, task):
+    figure = figures.task_figure(task, rows)
+    assert (figure.layout.width, figure.layout.height) == (1050, 520)
+    assert figure.layout.autosize is False
+
+
+def test_the_legend_order_follows_the_view_and_moves_no_line(rows):
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    before = [trace.to_plotly_json() for trace in figure.data]
+    figures.order_legend(figure, ["Brazil", "India", "Nigeria"])
+    ranks = {trace.name: trace.legendrank for trace in figure.data}
+    assert ranks == {"Nigeria": 3, "India": 2, "Brazil": 1, "World": None}
+    figures.order_legend(figure, None)
+    assert [trace.to_plotly_json() for trace in figure.data] == before
+
+
+@pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
+def test_no_figure_asks_plotly_to_keep_changes_of_its_own(rows, task):
+    """Without `uirevision`, every redraw is the figure as sent. The chart is reused from task to
+    task, so a kept change could carry one task's zoom or hidden line into the next."""
+    assert figures.task_figure(task, rows).layout.uirevision is None
 
 
 def test_gridline_and_axis_colors_come_from_config(rows):
@@ -394,23 +443,52 @@ def test_bars_share_one_colour_and_open_in_the_listed_order(rows):
     assert figure.layout.yaxis.fixedrange is True
 
 
-def test_sorting_bars_moves_them_highest_first_and_back(rows):
-    """The one control that moves marks (visual-spec.md section 7.2). Each bar keeps its data."""
+def test_sorting_bars_moves_them_and_changes_nothing_else(rows):
+    """Sorting moves the bars (visual-spec.md section 7.2). Each bar keeps its data."""
     task = TASK_BY_CHART["bar"]
     figure = _chart("bar", rows)
     before = figure.data[0].to_plotly_json()
-    figures.sort_bars(figure, by_coverage=True)
     values = dict(zip(figure.data[0].x, figure.data[0].y, strict=True))
+    figures.sort_bars(figure, "desc")
     assert list(figure.layout.xaxis.categoryarray) == sorted(values, key=lambda n: -values[n])
+    figures.sort_bars(figure, "asc")
+    assert list(figure.layout.xaxis.categoryarray) == sorted(values, key=lambda n: values[n])
     assert figure.data[0].to_plotly_json() == before, "only the axis order changes"
-    figures.sort_bars(figure, by_coverage=False)
+    figures.sort_bars(figure, "alpha")
     assert list(figure.layout.xaxis.categoryarray) == list(task.entities)
 
 
-def test_a_bar_with_no_value_sorts_last():
+def test_a_z_is_the_order_the_bars_are_first_drawn_in():
+    """The Sort control opens on A-Z, so A-Z must be the chart as first drawn."""
+    for task in (*tasks.FORM_A, *tasks.FORM_B):
+        if task.chart == "bar":
+            assert list(task.entities) == sorted(task.entities)
+
+
+def test_a_bar_with_no_value_sorts_last_either_way():
     figure = go.Figure(go.Bar(x=["A", "B", "C"], y=[50, None, 90]))
-    figures.sort_bars(figure, by_coverage=True)
+    figures.sort_bars(figure, "desc")
     assert list(figure.layout.xaxis.categoryarray) == ["C", "A", "B"]
+    figures.sort_bars(figure, "asc")
+    assert list(figure.layout.xaxis.categoryarray) == ["A", "C", "B"]
+
+
+def test_an_unknown_sort_is_refused(rows):
+    with pytest.raises(FigureError, match="bar sort"):
+        figures.sort_bars(_chart("bar", rows), "coverage")
+    with pytest.raises(FigureError, match="row sort"):
+        figures.sort_rows(_chart("heatmap", rows), "alpha")
+
+
+def test_a_hidden_bar_fades_in_place(rows):
+    """Faded, not removed: it keeps its place, its colour and its label (section 7.3)."""
+    figure = _chart("bar", rows)
+    names = list(figure.data[0].x)
+    figures.set_visible(figure, names[1:])
+    assert list(figure.data[0].marker.opacity) == [config.FADED_OPACITY] + [1.0] * (len(names) - 1)
+    assert list(figure.data[0].x) == names
+    figures.set_visible(figure, names)
+    assert figure.data[0].marker.opacity is None, "nothing hidden is the figure as first drawn"
 
 
 def test_scatter_dots_differ_in_colour_and_in_shape(rows):
@@ -460,6 +538,45 @@ def test_the_heatmap_carries_value_in_colour_alone(rows):
     assert figure.layout.yaxis.autorange == "reversed", "the first country listed is the top row"
 
 
+def test_sorting_rows_orders_them_by_lowest_cell_or_average_and_back(rows):
+    task = TASK_BY_CHART["heatmap"]
+    figure = _chart("heatmap", rows)
+    (cells,) = figure.data
+    before = cells.to_plotly_json()
+    reported = {
+        name: [v for v in row if v is not None] for name, row in zip(cells.y, cells.z, strict=True)
+    }
+    figures.sort_rows(figure, "min")
+    assert list(figure.layout.yaxis.categoryarray) == sorted(
+        task.entities, key=lambda n: min(reported[n])
+    )
+    figures.sort_rows(figure, "mean")
+    assert list(figure.layout.yaxis.categoryarray) == sorted(
+        task.entities, key=lambda n: sum(reported[n]) / len(reported[n])
+    )
+    assert figure.data[0].to_plotly_json() == before, "no cell changes"
+    figures.sort_rows(figure, "default")
+    assert figure.to_plotly_json() == _chart("heatmap", rows).to_plotly_json()
+
+
+def test_a_hidden_row_is_covered_where_it_is_drawn_and_follows_a_sort(rows):
+    """A heatmap has one opacity for the whole trace, so a hidden row is covered with white at
+    0.85: exactly the row at 0.15 on the white plot, and never white like an unreported cell."""
+    figure = _chart("heatmap", rows)
+    names = list(figure.data[0].y)
+    hidden = names[2]
+    figures.set_visible(figure, [name for name in names if name != hidden])
+    (cover,) = figure.layout.shapes
+    assert cover.fillcolor == config.BACKGROUND
+    assert cover.opacity == pytest.approx(1 - config.FADED_OPACITY)
+    assert (cover.y0, cover.y1) == (1.5, 2.5)
+    assert (cover.x0, cover.x1) == (-0.5, len(figure.data[0].x) - 0.5)
+    figures.sort_rows(figure, "min")
+    (cover,) = figure.layout.shapes
+    position = list(figure.layout.yaxis.categoryarray).index(hidden)
+    assert (cover.y0, cover.y1) == (position - 0.5, position + 0.5)
+
+
 def test_the_map_colours_each_country_by_its_iso_code(rows):
     task = TASK_BY_CHART["map"]
     figure = _chart("map", rows)
@@ -472,28 +589,41 @@ def test_the_map_colours_each_country_by_its_iso_code(rows):
     assert figure.layout.dragmode is False, "a fixed view: no drag-to-pan"
 
 
-def test_the_coverage_band_fades_countries_outside_it_and_moves_nothing(rows):
+def test_the_highlight_fades_countries_not_below_it_and_moves_nothing(rows):
     """Drawn as a selection: plotly.js 4 drops a per-country marker.opacity list without a word,
-    which is how the filter first shipped -- fading nothing (visual-spec.md section 7.4)."""
+    which is how the map's first filter shipped -- fading nothing (visual-spec.md section 7.4)."""
     figure = _chart("map", rows)
     (countries,) = figure.data
-    assert countries.unselected.marker.opacity == config.MAP_FADED_OPACITY
+    assert countries.unselected.marker.opacity == config.FADED_OPACITY
     assert countries.marker.opacity is None, "a per-country opacity list is never rendered"
     before = list(countries.locations), list(countries.z)
-    figures.set_band(figure, 0, 49)
-    shown = figures.in_band(figure)
-    assert shown == [value <= 49 for value in countries.z]
+    figures.set_threshold(figure, 50)
+    assert figures.full_strength(figure) == [value < 50 for value in countries.z]
     assert (list(countries.locations), list(countries.z)) == before
-    figures.set_band(figure, 0, 100)
-    assert countries.selectedpoints is None, "unfiltered is the figure build_figure made"
-    assert all(figures.in_band(figure))
 
 
-def test_a_band_that_is_not_a_range_within_0_to_100_is_refused(rows):
-    with pytest.raises(FigureError, match="coverage band"):
-        figures.set_band(_chart("map", rows), 60, 40)
-    with pytest.raises(FigureError, match="coverage band"):
-        figures.set_band(_chart("map", rows), -5, 40)
+@pytest.mark.parametrize("threshold", [None, 100])
+def test_an_empty_box_or_100_highlights_nothing(rows, threshold):
+    figure = figures.set_threshold(_chart("map", rows), threshold)
+    assert figure.data[0].selectedpoints is None, "no highlight is the figure build_figure made"
+    assert all(figures.full_strength(figure))
+
+
+def test_a_country_hidden_by_its_chip_stays_faded_under_the_highlight(rows):
+    figure = _chart("map", rows)
+    (countries,) = figure.data
+    names = list(countries.text)
+    lowest = names[min(range(len(names)), key=lambda i: countries.z[i])]
+    figures.set_visible(figure, [name for name in names if name != lowest])
+    figures.set_threshold(figure, 100)
+    assert figures.full_strength(figure)[names.index(lowest)] is False
+    figures.set_threshold(figure, 99)
+    assert figures.full_strength(figure)[names.index(lowest)] is False
+
+
+def test_a_highlight_below_0_is_refused(rows):
+    with pytest.raises(FigureError, match="threshold"):
+        figures.set_threshold(_chart("map", rows), -5)
 
 
 def test_an_aggregate_cannot_be_mapped(rows):

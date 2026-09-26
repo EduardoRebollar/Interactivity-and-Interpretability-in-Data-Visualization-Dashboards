@@ -6,6 +6,7 @@ in `tests/test_palette.py`.
 
 from __future__ import annotations
 
+import importlib.util
 import re
 
 from src import app, config, tasks
@@ -14,7 +15,9 @@ from src.flow import SessionState, Stage
 ASSETS = config.PROJECT_ROOT / "src" / "assets"
 HANDOFF = config.PROJECT_ROOT / "docs" / "design-handoff" / "assets" / "study.css"
 STUDY = ASSETS / "study.css"
+BRIDGE = ASSETS / "zz-bridge.css"
 OVERRIDES = ASSETS / "zz-overrides.css"
+BRIDGE_SCRIPT = config.PROJECT_ROOT / "scripts" / "bridge_stylesheet.py"
 
 # The props through which a Dash component takes a class: its own, and a radio or checkbox list's
 # labels and inputs.
@@ -41,7 +44,15 @@ def _rules(css: str) -> dict[str, str]:
 
 
 def _defined_classes() -> set[str]:
-    return set(re.findall(r"\.(-?[_a-zA-Z][\w-]*)", _css(STUDY) + _css(OVERRIDES)))
+    css = _css(STUDY) + _css(BRIDGE) + _css(OVERRIDES)
+    return set(re.findall(r"\.(-?[_a-zA-Z][\w-]*)", css))
+
+
+def _bridge_script():
+    spec = importlib.util.spec_from_file_location("bridge_stylesheet", BRIDGE_SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _screens():
@@ -96,7 +107,40 @@ def test_the_stylesheet_is_the_handoffs_unchanged():
 
 def test_the_overrides_load_after_the_stylesheet():
     """Dash serves assets/ in alphabetical order, and of two equal selectors the later one wins."""
-    assert sorted(path.name for path in ASSETS.glob("*.css")) == ["study.css", "zz-overrides.css"]
+    names = sorted(path.name for path in ASSETS.glob("*.css"))
+    assert names == ["study.css", "zz-bridge.css", "zz-overrides.css"]
+
+
+def test_the_bridge_is_what_the_script_writes_from_the_stylesheet():
+    """zz-bridge.css is generated from study.css. Edited by hand, or left behind by a change to
+    study.css, it would style Dash's option lists differently from what the stylesheet says."""
+    script = _bridge_script()
+    assert BRIDGE.read_text(encoding="utf-8") == script.build(STUDY.read_text(encoding="utf-8"))
+
+
+def test_the_bridge_re_aims_whole_classes_only():
+    """`.chip` is a label class; `.chips` and `.chip-name` are not, and must be left alone."""
+    translate = _bridge_script().translate
+    chip = ".dash-options-list-option:is(.chips > *)"
+    assert translate(".chip:has(input:checked)") == f"{chip}:has(input:checked)"
+    assert translate(".ui-chips .chip input") == f".ui-chips {chip} input"
+    assert translate(".chips") is None
+    assert translate(".chip-name") is None
+    assert translate(".ui-tile-label") is None
+    assert translate(".ui-tile.is-hover") is None, "preview-only states are left out"
+    assert translate(".tb-num:focus-visible") == ".tb-num:has(:focus-visible)"
+
+
+def test_the_bridge_copies_declarations_untouched():
+    """Every bridged rule says exactly what the study.css rule it came from says."""
+    script = _bridge_script()
+    study = _rules(_css(STUDY))
+    bridged = _rules(_css(BRIDGE))
+    assert bridged
+    for selector, declarations in bridged.items():
+        sources = [s for s in study if script.translate(s) == selector]
+        assert sources, selector
+        assert all(study[s] == declarations for s in sources), selector
 
 
 def test_compact_mode_declares_exactly_what_the_stylesheet_declares():

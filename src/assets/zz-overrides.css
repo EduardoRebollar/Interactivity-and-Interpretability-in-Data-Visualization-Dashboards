@@ -23,3 +23,32 @@
   .app .q-head, .app .ui-head { margin-bottom: var(--s-2); }
   .app .ui-main { padding-top: var(--s-2); padding-bottom: 6px; gap: 6px; }
 }
+
+/* ---- Dash 4's form controls ----------------------------------------------------------------
+   study.css expects a radio or checkbox list to be label > input + text, with a class on each
+   label. Dash 4 wraps each input in a span, puts labelClassName on the text, and brings a small
+   stylesheet of its own, inserted before study.css. zz-bridge.css (generated) re-aims study.css's
+   option rules at Dash's labels; the rules below make up the rest of the difference. */
+
+/* The span around each input takes no box, so the input is the label's own child again, as in
+   the handoff. Otherwise the label's gap spaces an empty span, and a segmented control's text,
+   whose radio is visually hidden, sits 6 px off centre. */
+.dash-options-list-option-wrapper { display: contents; }
+
+/* Dash's accent (#7f4bc4) colours an option's text on hover and on keyboard focus, through a
+   selector that outranks study.css. The handoff's options turn ink on hover. */
+:root { --Dash-Fill-Interactive-Strong: var(--c-ink); }
+
+/* Dash draws a 1 px outline round a focused text box or textarea, outranking study.css's
+   "*:focus { outline: none }". The handoff's focus ring is the box-shadow alone. */
+.dash-textarea:focus-visible,
+.dash-input-container:has(:focus-visible) { outline: none; }
+
+/* dcc.Input puts its className on a box around the <input>, so the box carries study.css's size,
+   edge and padding (the number box, .tb-num). The input inside adds no padding of its own and
+   takes the box's alignment. */
+.dash-input-container > .dash-input-element { padding: 0; text-align: inherit; }
+
+/* The practice's third answer spans both columns, as in the handoff, where an inline style does
+   it. The rule is general: a last tile alone on its row, in any odd-numbered set. */
+.ui-tiles > .dash-options-list-option:last-child:nth-child(odd) { grid-column: 1 / -1; }

@@ -80,10 +80,10 @@ def test_every_chart_types_interactive_version_is_shown(page):
         assert f"The interactive version of a question: {chart} chart" in page
 
 
-def test_the_coverage_slider_is_described_on_paper(page):
-    """A slider draws itself in the browser; printed, it would otherwise vanish."""
-    assert page.count('class="slider"') == 1
-    assert "set to 0% and 100%" in page
+def test_the_map_highlight_is_printed_with_its_starting_value(page):
+    """The box starts at 100, which highlights nothing (visual-spec.md section 7.4)."""
+    assert page.count(f'type="number" value="{layout.THRESHOLD_START}"') == 1
+    assert "Below" in page
 
 
 def test_the_map_prints_without_fetching_its_shapes(page):
@@ -91,8 +91,14 @@ def test_the_map_prints_without_fetching_its_shapes(page):
     assert 'window.PlotlyGeoAssets.topojson["africa_110m"]' in page
 
 
-def test_the_interactive_controls_are_shown_once(page):
-    assert page.count("Click a line to show it on its own") == 1
+def test_the_interactive_controls_are_shown_once_per_chart_type(page):
+    for hint in layout.HINTS.values():
+        assert page.count(html.escape(hint)) == 1, hint
+
+
+def test_a_chips_country_names_print_without_its_flag(page):
+    """A chip's label is a flag and a name. The name must print, not the component's repr."""
+    assert "Img(" not in page and "Span(" not in page
 
 
 def test_the_skip_popups_match_the_app(page):

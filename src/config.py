@@ -187,6 +187,8 @@ Y_RANGE = (0, 100)
 LINE_WIDTH = 2.5
 MARKER_SIZE = 5
 CHART_HEIGHT = 520
+# Fixed, in the figure's own layout (visual-spec.md section 5, 2026-09-25).
+CHART_WIDTH = 1050
 # End labels closer than this, in percentage points, are spread apart (visual-spec.md section 6).
 # The plot area is CHART_HEIGHT minus 120 px of margins over Y_RANGE: 4 px a point, so 4.5 points
 # is 18 px, about what a FONT_SIZE_AXIS label needs.
@@ -251,6 +253,6 @@ MAP_COAST_COLOR = GRIDLINE_COLOR
 # 26 N, not the Sahel: Mali reaches 25 N, and a crop through a coloured country hides part of it.
 MAP_LAT_RANGE = (-36, 26)
 MAP_LON_RANGE = (-20, 53)
-# A country the coverage filter excludes fades rather than disappears (visual-spec.md section 7.4),
-# so the map keeps its shape and nothing else moves.
-MAP_FADED_OPACITY = 0.15
+# A bar, heatmap row or map country the controls hide fades rather than disappears
+# (visual-spec.md sections 7.3 and 7.4), so it keeps its place and nothing else moves.
+FADED_OPACITY = 0.15

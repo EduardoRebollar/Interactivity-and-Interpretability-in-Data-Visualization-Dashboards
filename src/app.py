@@ -22,10 +22,12 @@ handed back to the sink on the next callback, where it is replayed before anythi
 from __future__ import annotations
 
 import argparse
+import json
+import math
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import dash
 from dash import ALL, Input, Output, State, callback_context, dcc, html, no_update
@@ -638,19 +640,57 @@ def _open_task(
 
 # --- The interactive controls ---------------------------------------------------------------------
 #
-# Filtering, sorting and line isolation on line charts; sorting bars; filtering the map by a
-# coverage range; zoom/pan. These exist ONLY in the interactive condition — the static condition
-# never renders the controls, and `staticPlot: True` means its chart can be neither clicked nor
-# zoomed — so every event below is, by construction, an interactive-condition event. The static
-# chart does still send Plotly's render-time relayout, which carries no axis range and is ignored
-# below exactly as it is in the interactive condition.
-# That is the study's independent variable, and this is where it gets recorded. Hovers are not
-# logged (decided 2026-09-21), so the scatter and heatmap items, whose affordance is hover, leave
-# no interaction record.
+# The country chips on every chart; the line chart's View, Show all, legend and line clicks; the bar
+# and heatmap sorts; the map's highlight; Reset view; zoom and pan (visual-spec.md section 7). They
+# exist ONLY in the interactive condition -- the static condition renders none of the controls, and
+# `staticPlot: True` means its chart can be neither clicked nor zoomed -- so every event below is,
+# by construction, an interactive-condition event. The static chart does still send Plotly's
+# render-time relayout, which carries no axis range and is ignored below exactly as it is in the
+# interactive condition. That is the study's independent variable, and this is where it gets
+# recorded. Hovers are not logged (decided 2026-09-21).
 
 # Zoom and pan arrive as axis-range keys. Plotly also sends relayout on resize and on render, which
 # is not a participant action and must not be logged as one.
 _VIEW_KEYS = ("xaxis.range", "yaxis.range", "xaxis.autorange", "yaxis.autorange")
+
+# The controls under the chart, by the `control` of their pattern id (`layout.control_id`). The
+# chart's own events are named by their prop id: "chart.clickData", "chart.relayoutData" and
+# "chart.restyleData" (a legend click).
+CONTROLS = ("chips", "sort", "show-all", "threshold", "reset")
+
+# `sort_change.direction` for each sort key: which way the new order runs.
+_SORT_DIRECTION = {
+    "listed": "none",
+    "coverage": "desc",
+    "alpha": "none",
+    "desc": "desc",
+    "asc": "asc",
+    "default": "none",
+    "min": "asc",
+    "mean": "asc",
+}
+
+
+class ControlResult(NamedTuple):
+    """What one control interaction changes. Any field may be `no_update`.
+
+    `chips` is a list of rows, each {"options", "value"}, as `layout.chip_rows` makes them.
+    `group` is the Countries group rebuilt, when the chips' order changed (`layout.chip_group`
+    says why a reorder cannot be sent as new options). `sort` and `threshold` are the values the
+    sort control and the highlight box must be set to, which only Reset view, and a refused box,
+    ever change.
+    """
+
+    figure: Any
+    chips: Any
+    group: Any
+    sort: Any
+    threshold: Any
+    control: Any
+    spool: Any
+
+
+UNCHANGED = ControlResult(*(no_update,) * 7)
 
 
 def _active_task(state: SessionState):
@@ -666,7 +706,7 @@ def _clicked_entity(click_data: dict[str, Any] | None, task) -> str | None:
     """Which series a click landed on.
 
     `curveNumber` indexes the figure's traces, which are in `task.entities` order. That mapping
-    survives filtering only because hidden series are made invisible rather than removed — see
+    survives filtering only because hidden series are made invisible rather than removed -- see
     `figures.set_visible`.
     """
     points = (click_data or {}).get("points") or []
@@ -678,36 +718,162 @@ def _clicked_entity(click_data: dict[str, Any] | None, task) -> str | None:
     return task.entities[index]
 
 
-def _band(raw: Any) -> list[int] | None:
-    """A coverage range from the slider, as [low, high] within 0-100, or None if it is not one."""
-    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+def _legend_change(restyle: Any, task, shown: list[str]) -> tuple[list[str], str] | None:
+    """The countries a legend click leaves on the chart, and the click as a `filter_change` action.
+
+    Plotly reports it as `restyleData`: `[{"visible": [...]}, [trace indices]]`, one value per
+    index, or one value for them all. A single index is a click, hiding or showing that line; more
+    than one is a double click, which shows one line alone ("only") or, on the only line left,
+    brings every line back. World has no legend entry, so it never counts. None when the payload
+    changes no line's visibility.
+    """
+    if not isinstance(restyle, (list, tuple)) or len(restyle) != 2:
         return None
+    update, indices = restyle
+    if not isinstance(update, dict) or "visible" not in update or not isinstance(indices, list):
+        return None
+    values = update["visible"]
+    if not isinstance(values, list):
+        values = [values] * len(indices)
+    elif len(values) == 1 and len(indices) > 1:
+        values = values * len(indices)
+    if len(values) != len(indices):
+        return None
+    after = set(shown)
+    for index, value in zip(indices, values, strict=True):
+        if not isinstance(index, int) or not 0 <= index < len(task.entities):
+            return None
+        name = task.entities[index]
+        if value is True or value == "true":
+            after.add(name)
+        else:
+            after.discard(name)
+    options = layout.filterable(list(task.entities))
+    result = [name for name in options if name in after]
+    if len(indices) == 1:
+        action = "show" if len(result) > len(shown) else "hide"
+    else:
+        action = "only" if len(result) == 1 else "show"
+    return result, action
+
+
+def _threshold(raw: Any) -> tuple[bool, int | None]:
+    """The highlight box's value: (True, a whole number 0-100), (True, None) when the box is empty,
+    or (False, None) for anything else. A typed decimal is rounded to the nearest whole number, the
+    box's step."""
+    if raw is None or raw == "":
+        return True, None
     try:
-        low, high = (round(float(value)) for value in raw)
+        value = float(raw)
     except (TypeError, ValueError):
-        return None
-    if not layout.BAND_FULL[0] <= low <= high <= layout.BAND_FULL[1]:
-        return None
-    return [low, high]
+        return False, None
+    if not 0 <= value <= 100:
+        return False, None
+    return True, int(value + 0.5)
+
+
+def _shown(control: dict[str, Any]) -> list[str]:
+    """The countries on the chart: the isolated line alone, or every ticked chip."""
+    return [control["isolated"]] if control["isolated"] else list(control["selected"])
 
 
 def _view_figure(task, control: dict[str, Any]):
     """The task's figure with the participant's current view applied.
 
-    Built fresh and then hidden, sorted or faded -- never rebuilt from a shorter list, which would
-    recolour what remains. The view functions in `src/figures.py` say why.
+    Built fresh, then sorted, hidden or faded -- never rebuilt from a shorter list, which would
+    recolour what remains. The view functions in `src/figures.py` say why. Rows are sorted before
+    any are faded, because a faded row is covered where it is drawn.
     """
     figure = figures.task_figure(task)
+    if control.get("xrange"):
+        # The participant's zoom, kept through every redraw (see `_zoomed_range`).
+        figure.update_xaxes(range=control["xrange"])
+    shown = _shown(control)
+    if task.chart == "line" and "World" in task.entities:
+        shown.append("World")
+    if task.chart == "bar":
+        figures.sort_bars(figure, control["sort"])
+    elif task.chart == "heatmap":
+        figures.sort_rows(figure, control["sort"])
+    figures.set_visible(figure, shown)
     if task.chart == "line":
-        shown = [control["isolated"]] if control["isolated"] else list(control["selected"])
-        if "World" in task.entities:
-            shown.append("World")
-        figures.set_visible(figure, shown)
-    elif task.chart == "bar":
-        figures.sort_bars(figure, by_coverage=control["sort"] == "coverage")
+        order = _chip_order(task, control) if control["sort"] == "coverage" else None
+        figures.order_legend(figure, order)
     elif task.chart == "map":
-        figures.set_band(figure, *control["band"])
+        figures.set_threshold(figure, control["threshold"])
     return figure
+
+
+def _chip_order(task, control: dict[str, Any]) -> list[str]:
+    """The chips' order: the task's own, or, on a line chart viewed by coverage, highest first."""
+    options = layout.filterable(list(task.entities))
+    if task.chart != "line":
+        return options
+    return layout.sorted_entities(options, task.vaccine, control["sort"])
+
+
+def _fresh_control(task, screen: str) -> dict[str, Any]:
+    """The view a task's chart opens on: every country, the first sort, no highlight."""
+    return {
+        "screen": screen,
+        "selected": layout.filterable(list(task.entities)),
+        "isolated": None,
+        "sort": layout.default_sort(task.chart),
+        "threshold": None,
+        "xrange": None,
+    }
+
+
+def _stored_control(task, screen: str, control_state: dict[str, Any] | None) -> dict[str, Any]:
+    """The view held in the `control-state` store, if it belongs to this task in this half.
+
+    The store outlives the screen. Any other key -- the previous task, the same task id in the other
+    condition, or none -- is discarded, which is what gives every task the fresh view its screen was
+    rendered with. What survives is checked against this task, so a malformed store cannot name a
+    country, sort or highlight the chart does not have.
+    """
+    control = _fresh_control(task, screen)
+    stored = control_state or {}
+    if stored.get("screen") != screen:
+        return control
+    options = control["selected"]
+    stored_selected = stored.get("selected")
+    # A list, never a string: `"China" in "China"` would pass a string off as a choice.
+    ticked = stored_selected if isinstance(stored_selected, list) else []
+    control["selected"] = [e for e in options if e in ticked] or list(options)
+    if stored.get("isolated") in options and task.chart == "line":
+        control["isolated"] = stored["isolated"]
+    sorts = [value for value, _label in layout.SORTS.get(task.chart, ("", ()))[1]]
+    if stored.get("sort") in sorts:
+        control["sort"] = stored["sort"]
+    valid, threshold = _threshold(stored.get("threshold"))
+    if task.chart == "map" and valid and threshold is not None and threshold < 100:
+        control["threshold"] = threshold
+    if task.chart == "line":
+        control["xrange"] = _range(stored.get("xrange"))
+    return control
+
+
+def _range(raw: Any) -> list[float] | None:
+    """An axis range as [low, high], low below high, or None if it is not one."""
+    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+        return None
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in raw):
+        return None
+    low, high = (float(value) for value in raw)
+    return [low, high] if math.isfinite(low) and math.isfinite(high) and low < high else None
+
+
+def _zoomed_range(relayout: dict[str, Any]) -> tuple[bool, list[float] | None]:
+    """What a relayout does to the line chart's x axis: (True, a range) for a zoom or pan, (True,
+    None) when Plotly's own reset puts it back, (False, None) when it says nothing about it."""
+    if relayout.get("xaxis.autorange") is True:
+        return True, None
+    if "xaxis.range" in relayout:
+        return True, _range(relayout["xaxis.range"])
+    if "xaxis.range[0]" in relayout and "xaxis.range[1]" in relayout:
+        return True, _range([relayout["xaxis.range[0]"], relayout["xaxis.range[1]"]])
+    return False, None
 
 
 def control_step(
@@ -716,193 +882,203 @@ def control_step(
     log_state: dict[str, Any] | None,
     control_state: dict[str, Any] | None,
     *,
-    selected: list[str] | None = None,
+    chips: list[str] | None = None,
     sort_key: str | None = None,
+    threshold: Any = None,
     click_data: dict[str, Any] | None = None,
     relayout: dict[str, Any] | None = None,
-    band: list[float] | None = None,
+    restyle: Any = None,
     spool: dict[str, Any] | None = None,
     log_dir: Path | None = None,
-) -> tuple[Any, Any, Any, Any, Any]:
-    """Apply one control interaction.
+) -> ControlResult:
+    """Apply one control interaction; see `ControlResult` for what comes back.
 
-    Returns (figure, control options, control value, control state, spool). On a line chart the
-    middle two are the filter checklist's options and ticked values. On the map they are
-    `no_update` and the slider's range, which Show all has to move back. Elsewhere they are
-    `no_update`.
+    `triggered` is one of CONTROLS, or a chart event by its **prop id** -- "chart.clickData", not
+    "chart". The chart raises several inputs and the component id alone cannot tell them apart:
+    `clickData` stays set on the component after a click, so a later zoom arrives with a stale
+    `click_data` still populated and would be read as the participant clicking the same line a
+    second time. `chips` is every ticked chip, both rows together.
 
-    `triggered` is a Dash **prop id** — "chart.clickData", not "chart". The chart raises two
-    different inputs and the component id alone cannot tell them apart: `clickData` stays set on the
-    component after a click, so a later zoom arrives with a stale `click_data` still populated and
-    would be read as the participant clicking the same line a second time. The property name is the
-    only thing that distinguishes them.
+    Returns UNCHANGED when nothing actually changed. Dash fires input callbacks when a component is
+    recreated, which happens on every task render, and logging those would fill the interaction
+    record with events no participant caused.
 
-    Returns `no_update` throughout when nothing actually changed. Dash fires input callbacks when a
-    component is recreated, which happens on every task render, and logging those would fill the
-    interaction record with events no participant caused.
-
-    A chart click or zoom never changes the filter list, so `chart_interaction` writes only the
-    figure, the control state and the spool, and discards the other two outputs.
+    Some changes are refused: unticking the last chip, a legend click that would leave no line, a
+    highlight that is not a number from 0 to 100. The browser has already moved the control by
+    then, so a refusal puts it back rather than leaving it saying something the chart does not.
+    Nothing is logged for one.
     """
     state = SessionState.from_dict(stored)
     task = _active_task(state)
     if task is None:
-        return (no_update,) * 5
+        return UNCHANGED
 
-    options = layout.filterable(list(task.entities))
-    # The store outlives the screen, so its view belongs to one task in one half. Any other key --
-    # the previous task, the same task id in the other condition, or none -- is discarded, which is
-    # what gives every task the fresh view its screen was rendered with.
     screen = f"{state.condition_index}/{task.task_id}"
-    control = {
-        "selected": list(options),
-        "sort": "listed",
-        "isolated": None,
-        "band": list(layout.BAND_FULL),
-        "screen": screen,
-    }
-    if (control_state or {}).get("screen") == screen:
-        control.update(control_state)
-    # A stale store from the previous task would name entities this one does not have.
-    control["selected"] = [e for e in control["selected"] if e in options] or list(options)
-    if control["isolated"] not in task.entities:
-        control["isolated"] = None
-    control["band"] = _band(control["band"]) or list(layout.BAND_FULL)
-
-    unchanged: tuple[Any, ...] = (no_update,) * 5
+    control = _stored_control(task, screen, control_state)
+    options = layout.filterable(list(task.entities))
+    default_sort = layout.default_sort(task.chart)
+    before = _shown(control)
+    order_before = _chip_order(task, control)
     event: tuple[str, dict[str, Any]] | None = None
-    # What the triggering control's own value must become. Only Show all on the map sets one: it
-    # has to move the slider's handles back to the ends.
-    control_value: Any = no_update
+    sort_value: Any = no_update
+    threshold_value: Any = no_update
 
-    if triggered == "entity-filter.value":
-        chosen = [e for e in options if e in (selected or [])]
-        if not chosen:
-            # Refuse rather than raise: an empty chart is a FigureError, and a participant who
-            # unchecks everything should simply keep the last series rather than see an error.
-            return unchanged
-        if chosen == list(control["selected"]) and control["isolated"] is None:
-            return unchanged
-        event = (
-            "filter_change",
-            {
-                "control": "entity-filter",
-                "action": "hide" if len(chosen) < len(control["selected"]) else "show",
-                "value": chosen,
-                "previous": list(control["selected"]),
-            },
-        )
-        control["selected"] = chosen
-        # A filter choice supersedes an isolation; otherwise the chart would ignore the click.
-        control["isolated"] = None
+    if triggered == "chips":
+        chosen = [e for e in options if e in (chips or [])]
+        if chosen == before:
+            return UNCHANGED
+        if chosen:
+            event = (
+                "filter_change",
+                {
+                    "control": "chips",
+                    "action": "hide" if set(chosen) < set(before) else "show",
+                    "value": chosen,
+                    "previous": before,
+                },
+            )
+            control["selected"] = chosen
+            # A chip supersedes an isolation; otherwise the chart would ignore the click.
+            control["isolated"] = None
+        # Unticking the last chip is refused: the chips are set back to what the chart shows.
 
-    elif triggered == "entity-sort.value":
-        if sort_key not in layout.SORT_KEYS or sort_key == control["sort"]:
-            return unchanged
-        event = (
-            "sort_change",
-            {"key": sort_key, "direction": "desc" if sort_key == "coverage" else "none"},
-        )
+    elif triggered == "sort":
+        sorts = [value for value, _label in layout.SORTS.get(task.chart, ("", ()))[1]]
+        if sort_key not in sorts or sort_key == control["sort"]:
+            return UNCHANGED
+        event = ("sort_change", {"key": sort_key, "direction": _SORT_DIRECTION[sort_key]})
         control["sort"] = sort_key
 
-    elif triggered == "reset-view.n_clicks":
-        if control["isolated"] is None and list(control["selected"]) == options:
-            return unchanged
+    elif triggered == "show-all":
+        if task.chart != "line" or before == options:
+            return UNCHANGED
         event = (
             "filter_change",
-            {
-                "control": "reset-view",
-                "action": "show",
-                "value": list(options),
-                "previous": list(control["selected"]),
-            },
+            {"control": "show-all", "action": "show", "value": list(options), "previous": before},
         )
         control["selected"] = list(options)
         control["isolated"] = None
 
-    elif triggered == "bar-sort.value":
-        # Logged as the line chart's sort is, with the same payload: `task_id` says which chart.
-        if task.chart != "bar" or sort_key not in layout.SORT_KEYS or sort_key == control["sort"]:
-            return unchanged
-        event = (
-            "sort_change",
-            {"key": sort_key, "direction": "desc" if sort_key == "coverage" else "none"},
-        )
-        control["sort"] = sort_key
+    elif triggered == "threshold":
+        if task.chart != "map":
+            return UNCHANGED
+        valid, typed = _threshold(threshold)
+        chosen = typed if valid and typed is not None and typed < 100 else None
+        if not valid:
+            # Put the box back to what the map shows.
+            threshold_value = control["threshold"] or layout.THRESHOLD_START
+        elif chosen == control["threshold"]:
+            return UNCHANGED
+        else:
+            event = (
+                "filter_change",
+                {
+                    "control": "threshold",
+                    "action": "clear" if chosen is None else "highlight",
+                    "value": chosen,
+                    "previous": control["threshold"],
+                },
+            )
+            control["threshold"] = chosen
 
-    elif triggered == "coverage-band.value":
-        chosen = _band(band)
-        if task.chart != "map" or chosen is None or chosen == control["band"]:
-            return unchanged
-        # A filter, so a `filter_change` -- whose `value` here is the range, not a list of names.
+    elif triggered == "reset":
+        if before == options and control["sort"] == default_sort and control["threshold"] is None:
+            return UNCHANGED
         event = (
-            "filter_change",
+            "view_reset",
             {
-                "control": "coverage-band",
-                "action": "band",
-                "value": chosen,
-                "previous": list(control["band"]),
+                "previous": {
+                    "selected": before,
+                    "sort": control["sort"],
+                    "isolated": control["isolated"],
+                    "threshold": control["threshold"],
+                }
             },
         )
-        control["band"] = chosen
-
-    elif triggered == "band-reset.n_clicks":
-        if task.chart != "map" or control["band"] == layout.BAND_FULL:
-            return unchanged
-        event = (
-            "filter_change",
-            {
-                "control": "band-reset",
-                "action": "show",
-                "value": list(layout.BAND_FULL),
-                "previous": list(control["band"]),
-            },
-        )
-        control["band"] = list(layout.BAND_FULL)
-        control_value = list(layout.BAND_FULL)
+        control.update(selected=list(options), isolated=None, sort=default_sort, threshold=None)
+        sort_value = default_sort if default_sort is not None else no_update
+        threshold_value = layout.THRESHOLD_START if task.chart == "map" else no_update
 
     elif triggered == "chart.clickData":
         # Only a line can be isolated. A click on a bar, dot, cell or country does nothing.
         entity = _clicked_entity(click_data, task) if task.chart == "line" else None
-        # World is the reference every task is read against; isolating to it alone would hide the
+        # World is the reference every line is read against; isolating to it alone would hide the
         # very series the question is about.
         if entity is None or entity == "World":
-            return unchanged
+            return UNCHANGED
         isolate = control["isolated"] != entity
         event = ("line_isolate", {"entity": entity, "isolated": isolate})
         control["isolated"] = entity if isolate else None
 
+    elif triggered == "chart.restyleData":
+        # A legend click (line charts only: the scatter's legend takes no clicks). Plotly has
+        # already redrawn the chart by the time this arrives.
+        change = _legend_change(restyle, task, before) if task.chart == "line" else None
+        if change is None:
+            return UNCHANGED
+        chosen, action = change
+        if chosen and chosen != before:
+            event = (
+                "filter_change",
+                {"control": "legend", "action": action, "value": chosen, "previous": before},
+            )
+            control["selected"] = chosen
+            control["isolated"] = None
+        # Otherwise refused, or a click that changed no country (World, say): the figure sent
+        # back redraws the chart as the app has it, undoing what Plotly did by itself.
+
     elif triggered == "chart.relayoutData":
         if not relayout or not any(key.startswith(_VIEW_KEYS) for key in relayout):
-            return unchanged
-        event = ("view_change", {"control": "chart", "value": relayout, "previous": None})
+            return UNCHANGED
+        # Logged, and no figure sent back: Plotly has already drawn it, and a figure in reply
+        # put the axis back where it was, undoing every zoom the moment it reached the server.
+        # The range is kept in the view instead, so the next redraw -- a chip, the View, Reset
+        # view -- draws the chart zoomed as the participant left it (visual-spec.md section 7.3).
+        # Plotly's own `uirevision` cannot: dcc.Graph redraws after every zoom with a figure
+        # Plotly has already edited, which wipes Plotly's record of the range it replaced
+        # (headless Chrome, 2026-09-26).
+        zoom = ("view_change", {"control": "chart", "value": relayout, "previous": None})
+        spool_out = _log_control(state, log_state, log_dir, spool, task, zoom)
+        says, xrange = _zoomed_range(relayout)
+        if task.chart == "line" and says:
+            control["xrange"] = xrange
+            return UNCHANGED._replace(control=control, spool=spool_out)
+        return UNCHANGED._replace(spool=spool_out)
 
     else:
-        return unchanged
+        return UNCHANGED
 
     figure = _view_figure(task, control)
-    if task.chart == "line":
-        ordered = layout.sorted_entities(options, task.vaccine, control["sort"])
-        values = (
-            layout.latest_values(ordered, task.vaccine) if control["sort"] == "coverage" else {}
-        )
-        filter_options: Any = [
-            {
-                "label": layout.control_label(entity, values.get(entity), control["sort"]),
-                "value": entity,
-            }
-            for entity in ordered
-        ]
-        control_value = list(control["selected"])
-    else:
-        filter_options = no_update
-
+    order = _chip_order(task, control)
+    chip_rows = layout.chip_rows(order, _shown(control))
+    group = layout.chip_group(task, order, _shown(control)) if order != order_before else no_update
     # Logged AFTER the figure is built. Logged first, a database failure left the participant's
     # click with no visible effect -- the chart simply did not change.
-    #
-    # NO_RETRY: this runs inside the task's measured window, and only in the interactive
-    # condition. A retry here would inflate time-on-task in one condition only. A failed write
-    # spools at once, and the circuit breaker sends the next click straight to the spool.
+    return ControlResult(
+        figure,
+        chip_rows,
+        group,
+        sort_value,
+        threshold_value,
+        control,
+        _log_control(state, log_state, log_dir, spool, task, event),
+    )
+
+
+def _log_control(
+    state: SessionState,
+    log_state: dict[str, Any] | None,
+    log_dir: Path | None,
+    spool: dict[str, Any] | None,
+    task,
+    event: tuple[str, dict[str, Any]] | None,
+) -> Any:
+    """Log one control's event, if it has one, and return the browser spool's new state.
+
+    NO_RETRY: this runs inside the task's measured window, and only in the interactive condition.
+    A retry here would inflate time-on-task in one condition only. A failed write spools at once,
+    and the circuit breaker sends the next click straight to the spool.
+    """
     carried = _Spool(spool)
     if event is not None:
         name, payload = event
@@ -912,7 +1088,43 @@ def control_step(
         except db.DatabaseError as exc:
             print(f"[study] could not log {name}: {exc}", file=sys.stderr)
         carried.take(logger)
-    return figure, filter_options, control_value, control, carried.output()
+    return carried.output()
+
+
+def _control_trigger(prop_id: str) -> str:
+    """A fired input as `control_step` names it: a control by its pattern id's `control`, the
+    chart's own events by prop id."""
+    component, _dot, _prop = prop_id.rpartition(".")
+    if component.startswith("{"):
+        return str(json.loads(component).get("control"))
+    return prop_id
+
+
+def view_outputs(result: ControlResult, counts: list[int]) -> tuple[Any, ...]:
+    """The `view` callback's outputs for a result, given how many components each of its four
+    `ALL` outputs matched on this screen (the chips' group, the chips, sort, threshold).
+
+    An `ALL` output must be a list with one entry per component, `no_update` entries included:
+    Dash 4 refuses a bare `no_update` there with a server error, which the tests calling
+    `control_step` could never see (found in headless Chrome). When the group is rebuilt, the
+    checklists it replaces are left alone.
+    """
+    groups, chips, sorts, thresholds = counts
+    if result.group is not no_update:
+        group, values = [result.group] * groups, [no_update] * chips
+    elif result.chips is not no_update:
+        group, values = [no_update] * groups, [row["value"] for row in result.chips][:chips]
+    else:
+        group, values = [no_update] * groups, [no_update] * chips
+    return (
+        result.figure,
+        group,
+        values,
+        [result.sort] * sorts,
+        [result.threshold] * thresholds,
+        result.control,
+        result.spool,
+    )
 
 
 # --- Callbacks ------------------------------------------------------------------------------------
@@ -1118,126 +1330,71 @@ def _register_callbacks(app: dash.Dash) -> None:
             raise PreventUpdate
         return step("survey-clock", stored, log_state, survey=_by_item(values, ids), spool=spool)
 
+    # Every control under the chart, and the chart's own clicks, zooms and legend clicks, in ONE
+    # callback. Each chart type has a different set of controls and the static condition has none,
+    # and the browser renderer refuses to run a callback whose Inputs are only partly on the page.
+    # So the controls are read by pattern (`ALL`), which matches none of them without complaint, and
+    # the chart, on every task screen in both conditions, supplies the rest.
     @app.callback(
         Output("chart", "figure", allow_duplicate=True),
-        Output("entity-filter", "options"),
-        Output("entity-filter", "value"),
-        Output("control-state", "data", allow_duplicate=True),
-        Output("spool-state", "data", allow_duplicate=True),
-        Input("entity-filter", "value"),
-        Input("entity-sort", "value"),
-        Input("reset-view", "n_clicks"),
-        State("session-state", "data"),
-        State("log-state", "data"),
-        State("control-state", "data"),
-        State("spool-state", "data"),
-        prevent_initial_call=True,
-    )
-    def controls(selected, sort_key, _reset, stored, log, control_state, spool):
-        """Thin wrapper over `control_step` for the controls above the chart.
-
-        Interactive condition only: the static condition renders none of these components, so this
-        callback has nothing to fire on there.
-        """
-        fired = callback_context.triggered
-        return control_step(
-            fired[0]["prop_id"] if fired else None,
-            stored,
-            log,
-            control_state,
-            selected=selected,
-            sort_key=sort_key,
-            spool=spool,
-        )
-
-    # The bar chart's sort and the map's coverage range, each in a callback of its own. Every Input
-    # of a callback must be on the page together or the browser renderer refuses to run it, so a
-    # control that exists on one chart type cannot share a callback with another type's controls.
-    @app.callback(
-        Output("chart", "figure", allow_duplicate=True),
-        Output("control-state", "data", allow_duplicate=True),
-        Output("spool-state", "data", allow_duplicate=True),
-        Input("bar-sort", "value"),
-        State("session-state", "data"),
-        State("log-state", "data"),
-        State("control-state", "data"),
-        State("spool-state", "data"),
-        prevent_initial_call=True,
-    )
-    def bar_sort(sort_key, stored, log, control_state, spool):
-        """Thin wrapper over `control_step` for the bar chart's Order control."""
-        fired = callback_context.triggered
-        figure, _options, _value, control, spool_out = control_step(
-            fired[0]["prop_id"] if fired else None,
-            stored,
-            log,
-            control_state,
-            sort_key=sort_key,
-            spool=spool,
-        )
-        return figure, control, spool_out
-
-    # Writes the slider it reads: Show all has to move the handles back. Dash allows a property to
-    # be both an Input and an Output of one callback, and does not re-fire it on its own write.
-    @app.callback(
-        Output("chart", "figure", allow_duplicate=True),
-        Output("coverage-band", "value"),
-        Output("control-state", "data", allow_duplicate=True),
-        Output("spool-state", "data", allow_duplicate=True),
-        Input("coverage-band", "value"),
-        Input("band-reset", "n_clicks"),
-        State("session-state", "data"),
-        State("log-state", "data"),
-        State("control-state", "data"),
-        State("spool-state", "data"),
-        prevent_initial_call=True,
-    )
-    def coverage_band(band, _reset, stored, log, control_state, spool):
-        """Thin wrapper over `control_step` for the map's coverage range and its Show all."""
-        fired = callback_context.triggered
-        figure, _options, value, control, spool_out = control_step(
-            fired[0]["prop_id"] if fired else None,
-            stored,
-            log,
-            control_state,
-            band=band,
-            spool=spool,
-        )
-        return figure, value, control, spool_out
-
-    # The chart's own events, in a callback of their own. The chart is rendered in BOTH conditions,
-    # so everything this callback touches must be too: were it wired to the interactive-only
-    # controls, the renderer would refuse it on every static screen with a console ReferenceError.
-    # Its Inputs are on every task screen and its States and other Outputs are in the base layout.
-    @app.callback(
-        Output("chart", "figure", allow_duplicate=True),
+        Output(layout.control_id("chip-group", ALL), "children"),
+        Output(layout.control_id("chips", ALL), "value"),
+        Output(layout.control_id("sort", ALL), "value"),
+        Output(layout.control_id("threshold", ALL), "value"),
         Output("control-state", "data", allow_duplicate=True),
         Output("spool-state", "data", allow_duplicate=True),
         Input("chart", "clickData"),
         Input("chart", "relayoutData"),
+        Input("chart", "restyleData"),
+        Input(layout.control_id("chips", ALL), "value"),
+        Input(layout.control_id("sort", ALL), "value"),
+        Input(layout.control_id("show-all", ALL), "n_clicks"),
+        Input(layout.control_id("threshold", ALL), "value"),
+        Input(layout.control_id("reset", ALL), "n_clicks"),
         State("session-state", "data"),
         State("log-state", "data"),
         State("control-state", "data"),
         State("spool-state", "data"),
         prevent_initial_call=True,
     )
-    def chart_interaction(click_data, relayout, stored, log, control_state, spool):
-        """Thin wrapper over `control_step` for clicks and zooms on the chart itself.
+    def view(
+        click_data,
+        relayout,
+        restyle,
+        chips,
+        sorts,
+        _show_all,
+        thresholds,
+        _reset,
+        stored,
+        log,
+        control_state,
+        spool,
+    ):
+        """Thin wrapper over `control_step`, which says what each control does.
 
-        Passes the **prop id**, not `triggered_id`: the chart raises both `clickData` and
-        `relayoutData`, and the component id alone cannot separate a zoom from a stale click.
+        Passes the **prop id**, not `triggered_id`: the chart raises three inputs, and the
+        component id alone cannot separate a zoom from a stale click.
         """
         fired = callback_context.triggered
-        figure, _options, _value, control, spool_out = control_step(
-            fired[0]["prop_id"] if fired else None,
+        result = control_step(
+            _control_trigger(fired[0]["prop_id"]) if fired else None,
             stored,
             log,
             control_state,
+            chips=[name for row in chips or [] for name in row or []],
+            sort_key=sorts[0] if sorts else None,
+            threshold=thresholds[0] if thresholds else None,
             click_data=click_data,
             relayout=relayout,
+            restyle=restyle,
             spool=spool,
         )
-        return figure, control, spool_out
+        if result == UNCHANGED:
+            # Most calls: a screen being built, or a render-time relayout. Nothing to send.
+            raise PreventUpdate
+        counts = [len(outputs) for outputs in callback_context.outputs_list[1:5]]
+        return view_outputs(result, counts)
 
     # Stamps the browser clock when a screen appears. Clientside so it never touches the server
     # clock, which would include network and cold-start time.
@@ -1271,6 +1428,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         SUBMIT_JS,
         Output("submit-clock", "data"),
         Output("submit-button", "disabled"),
+        Output("submit-button", "aria-busy"),
         Input("submit-button", "n_clicks"),
         State("answer-input", "value"),
         State("justification-input", "value"),
@@ -1318,8 +1476,9 @@ def _register_callbacks(app: dash.Dash) -> None:
     # ...and re-enable it when the step is refused. A refusal ("Please choose an answer") does not
     # re-render the screen, so without this the participant would be left with a dead button.
     app.clientside_callback(
-        SUBMIT_ENABLE_JS,
+        SUBMIT_REFUSED_JS,
         Output("submit-button", "disabled", allow_duplicate=True),
+        Output("submit-button", "aria-busy", allow_duplicate=True),
         Input("flow-error", "children"),
         prevent_initial_call=True,
     )
@@ -1365,7 +1524,10 @@ CLOCK_JS = """function(_, session, previous) {
     return {t: window.performance.now(), origin: window.performance.timeOrigin, screen: screen};
 }"""
 
-# Returns [submit-clock, submit-button.disabled].
+# Returns [submit-clock, submit-button.disabled, submit-button.aria-busy].
+#
+# While the answer is saving, Submit is disabled and marked busy, which study.css draws in its
+# saving fill (the handoff's state S1). The label does not change and nothing moves.
 #
 # The stamp is taken at the click, BEFORE any skip popup: time spent reading the popup is not time
 # spent on the task. Cancelling the popup changes nothing -- no stamp, no disabled button -- and the
@@ -1380,7 +1542,7 @@ CLOCK_JS = """function(_, session, previous) {
 # watchdog checks that its button is still on the page first.
 SUBMIT_JS = """function(n, answer, justification) {
     var no = window.dash_clientside.no_update;
-    if (!n) { return [no, no]; }
+    if (!n) { return [no, no, no]; }
     var stamp = {t: window.performance.now(), origin: window.performance.timeOrigin};
     var missing = [];
     if (answer === null || answer === undefined || answer === "") {
@@ -1392,14 +1554,16 @@ SUBMIT_JS = """function(n, answer, justification) {
     if (missing.length && !window.confirm(
         "You have not answered " + missing.join(" or ") + ". Continue without answering?"
     )) {
-        return [no, no];
+        return [no, no, no];
     }
     window.setTimeout(function () {
         if (document.getElementById("submit-button")) {
-            window.dash_clientside.set_props("submit-button", {disabled: false});
+            window.dash_clientside.set_props(
+                "submit-button", {disabled: false, "aria-busy": "false"}
+            );
         }
     }, 15000);
-    return [stamp, true];
+    return [stamp, true, "true"];
 }"""
 
 
@@ -1453,6 +1617,12 @@ COPY_DOWNLOAD_JS = """function(n, copy) {
 
 SUBMIT_ENABLE_JS = """function(message) {
     return message ? false : window.dash_clientside.no_update;
+}"""
+
+# Submit's version, which also clears the busy mark. Returns [disabled, aria-busy].
+SUBMIT_REFUSED_JS = """function(message) {
+    var no = window.dash_clientside.no_update;
+    return message ? [false, "false"] : [no, no];
 }"""
 
 # The watchdog is longer than Submit's: assignment retries under the FULL policy before refusing,

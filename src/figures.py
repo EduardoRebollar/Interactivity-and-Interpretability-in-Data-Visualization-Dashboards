@@ -14,8 +14,9 @@ text of BOTH conditions' figures. `staticPlot: True` is what keeps the static pa
 reaching it, so the information is interactive-only without the figures differing.
 
 The controls change a figure only through the view functions below (`set_visible`, `sort_bars`,
-`set_band`). Each hides, reorders or fades what is already there; none rebuilds the chart from a
-shorter list, because colour is assigned by position and a rebuild would recolour what is left.
+`sort_rows`, `order_legend`, `set_threshold`). Each hides, reorders or fades what is already there;
+none rebuilds the chart from a shorter list, because colour is assigned by position and a rebuild
+would recolour what is left.
 """
 
 from __future__ import annotations
@@ -107,7 +108,12 @@ def build_figure(
 
 
 def task_figure(task, rows: tuple[Row, ...] | None = None) -> go.Figure:
-    """The figure for one `flow.Task`, as it first appears: nothing hidden, sorted or filtered."""
+    """The figure for one `flow.Task`, as it first appears: nothing hidden, sorted or filtered.
+
+    No `uirevision`: every redraw is the figure exactly as sent, the zoom included (the app keeps
+    the zoom in the view, `app._zoomed_range`). Plotly's own record of a zoom does not survive
+    dcc.Graph, and whatever Plotly did keep would be a change the app had not drawn.
+    """
     return build_figure(
         list(task.entities), task.vaccine, rows, chart_type=task.chart, years=task.years
     )
@@ -115,82 +121,229 @@ def task_figure(task, rows: tuple[Row, ...] | None = None) -> go.Figure:
 
 # --- The view functions: what the interactive controls change --------------------------------
 
+BAR_SORTS = ("alpha", "desc", "asc")
+ROW_SORTS = ("default", "min", "mean")
+_FADED_ROW = "faded-row:"
+
+
+def chart_type_of(figure: go.Figure) -> str:
+    """Which of CHART_TYPES a built figure is, read from its traces."""
+    kinds = {type(trace) for trace in figure.data}
+    if kinds == {go.Choropleth}:
+        return "map"
+    if kinds == {go.Heatmap}:
+        return "heatmap"
+    if kinds == {go.Bar}:
+        return "bar"
+    if kinds == {go.Scatter}:
+        return "scatter" if all(trace.mode == "markers" for trace in figure.data) else "line"
+    raise FigureError(f"Not a figure build_figure makes: {sorted(k.__name__ for k in kinds)}")
+
+
+def entity_names(figure: go.Figure) -> list[str]:
+    """The entities a figure draws, in the order it was built with."""
+    chart = chart_type_of(figure)
+    if chart in ("line", "scatter"):
+        return [trace.name for trace in figure.data]
+    if chart == "bar":
+        return [str(name) for name in _only(figure, go.Bar).x]
+    if chart == "heatmap":
+        return [str(name) for name in _only(figure, go.Heatmap).y]
+    return [str(name) for name in _only(figure, go.Choropleth).text]
+
 
 def set_visible(figure: go.Figure, entities: Sequence[str]) -> go.Figure:
-    """Show only `entities`, leaving every remaining series the colour it already had.
+    """Show only `entities`, leaving every remaining mark the colour it already had.
 
-    **Filtering hides series; it never rebuilds the chart with a shorter list.** `build_figure`
+    **Filtering hides or fades; it never rebuilds the chart with a shorter list.** `build_figure`
     assigns colour by position among the non-World entities, so rebuilding from four entities
-    instead of five would recolour the survivors — a participant who filtered one country out would
-    watch the others change colour mid-task, and the "visual design is held constant" constraint
-    would be broken by the interactive condition's own controls.
+    instead of five would recolour the survivors, and the "visual design is held constant"
+    constraint would be broken by the interactive condition's own controls.
 
-    The end labels are filtered alongside the traces, since a label for a hidden series would
-    otherwise be left floating over the chart. Annotations that name no series are left alone.
+    How a mark is hidden depends on the chart (visual-spec.md section 7.3). A line or a scatter dot
+    goes `legendonly`: it disappears, and its legend entry stays, greyed, to bring it back. A line's
+    end label goes with it; annotations that name no series are left alone. A bar, a heatmap row or
+    a map country fades to FADED_OPACITY and keeps its place, its colour and its label: a hidden row
+    must not look like an empty cell, which means "not reported".
     """
     visible = set(entities)
-    names = {trace.name for trace in figure.data}
-    unknown = visible - names
+    names = entity_names(figure)
+    unknown = visible - set(names)
     if unknown:
         raise FigureError(f"Cannot show entities that are not on the figure: {sorted(unknown)}")
+    everything = visible >= set(names)
+    chart = chart_type_of(figure)
 
-    for trace in figure.data:
-        trace.visible = trace.name in visible
-    figure.layout.annotations = [
-        annotation
-        for annotation in figure.layout.annotations
-        if annotation.text not in names or annotation.text in visible
-    ]
+    if chart in ("line", "scatter"):
+        for trace in figure.data:
+            trace.visible = True if trace.name in visible else "legendonly"
+        figure.layout.annotations = [
+            annotation
+            for annotation in figure.layout.annotations
+            if annotation.text not in names or annotation.text in visible
+        ]
+    elif chart == "bar":
+        bars = _only(figure, go.Bar)
+        bars.marker.opacity = (
+            None
+            if everything
+            else [1.0 if str(name) in visible else config.FADED_OPACITY for name in bars.x]
+        )
+    elif chart == "heatmap":
+        _fade_rows(figure, [name for name in names if name not in visible])
+    else:
+        # A selection, as the highlight is (`set_threshold`): plotly.js 4 ignores a per-country
+        # opacity list on a choropleth.
+        countries = _only(figure, go.Choropleth)
+        countries.selectedpoints = (
+            None if everything else [i for i, name in enumerate(names) if name in visible]
+        )
     return figure
 
 
-def sort_bars(figure: go.Figure, by_coverage: bool) -> go.Figure:
-    """Order the bars highest first, or back in the order they were listed.
+def _row_order(figure: go.Figure) -> list[str]:
+    """The heatmap's rows as drawn, top first."""
+    order = figure.layout.yaxis.categoryarray
+    return [str(name) for name in order] if order else entity_names(figure)
 
-    **The one control that moves marks.** On a line chart, sorting reorders the control list only
-    (visual-spec.md section 7.2): the x axis is time, and the lines are where the data puts them. A
-    bar chart's x axis has no order of its own, so here the bars themselves move. Each bar keeps its
-    colour and its label, and a bar with no value sorts last.
+
+def _faded_rows(figure: go.Figure) -> list[str]:
+    return [
+        shape.name[len(_FADED_ROW) :]
+        for shape in figure.layout.shapes
+        if (shape.name or "").startswith(_FADED_ROW)
+    ]
+
+
+def _fade_rows(figure: go.Figure, rows: Sequence[str]) -> None:
+    """Fade whole heatmap rows by covering them with white at 1 - FADED_OPACITY.
+
+    A heatmap has one opacity for the whole trace, so a row cannot be faded on its own. On the white
+    plot, white over a cell at 0.85 is exactly the cell at 0.15. The cover is a shape, so it takes
+    no hover, and it sits at the row's place as drawn: a category axis numbers its categories in
+    the order shown, the top row 0 here.
     """
+    figure.layout.shapes = [
+        shape for shape in figure.layout.shapes if not (shape.name or "").startswith(_FADED_ROW)
+    ]
+    order = _row_order(figure)
+    columns = len(_only(figure, go.Heatmap).x)
+    for name in rows:
+        position = order.index(name)
+        figure.add_shape(
+            type="rect",
+            name=f"{_FADED_ROW}{name}",
+            xref="x",
+            yref="y",
+            x0=-0.5,
+            x1=columns - 0.5,
+            y0=position - 0.5,
+            y1=position + 0.5,
+            fillcolor=config.BACKGROUND,
+            opacity=round(1 - config.FADED_OPACITY, 6),
+            line={"width": 0},
+            layer="above",
+        )
+
+
+def sort_bars(figure: go.Figure, key: str) -> go.Figure:
+    """Order the bars A to Z, highest first or lowest first (visual-spec.md section 7.2).
+
+    **Sorting moves the bars.** On a line chart it reorders the chips and the legend only: the x
+    axis is time, and the lines are where the data puts them. A bar chart's x axis has no order of
+    its own. Each bar keeps its colour and its label; ties keep the listed order, and a bar with no
+    value sorts last either way.
+    """
+    if key not in BAR_SORTS:
+        raise FigureError(f"Unknown bar sort {key!r}; expected one of {BAR_SORTS}")
     bars = _only(figure, go.Bar)
     listed = [str(name) for name in bars.x]
-    if not by_coverage:
-        order = listed
+    values = dict(zip(listed, bars.y, strict=True))
+    if key == "alpha":
+        order = sorted(listed)
     else:
-        values = dict(zip(listed, bars.y, strict=True))
-        order = sorted(listed, key=lambda name: (values[name] is None, -(values[name] or 0), name))
+        sign = -1 if key == "desc" else 1
+        order = sorted(
+            listed,
+            key=lambda n: (values[n] is None, sign * (values[n] or 0), listed.index(n)),
+        )
     figure.update_xaxes(categoryorder="array", categoryarray=order)
     return figure
 
 
-def set_band(figure: go.Figure, low: float, high: float) -> go.Figure:
-    """Fade every country on the map whose coverage lies outside [low, high], ends included.
+def sort_rows(figure: go.Figure, key: str) -> go.Figure:
+    """Order the heatmap's rows: as listed, by each row's lowest cell, or by its average, lowest
+    first (visual-spec.md section 7.2). Each row keeps its cells and its label, so no cell changes
+    colour; ties keep the listed order, and a row with nothing reported sorts last."""
+    if key not in ROW_SORTS:
+        raise FigureError(f"Unknown row sort {key!r}; expected one of {ROW_SORTS}")
+    cells = _only(figure, go.Heatmap)
+    listed = [str(name) for name in cells.y]
+    reported = {
+        name: [value for value in row if value is not None]
+        for name, row in zip(listed, cells.z, strict=True)
+    }
 
-    Faded, not removed: the map keeps its shape, and a faded country is still where it was. The
-    colour scale is fixed to 0-100, so a country's colour never changes, only its opacity.
+    def statistic(name: str) -> float | None:
+        values = reported[name]
+        if not values:
+            return None
+        return min(values) if key == "min" else sum(values) / len(values)
 
-    Drawn as a SELECTION: the countries in the band are selected and the rest take the trace's
-    `unselected` opacity. plotly.js 4 applies a choropleth's `marker.opacity` to the whole trace,
-    so a list of per-country opacities is silently dropped -- the filter first shipped that way and
-    faded nothing, which only a browser showed. The full range clears the selection, so an
-    unfiltered map is the figure `build_figure` made.
-    """
-    if not 0 <= low <= high <= 100:
-        raise FigureError(f"A coverage band must satisfy 0 <= low <= high <= 100, got {low}-{high}")
-    countries = _only(figure, go.Choropleth)
-    if (low, high) == tuple(config.Y_RANGE):
-        countries.selectedpoints = None
+    if key == "default":
+        order = listed
     else:
-        countries.selectedpoints = [
-            index
-            for index, value in enumerate(countries.z)
-            if value is not None and low <= value <= high
-        ]
+        order = sorted(
+            listed, key=lambda n: (statistic(n) is None, statistic(n) or 0, listed.index(n))
+        )
+    faded = _faded_rows(figure)
+    figure.update_yaxes(categoryorder="array", categoryarray=order)
+    _fade_rows(figure, faded)
     return figure
 
 
-def in_band(figure: go.Figure) -> list[bool]:
-    """Which countries the map currently shows at full strength: all of them unless filtered."""
+def order_legend(figure: go.Figure, order: Sequence[str] | None) -> go.Figure:
+    """List a line chart's legend in `order`, or in the order the lines were listed when None.
+
+    The View control's `by coverage` (visual-spec.md section 7.2). It reorders the legend and the
+    chips, never the lines: `legendrank` changes only where an entry is listed.
+    """
+    if chart_type_of(figure) != "line":
+        raise FigureError("Only a line chart's legend follows the View control")
+    ranks = {name: index + 1 for index, name in enumerate(order or [])}
+    for trace in figure.data:
+        trace.legendrank = ranks.get(trace.name)
+    return figure
+
+
+def set_threshold(figure: go.Figure, threshold: float | None) -> go.Figure:
+    """Fade every country on the map whose coverage is `threshold` or more (visual-spec.md 7.4).
+
+    None, or 100, means no highlight, so the map at rest is the figure `build_figure` made. A
+    country the chips hid stays faded. Faded, not removed: the map keeps its shape, and a faded
+    country is still where it was; the colour scale is fixed to 0-100, so no colour changes.
+
+    Drawn as a SELECTION: the countries at full strength are selected and the rest take the trace's
+    `unselected` opacity. plotly.js 4 applies a choropleth's `marker.opacity` to the whole trace,
+    so a list of per-country opacities is silently dropped -- the map's first filter shipped that
+    way and faded nothing, which only a browser showed.
+    """
+    if threshold is None or threshold >= config.Y_RANGE[1]:
+        return figure
+    if threshold < config.Y_RANGE[0]:
+        raise FigureError(f"A highlight threshold must be 0-100, got {threshold}")
+    countries = _only(figure, go.Choropleth)
+    strong = full_strength(figure)
+    countries.selectedpoints = [
+        index
+        for index, (keep, value) in enumerate(zip(strong, countries.z, strict=True))
+        if keep and value is not None and value < threshold
+    ]
+    return figure
+
+
+def full_strength(figure: go.Figure) -> list[bool]:
+    """Which countries the map shows at full strength: all of them until a control fades some."""
     countries = _only(figure, go.Choropleth)
     if countries.selectedpoints is None:
         return [True] * len(countries.z)
@@ -257,7 +410,7 @@ def _axis_font() -> dict:
 
 
 def _apply_base(figure: go.Figure, title: str, margin: dict) -> None:
-    """What every chart type shares: title, fonts, height, background, no legend, hover mode."""
+    """What every chart type shares: title, fonts, size, background, no legend, hover mode."""
     figure.update_layout(
         title={
             "text": title,
@@ -272,11 +425,13 @@ def _apply_base(figure: go.Figure, title: str, margin: dict) -> None:
             "size": config.FONT_SIZE_BASE,
             "color": config.TEXT_PRIMARY,
         },
+        # Fixed (visual-spec.md section 5): the same size on every screen and in both conditions.
+        width=config.CHART_WIDTH,
         height=config.CHART_HEIGHT,
+        autosize=False,
         plot_bgcolor=config.BACKGROUND,
         paper_bgcolor=config.BACKGROUND,
-        # Series are labelled directly (visual-spec.md section 6), so a legend would be redundant
-        # clutter and would make legend-reading part of the task. The scatter is the exception.
+        # Only the line chart and the scatter have a legend (visual-spec.md section 6).
         showlegend=False,
         margin=margin,
         hovermode="closest",
@@ -380,11 +535,41 @@ def _line(
     )
     _coverage_axis(figure.update_yaxes)
     _add_end_labels(figure, vaccine, source)
+    _add_line_legend(figure)
     return figure
 
 
-# Right margin holds the end labels.
-_LINE_MARGIN = {"l": 70, "r": 150, "t": 60, "b": 60}
+# The right margin holds the end labels and, beyond them, the legend: the plot is 640 px wide.
+_LINE_MARGIN = {"l": 70, "r": 340, "t": 60, "b": 60}
+# How far right of the plot the legend starts, past the widest end label.
+_LABEL_SPACE = 170
+
+
+def _add_line_legend(figure: go.Figure) -> None:
+    """A vertical legend right of the end labels (visual-spec.md section 6, 2026-09-25).
+
+    A control in the interactive condition: a click hides or shows a line, a double click shows
+    that line alone. `staticPlot` leaves it drawn and inert in the static condition. World has no
+    entry, as it has no chip: it cannot be hidden, and its dash and end label name it.
+    """
+    plot_width = config.CHART_WIDTH - _LINE_MARGIN["l"] - _LINE_MARGIN["r"]
+    for trace in figure.data:
+        if trace.name == REFERENCE:
+            trace.showlegend = False
+    figure.update_layout(
+        showlegend=True,
+        legend={
+            "font": _axis_font(),
+            "x": round(1 + _LABEL_SPACE / plot_width, 6),
+            "xanchor": "left",
+            "y": 1,
+            "yanchor": "top",
+            "bordercolor": config.GRIDLINE_COLOR,
+            "borderwidth": 1,
+            "itemclick": "toggle",
+            "itemdoubleclick": "toggleothers",
+        },
+    )
 
 
 def _add_series(
@@ -677,8 +862,11 @@ def _heatmap(
     )
     _apply_base(figure, f"{vaccine} coverage by year", {"l": 190, "r": 40, "t": 60, "b": 60})
     _category_axis(figure.update_xaxes, "Year")
-    # The first country listed is the top row, as it would be read.
-    _category_axis(figure.update_yaxes, autorange="reversed")
+    # The first country listed is the top row, as it would be read. The order is written out, so
+    # the row sort's Default (`sort_rows`) is exactly this figure.
+    _category_axis(
+        figure.update_yaxes, autorange="reversed", categoryorder="array", categoryarray=entities
+    )
     return figure
 
 
@@ -710,10 +898,10 @@ def _map(
             zmax=config.Y_RANGE[1],
             colorscale=_sequential(),
             marker={"line": {"color": config.MAP_BORDER_COLOR, "width": 1}},
-            # How the coverage filter draws (`set_band`): countries in the band are selected, the
-            # rest fade. Nothing is selected until the filter is used.
+            # How the highlight and the chips draw (`set_threshold`, `set_visible`): countries at
+            # full strength are selected, the rest fade. Nothing is selected until a control acts.
             selected={"marker": {"opacity": 1.0}},
-            unselected={"marker": {"opacity": config.MAP_FADED_OPACITY}},
+            unselected={"marker": {"opacity": config.FADED_OPACITY}},
             colorbar=_color_key(),
             hovertemplate=f"<b>%{{text}}</b><br>{year}: %{{z:.0f}}%<extra></extra>",
         )

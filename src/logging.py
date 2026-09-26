@@ -155,10 +155,14 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # only.
     "comparison": ("c1", "c2", "c3"),
     # Interactive-only affordances. `control` says which: `chips`, `legend`, `show-all` or
-    # `threshold` (see v9 above). For `threshold`, `value` and `previous` are the typed number or
-    # null, not a list of entities.
+    # `threshold` (see v9 above). `action` is `hide` or `show`; a legend double-click that leaves
+    # one line is `only`; the highlight is `highlight` or `clear`. `value` and `previous` are the
+    # countries on the chart after and before, except for `threshold`, where they are the typed
+    # number or null.
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
+    # `key`: the line chart's View `listed` or `coverage`; the bar chart's `alpha`, `desc` or `asc`;
+    # the heatmap's `default`, `min` or `mean`. `direction`: `none`, `desc` or `asc`.
     "sort_change": ("key", "direction"),
     # Reset view: undoes filtering, sorting, isolating and the highlight in one press. `previous` is
     # the view it undid.

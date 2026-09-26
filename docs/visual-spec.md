@@ -389,7 +389,8 @@ listed order. Each row keeps its cells and its label; no cell changes colour.
   does *Show all*, which also shows every hidden line. The World reference stays visible throughout
   and cannot itself be isolated. A click on any other chart type does nothing.
 - **Reset view**, on every chart, undoes filtering, sorting, isolating and the map's highlight. It
-  does not undo a zoom; the modebar's own reset does.
+  does not undo a zoom; the modebar's own reset does. The zoom is kept by the app, not by Plotly:
+  every control redraws the chart, and each redraw keeps the range the participant zoomed to.
 - All of it resets between tasks: no task inherits the previous task's view.
 
 ### 7.4 The map's highlight (defined 2026-09-25, replacing the coverage range)
@@ -474,7 +475,16 @@ strip and the hint row under the chart (§7).
 - **Source of truth: the design handoff's stylesheet**, `docs/design-handoff/assets/study.css`,
   copied unchanged to `src/assets/study.css`, where Dash loads it automatically. Where Dash's markup
   cannot match one of its selectors, the smallest possible rule goes in `src/assets/zz-overrides.css`,
-  each commented with why. No inline style dicts in `layout.py`.
+  each commented with why. No inline style dicts in `layout.py`, beyond the data-driven values the
+  handoff sets inline itself (the chips' spacing on line charts).
+- **Dash 4's option lists (2026-09-26).** The stylesheet puts a class on each option's `<label>`
+  (`.chip`, `.ui-tile`, `.seg-item`). Dash 4 cannot: its labels are `.dash-options-list-option`,
+  and `labelClassName` goes on the text beside the input. `src/assets/zz-bridge.css`, generated from
+  `study.css` by `scripts/bridge_stylesheet.py`, copies every such rule with its selector re-aimed at
+  Dash's label inside the list that carries the handoff's list class (`.chips`, `.ui-tiles`, `.seg`),
+  declarations untouched; a test holds it to the stylesheet. `dcc.Input` puts its class on a box
+  around the input, so the number box's focus is read through that box. Dash's own accent colour
+  and focus outlines are overridden in `zz-overrides.css`.
 - **Two palettes that never mix.** The chrome's colours (the stylesheet's `:root` tokens: oat page
   `#F8F3EE`, band `#EFE4DA`, ink `#241C18`, muted `#5F544D`, cocoa accent `#5A4034`, error `#C35600`
   and the rest) are never used inside the chart, and the series colours and Cividis (§4) are never
@@ -503,5 +513,7 @@ strip and the hint row under the chart (§7).
   clock has started.
 - **Motion.** Only on screens without a chart: cards fade in over 180 ms and a slow background glow
   drifts. None on the task screen, and none at all under `prefers-reduced-motion`.
-- **Flags.** The chips' flags are image files bundled under `src/assets/`, never fetched from a CDN
-  during a task, as the map's shapes are (§1).
+- **Flags.** The chips' flags are image files bundled under `src/assets/flags/` by
+  `scripts/vendor_flags.py`, one per country in the scope, never fetched from a CDN during a task, as
+  the map's shapes are (§1). They are part of the controls, so only the interactive condition has
+  them.

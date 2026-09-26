@@ -3,7 +3,8 @@
 Every screen is used by BOTH conditions. Only these branch on `interactive`:
 
 1. The Plotly config passed to `chart()` — `figures.graph_config`, the single decision point.
-2. The task screen's controls (`task_controls`), which exist only in the interactive condition.
+2. The task screen's controls strip and hint row (`task_controls`, `hint_row`), which exist only in
+   the interactive condition and sit under the chart, so the chart is in the same place in both.
 3. `instructions_screen`, which must describe the affordances that actually exist. Telling static
    participants about hover, or failing to tell interactive participants, would handicap one
    condition procedurally. That is a difference in instructions, not in the visual design.
@@ -12,8 +13,10 @@ Every screen is used by BOTH conditions. Only these branch on `interactive`:
 Nothing else may differ. `tests/test_conditions.py` enforces the figure half of that.
 
 The look comes from `src/assets/study.css`, the design handoff's stylesheet, copied unchanged,
-with `src/assets/zz-overrides.css` for the few rules Dash's markup needs (docs/visual-spec.md
-section 10). Every screen sits in `shell`: the header band, the stepper, and the page's background.
+with `src/assets/zz-bridge.css` (generated) and `src/assets/zz-overrides.css` for what Dash 4's
+markup needs (docs/visual-spec.md section 10). Every screen sits in `shell`: the header band, the
+stepper, and the page's background. Screens not yet rebuilt on the stylesheet's classes use
+`interim_page`, today's look in a white box, until their phase of docs/study-redesign.md.
 """
 
 from __future__ import annotations
@@ -115,45 +118,30 @@ PROMPT_STYLE = {
 MUTED_STYLE = {"color": config.TEXT_MUTED, "fontSize": f"{config.FONT_SIZE_AXIS}px"}
 
 
-def chart(
-    entities: list[str],
-    vaccine: str,
-    interactive: bool,
-    element_id: str = "chart",
-    *,
-    chart_type: str = "line",
-    years: tuple[int, ...] = (),
-):
-    """The coverage chart. The figure is condition-independent; only the config differs.
+def chart(task, interactive: bool, element_id: str = "chart") -> html.Div:
+    """A task's chart, 1050 x 520. The figure is condition-independent; only the config differs.
 
-    Wrapped in a container that holds the chart's height before Plotly has loaded. `dcc.Graph`
-    loads Plotly on demand and renders at zero height until it arrives, so without the wrapper the
-    answers and Submit jumped 520 px down the page while a participant might be clicking them.
-    `docs/visual-spec.md` section 5.
+    Its container, `.ui-chart`, holds the chart's size before Plotly has loaded. `dcc.Graph` loads
+    Plotly on demand and renders at zero height until it arrives, so without it the answers and
+    Submit jumped 520 px while a participant might be clicking them (visual-spec.md section 5).
+    Not responsive: the figure sets its own size, the same on every screen.
     """
-    height = f"{config.CHART_HEIGHT}px"
     return html.Div(
         dcc.Graph(
             id=element_id,
-            figure=figures.build_figure(entities, vaccine, chart_type=chart_type, years=years),
+            figure=figures.task_figure(task),
             config=figures.graph_config(interactive),
-            # Keeps the rendered size identical across conditions rather than letting the
-            # modebar's presence shift the layout.
-            style={"height": height},
+            responsive=False,
         ),
-        style={"height": height},
+        className="ui-chart",
     )
 
 
-SORT_KEYS = ("listed", "coverage")
-
-
 def filterable(entities: list[str]) -> list[str]:
-    """The entities a participant may hide.
+    """The entities a participant may hide: every one but World.
 
-    World is excluded: it is the dashed reference every task is read against, and several items ask
-    directly about it. Letting it be switched off would let a participant remove the thing the
-    question is about.
+    World is the dashed reference every line is read against, and the practice asks about it. It
+    has no chip and no legend entry, and no control can switch it off (visual-spec.md section 6).
     """
     return [entity for entity in entities if entity != "World"]
 
@@ -179,221 +167,228 @@ def latest_values(entities: list[str], vaccine: str) -> dict[str, float | None]:
 
 
 def sorted_entities(entities: list[str], vaccine: str, sort_key: str) -> list[str]:
-    """Control-list order. `listed` is the task's own order; `coverage` is highest-latest first."""
-    if sort_key not in SORT_KEYS:
-        raise ValueError(f"Unknown sort key {sort_key!r}; expected one of {SORT_KEYS}")
+    """The line chart's chip and legend order. `listed` is the task's own order; `coverage` is
+    highest-latest first, an entity with nothing reported last."""
+    if sort_key not in ("listed", "coverage"):
+        raise ValueError(f"Unknown line sort {sort_key!r}; expected listed or coverage")
     if sort_key == "listed":
         return list(entities)
     values = latest_values(entities, vaccine)
-    # An entity with nothing reported sorts last rather than crashing the comparison.
     return sorted(entities, key=lambda e: (values[e] is None, -(values[e] or 0), e))
 
 
-def control_label(entity: str, value: float | None, sort_key: str) -> str:
-    """Checkbox text. The latest value is shown only when the list is ordered BY that value.
-
-    Sorting by coverage is meaningless without showing what it sorted on, but the default view has
-    no reason to carry numbers — and leaving them out of it keeps the resting state of the two
-    conditions closer.
-    """
-    if sort_key != "coverage":
-        return entity
-    return f"{entity} — {value:.0f}%" if value is not None else f"{entity} — not reported"
-
-
-def entity_controls(task, sort_key: str, selected: list[str]) -> html.Div:
-    """Filter, sort and reset. Rendered ONLY in the interactive condition.
-
-    These are the study's independent variable. The chart they act on is the same chart the static
-    condition sees; what differs is that it can be worked with rather than only looked at.
-
-    Every control here is a native form element, so keyboard navigation comes for free — required by
-    the accessibility baseline in CLAUDE.md. Do not reimplement any of them as styled divs.
-    """
-    options = filterable(list(task.entities))
-    ordered = sorted_entities(options, task.vaccine, sort_key)
-    values = latest_values(ordered, task.vaccine) if sort_key == "coverage" else {}
-
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.Span("Show:", style={**MUTED_STYLE, "marginRight": "8px"}),
-                    dcc.Checklist(
-                        id="entity-filter",
-                        options=[
-                            {"label": control_label(e, values.get(e), sort_key), "value": e}
-                            for e in ordered
-                        ],
-                        value=[e for e in ordered if e in selected],
-                        labelStyle={"display": "inline-block", "marginRight": "16px"},
-                        inputStyle={"marginRight": "6px"},
-                        style={"display": "inline-block"},
-                    ),
-                ],
-                style={"marginBottom": "6px"},
-            ),
-            html.Div(
-                [
-                    html.Span("Order:", style={**MUTED_STYLE, "marginRight": "8px"}),
-                    dcc.RadioItems(
-                        id="entity-sort",
-                        options=[
-                            {"label": "as listed", "value": "listed"},
-                            {"label": "by coverage", "value": "coverage"},
-                        ],
-                        value=sort_key,
-                        labelStyle={"display": "inline-block", "marginRight": "16px"},
-                        inputStyle={"marginRight": "6px"},
-                        style={"display": "inline-block"},
-                    ),
-                    html.Button(
-                        "Show all",
-                        id="reset-view",
-                        n_clicks=0,
-                        style={
-                            "fontFamily": config.FONT_FAMILY,
-                            "fontSize": f"{config.FONT_SIZE_AXIS}px",
-                            "padding": "4px 10px",
-                            "marginLeft": "12px",
-                            "color": config.TEXT_PRIMARY,
-                            "backgroundColor": config.BACKGROUND,
-                            "border": f"1px solid {config.AXIS_COLOR}",
-                            "borderRadius": "4px",
-                            "cursor": "pointer",
-                        },
-                    ),
-                ]
-            ),
-            html.P(
-                "Click a line to show it on its own; click it again, or Show all, to bring the "
-                "others back.",
-                style={**MUTED_STYLE, "margin": "6px 0 0 0"},
-            ),
-        ],
-        style={"marginBottom": "12px"},
-    )
-
-
-def _small_button(label: str, element_id: str) -> html.Button:
-    """The quiet button beside a control, like Show all. Native, so keyboard-navigable."""
-    return html.Button(
-        label,
-        id=element_id,
-        n_clicks=0,
-        style={
-            "fontFamily": config.FONT_FAMILY,
-            "fontSize": f"{config.FONT_SIZE_AXIS}px",
-            "padding": "4px 10px",
-            "marginLeft": "12px",
-            "color": config.TEXT_PRIMARY,
-            "backgroundColor": config.BACKGROUND,
-            "border": f"1px solid {config.AXIS_COLOR}",
-            "borderRadius": "4px",
-            "cursor": "pointer",
-        },
-    )
-
-
-def _hint(text: str) -> html.P:
-    return html.P(text, style={**MUTED_STYLE, "margin": "6px 0 0 0"})
-
-
-def bar_controls(sort_key: str) -> html.Div:
-    """Sort the bars. Rendered ONLY in the interactive condition, above a bar chart.
-
-    Its own id, not `entity-sort`: a Dash callback whose Inputs are only partly on the page is dead
-    in the browser, so the bar chart's control cannot share a callback with the line chart's three.
-    """
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.Span("Order:", style={**MUTED_STYLE, "marginRight": "8px"}),
-                    dcc.RadioItems(
-                        id="bar-sort",
-                        options=[
-                            {"label": "as listed", "value": "listed"},
-                            {"label": "by coverage", "value": "coverage"},
-                        ],
-                        value=sort_key,
-                        labelStyle={"display": "inline-block", "marginRight": "16px"},
-                        inputStyle={"marginRight": "6px"},
-                        style={"display": "inline-block"},
-                    ),
-                ]
-            ),
-            _hint(
-                "Order by coverage to sort the bars, highest first. Hover a bar to read its value."
-            ),
-        ],
-        style={"marginBottom": "12px"},
-    )
-
-
-BAND_FULL = [0, 100]
-
-
-def band_controls(band: list[int]) -> html.Div:
-    """Show only the countries within a coverage range. Rendered ONLY in the interactive condition.
-
-    The participant sets the range. A preset "below 50%" button was rejected (2026-09-23): it names
-    the question's own threshold and would answer the item in one click. The slider's number boxes
-    make it usable from the keyboard as well.
-    """
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.Span(
-                        "Show countries with coverage between:",
-                        style={**MUTED_STYLE, "marginRight": "8px"},
-                    ),
-                    _small_button("Show all", "band-reset"),
-                ]
-            ),
-            html.Div(
-                dcc.RangeSlider(
-                    id="coverage-band",
-                    min=BAND_FULL[0],
-                    max=BAND_FULL[1],
-                    step=1,
-                    value=list(band),
-                    marks={value: f"{value}%" for value in range(0, 101, 10)},
-                    allowCross=False,
-                ),
-                style={"maxWidth": "640px", "marginTop": "6px"},
-            ),
-            _hint("Countries outside the range fade. Hover a country to read its name and value."),
-        ],
-        style={"marginBottom": "12px"},
-    )
-
-
-HOVER_HINTS = {
-    "scatter": "Hover a dot to see which country it is and its values.",
-    "heatmap": "Hover a cell to read its value.",
+# The sort control each chart type has (visual-spec.md section 7.2, the handoff's SORT): its
+# legend, then (value, label) for each option. The first option is the chart as first drawn.
+SORTS = {
+    "line": ("View", (("listed", "as listed"), ("coverage", "by coverage"))),
+    "bar": ("Sort", (("alpha", "A–Z"), ("desc", "High → low"), ("asc", "Low → high"))),
+    "heatmap": (
+        "Sort rows",
+        (("default", "Default"), ("min", "Lowest value"), ("mean", "Average")),
+    ),
 }
 
+# The hint under each interactive chart, verbatim from the handoff's HINT.
+HINTS = {
+    "line": (
+        "Click a legend entry to hide or show a country; double-click to show only that country."
+    ),
+    "bar": "Hover a bar to read its value.",
+    "scatter": "Hover a dot to see which country it is and its values.",
+    "heatmap": "Hover a cell to read its value.",
+    "map": "Countries not below the threshold turn grey. Hover a country to read its value.",
+}
 
-def task_controls(task) -> html.Div | None:
-    """The interactive condition's controls for this task's chart, or None if it has none.
+RESET_TITLE = "Undo any filtering, sorting or isolating on this chart"
+# The handoff's undo arrow, in the button's ink. An image because Dash has no SVG components.
+UNDO_ICON = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' "
+    "viewBox='0 0 16 16' fill='none' stroke='%23241C18' stroke-width='1.8' "
+    "stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8a5.5 5.5 0 1 0 1.7-4'/%3E"
+    "%3Cpath d='M2.5 2.5v3.5H6'/%3E%3C/svg%3E"
+)
+THRESHOLD_START = 100
+CHIP_ROWS = 2
 
-    One control set per chart type (visual-spec.md section 7). The scatter and the heatmap have no
-    controls; their affordance is hover, which only a one-line hint announces.
-    """
-    if task.chart == "line":
-        # Rendered fresh with every task. The view they act on lives in the app's `control-state`
-        # store, which `app.control_step` keys to the task, so no task inherits the previous one's
-        # filtering, sorting or isolation.
-        return entity_controls(task, sort_key="listed", selected=filterable(list(task.entities)))
-    if task.chart == "bar":
-        return bar_controls("listed")
-    if task.chart == "map":
-        return band_controls(BAND_FULL)
-    if task.chart in HOVER_HINTS:
-        return html.Div(_hint(HOVER_HINTS[task.chart]), style={"marginBottom": "12px"})
+
+def default_sort(chart_type: str) -> str | None:
+    """The sort a chart opens with, or None for a chart with no sort."""
+    return SORTS[chart_type][1][0][0] if chart_type in SORTS else None
+
+
+def control_id(name: str, index: int = 0) -> dict[str, object]:
+    """A control's pattern id. Every chart type has a different set of controls and the static
+    condition has none, so one callback reads them all with `ALL`: a named id absent from the page
+    would stop a callback in the browser."""
+    return {"control": name, "index": index}
+
+
+def flag_src(entity: str) -> str | None:
+    """The chip's flag, served from `src/assets/flags/` (scripts/vendor_flags.py), or None for an
+    aggregate, which has no flag."""
+    from src import runtime_data
+
+    for row in runtime_data.load_rows():
+        if row.country == entity:
+            return (
+                None
+                if row.iso_code.startswith("OWID")
+                else f"assets/flags/{row.iso_code.lower()}.png"
+            )
     return None
+
+
+def chip_rows(order: list[str], shown: list[str]) -> list[dict[str, list]]:
+    """The chips in two rows, the first taking the extra one: each row's options and ticked values.
+
+    Two rows as in the handoff, so a long set wraps where the design wraps it, and a reorder by
+    coverage moves chips between rows without moving anything else on the page (its state S5).
+    """
+    half = -(-len(order) // CHIP_ROWS)
+    rows = []
+    for names in (order[:half], order[half:]):
+        options = []
+        for name in names:
+            flag = flag_src(name)
+            label = [html.Span(name)]
+            if flag:
+                label.insert(
+                    0, html.Img(src=flag, alt="", width=24, height=16, className="chip-flag")
+                )
+            options.append({"label": label, "value": name})
+        rows.append({"options": options, "value": [name for name in names if name in shown]})
+    return rows
+
+
+def chip_group(task, order: list[str], shown: list[str]) -> list:
+    """The Countries group's contents: its legend, then a checklist for each row of chips.
+
+    Built afresh whenever the chips' order changes (the View control, or Reset view undoing it),
+    rather than by sending the checklists new options. A chip's label is a flag and a name, as
+    components, and Dash 4 loses track of them when one moves to the other row's checklist: the
+    renderer throws and the chips vanish (headless Chrome, 2026-09-26). An empty row, the
+    practice's second, is left out.
+    """
+    justify = "space-between" if task.chart == "line" else "flex-start"
+    return [
+        html.Span("Countries", className="ui-legend"),
+        *[
+            dcc.Checklist(
+                id=control_id("chips", index),
+                options=row["options"],
+                value=row["value"],
+                className="chips ui-chips",
+                labelClassName="chip-name",
+                # Data-driven, as in the handoff: line charts spread their chips across the row.
+                style={"justifyContent": justify},
+            )
+            for index, row in enumerate(chip_rows(order, shown))
+            if row["options"]
+        ],
+    ]
+
+
+def _chips(task, order: list[str], shown: list[str]) -> html.Div:
+    return html.Div(
+        chip_group(task, order, shown),
+        id=control_id("chip-group"),
+        className="ui-group ui-group--grow",
+        role="group",
+        **{"aria-label": "Countries"},
+    )
+
+
+def _sort_group(task) -> html.Div:
+    legend, options = SORTS[task.chart]
+    stack = [
+        dcc.RadioItems(
+            id=control_id("sort"),
+            options=[{"label": label, "value": value} for value, label in options],
+            value=default_sort(task.chart),
+            className="seg ui-seg ui-seg--stack",
+        )
+    ]
+    if task.chart == "line":
+        stack.append(
+            html.Button(
+                "Show all", id=control_id("show-all"), n_clicks=0, className="btn btn-quiet btn-xs"
+            )
+        )
+    return html.Div(
+        [html.Span(legend, className="ui-legend"), html.Div(stack, className="ui-stack")],
+        className="ui-group ui-group--fit",
+        role="group",
+        **{"aria-label": legend},
+    )
+
+
+def _highlight_group() -> html.Div:
+    """The map's "Below [n] %" box (visual-spec.md section 7.4). It commits on Enter or when it
+    loses focus (`debounce`), so a number half typed does not fade the map."""
+    return html.Div(
+        [
+            html.Span("Highlight", className="ui-legend"),
+            html.Label(
+                [
+                    "Below",
+                    dcc.Input(
+                        id=control_id("threshold"),
+                        type="number",
+                        min=0,
+                        max=100,
+                        step=1,
+                        value=THRESHOLD_START,
+                        debounce=True,
+                        className="tb-num",
+                    ),
+                    "%",
+                ],
+                className="tb-inline",
+            ),
+        ],
+        className="ui-group ui-group--fit",
+        role="group",
+        **{"aria-label": "Highlight"},
+    )
+
+
+def task_controls(task) -> html.Div:
+    """The controls strip under the chart. Rendered ONLY in the interactive condition.
+
+    These are the study's independent variable. The chart they act on is the same chart the static
+    condition sees; what differs is that it can be worked with rather than only looked at. Every
+    chart has the country chips (visual-spec.md section 7.3); the line, bar and heatmap add a sort,
+    the line chart Show all, and the map the highlight. Each opens on the chart as first drawn:
+    every country shown, in the listed order, nothing faded. The view they change lives in the
+    app's `control-state` store, keyed to the task, so no task inherits another's.
+
+    Every control is a native form element, so keyboard navigation comes for free (the
+    accessibility baseline in CLAUDE.md). Do not reimplement any of them as styled divs.
+    """
+    order = filterable(list(task.entities))
+    groups = [_chips(task, order, order)]
+    if task.chart in SORTS:
+        groups.append(_sort_group(task))
+    if task.chart == "map":
+        groups.append(_highlight_group())
+    return html.Div(groups, className="ui-controls")
+
+
+def hint_row(task) -> html.Div:
+    """What the chart can do, and Reset view. Interactive condition only, under the controls."""
+    return html.Div(
+        [
+            html.P(HINTS[task.chart], className="tb-hint"),
+            html.Button(
+                [html.Img(src=UNDO_ICON, alt="", width=14, height=14), "Reset view"],
+                id=control_id("reset"),
+                n_clicks=0,
+                title=RESET_TITLE,
+                className="btn btn-quiet btn-sm btn-reset",
+            ),
+        ],
+        className="ui-hint-row",
+    )
 
 
 def gap_note(
@@ -430,7 +425,7 @@ def gap_note(
     return html.P(
         f"No data reported for: {'; '.join(incomplete)}. {absence} means the value was not "
         "reported, which is not the same as zero coverage.",
-        style=MUTED_STYLE,
+        className="ui-hint",
     )
 
 
@@ -457,17 +452,28 @@ ERROR_STYLE = {
 }
 
 
-def page(*children) -> html.Main:
-    """A screen's content, the `.page` inside the shell, plus the one validation-error slot.
+def error_slot(class_name: str = "msg msg-error") -> html.Div:
+    """The one validation-error slot, `flow-error`, which every screen must carry somewhere.
 
-    `flow-error` is emitted on EVERY screen, not only the ones that can produce an error. A Dash
-    callback resolves its outputs against whatever is in the DOM, so an error output present on some
-    screens and not others is a latent failure on exactly the screens that need it most. One id,
-    always present, is the version that cannot misfire.
+    It is on EVERY screen, not only the ones that can produce an error. A Dash callback resolves its
+    outputs against whatever is in the DOM, so an error output present on some screens and not
+    others is a latent failure on exactly the screens that need it most. One id, always present, is
+    the version that cannot misfire. Where it sits is the screen's business: under Submit on the
+    task screen, as in the handoff.
     """
-    return html.Main(
-        html.Div([*children, html.Div(id="flow-error", style=ERROR_STYLE)], style=PAGE_STYLE),
-        className="page",
+    return html.Div(id="flow-error", className=class_name)
+
+
+def page(*children, class_name: str = "page") -> html.Main:
+    """A screen's content, the `.page` inside the shell. The screen places its own error slot."""
+    return html.Main(list(children), className=class_name)
+
+
+def interim_page(*children) -> html.Main:
+    """A screen not yet rebuilt on the stylesheet's classes: today's look in a white box, inside the
+    shell, with the error slot at the end. docs/study-redesign.md phases 5-7 retire it."""
+    return page(
+        html.Div([*children, html.Div(id="flow-error", style=ERROR_STYLE)], style=PAGE_STYLE)
     )
 
 
@@ -597,7 +603,7 @@ def consent_screen() -> html.Div:
             body.append(html.H2(section_heading, style=SUBHEADING_STYLE))
         body.append(html.P(text, style=PROMPT_STYLE))
 
-    return page(
+    return interim_page(
         heading("Informed consent"),
         *banner,
         html.P("Occidental College — Informed Consent Form", style=MUTED_STYLE),
@@ -669,7 +675,7 @@ def consent_screen() -> html.Div:
 
 def declined_screen() -> html.Div:
     """IRB form item 12B. Nothing is written before consent, so the second sentence is true."""
-    return page(
+    return interim_page(
         heading("Thank you for your time"),
         html.P(
             "You chose not to take part in this study. No data has been collected. You can close "
@@ -685,7 +691,7 @@ def declined_screen() -> html.Div:
 
 
 def participant_screen() -> html.Div:
-    return page(
+    return interim_page(
         heading("Participant ID"),
         # The copy is held in a memory store and lost on reload; the researcher can send one then.
         html.P(
@@ -809,7 +815,7 @@ def demographics_screen() -> html.Div:
         body.append(html.H2(title, style=SUBHEADING_STYLE))
         for question in questions:
             body += _about_question(question)
-    return page(
+    return interim_page(
         heading("About you"),
         html.P(ABOUT_INTRO, style=PROMPT_STYLE),
         html.P(SKIP_NOTE, style=MUTED_STYLE),
@@ -821,7 +827,7 @@ def demographics_screen() -> html.Div:
 def practice_complete_screen() -> html.Div:
     """Between the practice and the first scored task, first condition only. The design handoff's
     screen 6 (docs/study-design.md section 8)."""
-    return page(
+    return interim_page(
         heading("Practice Complete!"),
         html.P("That was the practice question. It was not scored.", style=PROMPT_STYLE),
         html.P(
@@ -884,7 +890,7 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
             )
         ]
     )
-    return page(
+    return interim_page(
         heading("Instructions"),
         *intro,
         html.P(shared, style=PROMPT_STYLE),
@@ -902,62 +908,66 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
 
 def task_screen(
     task, interactive: bool, index: int, total: int, practice: bool = False
-) -> html.Div:
-    """One task: prompt, chart, answer options, justification.
+) -> html.Main:
+    """One task: the position and question, then one card holding the chart column and the answer
+    panel (the handoff's screen 5, visual-spec.md section 10).
+
+    The chart column is the chart, the gap caption in both conditions, and in the interactive
+    condition only the controls strip and the hint row, all under the chart, so the chart stands
+    in the same place in both. The panel is the numbered steps: choose an answer, then say why,
+    then Submit.
 
     The practice item uses this same screen, so what it teaches is the interface the scored tasks
     actually use.
     """
     position = "Practice — not scored" if practice else f"Question {index} of {total}"
-    children = [
-        html.P(position, style=MUTED_STYLE),
-        html.P(task.prompt, style={**PROMPT_STYLE, "fontWeight": "600"}),
-    ]
-
-    # The controls are the interactive condition's whole point, and the static condition renders
-    # nothing in their place. The CHART is identical either way: at first render every series is
-    # shown, in the listed order, unfiltered, so both conditions open on the same picture.
-    if interactive:
-        controls = task_controls(task)
-        if controls is not None:
-            children.append(controls)
-
-    children.append(
-        chart(
-            list(task.entities),
-            task.vaccine,
-            interactive,
-            chart_type=task.chart,
-            years=task.years,
-        )
-    )
-
+    column = [chart(task, interactive)]
     note = gap_note(list(task.entities), task.vaccine, task.years, task.chart)
     if note is not None:
-        children.append(note)
+        column.append(note)
+    # The controls are the interactive condition's whole point, and the static condition renders
+    # nothing in their place. The CHART is identical either way.
+    if interactive:
+        column += [task_controls(task), hint_row(task)]
 
-    children += [
+    panel = [
+        html.P(
+            [html.Span("1", className="ui-step-n"), tasks.CHOOSE_PROMPTS[task.kind]],
+            className="ui-step ui-step--nowrap",
+        ),
         dcc.RadioItems(
             id="answer-input",
-            options=[{"label": o, "value": o} for o in task.options],
+            options=[{"label": option, "value": option} for option in task.options],
             value=None,
-            labelStyle={"display": "block", "margin": "6px 0"},
-            inputStyle={"marginRight": "8px"},
+            className="ui-tiles",
+            labelClassName="ui-tile-label",
         ),
-        html.P(JUSTIFICATION_PROMPT, style={**PROMPT_STYLE, "marginTop": "16px"}),
-        dcc.Textarea(
-            id="justification-input",
-            style={
-                "fontFamily": config.FONT_FAMILY,
-                "fontSize": f"{config.FONT_SIZE_BASE}px",
-                "width": "100%",
-                "height": "70px",
-                "padding": "8px",
-            },
+        html.Div(
+            [
+                html.Label(
+                    [html.Span("2", className="ui-step-n"), JUSTIFICATION_PROMPT],
+                    htmlFor="justification-input",
+                    className="ui-step",
+                ),
+                dcc.Textarea(id="justification-input", className="ui-textarea"),
+                html.Button(
+                    "Submit", id="submit-button", n_clicks=0, className="btn btn-primary btn-block"
+                ),
+                error_slot(),
+            ],
+            className="ui-decide",
         ),
-        primary_button("Submit", "submit-button"),
     ]
-    return page(*children)
+    return page(
+        html.Div(
+            [html.P(position, className="position"), html.H1(task.prompt, className="question")],
+            className="ui-head",
+        ),
+        html.Div(
+            [html.Div(column, className="ui-main"), html.Div(panel, className="ui-panel")],
+            className="ui-card ui-card--task",
+        ),
+    )
 
 
 def _scale(item: str, question: str, points: int, anchors: dict[int, str], help_text: str = ""):
@@ -1020,7 +1030,7 @@ def load_screen(interactive: bool, second_half: bool) -> html.Div:
                 },
             ),
         ]
-    return page(
+    return interim_page(
         heading("About this part"),
         html.P(SURVEY_INTRO["second" if second_half else "first"], style=PROMPT_STYLE),
         html.P(SKIP_NOTE, style=MUTED_STYLE),
@@ -1030,7 +1040,7 @@ def load_screen(interactive: bool, second_half: bool) -> html.Div:
 
 
 def break_screen() -> html.Div:
-    return page(
+    return interim_page(
         heading("Halfway"),
         html.P(
             "That is the first half finished. The next set uses a different version of the chart "
@@ -1047,7 +1057,7 @@ def break_screen() -> html.Div:
 def complete_screen(participant_id: str | None = None) -> html.Div:
     """The end, with the withdrawal right IRB form item 13 promises to remind participants of."""
     who = f" (your participant ID is {participant_id})" if participant_id else ""
-    return page(
+    return interim_page(
         heading("Finished — thank you"),
         html.P(
             "Your responses have been recorded. You can close this tab.",
