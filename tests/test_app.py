@@ -23,7 +23,7 @@ import pytest
 from dash import html, no_update
 from dash.exceptions import PreventUpdate
 
-from src import app, consent, db, figures, flow, layout, runtime_data, tasks
+from src import app, config, consent, db, figures, flow, layout, runtime_data, tasks
 from src.flow import SessionState, Stage
 from src.logging import SCHEMA_VERSION
 
@@ -404,7 +404,7 @@ def test_the_chart_holds_its_size_before_plotly_has_loaded():
         assert wrapper.children.responsive is False
         containers.append((wrapper.className, getattr(wrapper, "style", None)))
     assert containers[0] == containers[1] == ("ui-chart", None)
-    css = (layout.config.PROJECT_ROOT / "src" / "assets" / "study.css").read_text(encoding="utf-8")
+    css = (config.PROJECT_ROOT / "src" / "assets" / "study.css").read_text(encoding="utf-8")
     assert ".ui-chart { width: var(--chart-w); height: var(--chart-h);" in css
     assert "--chart-w: 1050px; --chart-h: 520px;" in css
 
@@ -1216,7 +1216,7 @@ def test_a_chip_fades_a_bar_in_place(tmp_path):
     names = _countries(_task_at("bar"))
     result, events = _interact_on("bar", "chips", tmp_path, chips=names[1:])
     assert events[0]["payload"]["control"] == "chips"
-    assert list(result.figure.data[0].marker.opacity) == [layout.config.FADED_OPACITY] + [1.0] * (
+    assert list(result.figure.data[0].marker.opacity) == [config.FADED_OPACITY] + [1.0] * (
         len(names) - 1
     )
     assert list(result.figure.data[0].x) == names
@@ -1907,24 +1907,36 @@ const calls = [];
 const timers = [];
 const window = {
   performance: { now: () => 1234.5, timeOrigin: 1758000000000.25 },
-  dash_clientside: { no_update: "NO_UPDATE", set_props: (id, props) => calls.push([id, props]) },
+  dash_clientside: {
+    no_update: "NO_UPDATE",
+    PreventUpdate: "PREVENT_UPDATE",
+    set_props: (id, props) => calls.push([id, props]),
+  },
   setTimeout: (fn, ms) => timers.push([fn, ms]),
   confirm: (message) => { calls.push(["confirm", message]); return window.confirmAnswer; },
 };
 // Every id is on the page unless a case lists it as gone, as when the screen has moved on. An
-// attribute set or removed on an element is recorded as ["attr", id, name, value or null].
+// attribute set or removed on an element is recorded as ["attr", id, name, value or null], and a
+// focus as ["focus", id].
 const element = (id) => ({
   id,
   setAttribute: (name, value) => calls.push(["attr", id, name, value]),
   removeAttribute: (name) => calls.push(["attr", id, name, null]),
+  focus: () => calls.push(["focus", id]),
 });
 const document = { getElementById: (id) => (window.gone.includes(id) ? null : element(id)) };
 const cases = JSON.parse(process.argv[1]);
-const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer, gone]) => {
+// A case may name what triggered it, as Dash's callback_context does: [prop_id, value]. A function
+// that throws (PreventUpdate) has what it threw as its result.
+const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer, gone, triggered]) => {
   window.confirmAnswer = confirmAnswer !== false;
   window.gone = gone || [];
+  window.dash_clientside.callback_context = {
+    triggered: triggered ? [{ prop_id: triggered[0], value: triggered[1] }] : [],
+  };
   const fn = eval("(" + source + ")");
-  const result = fn(arg, ...(extra || []));
+  let result;
+  try { result = fn(arg, ...(extra || [])); } catch (thrown) { result = thrown; }
   if (fireTimers) { timers.forEach(([f]) => f()); }
   return { result, timers: timers.map(([, ms]) => ms), calls: calls.slice() };
 });
@@ -1943,6 +1955,7 @@ def _run_js(cases):
         [node, "-e", _NODE_HARNESS, json.dumps(cases)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=True,
         timeout=30,
     )
@@ -2100,6 +2113,217 @@ def test_about_you_counts_questions_not_their_extra_boxes():
     assert answered["result"][0]["skipped"] == 0
     (blank_age,) = _run_js([[source, 1, False, [["Mouse", "", None], about], True]])
     assert blank_age["result"][0]["skipped"] == 1
+
+
+# --- The survey and About you, one question per page (layout.pager_screen) ---------------------
+
+
+def _pager_screen(stage=Stage.LOAD, **kwargs):
+    return app._screen(_state(stage, **kwargs))
+
+
+def _pager_start(stage=Stage.LOAD, **kwargs) -> dict:
+    """The pager's state as the screen starts it."""
+    (store,) = [
+        n for n in _nodes(_pager_screen(stage, **kwargs)) if getattr(n, "id", None) == "pager-state"
+    ]
+    return store.data
+
+
+def _pager(state, trigger, value=1, survey=None, about=None, confirm=True):
+    """PAGER_JS, run once: `trigger` is "back", "next" or a section's index; `survey` and `about`
+    map each field's item to its value. Returns the harness's record of the run."""
+    if isinstance(trigger, str):
+        prop = f"pager-{trigger}.n_clicks"
+    else:
+        prop = json.dumps({"index": trigger, "pager": "section"}, separators=(",", ":"))
+        prop += ".n_clicks"
+    fields = []
+    for kind, answers in (("survey", survey or {}), ("about", about or {})):
+        fields += [list(answers.values()), [{"type": kind, "item": k} for k in answers]]
+    case = [app.PAGER_JS, None, True, [None, None, state, *fields], confirm, [], [prop, value]]
+    (run,) = _run_js([case])
+    return run
+
+
+_AGE_FIELD = json.dumps({"item": "age", "type": "about"}, separators=(",", ":"))
+
+
+def test_the_pager_draws_the_first_page_as_the_screen_starts_it():
+    """The screen is built in Python and redrawn by the script: back on the first page, the two
+    must agree, or the rail would change under the participant at the first click."""
+    screen = _pager_screen(first_condition="interactive")
+    nodes = {json.dumps(n.id, sort_keys=True): n for n in _nodes(screen) if getattr(n, "id", None)}
+
+    def parts(part):
+        found = [(k, n) for k, n in nodes.items() if k.startswith('{"index"') and f'"{part}"' in k]
+        return [n for _k, n in sorted(found, key=lambda kn: json.loads(kn[0])["index"])]
+
+    state = {**_pager_start(first_condition="interactive"), "page": 1, "max": 1}
+    result = _pager(state, "back", survey={"paas": 5})["result"]
+    (
+        new_state,
+        hidden,
+        classes,
+        locked,
+        marks,
+        subs,
+        bars,
+        bars_hidden,
+        position,
+        back_disabled,
+        next_hidden,
+        finish_hidden,
+        errors,
+    ) = result
+    assert new_state["page"] == 0
+    assert hidden == [page.hidden for page in parts("page")]
+    assert classes == [b.className for b in parts("section")]
+    assert locked == [b.disabled for b in parts("section")]
+    assert marks == [m.children for m in parts("mark")]
+    assert subs == [s.children for s in parts("sub")]
+    assert bars == [b.value for b in parts("bar")]
+    assert bars_hidden == [b.hidden for b in parts("bar")]
+    assert position == nodes['"pager-position"'].children
+    assert (back_disabled, next_hidden, finish_hidden) == (True, False, True)
+    assert errors == []
+
+
+def test_next_moves_on_and_confirms_a_blank_page_first():
+    state = _pager_start(first_condition="interactive")
+    answered = _pager(state, "next", survey={"paas": 5})
+    assert answered["result"][0]["page"] == 1
+    assert answered["result"][8] == "Question 2 of 13"
+    assert not [c for c in answered["calls"] if c[0] == "confirm"]
+    blank = _pager(state, "next", survey={"paas": None})
+    assert blank["result"][0]["page"] == 1
+    assert ["confirm", "You have left 1 question unanswered. Continue without answering?"] in (
+        blank["calls"]
+    )
+    assert _pager(state, "next", survey={"paas": None}, confirm=False)["result"] == "PREVENT_UPDATE"
+
+
+def test_the_pager_ignores_a_button_that_has_only_appeared():
+    """Dash fires the callback when a questionnaire screen's buttons first appear, at n_clicks 0.
+    Taken as a click, the survey would open on its second page."""
+    assert _pager(_pager_start(), "next", value=0)["result"] == "PREVENT_UPDATE"
+
+
+def test_an_age_the_study_cannot_take_is_refused_on_its_page():
+    """Refused by Next, on the age's own page, and marked on the field. The server refuses it too,
+    but only at Continue, pages later."""
+    state = {**_pager_start(Stage.DEMOGRAPHICS), "page": 1, "max": 1}
+    for age in (7, 25.5, 150):
+        refused = _pager(state, "next", about={"age": age, "age_prefer_not": []})
+        assert refused["result"][0]["page"] == 1, age
+        assert refused["result"][12] == [app.AGE_MESSAGE]
+        assert ["attr", _AGE_FIELD, "aria-invalid", "true"] in refused["calls"]
+    accepted = _pager(state, "next", about={"age": 25, "age_prefer_not": []})
+    assert accepted["result"][0]["page"] == 2
+    assert accepted["result"][12] == [""]
+    assert ["attr", _AGE_FIELD, "aria-invalid", None] in accepted["calls"]
+    declined = _pager(state, "next", about={"age": None, "age_prefer_not": [tasks.PREFER_NOT]})
+    assert declined["result"][0]["page"] == 2
+    assert not [c for c in declined["calls"] if c[0] == "confirm"]
+
+
+def test_the_rail_reopens_a_finished_section_and_keeps_the_later_one_reachable():
+    state = {**_pager_start(first_condition="interactive"), "page": 11, "max": 11}
+    at_controls = _pager(state, "next", survey={"b2": 4})["result"]
+    assert at_controls[4][0] == "\u2713" and "pager-go--done" in at_controls[2][0]
+    reopened = _pager(state, 0)["result"]
+    assert reopened[0]["page"] == 0 and reopened[0]["max"] == 11
+    assert reopened[2] == ["pager-go pager-go--current", "pager-go pager-go--reached"]
+    assert reopened[3] == [False, False]
+    assert reopened[5] == ["Question 1 of 10", "3 questions"]
+
+
+def test_the_last_page_puts_continue_in_place_of_next_and_hands_it_the_focus():
+    state = {**_pager_start(first_condition="interactive"), "page": 11, "max": 11}
+    run = _pager(state, "next", survey={"b2": 4})
+    assert run["result"][0]["page"] == 12
+    assert run["result"][9:12] == [False, True, False]
+    assert ["focus", "load-button"] in run["calls"]
+
+
+def test_continue_asks_only_about_the_last_page():
+    """Every earlier page's skip was confirmed as it was left, so Continue does not ask again."""
+    source = app.confirm_js("load-button")
+    ids = _survey_ids("paas", "a1", "a2")
+    pager = {"page": 2, "pages": [["paas"], ["a1"], ["a2"]]}
+    answered, blank = _run_js(
+        [
+            [source, 1, False, [[None, None, 6], ids, pager]],
+            [source, 1, False, [[None, None, None], ids, pager]],
+        ]
+    )
+    assert answered["result"][0]["skipped"] == 0
+    assert not [c for c in answered["calls"] if c[0] == "confirm"]
+    assert blank["result"][0]["skipped"] == 1
+
+
+def test_typing_beside_other_chooses_other():
+    typed, blank, chosen = _run_js(
+        [
+            [app.OTHER_CHOSEN_JS, "Stylus", False, [None]],
+            [app.OTHER_CHOSEN_JS, "  ", False, [None]],
+            [app.OTHER_CHOSEN_JS, "Stylus", False, [tasks.OTHER]],
+        ]
+    )
+    assert typed["result"] == tasks.OTHER
+    assert blank["result"] == chosen["result"] == "NO_UPDATE"
+    wired = [
+        (question.other_key, question.key)
+        for question in tasks.ABOUT_QUESTIONS
+        if question.other_key is not None
+    ]
+    assert wired == [("pointer_other", "pointer"), ("field_other", "field")]
+    for other_key, key in wired:
+        assert _wired(
+            json.dumps(layout.about_id(key), sort_keys=True, separators=(",", ":")) + ".value",
+            json.dumps(layout.about_id(other_key), sort_keys=True, separators=(",", ":"))
+            + ".value",
+        )
+
+
+@pytest.mark.parametrize(
+    ("stage", "first_condition", "condition_index"),
+    [
+        (Stage.LOAD, "static", 0),
+        (Stage.LOAD, "interactive", 0),
+        (Stage.LOAD, "interactive", 1),
+        (Stage.LOAD, "static", 1),
+        (Stage.DEMOGRAPHICS, "static", 1),
+    ],
+)
+def test_every_questionnaire_field_is_on_the_page_the_pager_says(
+    stage, first_condition, condition_index
+):
+    """The pager confirms a skip by the fields its state lists for the page. A field on another
+    page, or on none, would be confirmed on the wrong page or never."""
+    screen = _pager_screen(stage, first_condition=first_condition, condition_index=condition_index)
+    kind = "survey" if stage is Stage.LOAD else "about"
+    pages = [
+        n
+        for n in _nodes(screen)
+        if isinstance(getattr(n, "id", None), dict) and n.id.get("pager") == "page"
+    ]
+    listed = _pager_start(stage, first_condition=first_condition, condition_index=condition_index)
+    assert [sorted(_items(page, kind)) for page in pages] == [sorted(p) for p in listed["pages"]]
+    assert [page.hidden for page in pages] == [False] + [True] * (len(pages) - 1)
+
+
+def test_the_age_field_leaves_the_range_to_the_study():
+    """dcc.Input reports a number outside its min or max, or off its step, as null: an age of 7
+    would reach the study as a skip rather than be refused."""
+    (field,) = [
+        n
+        for n in _nodes(_pager_screen(Stage.DEMOGRAPHICS))
+        if getattr(n, "id", None) == layout.about_id("age")
+    ]
+    props = field.to_plotly_json()["props"]
+    assert props["type"] == "number"
+    assert not {"min", "max", "step"} & set(props)
 
 
 def test_the_signed_copy_downloads_from_the_browser():

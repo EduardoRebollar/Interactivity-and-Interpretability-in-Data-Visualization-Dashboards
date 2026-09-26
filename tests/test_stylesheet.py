@@ -136,8 +136,9 @@ def test_the_bridge_reads_an_input_boxs_states_through_the_box():
     mark (S2) and its placeholder are read through that box."""
     translate = _bridge_script().translate
     assert translate(".field:focus-visible") == ".field:has(:focus-visible)"
-    assert translate('.field[aria-invalid="true"]') == '.field:has(> [aria-invalid="true"])'
-    assert translate(".field:disabled") == ".field:has(> :disabled)"
+    assert translate('.field[aria-invalid="true"]') == '.field:has(> input[aria-invalid="true"])'
+    # The input itself, not Dash's stepper buttons beside a number, which are disabled at a limit.
+    assert translate(".field:disabled") == ".field:has(> input:disabled)"
     assert translate(".field::placeholder") == ".field > .dash-input-element::placeholder"
     assert translate(".field:hover") is None, "the box itself is hovered"
     assert translate(".field-error") is None
@@ -186,10 +187,10 @@ def test_every_class_a_screen_uses_is_defined():
 
 def test_the_rebuilt_screens_carry_no_inline_style():
     """Their look is the stylesheet's classes (visual-spec.md section 10): the handoff's own inline
-    sizes, centring and consent-sheet layout are classes in zz-overrides.css, so none is set from
-    layout.py."""
+    sizes, centring, consent sheet and questionnaire layout are classes in zz-overrides.css, so
+    none is set from layout.py."""
     short = {"declined", "participant_id", "instructions", "practice_complete", "break", "complete"}
-    short |= {"consent"}
+    short |= {"consent", "load", "demographics"}
     problems = [
         f"{name}: {type(node).__name__}"
         for name, screen in _screens()

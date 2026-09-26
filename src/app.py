@@ -1438,8 +1438,51 @@ def _register_callbacks(app: dash.Dash) -> None:
         prevent_initial_call=True,
     )
 
-    # Continue on the demographics and survey screens: confirm any skips, then trigger the server.
-    # Disabled on the way, like Submit, so a double click cannot record the survey twice.
+    # The survey and About you, one question per page (layout.pager_screen). Back, Next and the
+    # rail move between pages in the browser; Next confirms a skip on the page it leaves and checks
+    # the age. No page change reaches the server, and nothing is logged until Continue.
+    app.clientside_callback(
+        PAGER_JS,
+        Output("pager-state", "data"),
+        Output(layout.pager_id("page", ALL), "hidden"),
+        Output(layout.pager_id("section", ALL), "className"),
+        Output(layout.pager_id("section", ALL), "disabled"),
+        Output(layout.pager_id("mark", ALL), "children"),
+        Output(layout.pager_id("sub", ALL), "children"),
+        Output(layout.pager_id("bar", ALL), "value"),
+        Output(layout.pager_id("bar", ALL), "hidden"),
+        Output("pager-position", "children"),
+        Output("pager-back", "disabled"),
+        Output("pager-next", "hidden"),
+        Output("pager-finish", "hidden"),
+        Output(layout.pager_id("error", ALL), "children"),
+        Input("pager-back", "n_clicks"),
+        Input("pager-next", "n_clicks"),
+        Input(layout.pager_id("section", ALL), "n_clicks"),
+        State("pager-state", "data"),
+        State({"type": "survey", "item": ALL}, "value"),
+        State({"type": "survey", "item": ALL}, "id"),
+        State({"type": "about", "item": ALL}, "value"),
+        State({"type": "about", "item": ALL}, "id"),
+        prevent_initial_call=True,
+    )
+
+    # Typing beside "Other" chooses "Other". The box sits inside that option, and text typed there
+    # with no option chosen would otherwise be dropped (`_demographic_answers` keeps it only for
+    # "Other").
+    for question in tasks.ABOUT_QUESTIONS:
+        if question.other_key is not None:
+            app.clientside_callback(
+                OTHER_CHOSEN_JS,
+                Output(layout.about_id(question.key), "value"),
+                Input(layout.about_id(question.other_key), "value"),
+                State(layout.about_id(question.key), "value"),
+                prevent_initial_call=True,
+            )
+
+    # Continue, on the last page of the demographics and survey screens: confirm a skip there, then
+    # trigger the server. Disabled on the way, like Submit, so a double click cannot record the
+    # survey twice.
     app.clientside_callback(
         confirm_js("demographics-button"),
         Output("demographics-clock", "data"),
@@ -1447,6 +1490,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         Input("demographics-button", "n_clicks"),
         State({"type": "about", "item": ALL}, "value"),
         State({"type": "about", "item": ALL}, "id"),
+        State("pager-state", "data"),
         prevent_initial_call=True,
     )
     app.clientside_callback(
@@ -1456,6 +1500,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         Input("load-button", "n_clicks"),
         State({"type": "survey", "item": ALL}, "value"),
         State({"type": "survey", "item": ALL}, "id"),
+        State("pager-state", "data"),
         prevent_initial_call=True,
     )
     for button in ("demographics-button", "load-button"):
@@ -1570,38 +1615,54 @@ SUBMIT_JS = """function(n, answer, justification) {
 }"""
 
 
+# How many of a page's fields are unanswered, by the rules every questionnaire screen shares: a
+# field that is null, empty or an empty checklist is skipped, except the text box beside "Other"
+# (not a question of its own) and the age's "Prefer not to say", which answers the age when ticked.
+# `byItem` maps each field's item to its value. Shared by the pager's Next and by Continue.
+_SKIPS_JS = """
+    var blank = function (v) {
+        return v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length);
+    };
+    var skippedAmong = function (items, byItem) {
+        var ageDeclined = !blank(byItem.age_prefer_not);
+        return items.filter(function (item) {
+            if (/_other$/.test(item) || item === "age_prefer_not") { return false; }
+            if (item === "age" && ageDeclined) { return false; }
+            return blank(byItem[item]);
+        }).length;
+    };
+    var confirmSkips = function (skipped) {
+        return !skipped || window.confirm(
+            "You have left " + skipped + (skipped === 1 ? " question" : " questions") +
+            " unanswered. Continue without answering?"
+        );
+    };
+"""
+
+
 def confirm_js(button: str) -> str:
     """Continue on a questionnaire screen: confirm any skipped questions, then fire.
 
     Returns [clock, button.disabled]. Called with the screen's field values and their pattern ids,
-    in matching order. A field that is null, empty or an empty checklist counts as skipped, except
-    the text box beside "Other" (not a question of its own) and the age box's "Prefer not to say",
-    which answers the age question when ticked. The clock carries the time, so every press is a
-    distinct value -- the survey screen's button starts again at n_clicks 1 in the second condition,
-    and the store must not look unchanged.
+    in matching order, and the pager's state. On a paged screen Continue is on the last page, and
+    only that page's skips are asked about: Next asked about every earlier page as it was left.
+    Without a pager, every field counts. The clock carries the time, so every press is a distinct
+    value -- the survey screen's button starts again at n_clicks 1 in the second condition, and the
+    store must not look unchanged.
     """
-    return f"""function(n, values, ids) {{
+    return f"""function(n, values, ids, pager) {{
     var no = window.dash_clientside.no_update;
     if (!n) {{ return [no, no]; }}
     values = values || [];
     ids = ids || [];
-    var blank = function (v) {{
-        return v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length);
-    }};
-    var ageDeclined = false;
-    ids.forEach(function (id, i) {{
-        if (id.item === "age_prefer_not" && !blank(values[i])) {{ ageDeclined = true; }}
-    }});
-    var skipped = values.filter(function (v, i) {{
-        var item = (ids[i] || {{}}).item || "";
-        if (/_other$/.test(item) || item === "age_prefer_not") {{ return false; }}
-        if (item === "age" && ageDeclined) {{ return false; }}
-        return blank(v);
-    }}).length;
-    if (skipped && !window.confirm(
-        "You have left " + skipped + (skipped === 1 ? " question" : " questions") +
-        " unanswered. Continue without answering?"
-    )) {{
+    {_SKIPS_JS}
+    var byItem = {{}};
+    ids.forEach(function (id, i) {{ byItem[id.item] = values[i]; }});
+    var items = pager && pager.pages
+        ? pager.pages[pager.page]
+        : ids.map(function (id) {{ return id.item; }});
+    var skipped = skippedAmong(items, byItem);
+    if (!confirmSkips(skipped)) {{
         return [no, no];
     }}
     window.setTimeout(function () {{
@@ -1612,6 +1673,118 @@ def confirm_js(button: str) -> str:
     return [{{n: n, skipped: skipped, at: Date.now()}}, true];
 }}"""
 
+
+# The pager on the survey and About-you screens (layout.pager_screen): Back, Next and the rail's
+# sections. Returns, in order, the pager's state, each page's `hidden`, each section's class,
+# `disabled`, number or tick, subtitle, progress and its `hidden`, the position label, Back's
+# `disabled`, Next's and Continue's `hidden`, and the age message. Next confirms a skip on the page
+# it leaves, and refuses an age outside the range, marking the field, where the server would refuse
+# it only at Continue, pages later. A reached section can be reopened; one not reached cannot.
+PAGER_JS = (
+    """function(back, next, rail, pager, surveyValues, surveyIds, aboutValues, aboutIds) {
+    var context = window.dash_clientside.callback_context || {};
+    var trigger = (context.triggered || [])[0] || {};
+    var fired = trigger.prop_id || "";
+    // Only a click: Dash also fires this when the screen's buttons first appear, at n_clicks 0.
+    if (!pager || !pager.pages || !fired || !trigger.value) {
+        throw window.dash_clientside.PreventUpdate;
+    }
+    var source = fired.slice(0, fired.lastIndexOf("."));
+    """
+    + _SKIPS_JS
+    + """
+    var byItem = {};
+    [[surveyValues, surveyIds], [aboutValues, aboutIds]].forEach(function (pair) {
+        (pair[1] || []).forEach(function (id, i) { byItem[id.item] = (pair[0] || [])[i]; });
+    });
+    var pages = pager.pages, sectionOf = pager.sections, last = pages.length - 1;
+    var target = pager.page, error = "";
+    if (source === "pager-back") {
+        target = Math.max(0, pager.page - 1);
+    } else if (source === "pager-next") {
+        var items = pages[pager.page];
+        if (items.indexOf("age") >= 0 && blank(byItem.age_prefer_not) && !blank(byItem.age)) {
+            var age = Number(byItem.age);
+            if (!(isFinite(age) && Math.floor(age) === age && age >= AGE_LOW && age <= AGE_HIGH)) {
+                error = AGE_MESSAGE;
+            }
+        }
+        if (!error) {
+            if (!confirmSkips(skippedAmong(items, byItem))) {
+                throw window.dash_clientside.PreventUpdate;
+            }
+            target = Math.min(last, pager.page + 1);
+        }
+    } else {
+        var section = JSON.parse(source).index;
+        target = sectionOf[pager.page] === section ? pager.page : sectionOf.indexOf(section);
+    }
+    var ageField = document.getElementById(JSON.stringify({item: "age", type: "about"}));
+    if (ageField) {
+        if (error) {
+            ageField.setAttribute("aria-invalid", "true");
+            ageField.setAttribute("aria-describedby", JSON.stringify({index: 0, pager: "error"}));
+        } else {
+            ageField.removeAttribute("aria-invalid");
+        }
+    }
+    var reached = Math.max(pager.max, target);
+    var current = sectionOf[target];
+    var count = Math.max.apply(null, sectionOf) + 1;
+    var classes = [], locked = [], marks = [], subs = [], bars = [], barsHidden = [];
+    for (var s = 0; s < count; s++) {
+        var first = sectionOf.indexOf(s), end = sectionOf.lastIndexOf(s), size = end - first + 1;
+        var here = s === current, done = target > end;
+        classes.push("pager-go" + (here ? " pager-go--current" : done ? " pager-go--done"
+            : reached >= first ? " pager-go--reached" : ""));
+        locked.push(reached < first);
+        marks.push(done ? "\u2713" : String(s + 1));
+        subs.push(here ? "Question " + (target - first + 1) + " of " + size
+            : size === 1 ? "1 question" : size + " questions");
+        bars.push(here ? target - first + 1 : 0);
+        barsHidden.push(!here);
+    }
+    // A button that disappears or goes dead under the keyboard hands its focus on, once Dash has
+    // drawn the one that takes it over (a hidden button cannot take focus).
+    var focusSoon = function (id) {
+        var tries = 0;
+        var attempt = function () {
+            var element = document.getElementById(id);
+            if (element && element.offsetParent !== null && !element.disabled) {
+                element.focus();
+            } else if (++tries < 40) {
+                window.setTimeout(attempt, 25);
+            }
+        };
+        window.setTimeout(attempt, 0);
+    };
+    if (source === "pager-next" && target === last && target !== pager.page) {
+        focusSoon(pager.finish);
+    }
+    if (source === "pager-back" && target === 0) { focusSoon("pager-next"); }
+    return [
+        {page: target, max: reached, pages: pages, sections: sectionOf, errors: pager.errors,
+         finish: pager.finish},
+        pages.map(function (_, k) { return k !== target; }),
+        classes, locked, marks, subs, bars, barsHidden,
+        "Question " + (target + 1) + " of " + pages.length,
+        target === 0,
+        target === last,
+        target !== last,
+        Array.apply(null, Array(pager.errors)).map(function () { return error; })
+    ];
+}""".replace("AGE_LOW", str(tasks.AGE_RANGE[0]))
+    .replace("AGE_HIGH", str(tasks.AGE_RANGE[1]))
+    .replace("AGE_MESSAGE", json.dumps(AGE_MESSAGE))
+)
+
+
+OTHER_CHOSEN_JS = (
+    """function(text, chosen) {
+    var typed = typeof text === "string" && text.trim() !== "";
+    return typed && chosen !== OTHER ? OTHER : window.dash_clientside.no_update;
+}"""
+).replace("OTHER", json.dumps(tasks.OTHER))
 
 COPY_DOWNLOAD_JS = """function(n, copy) {
     if (!n || !copy) { return window.dash_clientside.no_update; }

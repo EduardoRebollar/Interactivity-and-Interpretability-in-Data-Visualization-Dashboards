@@ -235,6 +235,9 @@ CHROME_TEXT = [
     ("#FFFFFF", "c-error"),  # the pending-approval banner
     ("#000000", "#FFFFFF"),  # the consent sheet
     ("#000000", "#F4F7FB"),  # the consent sheet's signing fields (zz-overrides.css)
+    ("#FFFFFF", "c-ink"),  # a finished section's tick in the survey's rail (zz-overrides.css)
+    ("c-ink", "#F3EBE1"),  # a survey scale's numbers, on its fill (zz-overrides.css)
+    ("c-muted", "#F3EBE1"),  # a survey scale's anchors
 ]
 
 # Control edges, focus rings, selected edges and error borders, on the grounds they sit on.

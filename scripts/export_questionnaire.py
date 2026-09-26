@@ -72,7 +72,14 @@ _TAGS = {
     "Em": "em",
     "A": "a",
     "Ul": "ul",
+    "Ol": "ol",
     "Li": "li",
+    "Table": "table",
+    "Thead": "thead",
+    "Tbody": "tbody",
+    "Tr": "tr",
+    "Th": "th",
+    "Td": "td",
 }
 
 
@@ -107,6 +114,13 @@ class Renderer:
         kind, props = spec["type"], spec["props"]
         if props.get("id") == "flow-error":
             # The validation-error slot on every screen: always empty on a fresh one.
+            return ""
+        classes = (props.get("className") or "").split()
+        if props.get("aria-hidden") == "true" or "sr-only" in classes:
+            # Decoration a participant does not read (a heading's emoji, the survey rail's lines
+            # and bars), and names only a screen reader hears (each radio of the tools question).
+            return ""
+        if kind == "Progress":
             return ""
         if spec["namespace"] == "dash_core_components":
             return self._core(kind, props)

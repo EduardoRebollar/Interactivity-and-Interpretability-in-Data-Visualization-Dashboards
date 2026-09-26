@@ -505,6 +505,16 @@ strip and the hint row under the chart (§7).
   S3 draws the pad at its proportions. A text field's focus ring is drawn on dcc.Input's box
   alone, and the date field's on any focus, since Chrome never gives a date input
   `:focus-visible`.
+- **The survey and About you (2026-09-26).** The handoff's screens 7 and 10: a band-coloured rail
+  (title, intro, skip note, the sections with their progress) beside one question per page, with
+  Back and Next, and Continue on the last page. Every page is on the screen and only shown or
+  hidden, in the browser, so answers stay put and nothing reaches the server before Continue.
+  Paas, which the handoff lacks, is the first page, on a 9-point version of the same scale. Its
+  inline styles are classes in `zz-overrides.css`. Three departures, all invisible at rest: the
+  text box beside "Other" is laid over that option's cell rather than inside its label, since
+  Dash cannot read a field nested in an option; the rail's buttons get a focus ring, which the
+  handoff's `all: unset` removes; and when Next or Back disappears or goes dead under the
+  keyboard, focus moves to the button that replaces it.
 - **Two palettes that never mix.** The chrome's colours (the stylesheet's `:root` tokens: oat page
   `#F8F3EE`, band `#EFE4DA`, ink `#241C18`, muted `#5F544D`, cocoa accent `#5A4034`, error `#C35600`
   and the rest) are never used inside the chart, and the series colours and Cividis (§4) are never

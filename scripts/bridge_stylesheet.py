@@ -2,8 +2,8 @@
 
 The design handoff's stylesheet (`src/assets/study.css`, copied unchanged) was written for markup
 where a list of radios or checkboxes is a row of `<label class="chip"><input> text</label>`, with
-the class on each label: `.chip`, `.ui-tile`, `.seg-item`, `.check`. Dash 4's `dcc.RadioItems` and
-`dcc.Checklist` cannot put a class on those labels. Each label is
+the class on each label: `.chip`, `.ui-tile`, `.seg-item`, `.check`, `.option`, `.scale-pt`. Dash
+4's `dcc.RadioItems` and `dcc.Checklist` cannot put a class on those labels. Each label is
 `<label class="dash-options-list-option">`, and `labelClassName` goes on the text beside the
 input. The list's own `className` does reach the element around the labels, so every such rule
 can be matched as ".dash-options-list-option whose parent carries the list's class". Likewise
@@ -39,14 +39,16 @@ OPTION_LISTS = {
     "chip": "chips",
     "seg-item": "seg",
     "check": "checks",
+    "option": "options",
+    "scale-pt": "scale",
 }
 # Classes study.css puts on an <input>, which dcc.Input puts on the box around it instead.
 INPUT_BOXES = ("tb-num", "field")
 # A state study.css reads from the <input> itself, and how it is read through dcc.Input's box.
 INPUT_STATES = {
     ":focus-visible": ":has(:focus-visible)",
-    ":disabled": ":has(> :disabled)",
-    '[aria-invalid="true"]': ':has(> [aria-invalid="true"])',
+    ":disabled": ":has(> input:disabled)",
+    '[aria-invalid="true"]': ':has(> input[aria-invalid="true"])',
     "::placeholder": " > .dash-input-element::placeholder",
 }
 

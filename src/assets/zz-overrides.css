@@ -126,3 +126,92 @@
 .sheet-paper > .dash-options-list-option { margin-top: 0; font-size: 20px; }
 .sheet-actions { font-family: var(--font); margin-top: 40px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
 .sheet-actions .btn { height: 50px; }
+
+/* ---- The survey and About you -------------------------------------------------------------------
+   The handoff's screens 7 and 10: a rail of sections beside one question per page. Its Screens
+   file lays them out with inline styles, which layout.py does not use; these rules carry its
+   values. The scale's fill, #F3EBE1, is the handoff's; its pairs are in tests/test_palette.py. */
+.stage--top { justify-content: flex-start; padding-top: 40px; padding-bottom: 40px; }
+.pager { width: min(100%, 1160px); padding: 0; display: grid; grid-template-columns: 320px minmax(0, 1fr); overflow: hidden; }
+
+/* The rail: title, intro and skip note, then the sections. */
+.pager-rail { padding: 40px 32px; background: var(--c-band); display: flex; flex-direction: column; gap: 32px; }
+.pager-intro { display: flex; flex-direction: column; gap: 8px; }
+.pager-intro .h1 { margin: 0 0 4px; font-size: 30px; }
+.pager-intro .pager-lede { margin: 0; font-size: 16px; line-height: 1.5; }
+.pager-intro .note { margin: 0; }
+.pager-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pager-step { display: flex; flex-direction: column; }
+.pager-link { margin-left: 13.5px; width: 1px; height: 16px; background: var(--c-line); }
+.pager-go { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; min-height: 44px; padding: 4px 0; cursor: pointer; }
+/* all: unset takes study.css's focus ring with it, which the handoff's inline style also does;
+   the ring comes back for the keyboard. A section not reached yet cannot be opened. */
+.pager-go:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--r-1); }
+.pager-go:disabled { cursor: default; }
+.pager-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; font-weight: 700; background: transparent; color: var(--c-muted); box-shadow: inset 0 0 0 1.5px var(--c-line); }
+.pager-go--current .pager-mark { background: var(--c-accent); color: #FFFFFF; box-shadow: inset 0 0 0 1.5px var(--c-accent); }
+.pager-go--done .pager-mark { background: var(--c-ink); color: #FFFFFF; box-shadow: inset 0 0 0 1.5px var(--c-ink); }
+.pager-label { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+.pager-title { font-size: 16px; line-height: 1.3; color: var(--c-muted); font-weight: 400; }
+.pager-go--current .pager-title, .pager-go--done .pager-title, .pager-go--reached .pager-title { color: var(--c-ink); }
+.pager-go--current .pager-title { font-weight: 700; }
+.pager-sub { font-size: 14px; line-height: 1.3; color: var(--c-muted); }
+/* The current section's progress, a <progress> where the handoff sizes a bar inline. */
+.pager-bar { appearance: none; display: block; width: 100%; height: 4px; margin-top: 4px; border: none; border-radius: 2px; background: var(--c-line); overflow: hidden; }
+.pager-bar::-webkit-progress-bar { background: var(--c-line); }
+.pager-bar::-webkit-progress-value { background: var(--c-accent); }
+.pager-bar::-moz-progress-bar { background: var(--c-accent); }
+.pager-bar[hidden] { display: none; }
+
+/* The page: position, section, question, then Back and Next (or Continue) apart. */
+.pager-main { padding: 40px 64px; display: flex; flex-direction: column; gap: 24px; }
+.pager-main .position { margin: 0; }
+.pager-page { display: flex; flex-direction: column; gap: 32px; }
+.pager-page[hidden] { display: none; }
+.pager-page .h1 { margin: 0; font-size: 28px; }
+.pager-question { display: flex; flex-direction: column; gap: 16px; }
+.pager-question .q-text { margin: 0; }
+.q-help { display: block; margin-top: 4px; font-size: 15px; font-weight: 400; color: var(--c-muted); }
+.pager .scale { background: #F3EBE1; }
+.pager-text { width: 100%; min-height: 120px; }
+.pager-actions { justify-content: space-between; margin: 16px 0 0; }
+/* .btn's display would otherwise show Next on the last page. */
+.pager-actions .btn[hidden] { display: none; }
+
+/* Answer options in a grid: the radios' own box takes no space, so each option is a cell of the
+   grid around it, where the text box for "Other" can be laid over its cell. */
+.choice-grid { display: grid; gap: var(--s-1); position: relative; }
+.options--in-grid { display: contents; }
+.options--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.options--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.options--row-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* "Prefer not to say", set apart beneath the other options, as the handoff sets it. */
+.options--pnts > .dash-options-list-option:last-child { grid-column: 1 / -1; justify-self: start; width: max-content; margin-top: var(--s-2); color: var(--c-muted); }
+/* The text box for "Other", over that option's cell, after an unseen copy of its radio and word.
+   Positioned absolutely, it takes no cell from the options; both end lines are given, since an
+   absolutely positioned item's "auto" end is the grid's own edge. */
+.other-box { position: absolute; inset: 0; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); font-size: var(--fs-13); pointer-events: none; }
+.other-box--r2c1 { grid-row: 2 / 3; grid-column: 1 / 2; }
+.other-box--r3c2 { grid-row: 3 / 4; grid-column: 2 / 3; }
+.other-ghost { display: flex; align-items: center; gap: var(--s-3); visibility: hidden; }
+.other-radio { width: 18px; height: 18px; }
+.other-box .other-field { flex: 1; min-width: 0; min-height: 30px; padding: 2px 8px; font-size: 15px; pointer-events: auto; }
+
+/* The age: the number, "Prefer not to say" beside it, the message under both. Dash's own buttons
+   for stepping a number are not the handoff's, and would be two more stops for the keyboard. */
+.age-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; }
+.age-row .field { width: 140px; }
+.age-row .field > .dash-input-stepper { display: none; }
+.age-row .field-error { flex-basis: 100%; }
+.pager .age-pnts { margin: 0; }
+.age-pnts > .dash-options-list-option { color: var(--c-muted); }
+
+/* The tools question: one row of radios per tool under a header of levels. */
+.matrix { width: 100%; border-collapse: collapse; font-size: 15px; }
+.matrix thead th + th { padding: 6px; font-weight: 700; text-align: center; width: 14%; line-height: 1.3; }
+.matrix tbody tr { border-top: 1px solid var(--c-line-soft); }
+.matrix tbody th { text-align: left; padding: 8px 12px 8px 0; font-size: 16px; font-weight: 400; }
+.matrix td { padding: 0; }
+.matrix-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.matrix-row > .dash-options-list-option { display: flex; align-items: center; justify-content: center; min-height: 48px; cursor: pointer; }
+.matrix-row input { margin: 0; width: 18px; height: 18px; accent-color: var(--c-accent); cursor: pointer; }

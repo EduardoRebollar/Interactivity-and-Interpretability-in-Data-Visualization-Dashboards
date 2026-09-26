@@ -559,7 +559,7 @@ context cheap and the reports as long as they need to be.
 - 2026-09-25 — **Largest-rise item dropped** (uncommitted at time of writing), so line charts carry
   two items per form. T3–T7 renumbered T2–T6; schema v8. 853 tests. Four sessions, one per
   counterbalancing cell, driven in headless Chrome: every derived key matched what was logged.
-- 2026-09-25 — **Redesign, phases 1–6 of `docs/study-redesign.md`** (uncommitted at time of writing).
+- 2026-09-25 — **Redesign, phases 1–7 of `docs/study-redesign.md`** (uncommitted at time of writing).
   - Phase 1: the §4 decisions (below) and the plan.
   - Phase 2: `study-design.md` and `visual-spec.md` amended; six options per item; T1 without World;
     consent text from the handoff's screen 1 (hash re-pinned); practice-complete stage; About you
@@ -585,6 +585,10 @@ context cheap and the reports as long as they need to be.
     600 × 150. 1094 tests. Headless Chrome at 1440 × 790 and 1366 × 768: 30 checks (layout, Tab
     order, focus rings, signing and clearing, a refusal, S3 forced by a blocked store, then
     consent on the second try). Phases 4 and 5 re-run clean.
+  - Phase 7 (2026-09-26): the survey and About you, one question per page with the section rail;
+    the pages move in the browser (`app.PAGER_JS`). 1111 tests. Both orders in headless Chrome
+    (45–49 checks each): skips confirmed per page, the rail, keyboard, the age refused on its
+    page, "Other", and every answer logged as given. Phases 4–6 re-run clean.
 - **Still to do before the pilot:**
   - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
     and the URL for item 18.
@@ -702,6 +706,11 @@ context cheap and the reports as long as they need to be.
   150 proportions (120 px tall), not screen 1's 74 px, which stretched the signed copy; fixed
   along the way: signature points are kept on the pad, and a text field drew a second focus ring
   inside its box (phases 4 and 5).
+- 2026-09-26 — **Phase 7, taken without asking** (reported for review): a skip is confirmed when
+  Next leaves the page, and at Continue for the last page only; typing beside "Other" chooses it;
+  the "Other" box is laid over its option's cell. Found and fixed: dcc.Input reports a number
+  outside its `min`/`max` as null, so an age of 7 was logged as a skip since phase 2; the field
+  now has no range and Next refuses it on its page.
 - 2026-09-23 — Box and lasso select removed from every chart's modebar, including the line charts,
   where they had been since the start: they dim marks with no event recorded. `visual-spec.md` §7.5.
 

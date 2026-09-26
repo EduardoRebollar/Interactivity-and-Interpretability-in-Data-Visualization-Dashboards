@@ -14,17 +14,17 @@ Nothing else may differ. `tests/test_conditions.py` enforces the figure half of 
 
 The look comes from `src/assets/study.css`, the design handoff's stylesheet, copied unchanged,
 with `src/assets/zz-bridge.css` (generated) and `src/assets/zz-overrides.css` for what Dash 4's
-markup needs (docs/visual-spec.md section 10). Every screen sits in `shell`: the header band, the
-stepper, and the page's background. The short screens are `stage_page`. Screens not yet rebuilt on
-the stylesheet's classes (consent, the survey, About you) use `interim_page`, the old look in a
-white box, until their phase of docs/study-redesign.md.
+markup needs, and the handoff's own inline values as classes (docs/visual-spec.md section 10).
+Every screen sits in `shell`: the header band, the stepper, and the page's background. The short
+screens are `stage_page`; the survey and About you are `pager_screen`. No screen sets an inline
+style except where the value comes from the data (the chips' spacing on a line chart).
 """
 
 from __future__ import annotations
 
 from dash import dcc, html
 
-from src import config, consent, figures, flow, tasks
+from src import consent, figures, flow, tasks
 from src.tasks import (
     ABOUT_INTRO,
     ABOUT_SECTIONS,
@@ -96,27 +96,6 @@ def shell(step: int, background: str, screen) -> html.Div:
         ],
         className=BACKGROUNDS[background],
     )
-
-
-# Today's look for a screen's content, inside the shell's `.page`, until its phase of
-# docs/study-redesign.md rebuilds it on the stylesheet's classes. Both conditions alike.
-PAGE_STYLE = {
-    "fontFamily": config.FONT_FAMILY,
-    "fontSize": f"{config.FONT_SIZE_BASE}px",
-    "color": config.TEXT_PRIMARY,
-    "backgroundColor": config.BACKGROUND,
-    "maxWidth": "1100px",
-    "margin": "0 auto",
-    "padding": "24px",
-}
-
-PROMPT_STYLE = {
-    "fontSize": f"{config.FONT_SIZE_BASE + 2}px",
-    "lineHeight": "1.5",
-    "margin": "0 0 16px 0",
-}
-
-MUTED_STYLE = {"color": config.TEXT_MUTED, "fontSize": f"{config.FONT_SIZE_AXIS}px"}
 
 
 def chart(task, interactive: bool, element_id: str = "chart") -> html.Div:
@@ -445,14 +424,6 @@ def _year_ranges(years: list[int]) -> str:
     return ", ".join(str(a) if a == b else f"{a}-{b}" for a, b in spans)
 
 
-ERROR_STYLE = {
-    "fontSize": f"{config.FONT_SIZE_BASE}px",
-    "color": config.ERROR_COLOR,
-    "marginTop": "12px",
-    "minHeight": "1.4em",
-}
-
-
 def error_slot(class_name: str = "msg msg-error", element=html.Div, **attributes):
     """The one validation-error slot, `flow-error`, which every screen must carry somewhere.
 
@@ -497,78 +468,6 @@ def button(label, element_id: str, kind: str = "primary") -> html.Button:
 
 def actions(*buttons) -> html.Div:
     return html.Div(list(buttons), className="actions")
-
-
-def interim_page(*children) -> html.Main:
-    """A screen not yet rebuilt on the stylesheet's classes: today's look in a white box, inside the
-    shell, with the error slot at the end. docs/study-redesign.md phases 5-7 retire it."""
-    return page(
-        html.Div([*children, html.Div(id="flow-error", style=ERROR_STYLE)], style=PAGE_STYLE)
-    )
-
-
-def heading(text: str) -> html.H1:
-    return html.H1(
-        text,
-        style={
-            "fontSize": f"{config.FONT_SIZE_TITLE + 4}px",
-            "fontWeight": "600",
-            "margin": "0 0 16px 0",
-        },
-    )
-
-
-def primary_button(label: str, element_id: str, disabled: bool = False) -> html.Button:
-    """Keyboard-navigable by default; do not replace with a div."""
-    return html.Button(
-        label,
-        id=element_id,
-        n_clicks=0,
-        disabled=disabled,
-        style={
-            "fontFamily": config.FONT_FAMILY,
-            "fontSize": f"{config.FONT_SIZE_BASE}px",
-            "padding": "10px 20px",
-            "color": config.BACKGROUND,
-            "backgroundColor": config.TEXT_MUTED if disabled else config.SERIES_COLORS[0],
-            "border": "none",
-            "borderRadius": "4px",
-            "cursor": "not-allowed" if disabled else "pointer",
-            "marginTop": "16px",
-        },
-    )
-
-
-FIELD_STYLE = {
-    "fontFamily": config.FONT_FAMILY,
-    "fontSize": f"{config.FONT_SIZE_BASE}px",
-    "padding": "10px",
-    "width": "320px",
-    "maxWidth": "100%",
-    "boxSizing": "border-box",
-}
-
-SUBHEADING_STYLE = {
-    "fontSize": f"{config.FONT_SIZE_BASE + 2}px",
-    "fontWeight": "600",
-    "margin": "20px 0 6px 0",
-}
-
-
-def choice_question(element_id: str, question: str, options) -> html.Div:
-    """A question and its radio options. Native radios: keyboard-navigable (CLAUDE.md baseline)."""
-    return html.Div(
-        [
-            html.P(question, style={**PROMPT_STYLE, "fontWeight": "600", "margin": "20px 0 8px"}),
-            dcc.RadioItems(
-                id=element_id,
-                options=options,
-                value=None,
-                labelStyle={"display": "block", "margin": "6px 0"},
-                inputStyle={"marginRight": "8px"},
-            ),
-        ]
-    )
 
 
 # --- Study flow screens --------------------------------------------------------------------------
@@ -786,81 +685,311 @@ def survey_id(item: str) -> dict[str, str]:
     return {"type": "survey", "item": item}
 
 
-def _about_question(question) -> list:
-    """One About-you question and its fields. The ids are what `app._demographic_answers` reads."""
-    text = [
-        html.P(question.text, style={**PROMPT_STYLE, "fontWeight": "600", "margin": "20px 0 4px"})
-    ]
-    if question.help:
-        text.append(html.P(question.help, style={**MUTED_STYLE, "margin": "0 0 8px"}))
-    if question.kind == "age":
-        low, high = tasks.AGE_RANGE
-        return [
-            *text,
-            dcc.Input(
-                id=about_id("age"), type="number", min=low, max=high, step=1, style=FIELD_STYLE
+# --- The questionnaire screens: the survey and About you (the handoff's screens 7 and 10) --------
+#
+# One question per page, a rail of sections beside them, Back and Next under them. Every page is on
+# the screen from the start and only shown or hidden, in the browser (`app.PAGER_JS`), so every
+# answer stays in its component and the final Continue sends them all, as one step, through the
+# screen's clock. The pager's state lives in `pager-state`, which also tells the browser which
+# fields each page holds, so a skip is confirmed on the page it happens.
+
+
+def pager_id(part: str, index: int) -> dict[str, object]:
+    """A pattern id for one of the pager's repeated parts: a page, or a section's rail entry."""
+    return {"pager": part, "index": index}
+
+
+def _page(index: int, section: str, items: tuple[str, ...], question) -> tuple:
+    """(section, field items, the page's component)."""
+    return (
+        section,
+        items,
+        html.Div(
+            [html.H2(section, className="h1"), question],
+            id=pager_id("page", index),
+            hidden=index != 0,
+            className="pager-page",
+        ),
+    )
+
+
+def _question(key: str, text: str, field, help_text: str = "", group: bool = True) -> html.Div:
+    """A question's text, with its help beneath it, then its field. A group of radios is labelled
+    by the text, as the handoff's radiogroup is."""
+    words = [text, html.Span(help_text, className="q-help")] if help_text else text
+    if group:
+        field = html.Div(field, role="radiogroup", **{"aria-labelledby": f"q-{key}"})
+    return html.Div(
+        [html.P(words, id=f"q-{key}", className="q-text"), field], className="pager-question"
+    )
+
+
+def _scale(field_id: dict, points: int, anchors: dict[int, str]) -> dcc.RadioItems:
+    """A 1-to-`points` scale: each point's number, and its anchor where it has one."""
+    return dcc.RadioItems(
+        id=field_id,
+        options=[
+            {
+                "label": [
+                    html.Span(str(n), className="scale-num"),
+                    html.Span(anchors.get(n, ""), className="scale-anchor"),
+                ],
+                "value": n,
+            }
+            for n in range(1, points + 1)
+        ],
+        value=None,
+        className=f"scale scale-{points}",
+    )
+
+
+def _choices(field_id: dict, options, columns: str, prefer_not_apart: bool = False, other=None):
+    """Answer options in a grid of `columns` (`cols-2`, `cols-3` or `row-5`). With
+    `prefer_not_apart`, the last option, "Prefer not to say", sits alone beneath the rest. `other`
+    is the text box laid over the "Other" option's cell, where the handoff draws it inside the
+    option: Dash cannot put a field inside an option's label and still read its value."""
+    classes = "options options--compact options--in-grid"
+    if prefer_not_apart:
+        classes += " options--pnts"
+    radios = dcc.RadioItems(
+        id=field_id,
+        options=[{"label": option, "value": option} for option in options],
+        value=None,
+        className=classes,
+    )
+    return html.Div(
+        [radios, *([other] if other is not None else [])],
+        className=f"choice-grid options--{columns}",
+    )
+
+
+def _other_box(question, columns: int) -> html.Div:
+    """The text box for "Other", laid over that option's cell: its row and column from the
+    option's place in the grid. An unseen copy of the option's radio and word keeps the box clear
+    of them, whatever the typeface."""
+    row, column = divmod(question.options.index(OTHER), columns)
+    return html.Div(
+        [
+            html.Span(
+                [html.Span(className="other-radio"), OTHER],
+                className="other-ghost",
+                **{"aria-hidden": "true"},
             ),
+            dcc.Input(
+                id=about_id(question.other_key),
+                type="text",
+                maxLength=200,
+                className="field other-field",
+            ),
+        ],
+        className=f"other-box other-box--r{row + 1}c{column + 1}",
+    )
+
+
+def _matrix(question) -> html.Table:
+    """The tools question: a row of radios per tool, one column per level of familiarity. Each
+    radio's name is read out as "<tool>: <level>", as in the handoff."""
+    return html.Table(
+        [
+            html.Thead(html.Tr([html.Th(), *[html.Th(o, scope="col") for o in question.options]])),
+            html.Tbody(
+                [
+                    html.Tr(
+                        [
+                            html.Th(row, scope="row"),
+                            html.Td(
+                                dcc.RadioItems(
+                                    id=about_id(f"{question.key}/{row}"),
+                                    options=[
+                                        {
+                                            "label": html.Span(f"{row}: {o}", className="sr-only"),
+                                            "value": o,
+                                        }
+                                        for o in question.options
+                                    ],
+                                    value=None,
+                                    className="matrix-row",
+                                ),
+                                colSpan=len(question.options),
+                            ),
+                        ]
+                    )
+                    for row in question.rows
+                ]
+            ),
+        ],
+        className="matrix",
+    )
+
+
+def _age() -> html.Div:
+    """The age in years, or "Prefer not to say", with the message Next shows for an age it cannot
+    accept (app.PAGER_JS).
+
+    No `min`, `max` or `step` on the field: dcc.Input reports a number the browser finds invalid as
+    null, so an age of 7 would reach the study as a skip, never as an age to refuse. The range is
+    checked by Next and again by the server (`tasks.AGE_RANGE`)."""
+    return html.Div(
+        [
+            dcc.Input(id=about_id("age"), type="number", inputMode="numeric", className="field"),
             dcc.Checklist(
                 id=about_id("age_prefer_not"),
                 options=[{"label": PREFER_NOT, "value": PREFER_NOT}],
                 value=[],
-                inputStyle={"marginRight": "8px"},
-                style={"marginTop": "8px"},
+                className="options options--compact age-pnts",
             ),
-        ]
-    if question.kind == "matrix":
-        rows = []
-        for row in question.rows:
-            rows += [
-                html.P(row, style={"margin": "10px 0 4px"}),
-                dcc.RadioItems(
-                    id=about_id(f"{question.key}/{row}"),
-                    options=[{"label": o, "value": o} for o in question.options],
-                    value=None,
-                    labelStyle={"display": "inline-block", "marginRight": "16px"},
-                    inputStyle={"marginRight": "6px"},
-                ),
-            ]
-        return [*text, *rows]
-    fields = [
-        dcc.RadioItems(
-            id=about_id(question.key),
-            options=[{"label": o, "value": o} for o in question.options],
-            value=None,
-            labelStyle={"display": "block", "margin": "6px 0"},
-            inputStyle={"marginRight": "8px"},
-        )
-    ]
-    if question.other_key is not None:
-        fields.append(
-            dcc.Input(
-                id=about_id(question.other_key),
-                type="text",
-                placeholder=f"{OTHER}: please say",
-                maxLength=200,
-                style=FIELD_STYLE,
-            )
-        )
-    return [*text, *fields]
-
-
-def demographics_screen() -> html.Div:
-    """About you: once per participant, at the end. docs/study-design.md section 6.2.
-
-    Every question on one page for now; the design handoff's one-per-page version replaces it.
-    """
-    body = []
-    for title, questions in ABOUT_SECTIONS:
-        body.append(html.H2(title, style=SUBHEADING_STYLE))
-        for question in questions:
-            body += _about_question(question)
-    return interim_page(
-        heading("About you"),
-        html.P(ABOUT_INTRO, style=PROMPT_STYLE),
-        html.P(SKIP_NOTE, style=MUTED_STYLE),
-        *body,
-        primary_button("Continue", "demographics-button"),
+            html.Div(id=pager_id("error", 0), className="field-error", role="alert"),
+        ],
+        className="age-row",
     )
+
+
+def _about_field(question):
+    """The field(s) for one About-you question, with the ids `app._demographic_answers` reads."""
+    if question.kind == "age":
+        return _age()
+    if question.kind == "matrix":
+        return _matrix(question)
+    apart = question.options[-1] == PREFER_NOT and not question.prefer_not_inline
+    main = question.options[:-1] if apart else question.options
+    if question.ordinal:
+        width, columns = len(main), f"row-{len(main)}"
+    else:
+        # The handoff's rule: three across when every option is short, else two.
+        width = 3 if all(len(option) <= 24 for option in main) else 2
+        columns = f"cols-{width}"
+    other = _other_box(question, width) if question.other_key is not None else None
+    return _choices(about_id(question.key), question.options, columns, apart, other)
+
+
+def _count(n: int) -> str:
+    return "1 question" if n == 1 else f"{n} questions"
+
+
+def _rail_entry(index: int, section: str, count: int) -> html.Li:
+    """One section in the rail, as it stands on the first page: the first section current, the
+    rest not reached yet (app.PAGER_JS redraws them as the participant moves)."""
+    current = index == 0
+    return html.Li(
+        [
+            *([html.Div(className="pager-link", **{"aria-hidden": "true"})] if index else []),
+            html.Button(
+                [
+                    html.Span(str(index + 1), id=pager_id("mark", index), className="pager-mark"),
+                    html.Span(
+                        [
+                            html.Span(section, className="pager-title"),
+                            html.Span(
+                                f"Question 1 of {count}" if current else _count(count),
+                                id=pager_id("sub", index),
+                                className="pager-sub",
+                            ),
+                            html.Progress(
+                                id=pager_id("bar", index),
+                                value=1 if current else 0,
+                                max=count,
+                                hidden=not current,
+                                className="pager-bar",
+                                **{"aria-hidden": "true"},
+                            ),
+                        ],
+                        className="pager-label",
+                    ),
+                ],
+                id=pager_id("section", index),
+                n_clicks=0,
+                disabled=not current,
+                className="pager-go pager-go--current" if current else "pager-go",
+            ),
+        ],
+        className="pager-step",
+    )
+
+
+def pager_screen(title: str, intro: str, pages: list[tuple], finish_id: str) -> html.Main:
+    """A questionnaire screen: the rail (title, intro, skip note, sections), then the pages, one
+    shown at a time, with Back, Next and, on the last page, Continue (`finish_id`, the button the
+    screen's clock callback reads)."""
+    sections = list(dict.fromkeys(section for section, _items, _page in pages))
+    section_of = [sections.index(section) for section, _items, _page in pages]
+    state = {
+        "page": 0,
+        "max": 0,
+        "pages": [list(items) for _section, items, _page in pages],
+        "sections": section_of,
+        "errors": sum("age" in items for _section, items, _page in pages),
+        "finish": finish_id,
+    }
+    rail = html.Aside(
+        [
+            html.Div(
+                [
+                    html.H1(title, className="h1"),
+                    html.P(intro, className="pager-lede"),
+                    html.P(SKIP_NOTE, className="note"),
+                ],
+                className="pager-intro",
+            ),
+            html.Ol(
+                [
+                    _rail_entry(index, section, section_of.count(index))
+                    for index, section in enumerate(sections)
+                ],
+                className="pager-steps",
+            ),
+        ],
+        className="pager-rail",
+    )
+    main = html.Div(
+        [
+            html.P(f"Question 1 of {len(pages)}", id="pager-position", className="position"),
+            *[component for _section, _items, component in pages],
+            html.Div(
+                [
+                    html.Button(
+                        "Back",
+                        id="pager-back",
+                        n_clicks=0,
+                        disabled=True,
+                        className="btn btn-secondary",
+                    ),
+                    html.Button("Next", id="pager-next", n_clicks=0, className="btn btn-primary"),
+                    html.Span(button("Continue", finish_id), id="pager-finish", hidden=True),
+                ],
+                className="actions pager-actions",
+            ),
+            error_slot(),
+            dcc.Store(id="pager-state", data=state),
+        ],
+        className="pager-main",
+    )
+    return page(
+        html.Div(html.Div([rail, main], className="stage-col pager"), className="stage stage--top"),
+        class_name="page page--fill",
+    )
+
+
+def demographics_screen() -> html.Main:
+    """About you: once per participant, at the end, one question per page in four sections
+    (docs/study-design.md section 6.2, the handoff's screen 10)."""
+    pages = []
+    for section, questions in ABOUT_SECTIONS:
+        for question in questions:
+            if question.kind == "age":
+                items = ("age", "age_prefer_not")
+            elif question.kind == "matrix":
+                items = tuple(f"{question.key}/{row}" for row in question.rows)
+            else:
+                items = tuple(k for k in (question.key, question.other_key) if k is not None)
+            block = _question(
+                question.key,
+                question.text,
+                _about_field(question),
+                question.help,
+                group=question.kind == "choice",
+            )
+            pages.append(_page(len(pages), section, items, block))
+    return pager_screen("About you", ABOUT_INTRO, pages, "demographics-button")
 
 
 def practice_complete_screen() -> html.Main:
@@ -1083,72 +1212,70 @@ def task_screen(
     )
 
 
-def _scale(item: str, question: str, points: int, anchors: dict[int, str], help_text: str = ""):
-    options = [
-        {"label": f"{n} — {anchors[n]}" if n in anchors else str(n), "value": n}
-        for n in range(1, points + 1)
+def _rated(key: str, text: str, points: int, anchors: dict[int, str], help_text: str = ""):
+    return _question(key, text, _scale(survey_id(key), points, anchors), help_text)
+
+
+def survey_pages(interactive: bool, second_half: bool) -> list[tuple]:
+    """The survey's pages, in order: Paas, then a1-a9 ("Your experience"); b1-b3 ("Chart
+    controls") after the interactive condition only; c1-c3 ("Comparing the two versions") after
+    the second condition only."""
+    questions = [(EXPERIENCE_SECTION, "paas", _rated("paas", LOAD_PROMPT, 9, LOAD_ANCHORS))]
+    questions += [
+        (EXPERIENCE_SECTION, key, _rated(key, text, LIKERT_POINTS, LIKERT_ANCHORS))
+        for key, text in LIKERT_ITEMS.items()
     ]
-    block = choice_question(survey_id(item), question, options)
-    if help_text:
-        block.children.insert(1, html.P(help_text, style={**MUTED_STYLE, "margin": "0 0 8px"}))
-    return block
+    if interactive:
+        questions += [
+            (CONTROLS_SECTION, key, _rated(key, text, LIKERT_POINTS, LIKERT_ANCHORS, CONTROLS_HELP))
+            for key, text in CONTROLS_ITEMS.items()
+        ]
+    if second_half:
+        questions += [
+            (
+                COMPARISON_SECTION,
+                key,
+                _question(key, text, _choices(survey_id(key), COMPARISON_OPTIONS, "cols-3")),
+            )
+            for key, text in COMPARISON_CHOICES.items()
+        ]
+        text_box = dcc.Textarea(
+            id=survey_id(COMPARISON_TEXT_KEY),
+            maxLength=tasks.MAX_TEXT,
+            rows=4,
+            className="field pager-text",
+        )
+        questions.append(
+            (
+                COMPARISON_SECTION,
+                COMPARISON_TEXT_KEY,
+                _question(
+                    COMPARISON_TEXT_KEY,
+                    COMPARISON_TEXT,
+                    text_box,
+                    COMPARISON_TEXT_HELP,
+                    group=False,
+                ),
+            )
+        )
+    return [
+        _page(index, section, (key,), block)
+        for index, (section, key, block) in enumerate(questions)
+    ]
 
 
-def load_screen(interactive: bool, second_half: bool) -> html.Div:
+def load_screen(interactive: bool, second_half: bool) -> html.Main:
     """The post-condition survey, asked after EACH condition. docs/study-design.md section 6.1.
 
     Paas first (the RQ3 measure), then a1-a9. The chart-controls items b1-b3 follow after the
     interactive condition only, and the comparison c1-c3 after the second condition only. The
-    statements never say which version it was. Every question on one page for now; the design
-    handoff's one-per-page version replaces it.
+    statements never say which version it was. One question per page (the handoff's screen 7).
     """
-    sections = [
-        html.H2(EXPERIENCE_SECTION, style=SUBHEADING_STYLE),
-        _scale("paas", LOAD_PROMPT, 9, LOAD_ANCHORS),
-        *[
-            _scale(key, statement, LIKERT_POINTS, LIKERT_ANCHORS)
-            for key, statement in LIKERT_ITEMS.items()
-        ],
-    ]
-    if interactive:
-        sections += [
-            html.H2(CONTROLS_SECTION, style=SUBHEADING_STYLE),
-            *[
-                _scale(key, statement, LIKERT_POINTS, LIKERT_ANCHORS, CONTROLS_HELP)
-                for key, statement in CONTROLS_ITEMS.items()
-            ],
-        ]
-    if second_half:
-        sections += [
-            html.H2(COMPARISON_SECTION, style=SUBHEADING_STYLE),
-            *[
-                choice_question(
-                    survey_id(key), question, [{"label": o, "value": o} for o in COMPARISON_OPTIONS]
-                )
-                for key, question in COMPARISON_CHOICES.items()
-            ],
-            html.P(
-                COMPARISON_TEXT, style={**PROMPT_STYLE, "fontWeight": "600", "margin": "20px 0 4px"}
-            ),
-            html.P(COMPARISON_TEXT_HELP, style={**MUTED_STYLE, "margin": "0 0 8px"}),
-            dcc.Textarea(
-                id=survey_id(COMPARISON_TEXT_KEY),
-                maxLength=tasks.MAX_TEXT,
-                style={
-                    "fontFamily": config.FONT_FAMILY,
-                    "fontSize": f"{config.FONT_SIZE_BASE}px",
-                    "width": "100%",
-                    "height": "90px",
-                    "padding": "8px",
-                },
-            ),
-        ]
-    return interim_page(
-        heading("About this part"),
-        html.P(SURVEY_INTRO["second" if second_half else "first"], style=PROMPT_STYLE),
-        html.P(SKIP_NOTE, style=MUTED_STYLE),
-        *sections,
-        primary_button("Continue", "load-button"),
+    return pager_screen(
+        "About this part",
+        SURVEY_INTRO["second" if second_half else "first"],
+        survey_pages(interactive, second_half),
+        "load-button",
     )
 
 

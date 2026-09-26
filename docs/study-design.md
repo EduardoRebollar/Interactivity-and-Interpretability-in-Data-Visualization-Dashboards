@@ -518,7 +518,9 @@ is free text, marked "Optional". Paas sits on the first page of "Your experience
 Logged, once per condition, as `survey_rating` with `{"scale": "likert7", "a1": …, …, "a9": …}`;
 after the interactive condition also `controls_rating` with `{"scale": "likert7", "b1": …, "b2": …,
 "b3": …}`; and after the second condition `comparison` with `{"c1": …, "c2": …, "c3": …}`. Every item
-may be skipped, behind the same confirmation popup as a task (§5); a skipped rating is `null`.
+may be skipped, behind the same confirmation popup as a task (§5); a skipped rating is `null`. The
+popup comes when Next leaves a page unanswered, once per page, and at Continue for the last page
+only. Nothing is logged until Continue, so a participant can go back and change any answer.
 
 The three items of 2026-09-21 (`clarity`, `ease_of_use`, `confidence`) are gone. a1 and a2 are near
 two of them but reworded, so the two are not comparable.
@@ -530,7 +532,10 @@ two of them but reworded, so the two are not comparable.
 setup, Background, Experience with data visualization, Topic familiarity. Introduced as "A few
 questions about your setup and background." Every item may be skipped, behind the confirmation
 popup, and most also offer "Prefer not to say". The wording is the handoff's (`auBuild()` in
-`Study UI Screens.dc.html`), verbatim.
+`Study UI Screens.dc.html`), verbatim. An age that is not a whole number from 18 to 99 is refused on
+its own page, when Next is pressed: "Please enter your age as a whole number from 18 to 99, or tick
+Prefer not to say." (the server refuses it too). Typing in the box beside "Other" chooses "Other",
+so text typed there is never dropped for want of a ticked option.
 
 | Key | Id | Question | Answer |
 |---|---|---|---|
