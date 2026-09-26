@@ -494,6 +494,17 @@ strip and the hint row under the chart (§7).
   handoff hides it from screen readers, so the field has a name. An empty ID marks the field
   `aria-invalid` and links it to the message under it (S2); a database refusal leaves it
   unmarked.
+- **The consent sheet (2026-09-26).** The handoff's screen 1: the pending-approval banner, then the
+  form as a Letter sheet in Times New Roman, built from the text `consent.py` hashes, and signed
+  inside the sheet: the pad, the date and the printed name on one black rule with the form's
+  labels under them, the paper-copy box, then "I agree" and "I do not agree" at full width, with a
+  refusal (S3) under them. Its inline styles are classes in `zz-overrides.css`, like the short
+  screens'. "Clear signature" appears after the first stroke. **One departure:** the pad keeps its
+  canvas's proportions, 600 × 150 (120 px tall at the sheet's width), where screen 1 squeezes it
+  to 74 px, which would have stretched the signature 1.6 times on the signed copy; the handoff's
+  S3 draws the pad at its proportions. A text field's focus ring is drawn on dcc.Input's box
+  alone, and the date field's on any focus, since Chrome never gives a date input
+  `:focus-visible`.
 - **Two palettes that never mix.** The chrome's colours (the stylesheet's `:root` tokens: oat page
   `#F8F3EE`, band `#EFE4DA`, ink `#241C18`, muted `#5F544D`, cocoa accent `#5A4034`, error `#C35600`
   and the rest) are never used inside the chart, and the series colours and Cividis (§4) are never

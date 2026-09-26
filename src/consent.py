@@ -174,8 +174,10 @@ METHODS = ("drawn", "paper")
 
 # The signature pad's coordinate space. The canvas is drawn at this size and scaled by CSS, and the
 # JS maps pointer positions back into it, so a signature means the same thing at any screen width.
+# 600 x 150 is the handoff's canvas (screen 1); the page keeps its proportions, so the signed copy
+# shows the signature as it was drawn.
 PAD_WIDTH = 600
-PAD_HEIGHT = 180
+PAD_HEIGHT = 150
 
 # A tap or a stray click is not a signature. Real signatures run to hundreds of points.
 MIN_POINTS = 10

@@ -2,7 +2,7 @@
 
 The design handoff's stylesheet (`src/assets/study.css`, copied unchanged) was written for markup
 where a list of radios or checkboxes is a row of `<label class="chip"><input> text</label>`, with
-the class on each label: `.chip`, `.ui-tile`, `.seg-item`. Dash 4's `dcc.RadioItems` and
+the class on each label: `.chip`, `.ui-tile`, `.seg-item`, `.check`. Dash 4's `dcc.RadioItems` and
 `dcc.Checklist` cannot put a class on those labels. Each label is
 `<label class="dash-options-list-option">`, and `labelClassName` goes on the text beside the
 input. The list's own `className` does reach the element around the labels, so every such rule
@@ -38,6 +38,7 @@ OPTION_LISTS = {
     "ui-tile": "ui-tiles",
     "chip": "chips",
     "seg-item": "seg",
+    "check": "checks",
 }
 # Classes study.css puts on an <input>, which dcc.Input puts on the box around it instead.
 INPUT_BOXES = ("tb-num", "field")

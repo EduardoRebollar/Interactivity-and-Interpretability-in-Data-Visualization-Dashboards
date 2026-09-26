@@ -184,10 +184,12 @@ def test_every_class_a_screen_uses_is_defined():
     assert not problems, "\n".join(sorted(set(problems)))
 
 
-def test_the_short_screens_carry_no_inline_style():
+def test_the_rebuilt_screens_carry_no_inline_style():
     """Their look is the stylesheet's classes (visual-spec.md section 10): the handoff's own inline
-    sizes and centring are classes in zz-overrides.css, so none is set from layout.py."""
+    sizes, centring and consent-sheet layout are classes in zz-overrides.css, so none is set from
+    layout.py."""
     short = {"declined", "participant_id", "instructions", "practice_complete", "break", "complete"}
+    short |= {"consent"}
     problems = [
         f"{name}: {type(node).__name__}"
         for name, screen in _screens()

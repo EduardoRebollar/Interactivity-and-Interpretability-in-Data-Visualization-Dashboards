@@ -2478,3 +2478,49 @@ def test_the_final_screen_explains_withdrawal_with_the_participant_id():
 def test_the_consent_screen_warns_until_the_form_is_approved():
     text = json.dumps(app.render(_state(Stage.CONSENT)).to_plotly_json(), default=str)
     assert ("PENDING HSRRC APPROVAL" in text) is (not consent.APPROVED)
+
+
+def _texts(component) -> list[str]:
+    return [node for node in _nodes(component) if isinstance(node, str)]
+
+
+def test_the_sheet_shows_the_hashed_consent_text_in_order():
+    """The sheet is built from consent.SECTIONS, the text CONSENT_VERSION hashes: every heading
+    and paragraph, word for word and in the form's order, so the two cannot drift apart."""
+    (sheet,) = [
+        n for n in _nodes(app._screen(_state(Stage.CONSENT))) if type(n).__name__ == "Article"
+    ]
+    texts = _texts(sheet)
+    expected = list(consent.FORM_HEADING)
+    for heading, body in consent.SECTIONS:
+        expected += (
+            [heading, f" {body}" if consent.runs_in(heading) else body] if heading else [body]
+        )
+    positions = [texts.index(text) for text in expected]
+    assert positions == sorted(positions)
+
+
+def test_the_signing_fields_keep_the_keyboard_alternative():
+    """The pad cannot be drawn with a keyboard; the paper-copy box is the way round it, a native
+    checkbox on the same sheet (CLAUDE.md, accessibility baseline)."""
+    screen = app._screen(_state(Stage.CONSENT))
+    nodes = {getattr(n, "id", None): n for n in _nodes(screen)}
+    pad = nodes["signature-pad"]
+    assert (pad.width, pad.height) == (consent.PAD_WIDTH, consent.PAD_HEIGHT)
+    assert nodes["signature-clear"].hidden is True, "shown by signature.js after the first stroke"
+    paper = nodes["consent-paper"]
+    assert type(paper).__name__ == "Checklist"
+    assert paper.options == [{"label": layout.PAPER_COPY, "value": "paper"}]
+
+
+def test_a_consent_that_could_not_be_stored_shows_under_the_buttons():
+    """S3: the refusal is announced, under "I agree" and "I do not agree"."""
+    ids = [n.id for n in _nodes(app._screen(_state(Stage.CONSENT))) if getattr(n, "id", None)]
+    assert ids.index("consent-button") < ids.index("decline-button") < ids.index("flow-error")
+    (slot,) = [
+        n
+        for n in _nodes(app._screen(_state(Stage.CONSENT)))
+        if getattr(n, "id", None) == "flow-error"
+    ]
+    assert slot.className == "msg msg-error"
+    assert slot.to_plotly_json()["props"]["role"] == "alert"

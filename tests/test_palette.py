@@ -234,6 +234,7 @@ CHROME_TEXT = [
     ("#FFFFFF", "c-accent-hov"),  # the primary button, hovered
     ("#FFFFFF", "c-error"),  # the pending-approval banner
     ("#000000", "#FFFFFF"),  # the consent sheet
+    ("#000000", "#F4F7FB"),  # the consent sheet's signing fields (zz-overrides.css)
 ]
 
 # Control edges, focus rings, selected edges and error borders, on the grounds they sit on.
@@ -294,6 +295,18 @@ def test_every_text_colour_in_the_stylesheet_is_measured():
     for token, literal in used:
         assert (token or literal.upper()) in foregrounds, token or literal
         assert token not in CHROME_DECORATIVE
+
+
+def test_every_colour_the_overrides_set_is_measured():
+    """zz-overrides.css carries the handoff's inline colours (the consent sheet's signing fields).
+    Each must be in a measured pair, as study.css's tokens are."""
+    overrides = config.PROJECT_ROOT / "src" / "assets" / "zz-overrides.css"
+    css = re.sub(r"/\*.*?\*/", "", overrides.read_text(encoding="utf-8"), flags=re.S)
+    measured = {name.upper() for pair in CHROME_TEXT + CHROME_GRAPHIC for name in pair}
+    literals = {hex_code.upper() for hex_code in re.findall(r"#[0-9A-Fa-f]{6}\b", css)}
+    assert literals, "the consent sheet's colours are expected here"
+    assert literals <= measured, sorted(literals - measured)
+    assert not re.findall(r"#[0-9A-Fa-f]{3}\b", css), "write colours in full, so they are checked"
 
 
 def test_the_saving_fill_exemption_is_declared_and_bounded():

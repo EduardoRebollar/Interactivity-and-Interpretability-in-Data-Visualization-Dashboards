@@ -7,13 +7,18 @@
 // and pushed into the `signature-strokes` store after every stroke, where the consent callback reads
 // it. Pointer events cover mouse, pen and touch alike; the canvas has `touch-action: none` so a
 // finger signs instead of scrolling. Points are mapped from screen pixels back into the canvas's
-// fixed size, so a signature means the same thing however wide the page is.
+// fixed size, so a signature means the same thing however wide the page is. "Clear signature" is
+// hidden until there is something to clear (the handoff's screen 1).
 (function () {
   "use strict";
 
   var MAX_POINTS = 5000; // src/consent.py MAX_POINTS; the server refuses anything larger.
 
   function publish(strokes) {
+    var clear = document.getElementById("signature-clear");
+    if (clear) {
+      clear.hidden = !strokes.length;
+    }
     if (!window.dash_clientside || !window.dash_clientside.set_props) {
       return;
     }
@@ -41,11 +46,16 @@
       ctx.fillStyle = ctx.strokeStyle;
     }
 
+    // A point in the canvas's own space, measured from its drawing area (inside the border the
+    // sheet draws under the pad), and kept on the pad: the pointer is captured, so a stroke that
+    // runs off the edge keeps reporting positions beyond it.
     function at(event) {
       var box = canvas.getBoundingClientRect();
+      var x = ((event.clientX - box.left - canvas.clientLeft) * canvas.width) / canvas.clientWidth;
+      var y = ((event.clientY - box.top - canvas.clientTop) * canvas.height) / canvas.clientHeight;
       return [
-        Math.round(((event.clientX - box.left) * canvas.width) / box.width),
-        Math.round(((event.clientY - box.top) * canvas.height) / box.height),
+        Math.round(Math.min(Math.max(x, 0), canvas.width)),
+        Math.round(Math.min(Math.max(y, 0), canvas.height)),
       ];
     }
 

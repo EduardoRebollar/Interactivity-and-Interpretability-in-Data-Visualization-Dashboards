@@ -539,27 +539,6 @@ def primary_button(label: str, element_id: str, disabled: bool = False) -> html.
     )
 
 
-def secondary_button(label: str, element_id: str) -> html.Button:
-    """The quieter action beside a primary one. A native button, so keyboard-navigable."""
-    return html.Button(
-        label,
-        id=element_id,
-        n_clicks=0,
-        style={
-            "fontFamily": config.FONT_FAMILY,
-            "fontSize": f"{config.FONT_SIZE_BASE}px",
-            "padding": "9px 18px",
-            "color": config.TEXT_PRIMARY,
-            "backgroundColor": config.BACKGROUND,
-            "border": f"1px solid {config.AXIS_COLOR}",
-            "borderRadius": "4px",
-            "cursor": "pointer",
-            "marginTop": "16px",
-            "marginLeft": "12px",
-        },
-    )
-
-
 FIELD_STYLE = {
     "fontFamily": config.FONT_FAMILY,
     "fontSize": f"{config.FONT_SIZE_BASE}px",
@@ -568,8 +547,6 @@ FIELD_STYLE = {
     "maxWidth": "100%",
     "boxSizing": "border-box",
 }
-
-LABEL_STYLE = {"display": "block", "fontWeight": "600", "margin": "16px 0 6px 0"}
 
 SUBHEADING_STYLE = {
     "fontSize": f"{config.FONT_SIZE_BASE + 2}px",
@@ -600,106 +577,138 @@ def choice_question(element_id: str, question: str, options) -> html.Div:
 # passed to `chart()`, plus the interactive-only controls, which render only when `interactive`.
 
 
-def consent_screen() -> html.Div:
-    """The Occidental informed consent form, then name, date, signature, agree or decline.
+PENDING_APPROVAL = (
+    "PENDING HSRRC APPROVAL! This consent form has not been approved! Do not run participants!"
+)
+PAPER_COPY = "I have signed a paper copy of this form with the researcher instead"
+# The lines under the signing fields, spaced as the handoff's screen 1 spaces them so each label
+# sits under its field (the sheet keeps runs of spaces), and the researcher's countersignature line
+# from the paper form.
+SIGNOFF_LABEL = f"Participant Signature and Date{' ' * 38}/{' ' * 20}PRINTED NAME"
+COUNTERSIGN_RULE = "_" * 104
+COUNTERSIGN_LABEL = (
+    f"Researcher or Research Assistant Signature and Date{' ' * 2}/{' ' * 20}PRINTED NAME"
+)
+# The form's title lines (title, investigator, supervisor) stand together under its heading;
+# every later paragraph follows a blank line.
+TITLE_LINES = 3
+
+
+def _warned(text: str) -> list:
+    """The banner's text between its warning signs, which screen readers are spared."""
+    sign = {"aria-hidden": "true"}
+    return [html.Span("⚠️", **sign), f" {text} ", html.Span("⚠️", **sign)]
+
+
+def consent_sheet_text() -> list:
+    """The form's text as the sheet sets it (the handoff's screen 1): the centred heading, the title
+    lines, then every paragraph after a blank line, run-in headings in bold. Built from
+    `consent.SECTIONS`, the text `consent.CONSENT_VERSION` hashes, so the two cannot differ."""
+    lines = [html.P(html.B(line), className="sheet-center") for line in consent.FORM_HEADING]
+    lines += [html.P(), html.P()]
+    for index, (heading, body) in enumerate(consent.SECTIONS):
+        if index >= TITLE_LINES:
+            lines.append(html.P())
+        if heading is None:
+            lines.append(html.P(body))
+        elif consent.runs_in(heading):
+            lines.append(html.P([html.B(heading), f" {body}"]))
+        else:
+            lines += [html.P(html.B(heading)), html.P(), html.P(body)]
+    return lines
+
+
+def consent_screen() -> html.Main:
+    """The Occidental informed consent form as a Letter sheet, signed inside it: signature, date and
+    printed name, then agree or decline (the handoff's screen 1).
 
     IRB form item 12A: typed name and date, a signature, and an explicit "I agree to participate".
     Item 12B: declining must be possible and must lead somewhere that says no data was collected.
 
     The signature pad (`src/assets/signature.js`) cannot be used from a keyboard. The paper-copy box
     is the alternative, and it is a native checkbox: a participant who cannot draw signs the paper
-    form the researcher brings, which item 12A already provides for.
+    form the researcher brings, which item 12A already provides for. A consent that could not be
+    stored shows under the buttons (S3).
     """
     banner = (
         []
         if consent.APPROVED
-        else [
-            html.P(
-                "PENDING HSRRC APPROVAL — this consent form has not been approved. Do not run "
-                "participants.",
-                style={
-                    **PROMPT_STYLE,
-                    "fontWeight": "600",
-                    "color": config.ERROR_COLOR,
-                    "border": f"2px solid {config.ERROR_COLOR}",
-                    "padding": "10px",
-                },
-            )
-        ]
+        else [html.P(_warned(PENDING_APPROVAL), className="banner banner--static", role="alert")]
     )
-    body = []
-    for section_heading, text in consent.SECTIONS:
-        if section_heading:
-            body.append(html.H2(section_heading, style=SUBHEADING_STYLE))
-        body.append(html.P(text, style=PROMPT_STYLE))
-
-    return interim_page(
-        heading("Informed consent"),
+    signoff = html.Div(
+        [
+            html.Div(
+                [
+                    html.Canvas(
+                        id="signature-pad",
+                        width=consent.PAD_WIDTH,
+                        height=consent.PAD_HEIGHT,
+                        className="pad",
+                        **{
+                            "aria-label": "Participant signature — sign with your mouse, "
+                            "trackpad or finger"
+                        },
+                    ),
+                    # Shown by signature.js once there is a stroke to clear.
+                    html.Button(
+                        "Clear signature",
+                        id="signature-clear",
+                        n_clicks=0,
+                        hidden=True,
+                        className="btn btn-quiet pad-clear",
+                    ),
+                ],
+                className="sheet-pad",
+            ),
+            # The form's own labels are the line under the fields; these name the fields for
+            # screen readers, which dcc.Input's lack of aria-* properties leaves no other way to do.
+            html.Label("Date", htmlFor="consent-date", className="sr-only"),
+            dcc.Input(id="consent-date", type="date", className="sheet-line"),
+            html.Label("Printed name", htmlFor="consent-name", className="sr-only"),
+            dcc.Input(
+                id="consent-name",
+                type="text",
+                autoComplete="name",
+                className="sheet-line sheet-line--name",
+            ),
+            html.P(SIGNOFF_LABEL, className="sheet-label sheet-label--row"),
+        ],
+        className="sheet-signoff",
+        role="group",
+        **{"aria-label": "Participant sign-off"},
+    )
+    return page(
         *banner,
-        html.P("Occidental College — Informed Consent Form", style=MUTED_STYLE),
-        *body,
-        html.Label("Printed name", htmlFor="consent-name", style=LABEL_STYLE),
-        dcc.Input(id="consent-name", type="text", autoComplete="name", style=FIELD_STYLE),
-        html.Label("Date", htmlFor="consent-date", style=LABEL_STYLE),
-        dcc.Input(id="consent-date", type="date", style=FIELD_STYLE),
-        html.Label("Signature", htmlFor="signature-pad", style=LABEL_STYLE),
-        html.P(
-            "Sign in the box with your mouse, trackpad or finger.",
-            style={**MUTED_STYLE, "margin": "0 0 6px 0"},
-        ),
-        html.Canvas(
-            id="signature-pad",
-            width=consent.PAD_WIDTH,
-            height=consent.PAD_HEIGHT,
-            style={
-                "display": "block",
-                "width": "100%",
-                "maxWidth": f"{consent.PAD_WIDTH}px",
-                "aspectRatio": f"{consent.PAD_WIDTH} / {consent.PAD_HEIGHT}",
-                "border": f"1px solid {config.AXIS_COLOR}",
-                "borderRadius": "4px",
-                "backgroundColor": config.BACKGROUND,
-                # The pen colour: the pad's script draws in the canvas's computed `color`.
-                "color": config.TEXT_PRIMARY,
-                # Without this a finger on a touchscreen scrolls the page instead of signing.
-                "touchAction": "none",
-                "cursor": "crosshair",
-            },
-        ),
-        html.Button(
-            "Clear signature",
-            id="signature-clear",
-            n_clicks=0,
-            style={
-                "fontFamily": config.FONT_FAMILY,
-                "fontSize": f"{config.FONT_SIZE_AXIS}px",
-                "padding": "4px 10px",
-                "marginTop": "6px",
-                "color": config.TEXT_PRIMARY,
-                "backgroundColor": config.BACKGROUND,
-                "border": f"1px solid {config.AXIS_COLOR}",
-                "borderRadius": "4px",
-                "cursor": "pointer",
-            },
-        ),
-        dcc.Checklist(
-            id="consent-paper",
-            options=[
-                {
-                    "label": "I have signed a paper copy of this form with the researcher instead",
-                    "value": "paper",
-                }
-            ],
-            value=[],
-            inputStyle={"marginRight": "8px"},
-            style={"marginTop": "12px"},
-        ),
         html.Div(
-            [
-                primary_button("I agree to participate", "consent-button"),
-                secondary_button("I do not agree", "decline-button"),
-            ]
+            html.Article(
+                [
+                    html.H1("Informed consent", id="consent-title", className="sr-only"),
+                    *consent_sheet_text(),
+                    signoff,
+                    html.P(),
+                    html.P([html.Br(), COUNTERSIGN_RULE]),
+                    html.P(COUNTERSIGN_LABEL, className="sheet-label"),
+                    dcc.Checklist(
+                        id="consent-paper",
+                        options=[{"label": PAPER_COPY, "value": "paper"}],
+                        value=[],
+                        className="checks sheet-paper",
+                    ),
+                    html.Div(
+                        [
+                            button("I agree to participate", "consent-button"),
+                            button("I do not agree", "decline-button", "secondary"),
+                            error_slot(role="alert"),
+                        ],
+                        className="sheet-actions",
+                    ),
+                ],
+                className="sheet sheet--form",
+                **{"aria-labelledby": "consent-title"},
+            ),
+            className="sheet-desk",
         ),
+        class_name="page page--desk",
     )
 
 

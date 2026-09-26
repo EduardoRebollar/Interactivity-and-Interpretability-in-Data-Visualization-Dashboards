@@ -49,6 +49,11 @@
    takes the box's alignment. */
 .dash-input-container > .dash-input-element { padding: 0; text-align: inherit; }
 
+/* The box carries the focus ring too (zz-bridge.css, and the consent sheet's fields below), so
+   the input inside drops the one study.css's *:focus-visible gives every element: it drew a
+   second ring inside the field, in the box's padding. */
+.dash-input-container > .dash-input-element:focus-visible { box-shadow: none; }
+
 /* The practice's third answer spans both columns, as in the handoff, where an inline style does
    it. The rule is general: a last tile alone on its row, in any odd-numbered set. */
 .ui-tiles > .dash-options-list-option:last-child:nth-child(odd) { grid-column: 1 / -1; }
@@ -87,3 +92,37 @@
    that and would draw the "!" with no message: the error slot is always on the page, empty until
    a refusal. */
 .stage .prose .field-error:empty { display: none; }
+
+/* ---- The consent sheet --------------------------------------------------------------------------
+   The handoff's screen 1 reproduces the finalized form as a Letter sheet and sets the sheet, its
+   sign-off and its buttons with inline styles, which layout.py does not use; these rules carry its
+   values. The signing fields' fill (#F4F7FB) and black rules are the form's; the pairs are measured
+   in tests/test_palette.py. */
+.sheet-desk { display: flex; justify-content: center; }
+.sheet--form { max-width: 1240px; padding: 80px 96px; }
+.sheet .sheet-center { text-align: center; }
+
+/* Signature, date and printed name side by side on one rule, the labels on the line under them. */
+.sheet-signoff { display: grid; grid-template-columns: minmax(0, 1.3fr) 200px minmax(0, 1fr); gap: 6px 0; align-items: end; margin-top: 2.3em; }
+.sheet .sheet-label { font-size: 26px; }
+.sheet .sheet-label--row { grid-column: 1 / -1; }
+.sheet-pad { position: relative; }
+/* The pad at its own proportions, the canvas's 600 x 150 (aspect-ratio: auto reads them from the
+   canvas), where study.css's .pad fixes 600 / 180. */
+.sheet .pad { aspect-ratio: auto; border: none; border-bottom: 1px solid #000000; border-radius: 0; background: #F4F7FB; color: #000000; }
+.pad-clear { position: absolute; top: 6px; right: 6px; min-height: 32px; padding: 0 10px; font: 13px Helvetica, Arial, sans-serif; }
+/* .btn's display would otherwise show it before there is a stroke to clear. */
+.pad-clear[hidden] { display: none; }
+/* dcc.Input's box carries the field's look; it outranks Dash's own edge, which returns on focus. */
+.sheet .sheet-line { border: none; border-bottom: 1px solid #000000; border-radius: 0; background: #F4F7FB; color: #000000; font: inherit; height: 40px; padding: 0 16px; box-sizing: border-box; width: 100%; }
+.sheet .sheet-line--name { width: 360px; }
+/* The focus ring on the box. :focus-within, not :focus-visible: Chrome never gives a date input
+   :focus-visible, so the date would have no ring at all, and a text field has one on any focus
+   anyway. */
+.sheet .sheet-line:focus-within { box-shadow: var(--focus-ring); }
+
+/* The paper-copy box and the buttons, in the chrome's typeface under the sheet's. */
+.sheet-paper { font-family: var(--font); margin-top: 20px; }
+.sheet-paper > .dash-options-list-option { margin-top: 0; font-size: 20px; }
+.sheet-actions { font-family: var(--font); margin-top: 40px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+.sheet-actions .btn { height: 50px; }
