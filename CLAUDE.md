@@ -225,6 +225,9 @@ committed, `.env*` gitignored.
   Series colours must also stay at least 12 ΔE2000 apart under simulated protanopia and deuteranopia
   (`src/contrast.py`, 2026-09-23); two documented exemptions, the gridline and the heatmap/map
   sequential scale, are bounded by tests (`visual-spec.md` §4).
+- The page chrome's colours, the tokens in `src/assets/study.css`, are held to the same floors by
+  `tests/test_palette.py`. One exemption: Submit's fill while saving (`#91796E`, white text 4.07:1),
+  because the button is disabled then and WCAG 1.4.3 exempts inactive controls.
 - All interactive controls keyboard-navigable. The one exception is the consent screen's
   signature pad, which cannot be drawn with a keyboard. Its keyboard alternative is the
   "signed a paper copy" checkbox, and IRB form item 12A already provides a paper form. Keep that
@@ -313,6 +316,8 @@ src/
   logging.py            # event/timing logger; Postgres or JSONL sink
   app.py                # Dash app factory, callbacks, clientside timing, Submit and skip guards
   assets/
+    study.css           # the design handoff's stylesheet, copied unchanged (visual-spec.md §10)
+    zz-overrides.css    # the few rules Dash's markup needs; loads after study.css, each one explained
     signature.js        # the consent screen's signature pad; Dash serves assets/ automatically
     geo_africa.js       # the map's country shapes, Plotly's own file (generated; committed)
     slider_enter.js     # Enter commits a value typed into the map's coverage-range boxes
@@ -346,6 +351,7 @@ tests/
   test_data.py          # cleaning, the complete grid, the missing-data guarantees
   test_runtime_data.py  # the csv loader — and fails the build if a runtime module imports pandas
   test_palette.py       # enforces the contrast floors and the colour-blind separation floor
+  test_stylesheet.py    # study.css unchanged; every class a screen uses is defined; compact mode
   test_conditions.py    # the two conditions must produce identical figure JSON
   test_tasks.py         # item structure, and that no answer key ships
   test_flow.py          # the stage sequence and the counterbalancing
@@ -541,13 +547,17 @@ context cheap and the reports as long as they need to be.
 - 2026-09-25 — **Largest-rise item dropped** (uncommitted at time of writing), so line charts carry
   two items per form. T3–T7 renumbered T2–T6; schema v8. 853 tests. Four sessions, one per
   counterbalancing cell, driven in headless Chrome: every derived key matched what was logged.
-- 2026-09-25 — **Redesign, phases 1–2 of `docs/study-redesign.md`** (uncommitted at time of writing).
+- 2026-09-25 — **Redesign, phases 1–3 of `docs/study-redesign.md`** (uncommitted at time of writing).
   - Phase 1: the §4 decisions (below) and the plan.
   - Phase 2: `study-design.md` and `visual-spec.md` amended; six options per item; T1 without World;
     consent text from the handoff's screen 1 (hash re-pinned); practice-complete stage; About you
     moved to the end with the handoff's ten questions; the new survey (Paas kept first); schema v9.
     Screens keep the old look until phases 3–7. 910 tests. Two sessions (both orders) driven in
     headless Chrome: no page errors, and the survey, About you and skip popups logged as specified.
+  - Phase 3: `study.css` copied unchanged; the shell (header, seven-step stepper, backgrounds) on
+    every screen; compact mode as a media query in `zz-overrides.css`; chrome contrast tested. 997
+    tests. Sessions at 1440 × 790 and 1366 × 768 in headless Chrome: right step and background on
+    every screen, compact on at 800 px or less, no page errors.
 - **Still to do before the pilot:**
   - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
     and the URL for item 18.

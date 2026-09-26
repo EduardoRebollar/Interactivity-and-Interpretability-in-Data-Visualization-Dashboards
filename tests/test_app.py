@@ -20,7 +20,7 @@ import uuid
 from collections import Counter
 
 import pytest
-from dash import no_update
+from dash import html, no_update
 from dash.exceptions import PreventUpdate
 
 from src import app, consent, db, figures, flow, layout, runtime_data, tasks
@@ -192,6 +192,77 @@ def test_every_stage_carries_the_error_slot():
     """The callback writes `flow-error` on every screen, so every screen must have it."""
     for stage in Stage:
         assert "flow-error" in _ids(app.render(_state(stage))), f"{stage.value} has no error slot"
+
+
+# --- The shell: header, stepper, background (docs/visual-spec.md section 10) ---------------------
+
+
+def _step_props(screen) -> list[dict]:
+    """The stepper's list items, as props, from a rendered screen's header."""
+    header = screen.children[0]
+    assert header.className == "appbar"
+    title, right = header.children
+    assert title.children == layout.TITLE
+    steps = right.children
+    assert steps.className == "steps"
+    return [item.to_plotly_json()["props"] for item in steps.children]
+
+
+@pytest.mark.parametrize("stage", list(Stage))
+@pytest.mark.parametrize("index", [0, 1])
+def test_every_screen_sits_in_the_shell_with_its_step_marked(stage, index):
+    """Seven steps, the current one marked for assistive technology as well as by look, and every
+    step before it ticked. Display only: nothing in the stepper is a link or a button."""
+    state = _state(stage, condition_index=index)
+    screen = app.render(state)
+    assert screen.className.split()[0] == "app"
+    current = flow.step_index(state)
+    items = _step_props(screen)
+    assert [item["children"] for item in items] == list(flow.STEPS)
+    assert [item.get("aria-current") for item in items] == [
+        "step" if i == current else None for i in range(len(flow.STEPS))
+    ]
+    assert [item.get("className") for item in items] == [
+        "is-done" if i < current else None for i in range(len(flow.STEPS))
+    ]
+    assert screen.children[1].className == "page"
+
+
+def test_the_background_follows_the_handoffs_screens():
+    """None behind a chart; a warmer one at the practice's end, the break and the finish."""
+    assert set(app.SCREEN_BACKGROUND) == set(Stage)
+    plain = {Stage.PRACTICE, Stage.TASK}
+    celebrate = {Stage.PRACTICE_COMPLETE, Stage.BREAK, Stage.COMPLETE}
+    for stage in Stage:
+        expected = (
+            "app"
+            if stage in plain
+            else "app app--celebrate"
+            if stage in celebrate
+            else "app app--deco"
+        )
+        assert app.render(_state(stage)).className == expected, stage.value
+
+
+@pytest.mark.parametrize("stage", list(Stage))
+@pytest.mark.parametrize("index", [0, 1])
+def test_the_shell_is_identical_in_both_conditions(stage, index):
+    """The header and the background come from the stage and the half, never the condition."""
+    shells = []
+    for condition in ("static", "interactive"):
+        screen = app.render(_state(stage, first_condition=condition, condition_index=index))
+        header = json.dumps(screen.children[0].to_plotly_json(), default=str)
+        shells.append((screen.className, header))
+    assert shells[0] == shells[1]
+
+
+def test_the_shell_refuses_a_step_or_background_it_does_not_have():
+    with pytest.raises(ValueError):
+        layout.stepper(len(flow.STEPS))
+    with pytest.raises(ValueError):
+        layout.stepper(-1)
+    with pytest.raises(ValueError):
+        layout.shell(0, "sparkly", html.Main())
 
 
 @pytest.mark.parametrize(
@@ -389,17 +460,22 @@ def test_inputs_the_callback_reads_exist_on_the_screens_that_supply_them():
 # --- Practice and the second condition's instructions ---------------------------------------------
 
 
+def _content_text(state: SessionState) -> str:
+    """A screen's own text, without the shell: the stepper names "Practice" on every screen."""
+    return json.dumps(app._screen(state).to_plotly_json(), default=str)
+
+
 def test_practice_renders_the_practice_item():
     screen = app.render(_state(Stage.PRACTICE))
     assert "chart" in _ids(screen)
-    assert "Practice" in json.dumps(screen.to_plotly_json(), default=str)
+    assert "Practice" in _content_text(_state(Stage.PRACTICE))
 
 
 def test_practice_is_offered_before_the_first_condition_only():
-    first = app.render(_state(Stage.INSTRUCTIONS, condition_index=0))
-    second = app.render(_state(Stage.INSTRUCTIONS, condition_index=1))
-    assert "practice" in json.dumps(first.to_plotly_json(), default=str).lower()
-    assert "practice" not in json.dumps(second.to_plotly_json(), default=str).lower()
+    first = _content_text(_state(Stage.INSTRUCTIONS, condition_index=0))
+    second = _content_text(_state(Stage.INSTRUCTIONS, condition_index=1))
+    assert "practice" in first.lower()
+    assert "practice" not in second.lower()
 
 
 def test_the_second_conditions_instructions_describe_the_condition_about_to_start():

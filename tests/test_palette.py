@@ -7,6 +7,8 @@ fails rather than the study shipping with an inaccessible chart.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from src import config, contrast
@@ -214,3 +216,93 @@ def test_the_sequential_exemption_is_declared_and_bounded():
         if position <= 0.5:
             ratio = contrast_ratio(config.MAP_BORDER_COLOR, color)
             assert ratio >= GRAPHIC_MIN, f"border vs {color}: {ratio:.2f}:1"
+
+
+# --- The page chrome: study.css (docs/visual-spec.md section 10) ----------------------------------
+
+STYLESHEET = config.PROJECT_ROOT / "src" / "assets" / "study.css"
+GROUNDS = ("c-card", "c-page", "c-band")
+
+# Text, on every ground the stylesheet sets it on. Names are study.css's `--c-*` tokens.
+CHROME_TEXT = [
+    *[("c-ink", ground) for ground in (*GROUNDS, "c-soft-hov")],
+    *[("c-muted", ground) for ground in (*GROUNDS, "c-disabled-bg")],
+    *[("c-accent", ground) for ground in GROUNDS],
+    *[("c-accent-hov", ground) for ground in GROUNDS],  # a hovered link
+    *[("c-error-text", ground) for ground in GROUNDS],
+    ("#FFFFFF", "c-accent"),  # the primary button, a done step's tick, the step numbers
+    ("#FFFFFF", "c-accent-hov"),  # the primary button, hovered
+    ("#FFFFFF", "c-error"),  # the pending-approval banner
+    ("#000000", "#FFFFFF"),  # the consent sheet
+]
+
+# Control edges, focus rings, selected edges and error borders, on the grounds they sit on.
+CHROME_GRAPHIC = [
+    *[("c-line", ground) for ground in GROUNDS],
+    *[("c-focus", ground) for ground in ("c-card", "c-page")],
+    *[("c-accent", ground) for ground in GROUNDS],
+    *[("c-error", ground) for ground in GROUNDS],
+]
+
+# Never text, and never the only edge of a control: dividers, group outlines, the background's
+# shapes. Grouped controls keep their own edges.
+CHROME_DECORATIVE = {"c-line-soft", "c-group", "c-deco-1", "c-deco-2"}
+
+# The one exemption: Submit's fill while saving (see the test below).
+CHROME_EXEMPT = {"c-accent-busy"}
+
+
+def _stylesheet() -> str:
+    return re.sub(r"/\*.*?\*/", "", STYLESHEET.read_text(encoding="utf-8"), flags=re.S)
+
+
+def _tokens() -> dict[str, str]:
+    """study.css's colour tokens as it ships: `c-page` -> `#F8F3EE`."""
+    return dict(re.findall(r"--(c-[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\b", _stylesheet()))
+
+
+def _hex(name: str) -> str:
+    return name if name.startswith("#") else _tokens()[name]
+
+
+@pytest.mark.parametrize(("foreground", "ground"), CHROME_TEXT)
+def test_chrome_text_meets_the_text_floor(foreground, ground):
+    ratio = contrast_ratio(_hex(foreground), _hex(ground))
+    assert ratio >= TEXT_MIN, f"{foreground} on {ground}: {ratio:.2f}:1"
+
+
+@pytest.mark.parametrize(("foreground", "ground"), CHROME_GRAPHIC)
+def test_chrome_edges_meet_the_graphical_floor(foreground, ground):
+    ratio = contrast_ratio(_hex(foreground), _hex(ground))
+    assert ratio >= GRAPHIC_MIN, f"{foreground} on {ground}: {ratio:.2f}:1"
+
+
+def test_every_chrome_colour_is_measured_or_declared():
+    """A token added to study.css must be put in one of the lists above before it can ship."""
+    measured = {name for pair in CHROME_TEXT + CHROME_GRAPHIC for name in pair}
+    assert set(_tokens()) <= measured | CHROME_DECORATIVE | CHROME_EXEMPT
+
+
+def test_every_text_colour_in_the_stylesheet_is_measured():
+    """Whatever study.css sets as `color` must be one of the measured foregrounds."""
+    used = set(
+        re.findall(
+            r"(?<![\w-])color:\s*(?:var\(--(c-[a-z0-9-]+)\)|(#[0-9A-Fa-f]{6}))", _stylesheet()
+        )
+    )
+    foregrounds = {foreground for foreground, _ground in CHROME_TEXT}
+    for token, literal in used:
+        assert (token or literal.upper()) in foregrounds, token or literal
+        assert token not in CHROME_DECORATIVE
+
+
+def test_the_saving_fill_exemption_is_declared_and_bounded():
+    """Submit's fill while saving gives its white label less than 4.5:1. The button is disabled at
+    that moment, and WCAG 1.4.3 exempts inactive controls (visual-spec.md section 10). It must stay
+    the busy state's fill and nothing else, and stay legible."""
+    ratio = contrast_ratio("#FFFFFF", _tokens()["c-accent-busy"])
+    assert ratio < TEXT_MIN, "the fill now passes; drop the exemption"
+    assert ratio >= GRAPHIC_MIN
+    selectors = re.findall(r"([^{}]+)\{[^{}]*var\(--c-accent-busy\)", _stylesheet())
+    assert selectors
+    assert all('[aria-busy="true"]' in selector for selector in selectors), selectors

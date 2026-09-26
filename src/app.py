@@ -114,12 +114,37 @@ def create_app() -> dash.Dash:
 # --- Rendering ------------------------------------------------------------------------------------
 
 
-def render(state: SessionState) -> html.Div:
-    """The screen for the current stage. Pure: stage in, layout out.
+# The page's background behind each stage's screen, as the design handoff's Screens file draws it:
+# none behind a chart, a slow sand fade on the other screens, and a warmer one at the practice's
+# end, the break and the finish. Its README calls the survey and About you plain; the Screens file
+# outranks it (docs/study-redesign.md section 1).
+SCREEN_BACKGROUND = {
+    Stage.CONSENT: "deco",
+    Stage.DECLINED: "deco",
+    Stage.PARTICIPANT_ID: "deco",
+    Stage.INSTRUCTIONS: "deco",
+    Stage.PRACTICE: "plain",
+    Stage.PRACTICE_COMPLETE: "celebrate",
+    Stage.TASK: "plain",
+    Stage.LOAD: "deco",
+    Stage.BREAK: "celebrate",
+    Stage.DEMOGRAPHICS: "deco",
+    Stage.COMPLETE: "celebrate",
+}
 
-    Total over `Stage` — every member has a branch, and `tests/test_app.py` proves it, so adding a
-    stage without a screen fails the suite rather than a participant's session.
+
+def render(state: SessionState) -> html.Div:
+    """The screen for the current stage, in the shell: header, stepper, background. Pure: stage in,
+    layout out.
+
+    Total over `Stage` — every member has a screen and a background, and `tests/test_app.py` proves
+    it, so adding a stage without one fails the suite rather than a participant's session.
     """
+    return layout.shell(flow.step_index(state), SCREEN_BACKGROUND[state.stage], _screen(state))
+
+
+def _screen(state: SessionState) -> html.Main:
+    """The current stage's screen, without the shell."""
     if state.stage is Stage.CONSENT:
         return layout.consent_screen()
     if state.stage is Stage.DECLINED:

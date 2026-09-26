@@ -10,13 +10,17 @@ Every screen is used by BOTH conditions. Only these branch on `interactive`:
 4. `load_screen`, which asks about the chart controls only after the condition that had them.
 
 Nothing else may differ. `tests/test_conditions.py` enforces the figure half of that.
+
+The look comes from `src/assets/study.css`, the design handoff's stylesheet, copied unchanged,
+with `src/assets/zz-overrides.css` for the few rules Dash's markup needs (docs/visual-spec.md
+section 10). Every screen sits in `shell`: the header band, the stepper, and the page's background.
 """
 
 from __future__ import annotations
 
 from dash import dcc, html
 
-from src import config, consent, figures, tasks
+from src import config, consent, figures, flow, tasks
 from src.tasks import (
     ABOUT_INTRO,
     ABOUT_SECTIONS,
@@ -42,7 +46,56 @@ from src.tasks import (
     SURVEY_INTRO,
 )
 
-# Shared page chrome, so both conditions are laid out identically.
+TITLE = "Vaccination coverage study"
+
+# The page's background, by the class on the app root (the handoff's Screens file): none behind a
+# chart, a slow sand fade on the other screens, and a warmer one at the three milestones.
+BACKGROUNDS = {"plain": "app", "deco": "app app--deco", "celebrate": "app app--celebrate"}
+
+
+def stepper(current: int) -> html.Ol:
+    """The header's seven steps, `flow.STEPS`. Orientation only: plain list items, not links, so
+    nothing in it can be clicked or tabbed to. Steps before the current one are ticked."""
+    if not 0 <= current < len(flow.STEPS):
+        raise ValueError(f"Step {current} is not one of the {len(flow.STEPS)} steps")
+    items = []
+    for index, label in enumerate(flow.STEPS):
+        if index < current:
+            items.append(html.Li(label, className="is-done"))
+        elif index == current:
+            items.append(html.Li(label, **{"aria-current": "step"}))
+        else:
+            items.append(html.Li(label))
+    return html.Ol(items, className="steps")
+
+
+def shell(step: int, background: str, screen) -> html.Div:
+    """Every screen's frame: the app root with its background, then the header band with the title
+    and the stepper, then the screen itself.
+
+    Identical in both conditions: the step and the background come from the stage and the half,
+    never from the condition. Compact mode, for a window 800 px tall or less, is a media query in
+    `zz-overrides.css`, so it applies before the screen first paints.
+    """
+    if background not in BACKGROUNDS:
+        raise ValueError(f"Unknown background {background!r}; expected one of {list(BACKGROUNDS)}")
+    return html.Div(
+        [
+            html.Header(
+                [
+                    html.P(TITLE, className="appbar-title"),
+                    html.Div(stepper(step), className="appbar-right"),
+                ],
+                className="appbar",
+            ),
+            screen,
+        ],
+        className=BACKGROUNDS[background],
+    )
+
+
+# Today's look for a screen's content, inside the shell's `.page`, until its phase of
+# docs/study-redesign.md rebuilds it on the stylesheet's classes. Both conditions alike.
 PAGE_STYLE = {
     "fontFamily": config.FONT_FAMILY,
     "fontSize": f"{config.FONT_SIZE_BASE}px",
@@ -404,17 +457,17 @@ ERROR_STYLE = {
 }
 
 
-def page(*children) -> html.Div:
-    """Page chrome plus the one validation-error slot.
+def page(*children) -> html.Main:
+    """A screen's content, the `.page` inside the shell, plus the one validation-error slot.
 
     `flow-error` is emitted on EVERY screen, not only the ones that can produce an error. A Dash
     callback resolves its outputs against whatever is in the DOM, so an error output present on some
     screens and not others is a latent failure on exactly the screens that need it most. One id,
     always present, is the version that cannot misfire.
     """
-    return html.Div(
-        [*children, html.Div(id="flow-error", style=ERROR_STYLE)],
-        style=PAGE_STYLE,
+    return html.Main(
+        html.Div([*children, html.Div(id="flow-error", style=ERROR_STYLE)], style=PAGE_STYLE),
+        className="page",
     )
 
 

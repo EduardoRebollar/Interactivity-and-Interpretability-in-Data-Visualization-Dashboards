@@ -488,8 +488,19 @@ strip and the hint row under the chart (§7).
   side) and the answer panel. Under the chart: the gap caption (§3), then, in the interactive
   condition only, the controls strip and the hint row. Submit sits above the fold of a 1440 × 900
   laptop with a one-line question.
+- **Header.** On every screen: a band with the title, "Vaccination coverage study", and a seven-step
+  indicator: Consent, Practice, Part 1, Break, Part 2, About you, Finished. It is display only, not
+  links. The current step carries `aria-current="step"`, and the steps before it are ticked. The
+  first half's instructions, practice and practice-complete screens are "Practice"; its tasks and
+  survey are "Part 1"; everything in the second half before About you is "Part 2".
+- **Backgrounds.** The oat ground on every screen, with nothing behind a chart: the task screen is
+  plain. The other screens have a sand fade with a slow glow, and practice complete, the break and
+  the finished screen a warmer one. The handoff's README calls the survey and About you plain; its
+  Screens file draws them with the fade, and the Screens file outranks it.
 - **Compact mode.** At a window height of 800 px or less, the chrome above the chart tightens so the
-  card fits a 1366 × 768 screen. The chart itself does not change size.
+  card fits a 1366 × 768 screen. The chart itself does not change size. It is a media query, not a
+  class set by script, so it applies before a screen first paints and nothing moves once a task's
+  clock has started.
 - **Motion.** Only on screens without a chart: cards fade in over 180 ms and a slow background glow
   drifts. None on the task screen, and none at all under `prefers-reduced-motion`.
 - **Flags.** The chips' flags are image files bundled under `src/assets/`, never fetched from a CDN

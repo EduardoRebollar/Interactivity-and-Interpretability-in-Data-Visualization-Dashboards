@@ -1,0 +1,25 @@
+/* ==========================================================================
+   Overrides for study.css, the design handoff's stylesheet, which is copied unchanged.
+   Each rule is the smallest that lets Dash's markup meet what study.css asks for, with the reason
+   beside it (docs/visual-spec.md section 10). Dash loads assets in alphabetical order, so this file
+   comes after study.css.
+   ========================================================================== */
+
+/* The app root places the sand glow of .app--deco and .app--celebrate, an absolutely positioned
+   ::before at inset 0. The handoff's artboards give .app position: relative inline, so the glow
+   covers the whole screen. Without it the glow covers only the first window's height and scrolls
+   away on a long screen such as consent (measured in Chrome: 790 px of a 2476 px page). */
+.app { position: relative; }
+
+/* Compact mode, for a window 800 px tall or less (1366 x 768 full screen). study.css switches it
+   on with .is-compact on .app, which a script would have to add; its own comment offers this media
+   query instead. A class set by a callback lands after a screen has painted, so the chart would
+   jump 16 px just after each task appeared, while its clock was running. A media query applies
+   before the first paint. The declarations are study.css's own, and tests/test_stylesheet.py holds
+   them equal. */
+@media (max-height: 800px) {
+  .app .appbar { height: 44px; }
+  .app .page { padding-top: var(--s-2); }
+  .app .q-head, .app .ui-head { margin-bottom: var(--s-2); }
+  .app .ui-main { padding-top: var(--s-2); padding-bottom: 6px; gap: 6px; }
+}
