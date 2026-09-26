@@ -28,24 +28,15 @@ TASKS = tuple(
 )
 
 
-DEMOGRAPHICS = {
-    "age_range": "18–24",
-    "field": None,
-    "chart_frequency": None,
-    "dashboard_familiarity": None,
-}
-
-
 def _started(first_condition: str = "static", first_form: str = "A") -> SessionState:
-    """Consent, ID and demographics done: parked on the first condition's instructions."""
+    """Consent and ID done: parked on the first condition's instructions."""
     state = flow.give_consent(SessionState(), "2026-09-21T10:00:00Z", "drawn")
-    state = flow.set_participant(state, "P01", first_condition, first_form)
-    return flow.submit_demographics(state, DEMOGRAPHICS)
+    return flow.set_participant(state, "P01", first_condition, first_form)
 
 
 def _first_tasks(state: SessionState) -> SessionState:
-    """Instructions -> practice -> the first scored task of the FIRST condition."""
-    return flow.begin_tasks(flow.begin_practice(state))
+    """Instructions -> practice -> practice complete -> the FIRST condition's first scored task."""
+    return flow.begin_tasks(flow.finish_practice(flow.begin_practice(state)))
 
 
 def _through_tasks(state: SessionState) -> SessionState:
@@ -103,6 +94,8 @@ def test_participant_sees_both_conditions_and_both_forms_once(first_condition, f
     state = _second_tasks(state)
     seen.append((flow.current_condition(state), flow.current_form(state)))
     state = flow.submit_load(_through_tasks(state))
+    assert state.stage is Stage.DEMOGRAPHICS
+    state = flow.submit_demographics(state)
 
     assert state.stage is Stage.COMPLETE
     assert sorted(c for c, _ in seen) == ["interactive", "static"]
@@ -200,8 +193,12 @@ def test_stages_must_be_entered_in_order():
     fresh = SessionState()
     with pytest.raises(FlowError, match="Expected stage participant_id"):
         flow.set_participant(fresh, "P01", "static", "A")
-    with pytest.raises(FlowError, match="Expected stage instructions or practice"):
+    with pytest.raises(FlowError, match="Expected stage instructions or practice_complete"):
         flow.begin_tasks(fresh)
+    with pytest.raises(FlowError, match="Expected stage practice"):
+        flow.finish_practice(fresh)
+    with pytest.raises(FlowError, match="Expected stage demographics"):
+        flow.submit_demographics(fresh)
     with pytest.raises(FlowError, match="Expected stage task"):
         flow.complete_task(fresh, TASKS)
     with pytest.raises(FlowError, match="Expected stage load"):
@@ -216,7 +213,15 @@ def test_stages_must_be_entered_in_order():
 def test_practice_precedes_the_first_condition():
     state = flow.begin_practice(_started())
     assert state.stage is Stage.PRACTICE
+    state = flow.finish_practice(state)
+    assert state.stage is Stage.PRACTICE_COMPLETE
     assert flow.begin_tasks(state).stage is Stage.TASK
+
+
+def test_the_practice_is_followed_by_its_complete_screen_not_the_tasks():
+    """The handoff's screen 6 says the practice is over and the next six count (section 8)."""
+    with pytest.raises(FlowError, match="Expected stage instructions or practice_complete"):
+        flow.begin_tasks(flow.begin_practice(_started()))
 
 
 def test_practice_does_not_run_before_the_second_condition():
@@ -312,17 +317,67 @@ def test_consent_records_how_the_form_was_signed():
     assert flow.give_consent(SessionState(), "t", "paper").consent_method == "paper"
 
 
-def test_demographics_come_between_the_id_and_the_instructions():
+def test_the_id_leads_straight_to_the_instructions():
+    """About you moved to the end of the study (2026-09-25, study-design.md section 8)."""
     state = flow.set_participant(flow.give_consent(SessionState(), "t"), "P01", "static", "A")
-    assert state.stage is Stage.DEMOGRAPHICS
-    with pytest.raises(FlowError, match="Expected stage instructions"):
-        flow.begin_practice(state)
-    state = flow.submit_demographics(state, DEMOGRAPHICS)
     assert state.stage is Stage.INSTRUCTIONS
-    assert state.demographics == DEMOGRAPHICS
 
 
-def test_demographics_survive_the_store():
-    """Held in browser session state until condition 1's logger opens, so they must round-trip."""
-    state = _started()
-    assert SessionState.from_dict(state.to_dict()).demographics == DEMOGRAPHICS
+def test_about_you_comes_after_the_second_survey_only():
+    first = _through_tasks(_first_tasks(_started()))
+    assert flow.submit_load(first).stage is Stage.BREAK
+    second = flow.submit_load(_through_tasks(_second_tasks(first)))
+    assert second.stage is Stage.DEMOGRAPHICS
+    # Still the second condition, so About you is attributed to its log session.
+    assert second.condition_index == 1
+    assert flow.submit_demographics(second).stage is Stage.COMPLETE
+
+
+def test_an_old_store_with_demographics_still_loads():
+    """A tab open across the upgrade carries the retired `demographics` key; it is ignored."""
+    raw = {**_started().to_dict(), "demographics": {"age_range": "18–24"}}
+    assert SessionState.from_dict(raw) == _started()
+
+
+# --- The stepper (study-design.md section 8) ------------------------------------------------------
+
+
+def test_the_stepper_walks_its_seven_steps_in_order():
+    assert flow.STEPS == (
+        "Consent",
+        "Practice",
+        "Part 1",
+        "Break",
+        "Part 2",
+        "About you",
+        "Finished",
+    )
+    state = SessionState()
+    walk = [flow.step_index(state)]
+    for move in (
+        lambda s: flow.give_consent(s, "t", "paper"),
+        lambda s: flow.set_participant(s, "P01", "interactive", "B"),
+        flow.begin_practice,
+        flow.finish_practice,
+        flow.begin_tasks,
+    ):
+        state = move(state)
+        walk.append(flow.step_index(state))
+    state = _through_tasks(state)
+    walk.append(flow.step_index(state))  # the first survey
+    state = flow.submit_load(state)
+    walk.append(flow.step_index(state))  # the break
+    state = flow.resume_after_break(state)
+    walk.append(flow.step_index(state))  # the second instructions
+    state = flow.begin_tasks(state)
+    walk.append(flow.step_index(state))
+    state = _through_tasks(state)
+    walk.append(flow.step_index(state))  # the second survey
+    state = flow.submit_load(state)
+    walk.append(flow.step_index(state))  # About you
+    walk.append(flow.step_index(flow.submit_demographics(state)))
+    assert walk == [0, 0, 1, 1, 1, 2, 2, 3, 4, 4, 4, 5, 6]
+
+
+def test_declining_stays_on_the_consent_step():
+    assert flow.step_index(flow.decline(SessionState())) == 0

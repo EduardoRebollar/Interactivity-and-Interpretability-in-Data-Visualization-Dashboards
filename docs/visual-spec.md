@@ -11,8 +11,12 @@ between static and interactive is a defect, not a variation.
 Status: **settled, 2026-09-15.** Every section is decided and built. Amended 2026-09-22 (end-label
 spacing, §6). **Amended 2026-09-23 for the redesigned task bank** (`docs/study-design.md` §4): five
 chart types instead of one (§1), eight series colours instead of five and a sequential scale (§4),
-labelling by chart type (§6), and the bar sort, the map's coverage range and the modebar (§7). A
-change to any of §1–8 needs this document edited first, then the code.
+labelling by chart type (§6), and the bar sort, the map's coverage range and the modebar (§7).
+**Amended 2026-09-25 for the redesign** (`docs/design-handoff/`, `docs/study-redesign.md`): a fixed
+1050 × 520 chart (§5), a legend on line charts beside the end labels (§6), controls under every chart
+with a heatmap row sort and a typed map highlight in place of the range (§7), and the page chrome
+around the chart (§10). A change to any of §1–8 or §10 needs this document edited first, then the
+code.
 
 ---
 
@@ -23,7 +27,7 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 | Type | Items | Encoding |
 |---|---|---|
-| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, World dashed where shown (T6 draws two countries and no World line) |
+| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, World dashed where shown (only the practice draws it; T1 draws eight countries and T6 two) |
 | Bar | T2 | One year's coverage, one bar per country, in the listed order |
 | Scatter | T3 | Each country a dot: coverage in 2000 across, in 2024 up, with a dashed no-change diagonal |
 | Heatmap | T4 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as colour |
@@ -82,7 +86,8 @@ the value was not reported, which is not the same as zero coverage."* On the oth
 second sentence names what is missing instead: a bar, a dot, a cell, or a country's colour.
 
 It appears in **both** conditions, which is what makes it admissible: interactivity must not change
-what information is available, only how it is reached.
+what information is available, only how it is reached. It sits directly under the chart, above the
+interactive condition's controls, so it is in the same place in both.
 
 No chart in the current task bank shows a gap: the acceptance rule refuses an item with a missing
 bar, dot, cell or country (`docs/study-design.md` §4), and every line in the line items is complete
@@ -183,7 +188,7 @@ countries, such as CAR and Chad, would merge.)
 | Every other country | `#EFEFEF`, plain land |
 | Borders between countries | `#FFFFFF` |
 | Coastlines | `#B3B3B3`, the gridline grey |
-| Countries outside the chosen coverage range (interactive, §7.4) | same colour, opacity 0.15 |
+| Countries hidden by a chip, or not below the highlight (interactive, §7.3–7.4) | same colour, opacity 0.15 |
 
 ### Text and structure
 
@@ -219,9 +224,16 @@ fails if the gridline ever drifts too faint to use (< 1.8:1).
 | Line marker radius | 5 px |
 | Scatter marker size | 12 px |
 | Heatmap cell gap | 2 px |
-| Chart height, every type | 520 px |
+| Chart size, every type | 1050 × 520 px, fixed (2026-09-25) |
 
-**The chart's 520 px is reserved from the moment a task screen appears (2026-09-16), in both
+**Fixed at 1050 × 520 (2026-09-25).** The figure's own layout sets the width, and `dcc.Graph` is not
+responsive, so the chart is the same size on every screen and in both conditions. Margins are in
+pixels. The line chart keeps 60 px above and below its plot, so the plot is 400 px tall: one
+coverage point is 4 px, which the acceptance rule's floors rest on (`docs/study-design.md` §4). Its
+right margin holds the end labels and, beyond them, the legend (§6), so the plot is about 640 px
+wide, about 26 px a year.
+
+**The chart's size is reserved from the moment a task screen appears (2026-09-16), in both
 conditions.** Plotly is loaded on demand, the first time a chart is drawn in a session. Until it
 arrives, `dcc.Graph` renders at zero height, so the question, answers and Submit first appeared
 directly under the prompt and then jumped 520 px down about 600 ms later — long enough for a click
@@ -236,7 +248,7 @@ to land on the wrong option. A fixed-height container around the chart holds the
 
 | Type | Identity carried by |
 |---|---|
-| Line | the series name at the right end of the line, in its colour |
+| Line | the series name at the right end of the line, in its colour; and a legend (2026-09-25) |
 | Bar | the country name on the x axis |
 | Scatter | a legend pairing each colour with its own marker shape |
 | Heatmap | the country name on each row |
@@ -253,9 +265,18 @@ to land on the wrong option. A fixed-height container around the chart holds the
   coordinates vertically, because Plotly does not draw an annotation whose data coordinate lies
   outside its axis range. The first build did exactly that, and China's label on A-T1 never
   appeared (found in headless Chrome).
+- **A legend on every line chart (2026-09-25).** The design handoff makes the legend a control:
+  clicking a name hides or shows its line, and double-clicking shows only that one (§7.3). It is part
+  of the figure, so both conditions draw it; `staticPlot` makes it inert in the static condition.
+  It stands vertically to the right of the end labels, which stay: they are the static reader's way
+  to find a line in a tangle without matching colours, and the reason colour is never the only
+  channel. Entries follow the task's entity order until the View control reorders them (§7.2).
+  World has no legend entry, as it has no chip: it cannot be hidden (below), and its end label and
+  dash identify it.
 - **The scatter's legend is part of the task.** Its item asks which country improved most; without
   hover, the dot is named by matching its colour and shape to the legend. Legend clicks are
-  disabled, because a click hides a series — a filter no event would record.
+  disabled, because a click there would hide a dot outside the logged controls. The chips do that
+  instead, and are logged (§7.3).
 
 **RESOLVED (2026-09-15) — the same fixed set per task, in both conditions.** If interactive
 participants could reach entities that static participants could not, interactivity would be
@@ -263,8 +284,9 @@ changing *how much data is reachable* as well as *how it is worked with*. Each t
 fixed entity set, both conditions see it, and no control reaches an entity the static condition
 cannot see (`docs/study-design.md` §3).
 
-The World reference is excluded from the line filter (`layout.filterable`): it is the baseline the
-lines are read against, and switching it off would remove part of what the question is about.
+The World reference is excluded from the line filter (`layout.filterable`), and has no chip and no
+legend entry: it is the baseline the lines are read against, and switching it off would remove part
+of what the question is about.
 
 Enforced by `tests/test_conditions.py::test_the_task_screen_opens_on_the_same_chart_in_both_conditions`,
 for every task.
@@ -277,21 +299,27 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 |---|---|---|
 | `staticPlot` | `True` | `False` |
 | Hover tooltips | none | every chart: the value; on lines, also the change from the year before |
-| Line charts | image | filter, sort the list, isolate a line, zoom and pan the x axis |
-| Bar chart | image | sort the bars by coverage |
-| Scatter, heatmap | image | hover only, announced by a line of text above the chart |
-| Map | image | show only countries within a coverage range |
+| Country chips | none | every chart: show or hide each country drawn |
+| Line charts | image | View (reorder the chips and the legend), Show all, isolate a line, legend click and double-click, zoom and pan the x axis |
+| Bar chart | image | Sort: A–Z, High → low, Low → high |
+| Heatmap | image | Sort rows: Default, Lowest value, Average |
+| Map | image | Highlight: fade every country not below a typed percentage |
+| Every chart | none | a hint row saying what the chart can do, and Reset view |
 
 Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition hoverable
 and zoomable and the manipulation would be invalid. `staticPlot: True` is what makes "static"
 actually static.
 
 **The chart itself is identical.** Every difference above is either a Plotly config flag or a control
-rendered *beside* the chart. Nothing in this table adds, removes or restyles a mark at rest.
+rendered *under* the chart. Nothing in this table adds, removes or restyles a mark at rest.
 `build_figure` takes no `interactive` argument, and `tests/test_conditions.py` proves both conditions
 open on byte-identical figure JSON for every task. Once a control is used, it changes the chart only
 through a view function that hides, reorders or fades what is already there (`figures.set_visible`,
-`sort_bars`, `set_band`).
+`sort_bars` and their 2026-09-25 companions for rows, fades, the legend's order and the highlight).
+
+**The controls sit under the chart (2026-09-25).** The controls strip and the hint row come after
+the chart and the gap caption, and exist only in the interactive condition, so the chart is at the
+same place on the page in both conditions (§10).
 
 ### 7.1 Year-over-year change (defined 2026-09-15)
 
@@ -322,46 +350,65 @@ the country's name. Like the change line, they are in both conditions' figures.
 
 ### 7.2 Sorting (defined 2026-09-15; bars added 2026-09-23)
 
-**On a line chart, sorting reorders the entity control list. It never reorders the chart.** A
+**On a line chart, sorting reorders the chips and the legend. It never reorders the chart.** A
 time-series line chart has no meaningful row order: the x axis is time and the lines are where the
 data puts them.
 
-- Control: `Order: (as listed) (by coverage)`, default `as listed` (the task's own order).
-- `by coverage` sorts the checkbox list by each entity's most recently **reported** value, highest
-  first, and shows the value in the label (`Brazil — 91%`).
-- An entity with nothing reported sorts last and reads `not reported`.
+- Control: **View**, `as listed` / `by coverage`, default `as listed` (the task's own order).
+- `by coverage` orders the chips and the legend by each entity's most recently **reported** value,
+  highest first. An entity with nothing reported sorts last.
+- **Chip labels carry no value (2026-09-25).** The earlier control read `Brazil — 91%`; the design
+  handoff keeps the name alone so that reordering moves nothing else on the page (its state S5).
 
 **On the bar chart, sorting moves the bars** (2026-09-23). A bar chart's x axis has no order of its
-own, so reordering it changes no meaning: each bar keeps its colour, its label and its height. The
-same two options, on a control of its own (`bar-sort`). `by coverage` puts the bars highest first,
-and `as listed` puts them back. A bar with no value would sort last.
+own, so reordering it changes no meaning: each bar keeps its colour, its label and its height.
+Control: **Sort**, `A–Z` (the listed order, which is alphabetical), `High → low`, `Low → high`
+(three options since 2026-09-25). A bar with no value sorts last either way.
 
-### 7.3 Filtering and line isolation (line charts)
+**On the heatmap, sorting moves the rows** (2026-09-25), for the same reason: its rows are names,
+not a scale. Control: **Sort rows**, `Default` (the listed order), `Lowest value` (each row's lowest
+cell, lowest first) and `Average` (each row's mean over its columns, lowest first). Ties keep the
+listed order. Each row keeps its cells and its label; no cell changes colour.
 
-- **Filtering** hides series via `visible`; it does **not** rebuild the chart from a shorter list.
-  Colour is assigned by position (§4), so a rebuild would recolour the survivors. An end label is
-  hidden with its series. The filter cannot empty the chart — the last series cannot be unchecked.
+### 7.3 Filtering, the legend and line isolation
+
+- **Chips on every chart (2026-09-25).** One chip per country the chart draws, with its flag, in
+  the task's entity order (the View control reorders them on line charts). World has none.
+- **Filtering hides; it does not rebuild the chart from a shorter list.** Colour is assigned by
+  position (§4), so a rebuild would recolour the survivors.
+  - A hidden **line or scatter dot** disappears (`visible="legendonly"`, so a line's legend entry
+    stays, greyed, and can bring it back). An end label is hidden with its line.
+  - A hidden **bar, heatmap row or map country** fades to opacity 0.15, keeping its place, its
+    colour and its label. A hidden row must not look like an empty cell, which means "not reported"
+    (§3).
+- The filter cannot empty the chart: the last country cannot be unchecked. On the practice chart
+  that leaves one chip, Brazil, which cannot be unchecked.
+- **The legend (line charts).** Clicking a name hides or shows its line; double-clicking shows only
+  that line. The chips follow the legend and the legend follows the chips.
 - **Line isolation** is a click on the line itself. Clicking an isolated line again releases it, as
-  does *Show all*. The World reference stays visible throughout and cannot itself be isolated. A
-  click on any other chart type does nothing.
-- Both reset between tasks: no task inherits the previous task's view.
+  does *Show all*, which also shows every hidden line. The World reference stays visible throughout
+  and cannot itself be isolated. A click on any other chart type does nothing.
+- **Reset view**, on every chart, undoes filtering, sorting, isolating and the map's highlight. It
+  does not undo a zoom; the modebar's own reset does.
+- All of it resets between tasks: no task inherits the previous task's view.
 
-### 7.4 The map's coverage range (defined 2026-09-23)
+### 7.4 The map's highlight (defined 2026-09-25, replacing the coverage range)
 
-- Control: a range slider, 0–100% in steps of 1, with a number box at each end, and *Show all*. The
-  participant sets the range. A preset "below 50%" button was rejected: it would name the
-  question's own threshold and answer T5 in one click.
-- **Countries outside the range fade to 0.15 opacity.** They keep their colour and their place, and
-  the ends of the range are included.
-- Drawn as a **selection**. The countries in the range are selected and the rest take the trace's
-  `unselected` opacity. plotly.js 4 applies a choropleth's `marker.opacity` to the whole trace, so
-  the first build's per-country opacity list faded nothing. Only a browser showed it.
-- The full range clears the selection, so an unfiltered map is exactly the figure at rest.
-- A handle can be dragged, moved with the arrow, Page Up/Down, Home and End keys, or set by typing
-  in its box. Dash 4 commits a typed value only when the box loses focus; `src/assets/slider_enter.js`
-  makes Enter commit it too. Without it, a participant who typed 49 and pressed Enter saw the handle
-  move and the map ignore them.
-- *Show all* moves both handles back to the ends.
+- Control: **Highlight**, "Below [n] %", a number box from 0 to 100 in steps of 1. It starts at 100.
+  The participant types the number. A preset "below 50%" button was rejected on 2026-09-23 because
+  it would name the question's own threshold; the box names none, and does what dragging the old
+  range's upper handle did (Eduardo, 2026-09-25).
+- **Countries at n or above fade to 0.15 opacity.** Countries below n stay at full strength. They
+  keep their colour and their place.
+- **100 or an empty box means no highlight**, so the map at rest is exactly the figure
+  `build_figure` made, and no country can be faded by the starting value.
+- Drawn as a **selection**. The countries shown at full strength are selected and the rest take the
+  trace's `unselected` opacity. plotly.js 4 applies a choropleth's `marker.opacity` to the whole
+  trace, so the first build's per-country opacity list faded nothing. Only a browser showed it. A
+  country hidden by its chip is left out of the selection too.
+- Typing commits on Enter or when the box loses focus. Reset view empties the highlight.
+- The hint says countries not below the threshold "turn grey": faded to 0.15 over the grey land,
+  they read as nearly grey.
 
 ### 7.5 The modebar (defined 2026-09-23)
 
@@ -376,6 +423,8 @@ static condition shows no modebar at all.
 - **Zoom and pan are removed from the bar, scatter, heatmap and map**, whose views are fixed (§2);
   on the map, so are the map zoom buttons. The line chart keeps zoom and pan on its x axis, logged
   as `view_change`.
+- **Legend clicks** are on for line charts (§7.3) and off for the scatter (§6). In the static
+  condition, `staticPlot` turns every legend off as a control while leaving it drawn.
 
 **Consequence for task design:** static participants cannot read exact values; they estimate against
 gridlines or a colour key. A task asking "what was Nigeria's DTP3 coverage in 2012?" therefore
@@ -389,12 +438,13 @@ study-design decision, recorded here because it follows directly from the visual
   build rather than reaching a participant. So is the palette's separation under simulated
   colour-vision deficiency (§4), and the sequential scale's steady lightness under it.
 - All controls are keyboard-operable (CLAUDE.md baseline):
-  - the line chart's checkboxes and radios and the bar chart's radios are native form elements;
-  - the map's slider handles take the arrow, Page Up/Down, Home and End keys, and its number boxes
-    take typing.
-- Hover, line isolation and zoom are mouse-only. A keyboard-only participant in the interactive
-  condition therefore meets the scatter and heatmap items with no affordance at all, as in the
-  static condition. This is recorded in `docs/study-design.md` §10.
+  - the chips are native checkboxes, and View, Sort and Sort rows are native radios;
+  - Show all and Reset view are native buttons, and the map's highlight is a native number box.
+- Focus rings appear only for keyboard focus (`:focus-visible`), as a 2 px white gap and a 2 px
+  accent ring (§10).
+- Hover, line isolation, legend clicks and zoom are mouse-only. A keyboard-only participant in the
+  interactive condition therefore meets the scatter item with only the chips and the heatmap item
+  with only the row sort. This is recorded in `docs/study-design.md` §10.
 - Direct labelling and marker shapes mean colour is never the sole channel for a series (§6).
 - Full screen-reader support is explicitly out of scope; nothing here should make it worse.
 
@@ -414,3 +464,33 @@ the write-up.
    colour-vision deficiency, with the scatter's second channel in marker shape. See §4 and §6.
 
 Nothing in §1–8 is open. A change to any of it needs this document edited first, then the code.
+
+## 10. Page chrome (defined 2026-09-25)
+
+Everything around the chart: the header, the stepper, the cards, the answer panel, the controls
+strip, the buttons and the short screens. It is identical in both conditions except the controls
+strip and the hint row under the chart (§7).
+
+- **Source of truth: the design handoff's stylesheet**, `docs/design-handoff/assets/study.css`,
+  copied unchanged to `src/assets/study.css`, where Dash loads it automatically. Where Dash's markup
+  cannot match one of its selectors, the smallest possible rule goes in `src/assets/zz-overrides.css`,
+  each commented with why. No inline style dicts in `layout.py`.
+- **Two palettes that never mix.** The chrome's colours (the stylesheet's `:root` tokens: oat page
+  `#F8F3EE`, band `#EFE4DA`, ink `#241C18`, muted `#5F544D`, cocoa accent `#5A4034`, error `#C35600`
+  and the rest) are never used inside the chart, and the series colours and Cividis (§4) are never
+  used in the chrome. The chart's own text colours stay those of §4.
+- **Contrast.** Every chrome pair the stylesheet uses is measured with `src/contrast.py` and held to
+  the §4 floors by `tests/test_palette.py`. One deliberate exemption: Submit's fill while saving,
+  `#91796E`, gives white text about 3.9:1. The button is disabled at that moment, and WCAG 1.4.3
+  exempts inactive controls.
+- **Layout of the task screen.** A header band with the title and the stepper; the position label
+  and the question on one line; one card holding the chart column (the 1050 px chart plus 16 px each
+  side) and the answer panel. Under the chart: the gap caption (§3), then, in the interactive
+  condition only, the controls strip and the hint row. Submit sits above the fold of a 1440 × 900
+  laptop with a one-line question.
+- **Compact mode.** At a window height of 800 px or less, the chrome above the chart tightens so the
+  card fits a 1366 × 768 screen. The chart itself does not change size.
+- **Motion.** Only on screens without a chart: cards fade in over 180 ms and a slow background glow
+  drifts. None on the task screen, and none at all under `prefers-reduced-motion`.
+- **Flags.** The chips' flags are image files bundled under `src/assets/`, never fetched from a CDN
+  during a task, as the map's shapes are (§1).

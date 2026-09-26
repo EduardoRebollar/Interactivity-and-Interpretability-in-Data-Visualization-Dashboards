@@ -59,6 +59,17 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v9 (2026-09-25): the redesign (docs/study-redesign.md). Every item offers six options, so an
+# answer means something different against a v8 option list. `survey_rating` carries the new items
+# a1-a9 in place of clarity/ease_of_use/confidence; new events `controls_rating` (b1-b3, after the
+# interactive condition only), `comparison` (c1-c3, after the second condition only) and
+# `view_reset` (the Reset view button). `demographics` carries the ten About-you questions, and is
+# written once, into the SECOND condition's session after its `session_end`: About you moved to the
+# end of the study, and a participant who stops there must still leave two complete sessions.
+# `filter_change` gains the controls `chips`, `legend`, `show-all` (Show all, which was
+# `reset-view`) and `threshold` (the map's highlight: `value` is the typed number or null). No new
+# table or column, so no init_db.py re-run. Nothing has been collected, so no migration.
+#
 # v8 (2026-09-25): the largest-rise item was dropped and the items after it renumbered, so T2-T6
 # name different items than in v7 (docs/study-design.md section 4). A v7 answer scored against a v8
 # key would be scored against the wrong question. The record shape is unchanged: no new event, key
@@ -89,7 +100,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -101,8 +112,24 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # `signature_method` is "drawn" or "paper". The signature and the printed name are NOT here:
     # they go to the consent record, which is kept apart from study data (IRB form items 15, 17).
     "consent": ("consented_at", "consent_version", "signature_method"),
-    # Once per participant, right after `consent`. Any value may be null (skipped).
-    "demographics": ("age_range", "field", "chart_frequency", "dashboard_familiarity"),
+    # About you: once per participant, in the second condition's session after its session_end.
+    # The keys of `tasks.DEMOGRAPHIC_KEYS` (docs/study-design.md section 6.2). Any value may be null
+    # (skipped); `tools` is an object from tool name to answer, `age` an integer or "Prefer not to
+    # say", and the two `_other` keys the text typed beside "Other".
+    "demographics": (
+        "pointer",
+        "pointer_other",
+        "age",
+        "role",
+        "field",
+        "field_other",
+        "read_charts",
+        "make_charts",
+        "stats_course",
+        "tools",
+        "topic_familiarity",
+        "health_background",
+    ),
     # Session lifecycle
     "session_start": ("interactive", "entities", "vaccines", "year_range"),
     "session_end": ("reason",),
@@ -120,13 +147,22 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "answer_submit": ("answer", "justification", "skipped", "duration_ms", "duration_invalid"),
     # Paas single-item mental effort, once per condition. The RQ3 measure. `value` null if skipped.
     "load_rating": ("scale", "value"),
-    # The three 7-point Likert items, once per condition, alongside load_rating. Null if skipped.
-    "survey_rating": ("scale", "clarity", "ease_of_use", "confidence"),
-    # Interactive-only affordances. On the map, `filter_change.value` is a [low, high] coverage
-    # range, not a list of entities; `control` says which (see v7 above).
+    # The survey's 7-point items a1-a9, once per condition, after load_rating. Null if skipped.
+    "survey_rating": ("scale", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9"),
+    # b1-b3, about the chart controls: after the INTERACTIVE condition only.
+    "controls_rating": ("scale", "b1", "b2", "b3"),
+    # c1 and c2 (one of tasks.COMPARISON_OPTIONS) and c3 (free text): after the SECOND condition
+    # only.
+    "comparison": ("c1", "c2", "c3"),
+    # Interactive-only affordances. `control` says which: `chips`, `legend`, `show-all` or
+    # `threshold` (see v9 above). For `threshold`, `value` and `previous` are the typed number or
+    # null, not a list of entities.
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
     "sort_change": ("key", "direction"),
+    # Reset view: undoes filtering, sorting, isolating and the highlight in one press. `previous` is
+    # the view it undid.
+    "view_reset": ("previous",),
     # Present in both conditions
     "view_change": ("control", "value", "previous"),
     # Written by ResilientSink, not by a caller: `spooled` events that could not reach the database
@@ -652,19 +688,43 @@ class StudyLogger:
         )
 
     def rate_survey(self, ratings: dict[str, int | None]) -> dict[str, Any]:
-        """Record the three 7-point Likert items for the condition just finished.
+        """Record the survey's 7-point items a1-a9 for the condition just finished.
 
         Exactly the keys of `tasks.LIKERT_ITEMS`; each value 1-7, or None when skipped.
         """
-        expected = set(EVENTS["survey_rating"]) - {"scale"}
+        return self._likert("survey_rating", ratings)
+
+    def rate_controls(self, ratings: dict[str, int | None]) -> dict[str, Any]:
+        """Record b1-b3, about the chart controls. The interactive condition only: the static
+        condition has no controls, so a rating of them there could only be a mistake."""
+        if not self.interactive:
+            raise LogError("The chart controls are rated after the interactive condition only")
+        return self._likert("controls_rating", ratings)
+
+    def _likert(self, name: str, ratings: dict[str, int | None]) -> dict[str, Any]:
+        expected = set(EVENTS[name]) - {"scale"}
         if set(ratings) != expected:
-            raise LogError(f"Survey ratings must be {sorted(expected)}, got {sorted(ratings)}")
+            raise LogError(f"{name} must be {sorted(expected)}, got {sorted(ratings)}")
         for key, value in ratings.items():
             _check_scale(f"Likert rating {key!r}", value, 7)
-        return self.event("survey_rating", scale="likert7", **ratings)
+        return self.event(name, scale="likert7", **ratings)
 
-    def record_demographics(self, answers: dict[str, str | None]) -> dict[str, Any]:
-        """Record the demographic answers. Call once, on condition 1's logger, after consent."""
+    def record_comparison(self, answers: dict[str, str | None]) -> dict[str, Any]:
+        """Record c1-c3, comparing the two versions. The second condition only, after its survey:
+        before then the participant has seen one version."""
+        if self.condition_order != 2:
+            raise LogError("The two versions are compared after the second condition only")
+        expected = set(EVENTS["comparison"])
+        if set(answers) != expected:
+            raise LogError(f"Comparison must be {sorted(expected)}, got {sorted(answers)}")
+        for key, value in answers.items():
+            if value is not None and not isinstance(value, str):
+                raise LogError(f"Comparison answer {key!r} must be text or null, got {value!r}")
+        return self.event("comparison", **answers)
+
+    def record_demographics(self, answers: dict[str, Any]) -> dict[str, Any]:
+        """Record the About-you answers. Call once, on the second condition's logger, after its
+        survey has closed the session (docs/study-design.md section 6.2)."""
         expected = set(EVENTS["demographics"])
         if set(answers) != expected:
             raise LogError(f"Demographics must be {sorted(expected)}, got {sorted(answers)}")

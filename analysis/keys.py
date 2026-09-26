@@ -384,7 +384,8 @@ def _threshold(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Der
         task.task_id,
         task.form,
         task.kind,
-        str(count) if count < 4 else "4 or more",
+        # The options are 0-4 and "5 or more" (2026-09-25; "4 or more" before).
+        str(count) if count < 5 else "5 or more",
         f"number of coloured countries strictly below {threshold}% in {year}",
         {
             "year": year,

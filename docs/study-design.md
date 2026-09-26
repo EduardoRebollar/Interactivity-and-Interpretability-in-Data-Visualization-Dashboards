@@ -6,9 +6,11 @@ before changing `src/tasks.py` or `src/flow.py`.
 
 Status: **draft, 2026-09-15; revised 2026-09-21 to match the IRB submission; task set finalized
 2026-09-22, then replaced 2026-09-23 by a redesigned task bank on five chart types, with a
-crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4).** The consent
-text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until
-approved.
+crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4); redesigned
+2026-09-25 from the design handoff (`docs/design-handoff/`, `docs/study-redesign.md`): six options
+per item, controls on every chart, a new survey, and About you, which moves to the end.** The
+consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a
+participant until approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -41,20 +43,26 @@ Within-subjects, 2 (condition: static / interactive) × 2 (form: A / B), fully c
 Target n ≥ 25.
 
 Each participant completes **6 scored tasks per condition, 12 in total**, plus one unscored practice
-task. All six make up the RQ1 accuracy score (§7). Expected duration 20–35 minutes, capped at one
-hour (IRB form items 5B and 10).
+task. All six make up the RQ1 accuracy score (§7). Expected duration about 40 minutes (the consent
+form), capped at one hour (IRB form item 10). Request form 5B still says 20–35 minutes (§10).
 
 ### Conditions
 
 Identical in every visual respect. The only difference is the Plotly render config
-(`figures.graph_config`) and the controls rendered beside the chart (`docs/visual-spec.md` §7):
+(`figures.graph_config`) and the controls rendered under the chart (`docs/visual-spec.md` §7):
 
 | | Static | Interactive |
 |---|---|---|
 | Hover tooltips | none | every chart |
-| Line charts | image | filter, sort, line isolation, zoom and pan |
-| Bar chart | image | sort the bars |
-| Map | image | show only countries within a coverage range |
+| Country chips | none | every chart: show or hide each country drawn |
+| Line charts | image | View (as listed / by coverage), Show all, click a line to isolate it, legend click to hide or show, double-click to show only one, zoom and pan |
+| Bar chart | image | Sort: A–Z, High → low, Low → high |
+| Heatmap | image | Sort rows: Default, Lowest value, Average |
+| Map | image | Highlight: fade every country not below a typed percentage |
+| Every chart | — | Reset view: undo filtering, sorting, isolating and the highlight |
+
+The controls and a one-line hint sit under the chart, so the chart is in the same place in both
+conditions.
 
 **Static participants cannot read exact values.** They estimate against gridlines or a colour key.
 No task may therefore ask for a specific number — such an item would measure whether hover exists,
@@ -95,8 +103,8 @@ chart types, in the same order, with matched margins — over different data.
 ## 3. The entity set
 
 Each task shows **the same fixed set of entities in both conditions.** No control reaches an entity
-the static condition cannot see: filtering hides lines within the set, and the map's coverage range
-fades countries within it.
+the static condition cannot see: the chips and the legend hide entities within the set, the sorts
+reorder them, and the map's highlight fades countries within it.
 
 This is deliberate. If interactive participants could pull in entities that static participants could
 not, interactivity would be changing *what data is available* as well as *how it is worked with*, and
@@ -126,12 +134,17 @@ read is costly and that affordance lowers the cost:
 
 | Item | Chart | Affordance | The static cost it lowers |
 |---|---|---|---|
-| T1 | line, 8 countries and World | isolating a line | tracing one line through a tangle of crossings |
+| T1 | line, 8 countries | isolating a line: a click, a legend double-click, or the chips | tracing one line through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
-| T3 | scatter | hovering a dot | matching a dot to its legend entry |
-| T4 | heatmap | hovering a cell | telling dark shades apart |
-| T5 | map | the coverage range | sorting every country's colour against the key |
+| T3 | scatter | hovering a dot; hiding dots with the chips | matching a dot to its legend entry |
+| T4 | heatmap | hovering a cell; sorting rows by lowest value | telling dark shades apart |
+| T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
 | T6 | line, 2 countries | hovering both lines where they meet | placing, by eye, the year two lines cross |
+
+**Redesign, 2026-09-25.** Every chart now has country chips and Reset view. The heatmap gained a
+row sort, and the map's range slider gave way to a typed threshold. The heatmap's Lowest value sort
+answers T4 in one click, as the bar sort answers T2. Like the bar sort, it lowers the static cost
+rather than making the item answerable, because T4's key already clears the acceptance rule.
 
 Chart type here is **variety** — evidence that an effect holds across formats — not a per-type
 claim. Each type carries one item per form, the line chart two, so per-chart-type differences
@@ -185,14 +198,20 @@ that was changed on the real data and checks that it is still refused.
 | Country | Ukraine | Myanmar |
 | Lowest point | **2016** (19%) | **2021** (37%) |
 | Within 5 points of it | 2014 and 2015 (23%) | none |
-| Options | 2008, 2016, 2019, 2022, 2024 | 2009, 2013, 2017, 2021, 2024 |
+| Options | 2004, 2008, 2016, 2019, 2022, 2024 | 2005, 2009, 2013, 2017, 2021, 2024 |
 | Next-lowest option | 2022 at 73%: 54 points above | 2024 at 71%: 34 points above |
-| Other lines | Brazil, China, Ethiopia, India, Indonesia, Nigeria, Pakistan, World | same |
+| Other lines | Brazil, China, Ethiopia, India, Indonesia, Nigeria, Pakistan (no World line) | same |
 | Key | **2016** | **2021** |
 
 The difficulty is finding and following the line, not reading it: both lows are far below every
 other option. The other lines are the tangle the isolation control cuts through: Ukraine's line
-crosses all eight of them, 25 times in all, and Myanmar's crosses seven of eight, 21 times.
+crosses all seven of them, 23 times in all, and Myanmar's crosses six of seven, 16 times.
+
+> **Redesign, 2026-09-25.** The handoff dropped World from A-T1 and offered 2012 as a sixth option.
+> 2012 fails the rule: 2014, 4 points off the low, read a year early is 2013, nearest 2012. Eduardo
+> chose 2004 instead, and B-T1 gained 2005 to match: each form adds a year four before its first
+> option. B-T1 drops World too, so both forms draw eight lines. The margins are unchanged, because
+> 2004 (99%) and 2005 (73%) sit above each form's next-lowest option.
 
 > **A-T1's options changed from the spec.** The spec offered 2010, 2013, 2016, 2019 and 2022.
 > Ukraine is at 23% in 2014 and 2015, too close to its 19% in 2016 to tell apart, and 2014 lies
@@ -209,12 +228,13 @@ crosses all eight of them, 25 times in all, and Myanmar's crosses seven of eight
 | Year | 2017 | 2024 |
 | Bars | China 99, Vietnam 94, **India 89**, Brazil 83, Pakistan 75, Ethiopia 65, Nigeria 55 | Egypt 97, United States 94, **Colombia 89**, Cambodia 83, Indonesia 78, Ethiopia 73, Nigeria 67 |
 | Gap to the bar above / below | 5 / 6 | 5 / 6 |
-| Options | Brazil, China, Ethiopia, India, Vietnam | Cambodia, Colombia, Egypt, Ethiopia, United States |
+| Options | Brazil, China, Ethiopia, India, Nigeria, Vietnam | Cambodia, Colombia, Egypt, Ethiopia, Nigeria, United States |
 | Key | **India** | **Colombia** |
 
 The bars stand in alphabetical order, so the top three are not side by side. Sorting lines them up.
 The forms are matched exactly: the key is 89 in both, 5 points below the bar above and 6 above the
-bar below. Each form's options are the ranks 1, 2, 3, 4 and 6.
+bar below. Each form's options are the ranks 1, 2, 3, 4, 6 and 7 (Nigeria, the seventh, added
+2026-09-25).
 
 > **Re-tuned from the spec.** The spec's A-T2 (2015) had China 99, Bangladesh 98, Vietnam 97 and
 > Brazil 96, and its B-T2 (2019) Egypt 95 against Colombia 94. Both keys were 1 point from a
@@ -232,7 +252,7 @@ diagonal?*
 | Dots, 2000 → 2024 | Burkina Faso 45 → 91, Chad 38 → 68, Ethiopia 30 → 73, Mali 43 → 82, **Niger 34 → 86**, Nigeria 29 → 67 | Bangladesh 82 → 97, Cambodia 59 → 83, **India 58 → 94**, Indonesia 75 → 78, Nepal 74 → 97, Pakistan 59 → 87 |
 | Improvement, key vs runner-up | +52 vs +46 (Burkina Faso): 6 | +36 vs +28 (Pakistan): 8 |
 | Closest two dots | 6.1 points (Ethiopia, Nigeria) | 4.0 points (Cambodia, Pakistan) |
-| Options | Burkina Faso, Chad, Ethiopia, Mali, Niger | Bangladesh, Cambodia, India, Nepal, Pakistan |
+| Options | Burkina Faso, Chad, Ethiopia, Mali, Niger, Nigeria | Bangladesh, Cambodia, India, Indonesia, Nepal, Pakistan |
 | Key | **Niger** | **India** |
 
 The dot is easy to find; the static cost is naming it, by matching its colour and shape to the
@@ -240,10 +260,10 @@ legend. Hover names it directly.
 
 > **Changed from the spec.** A-T3 drops Angola (31 → 64) and DR Congo (30 → 65): their dots sat
 > 1.4 points apart, and within 3 of Nigeria's, so one dot hid another. B-T3 drops Laos, so both forms
-> show six dots, and keeps Afghanistan out as the spec warned: its +35 all but ties India's +36. A-T3
-> offers Mali in place of Nigeria (+39 and +38), which moves the key off the fourth option.
+> show six dots, and keeps Afghanistan out as the spec warned: its +35 all but ties India's +36.
+> Since 2026-09-25 both forms offer all six dots.
 
-### T4 — Lowest cell (heatmap, hover)
+### T4 — Lowest cell (heatmap, hover and row sort)
 
 *Rows are countries and columns are years. Darker cells mean lower coverage. Which country's row
 contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024.
@@ -254,11 +274,12 @@ contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024.
 | Lowest cell | **Chad, 2005: 26%** | **Afghanistan, 2000: 24%** |
 | Next row's lowest | Central African Republic, 37% | Niger, 34% |
 | Margin | 11 | 10 |
-| Options | Burkina Faso, Central African Republic, Chad, Mali, Pakistan | Afghanistan, Mali, Niger, Pakistan, Uganda |
+| Options | Burkina Faso, Central African Republic, Chad, India, Mali, Pakistan | Afghanistan, Madagascar, Mali, Niger, Pakistan, Uganda |
 | Key | **Chad** | **Afghanistan** |
 
 No number is written in a cell. Static participants compare shades against the colour key; hover
-gives the exact value.
+gives the exact value, and the Lowest value row sort brings the key's row to the top. The sixth
+option, added 2026-09-25, is each grid's sixth-lowest row: India (58) in A, Madagascar (57) in B.
 
 > **Re-tuned from the spec.** The spec's A-T4 lowest cell (Chad, 26) was 3 points from Nigeria's
 > (29), and its B-T4 (Afghanistan, 24) 5 points from Nigeria's — enough on a position axis, not in
@@ -267,7 +288,7 @@ gives the exact value.
 > B also traded India and Indonesia for rows form A does not show, so the two grids share only Mali
 > and Pakistan. The spec's keys, Chad and Afghanistan, stayed.
 
-### T5 — Countries below 50% (map, coverage range)
+### T5 — Countries below 50% (map, highlight)
 
 *The map colours {n} countries in sub-Saharan Africa by their coverage in {year}. How many of those
 countries had coverage below 50%?*
@@ -279,7 +300,7 @@ countries had coverage below 50%?*
 | Below 50% | Central African Republic 23, Chad 39, Nigeria 39 | Chad 29, Somalia 40 |
 | Closest to the line | Chad and Nigeria, 11 points below | Somalia, 10 points below |
 | Left uncoloured, within 10 points of 50% | Somalia 44, South Sudan 53, Angola 54, Ethiopia 59 | Nigeria 42, Angola 43, Central African Republic 48, Ethiopia 50, Niger 58; South Sudan has no 2007 value |
-| Options | 0, 1, 2, 3, 4 or more | same |
+| Options | 0, 1, 2, 3, 4, 5 or more | same |
 | Key | **3** | **2** |
 
 The coloured countries are the spec's pool of large, easily seen countries, less those within 10
@@ -291,10 +312,18 @@ many are coloured.
 > No single pool kept every country 10 points clear in two years with different counts, so each form
 > has its own. B-T5 moved to 2007: 2018 left only one country clear below the line.
 
+> **Redesign, 2026-09-25.** The handoff proposed another 13: Burkina Faso, Cameroon, the Central
+> African Republic, Chad, Ethiopia, Guinea, Kenya, Mali, Niger, Nigeria, Senegal, South Sudan and
+> Uganda. In 2013 South Sudan (53), Guinea (56) and Ethiopia (59) sit within 10 points of 50%, so
+> the rule refuses it. Eduardo kept this set, and the scope is unchanged. "4 or more" became two
+> options, "4" and "5 or more", so every item offers six.
+
 ### T6 — Crossing (line, hover)
 
 *{Country}'s coverage became higher than {other country}'s at some point. Roughly when did that
-first happen?* Options, in calendar order: 2004-2008, 2009-2012, 2013-2016, 2017-2020, 2021-2024.
+first happen?* Options, in calendar order: 2000-2003, 2004-2008, 2009-2012, 2013-2016, 2017-2020,
+2021-2024. 2000-2003 was added 2026-09-25 so that every item offers six options. No key, margin or
+adjacent band moves.
 
 | | Form A | Form B |
 |---|---|---|
@@ -341,8 +370,9 @@ line is rising. The line controls and zoom work here as on every line chart.
 | Floor | 5 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
-than quietly unbalancing the forms. Three known differences go to the pilot (§10):
+than quietly unbalancing the forms. Four known differences go to the pilot (§10):
 - T1's low point is a three-year trough in A and a one-year dip in B.
+- T1's tangle: Ukraine crosses its seven neighbours 23 times, Myanmar 16 times.
 - B-T3's closest dots sit on the 4-point floor.
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
@@ -353,8 +383,8 @@ than quietly unbalancing the forms. Three known differences go to the pilot (§1
 *Practice (not scored). Look at Brazil's line. Did coverage rise, fall, or stay level between 2015
 and 2021?* Brazil and World, DTP3, 2000–2024: a fall from 96% to 68%, unmissable. Shown in the
 participant's first condition only, identical across forms, to teach the interface rather than the
-concept. It is a line chart, the one type with every control. The other types' controls are
-described in the instructions and by a line of text above each chart in the interactive condition.
+concept. It is a line chart, the type with the most controls. The other types' controls are
+described in the instructions and by the hint row under each chart in the interactive condition.
 
 > **Changed 2026-09-23.** The practice was Ukraine's collapse between 2008 and 2016, and A-T1 now
 > asks for Ukraine's lowest year: a first half of form A would have been answered by its own
@@ -391,6 +421,19 @@ described in the instructions and by a line of text above each chart in the inte
 - **Renumbered.** The old T3–T7 are now T2–T6. A task id now names a different item than it did, so
   the log schema moved to v8 (`src/logging.py`). Nothing had been collected.
 
+### Revision 2026-09-25: the redesign
+
+The design handoff (`docs/design-handoff/`, `docs/study-redesign.md`) changed the items' options and
+the controls, not the questions or the keys.
+
+- **Six options per item.** Form A's sixth options came from the handoff. Two failed the rule and
+  were replaced at Eduardo's choice: A-T1's 2012 became 2004, and A-T5 kept its 13 countries
+  instead of the handoff's set (T1, T5 above). Form B's sixth options mirror A's.
+- **No World line on T1**, in either form.
+- **Controls on every chart:** country chips and Reset view everywhere, a row sort on the heatmap,
+  and a typed threshold on the map in place of the range slider (§2).
+- **Unchanged:** every key, every margin in the table above, and the scope (3900 rows).
+
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so is the rise item, with its rule and its values.
 
@@ -399,8 +442,8 @@ and so is the rise item, with its rule and its values.
 Every scored task collects two things:
 
 1. **A multiple-choice answer** — scored objectively, no rater judgement.
-2. **A short free-text justification** ("In one sentence, how did you decide?") — the material for
-   RQ2.
+2. **A short free-text justification** ("In one sentence, describe why you chose your answer.") —
+   the material for RQ2.
 
 **Both may be skipped (2026-09-21).** The IRB form (item 10) and the consent form promise that a
 participant may skip any question. Pressing Submit with either part empty opens a confirmation popup
@@ -416,9 +459,10 @@ source. Scoring happens offline against §7.
   which also sets each line's and dot's colour and the order of bars and rows, with World always last.
 - Years and year bands run in calendar order; counts in their natural order.
 - Which options an item offers is the one free choice. It is used to spread the key: no position
-  holds more than a third of the twelve keys (first: 2, second: 2, third: 3, fourth: 4, fifth: 1).
-  T6 has no free choice, since it offers all five bands; its keys sit first and fourth.
-  `tests/test_scoring.py` fails if any position holds more than a third.
+  holds more than a third of the twelve keys. Every item offers six options (2026-09-25), and the
+  keys sit first: 1, second: 2, third: 4, fourth: 2, fifth: 3, sixth: 0. T6 has no free choice,
+  since it offers all six bands; its keys sit second and fifth. `tests/test_scoring.py` fails if any
+  position holds more than a third.
 
 Before this rule, the country options were sorted by how much each changed, which put the correct
 answer first in 7 of the then 12 items.
@@ -431,7 +475,13 @@ After **each** condition — the consent form says so ("For each version … fol
 with Likert-scale ratings of clarity, ease of use, confidence, and cognitive load"), and a single
 survey after both would give one rating that cannot be split between the conditions it compares.
 
-Cognitive load is the Paas mental-effort item (RQ3):
+**Redesigned 2026-09-25** from the design handoff. One question per page, with a rail of sections
+beside it. The first half's survey opens with "A few questions about the charts you just used."; the
+second half's with "A few questions about the charts you just used, then a comparison of both
+versions."
+
+**Paas comes first** (kept 2026-09-25: it is RQ3's measure). Cognitive load is the Paas
+mental-effort item:
 
 > **In solving the preceding tasks, I invested:**
 > 1 — very, very low mental effort … 9 — very, very high mental effort
@@ -440,36 +490,70 @@ One item, not NASA-TLX: with only two conditions per participant the extra subsc
 administration time and fatigue without much resolution. Logged as `load_rating` with
 `{"scale": "paas", "value": 1-9}`.
 
-Clarity, ease of use and confidence are three 7-point agreement items (1 = strongly disagree,
-4 = neither agree nor disagree, 7 = strongly agree), chosen 2026-09-21 over 5-point for resolution,
-since each condition yields only one rating per participant:
+Then the handoff's items, verbatim, on a 7-point agreement scale with every point labelled:
+1 Strongly disagree, 2 Disagree, 3 Somewhat disagree, 4 Neither agree nor disagree, 5 Somewhat
+agree, 6 Agree, 7 Strongly agree.
 
-| Key | Statement |
-|---|---|
-| `clarity` | The charts in this part made the information clear. |
-| `ease_of_use` | The charts in this part were easy to use. |
-| `confidence` | I am confident in my answers in this part. |
+| Id | Section | Statement | Asked |
+|---|---|---|---|
+| a1 | Your experience | I am confident that my answers in this part were correct. | after each condition |
+| a2 | | The charts were easy to understand. | |
+| a3 | | I could quickly find the information I needed. | |
+| a4 | | I could read values from the charts as precisely as the questions required. | |
+| a5 | | It was easy to see where coverage increased or decreased. | |
+| a6 | | It was easy to compare countries with each other. | |
+| a7 | | Answering the questions took a lot of mental effort. | |
+| a8 | | I felt frustrated while answering the questions. | |
+| a9 | | I felt rushed while answering the questions. | |
+| b1 | Chart controls | I could figure out how to use the chart controls without instructions. | after the interactive condition only |
+| b2 | | The chart controls helped me answer the questions. | |
+| b3 | | The chart controls were easy to use. | |
+| c1 | Comparing the two versions | Which charts helped you answer more accurately? | after the second condition only |
+| c2 | | Which charts did you prefer using? | |
+| c3 | | What made one set of charts easier or harder to use than the other? | |
 
-Logged as `survey_rating` with `{"scale": "likert7", "clarity": …, "ease_of_use": …,
-"confidence": …}`. Every item may be skipped, behind the same confirmation popup as a task (§5); a
-skipped rating is `null`.
+c1 and c2 offer "The charts with controls", "The charts without controls" and "No difference". c3
+is free text, marked "Optional". Paas sits on the first page of "Your experience", before a1.
 
-### 6.2 Demographics
+Logged, once per condition, as `survey_rating` with `{"scale": "likert7", "a1": …, …, "a9": …}`;
+after the interactive condition also `controls_rating` with `{"scale": "likert7", "b1": …, "b2": …,
+"b3": …}`; and after the second condition `comparison` with `{"c1": …, "c2": …, "c3": …}`. Every item
+may be skipped, behind the same confirmation popup as a task (§5); a skipped rating is `null`.
 
-Once, after the participant ID and before the instructions (chosen 2026-09-21: simplest, and nothing
-is lost when a participant stops part-way). Broad categories only, per IRB form item 17, so no answer
-can re-identify anyone. Every item may be skipped, behind the confirmation popup, and every item also
-offers "Prefer not to say".
+The three items of 2026-09-21 (`clarity`, `ease_of_use`, `confidence`) are gone. a1 and a2 are near
+two of them but reworded, so the two are not comparable.
 
-| Key | Question | Options |
-|---|---|---|
-| `age_range` | What is your age range? | 18–24; 25–34; 35–44; 45–54; 55–64; 65 or older |
-| `field` | What is your main field of study or work? | Arts and humanities; Social sciences; Natural sciences; Mathematics, statistics or computer science; Engineering; Health or medicine; Business or economics; Education; Other |
-| `chart_frequency` | How often do you read charts or graphs, for example in the news, at work, or in class? | Never; Less than once a month; A few times a month; A few times a week; Daily |
-| `dashboard_familiarity` | How familiar are you with interactive data dashboards, such as Tableau, Power BI, or online COVID-19 trackers? | Not at all familiar; Slightly familiar; Moderately familiar; Very familiar; Extremely familiar |
+### 6.2 About you
 
-Logged as a `demographics` event, once per participant, in condition 1's log session right after
-`consent` — it is held in session state until then, for the same reason consent is (§9).
+**Redesigned 2026-09-25**, replacing the four broad-category items of 2026-09-21. Asked once, at the
+**end**, after the second survey. One question per page, with a rail of four sections: Session
+setup, Background, Experience with data visualization, Topic familiarity. Introduced as "A few
+questions about your setup and background." Every item may be skipped, behind the confirmation
+popup, and most also offer "Prefer not to say". The wording is the handoff's (`auBuild()` in
+`Study UI Screens.dc.html`), verbatim.
+
+| Key | Id | Question | Answer |
+|---|---|---|---|
+| `pointer` | A1 | What are you using to control the pointer right now? | Mouse; Trackpad / touchpad; Touchscreen; Other (with a text box, `pointer_other`) |
+| `age` | B1 | What is your age (in years)? | A whole number from 18 to 99, or Prefer not to say |
+| `role` | B2 | Which best describes your current role? | Undergraduate student; Graduate student; Faculty or staff; Not affiliated with a college or university; Prefer not to say |
+| `field` | B3 | What is your primary field of study or work? *(If you have more than one, choose the one closest to how you spend most of your time.)* | Computer science, math, or statistics; Natural or physical sciences (e.g., biology, chemistry, physics); Health or life sciences (e.g., kinesiology, public health, pre-med); Social sciences (e.g., economics, psychology, politics); Humanities or arts; Other (with a text box, `field_other`); Prefer not to say |
+| `read_charts` | C1 | How often do you read or use charts, graphs, or dashboards (for school, work, or personal interest)? | Rarely or never; A few times a year; About monthly; About weekly; Daily or almost daily; Prefer not to say |
+| `make_charts` | C2 | How often do you create charts, graphs, or dashboards? | Never; A few times ever; A few times a year; About monthly; About weekly or more; Prefer not to say |
+| `stats_course` | C3 | Have you taken a course where data visualization or statistics was a major part? | Yes; No; Not sure; Prefer not to say |
+| `tools` | C4 | How familiar are you with each of these tools? | For each of Tableau; Plotly or Plotly Dash; Microsoft Excel or Google Sheets charts; Power BI; Our World in Data charts: Never heard of it; Heard of it, never used; Used a few times; Use regularly; Prefer not to say |
+| `topic_familiarity` | D1 | Before today, how familiar were you with data on childhood vaccination rates around the world? | 1 — Not at all familiar; 2 — Slightly familiar; 3 — Somewhat familiar; 4 — Very familiar; 5 — Extremely familiar; Prefer not to say |
+| `health_background` | D2 | Have you studied or worked in public health, medicine, nursing, or epidemiology? | Yes; No; Prefer not to say |
+
+**These are not all broad categories.** Age in years and the two free-text boxes conflict with IRB
+form item 17, which promises broad categories only and lists age among the identifying information
+kept apart from the study data. Listed in §10 to be settled before submission.
+
+Logged as a `demographics` event, once per participant, in the **second** condition's log session,
+after that session's `session_end`. The session is closed at its survey as before, so a participant
+who stops at About you still leaves two complete sessions (§7's `incomplete_session`), and one who
+stops earlier leaves no demographics. `tools` is an object from tool name to answer; `age` is an
+integer or "Prefer not to say"; any value may be null (skipped).
 
 ## 7. Scoring
 
@@ -507,14 +591,16 @@ as per-chart-type effects.
 
 | Item | Affordance | Logged? |
 |---|---|---|
-| T1 | isolating a line (also filter, sort, zoom) | yes — `line_isolate`, `filter_change`, `sort_change`, `view_change` |
+| T1 | isolating a line (also chips, legend, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `legend`, `show-all`), `sort_change`, `view_change`, `view_reset` |
 | T2 | sorting the bars | yes — `sort_change` |
-| T3, T4 | hover | no |
-| T5 | the coverage range | yes — `filter_change` with `control` `coverage-band` or `band-reset` |
+| T3 | hover; hiding dots with the chips | the chips only — `filter_change` (`chips`) |
+| T4 | hover; sorting rows by lowest value | the sort only — `sort_change` |
+| T5 | the highlight | yes — `filter_change` with `control` `threshold` |
 | T6 | hover | no (the line controls are, if used) |
 
 For T3, T4 and T6, an interactive participant who answers correctly may or may not have hovered.
-Analyses of affordance use are confined to T1, T2 and T5, and the write-up says so.
+Analyses of affordance use are confined to T1, T2, T4's sort and T5; for T3, T4 and T6 a correct
+interactive answer may rest on an unlogged hover, and the write-up says so.
 
 **Reasoning depth (RQ2).** Each justification coded on three binary features:
 
@@ -542,7 +628,9 @@ reported as such rather than as a number. At n ≥ 25 the double-coded sample is
 conventional, but thin, and the write-up should say so.
 
 **Cognitive load (RQ3).** Paas score per condition, 1–9. A skipped rating is missing for that
-participant × condition. The three Likert items (§6.1) are reported descriptively per condition.
+participant × condition. The survey items a1–a9, b1–b3 and c1–c2 (§6.1) are reported descriptively
+per condition. c3's free text is reported descriptively too; it is not part of the RQ2 coding, which
+covers task justifications only. a7 (mental effort) is reported beside Paas, never in its place.
 
 **Time on task.** From the browser clock (`performance.now()`), never the server, so cold starts and
 network latency do not enter a dependent variable.
@@ -580,8 +668,14 @@ then `too_fast`, then the 1% trim computed on whatever survives.
 
 ## 8. Procedure
 
-`consent → participant ID → demographics → instructions → practice → 6 tasks → survey → break →
-instructions → 6 tasks → survey → complete`
+`consent → participant ID → instructions → practice → practice complete → 6 tasks → survey → break
+→ instructions → 6 tasks → survey → about you → finished`
+
+**Revised 2026-09-25** (the design handoff): a practice-complete screen now sits between the
+practice and the first scored task, in the first half only, and About you (§6.2) moved from after
+the participant ID to the end. A stepper in the header shows where the participant is: Consent,
+Practice, Part 1, Break, Part 2, About you, Finished. It is display only; nothing in it can be
+clicked.
 
 Declining on the consent screen leads to a thank-you screen that confirms no data was collected (IRB
 form item 12B), with a button back to the consent form in case the choice was a mis-click. Nothing is
@@ -597,12 +691,84 @@ difference in interactivity, and one that would depress the interactive conditio
 exactly the wrong reason. Practice is not repeated: it teaches the interface, and by the second
 condition the participant has used it.
 
-**What the instructions say (revised 2026-09-23).** Both versions name the five kinds of chart. The
-interactive version says that hovering over any line, bar, dot, cell or country shows its exact
-value, and on a line chart its change from the year before. It also names the controls: filter,
-sort and isolate on line charts, sort on the bar chart, a coverage range on the map. The static
-version says the charts are images, to be read against the gridlines or the colour key. In the
-interactive condition, a line of text above each chart restates what that chart can do.
+**What the instructions say (revised 2026-09-25).** The wording is the design handoff's (screens
+4a, 4b, 9a, 9b), with the copy fixes in `docs/study-redesign.md` §5. Its interactive bullets were
+rewritten to describe the controls the charts actually have, and the first half's interactive
+version (4b) now carries the same control bullets as the second half's (9b). Without that, whoever
+draws the interactive condition first would meet the bar, heatmap and map controls with only the
+hint row to go on, which is the procedural difference this section exists to prevent. In the
+interactive condition, a hint row under each chart restates what that chart can do.
+
+First half, both versions. Heading "Instructions", then "Practice Question":
+
+> Before the main set of questions, you'll try one practice question so you know what to expect. It
+> won't be scored.
+>
+> You'll see a line chart of childhood vaccination coverage (the share of children who received a
+> vaccine each year). Answer the question, then explain in one sentence how you decided.
+
+Then, **static (4a):**
+
+> - The chart is an image. Read values by comparing the line to the gridlines.
+> - A break in a line means no value was reported for those years.
+> - You can skip the question. If you leave it blank, you'll be asked to confirm.
+>
+> In the main task, you'll see other kinds of charts too: bar charts, scatter plots, coloured grids
+> and maps. Those are images too: read them against the gridlines, or against the colour key where
+> there is one.
+
+Or **interactive (4b):**
+
+> - The charts are interactive. Move your pointer over any line, bar, dot, cell or country to see
+>   its value; on a line chart you also see its change from the year before.
+> - Under each chart, the country buttons show or hide countries, and Reset view undoes your
+>   changes.
+> - On line charts you can also click a line, or double-click a name in the legend, to see one
+>   country on its own; reorder the countries by coverage; and bring every line back with Show all.
+> - The bar chart and the coloured grid can sort their bars or rows. The map can highlight only the
+>   countries below a coverage you type.
+> - A break in a line means no value was reported for those years.
+> - You can skip the question. If you leave it blank, you'll be asked to confirm.
+>
+> In the main task, you'll see other kinds of charts too: bar charts, scatter plots, coloured grids
+> and maps.
+
+Button: "Start the practice question". Second half, heading "Instructions", then "Second Half":
+
+> This half uses a different version of the charts. The tasks are similar, but the charts work
+> differently.
+
+Then, **static (9a):** "The charts in this half are **static** images. They don't respond to your
+mouse pointer and have no controls. Read them against the gridlines, or against the colour key where
+there is one." Or **interactive (9b):** "The charts in this half are **interactive**:", followed by
+
+> - Pointing at any line, bar, dot, cell or country shows its value. On line charts, it also shows
+>   the change from the year before.
+
+and 4b's second, third and fourth bullets. Both end: "As before, you'll answer a question about
+each chart and then say in one sentence how you decided. A break in a line means no value was
+reported for those years. You may skip any question, and you'll be asked to confirm if you leave one
+blank." Button: "Start the questions".
+
+The colour-key sentences in 4a and 9a are additions to the handoff, made so the static wording names
+the colour key the heatmap and map are read against, as the 2026-09-23 wording did.
+
+**Practice complete** (first half only), heading "Practice Complete!":
+
+> That was the practice question. It was not scored.
+>
+> The next six questions are the ones that count. The charts use the same version
+> (static/interactive) that you experienced in the practice question.
+>
+> For each question, choose one answer, then write a short sentence response about your decision.
+> After the sixth question, there are a few quick reflecting questions about your experience with
+> this version.
+>
+> You may skip a question at any time. If you leave one unanswered, you will be asked to confirm.
+
+Button: "Start the questions". **The break**, heading "Halfway There!": "Congratulations! The first
+half of the study is complete! The next set will ask different questions using the other version
+(static/interactive). Take a moment, then continue when you are ready." Button: "Continue".
 
 The practice answer is recorded under `task_id` `P0` so that its timing is available, and **excluded
 from scoring** (§7).
@@ -618,14 +784,17 @@ never re-randomised — the assignment is held in the database and is idempotent
 > A reload within the same tab does keep their place.
 >
 > **The participant-ID screen no longer promises resume (2026-09-16).** It used to say a returning
-> participant would "continue where the study left off". It now reads: *"Enter the ID you were
-> given. Please complete the study in one sitting, in this tab — closing it ends your session."*
+> participant would "continue where the study left off". Since 2026-09-25 it reads: *"Thank you!
+> Please download a copy of your signed consent form below. Afterwards, enter the ID you were given
+> by the student investigator in the empty text area below. Please complete the study in one
+> sitting, in this tab. Closing it ends your session."*
 > Resume itself is still not implemented, so treat a participant with more than two log sessions as
 > needing manual inspection before analysis — the `incomplete_session` rule in §7 counts sessions and
 > would otherwise be misled.
 
-Each condition is one log session, opened at its instructions and closed after its load rating, so
-both halves produce a complete `session_start … session_end` record.
+Each condition is one log session, opened at its instructions and closed after its survey, so
+both halves produce a complete `session_start … session_end` record. About you is written into the
+second session after its `session_end` (§6.2).
 
 **Timing integrity.** Task duration is the difference between two `performance.now()` stamps taken in
 the participant's browser. That clock resets to zero on a page reload, which would otherwise yield a
@@ -645,7 +814,21 @@ refuses a second `answer_submit` for the same session and task through a unique 
 a double-click writes a duplicate answer and a duplicate `task_end`; it does not skip an item, since
 both requests advance from the same starting point. The 15-second re-enable does nothing if the
 button has left the page (2026-09-23): after the last task the survey is on screen, and
-re-enabling a Submit that no longer existed made the page throw an error in every session.
+re-enabling a Submit that no longer existed made the page throw an error in every session. While a
+Submit is in flight the button also carries `aria-busy="true"` (2026-09-25); its label never
+changes.
+
+**When nothing can be saved (2026-09-25).** A database that is only unreachable does not stop a
+session: events are retried, then spooled in the browser and replayed later (CLAUDE.md, schema v4).
+When a response cannot be saved anywhere, the screen's content is replaced by a blocking message:
+*"The study cannot save responses right now, so it cannot continue. Please contact the
+researcher."* That happens when the log sink cannot be opened or written at all, and when the
+browser spool is full, so the next answer or rating would be dropped rather than kept.
+
+**Finished.** Heading "Finished! Thank you!": "Your responses have been successfully recorded. You
+can close this tab." and "If you change your mind, you can withdraw your responses within two weeks
+of today, without giving a reason. Email rebollar@oxy.edu and include your participant ID (your
+participant ID is {ID})."
 
 ## 9. Consent
 
@@ -653,6 +836,13 @@ The consent screen shows the Occidental informed consent form submitted to HSRRC
 (`irb/COMP 490 Consent Form.pdf`, local only), word for word. The app's copy lives in
 `src/consent.py`; `tests/test_consent.py` pins it. **Until HSRRC approves it, the screen carries a
 "pending approval" banner** (`consent.APPROVED = False`), and no participant may be run.
+
+**Revised 2026-09-25** to the design handoff's screen 1, which reproduces the finalized form as a
+Letter sheet in Times New Roman, with the signing fields inside the sheet. Its wording differs from
+the 2026-09-21 transcription in four places, all listed in §10 for the IRB paperwork: about 40
+minutes instead of 20 to 35 (twice), a new sentence in Risks on childhood vaccination as a sensitive
+topic, "Neon (a managed PostgreSQL service)" instead of "Neon (managed by PostgreSQL)", and access to
+"identifying data" instead of "the data". The hash in `tests/test_consent.py` was re-pinned.
 
 ### How consent is given
 
@@ -723,21 +913,25 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 ## 10. Open items
 
 - IRB approval, and the final consent wording.
-- **Pilot checks for the 2026-09-23 bank:**
+- **Pilot checks for the 2026-09-23 bank, as redesigned 2026-09-25:**
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
-    points), so they are the hardest static reads. Near-chance static accuracy (one in five) would
+    points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
     mean the floor is too tight for that chart type.
   - **Form equivalence.** T1's low point is a three-year trough in form A and a one-year dip in form
-    B. B-T3's two closest dots sit exactly on the 4-point floor. The T6 crossings are drawn
-    differently (§4).
+    B, and its tangle differs: Ukraine crosses its neighbours 23 times, Myanmar 16. B-T3's two
+    closest dots sit exactly on the 4-point floor. The T6 crossings are drawn differently (§4).
   - **T6 against its adjacent-band secondary.** If the two scores differ much, static readers are
     placing the crossing a band off, and the band edges are doing the work.
-  - **Whether the interactive affordances are found at all.** Especially the map's coverage range
-    and the bar sort, which the practice does not teach. The logs show both (§7).
+  - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
+    row sort, the map's highlight and the bar sort, which the practice does not teach. The logs show
+    all four (§7).
+  - **Whether T4 sits at ceiling in the interactive condition** because the Lowest value row sort
+    answers it in one click (§4).
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
-- **Keyboard-only participants.** Hover is mouse-only, so a keyboard-only participant in the
-  interactive condition meets T3, T4 and T6 with no affordance at all. The bar sort and the map's range
-  work from the keyboard (`docs/visual-spec.md` §8).
+- **Keyboard-only participants.** Hover, clicking a line and clicking the legend are mouse-only, so a
+  keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
+  with only the row sort. The chips, the sorts, the highlight, Show all and Reset view all work from
+  the keyboard (`docs/visual-spec.md` §8).
 - ~~Whether the items can be answered without hover.~~ Resolved 2026-09-22 by the item acceptance
   rule, and kept for the 2026-09-23 bank, which was re-tuned to pass it (§4).
 - **Session resume is not implemented.** The participant-ID screen no longer promises it; it asks
@@ -768,8 +962,39 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - *Request form 15:* "All records and backups will be available for at least three years". Neon's
     automatic backups are kept for days, not years, so the three-year copy has to be the export on
     the Oxy Drive. Deleted rows also survive in Neon's backups until that window passes.
-  - *Request form 15:* "managed by PostSQL" is a typo for PostgreSQL. Both forms also say "Neon
-    (managed by PostgreSQL)", but Neon is a managed PostgreSQL service, not managed by it.
+  - *Request form 15:* "managed by PostSQL" is a typo for PostgreSQL. The consent form now says
+    "Neon (a managed PostgreSQL service)" (2026-09-25); the request form should say the same.
+- **IRB paperwork to change for the 2026-09-25 redesign.** The app shows the handoff's consent text
+  (§9), so the PDF submitted to HSRRC must carry the same words.
+  - *Consent form, Purpose and Procedures:* "approximately 20 to 35 minutes" is now "approximately
+    40 minutes".
+  - *Consent form, Risks:* a new sentence: "The dashboards display real data on childhood vaccination
+    coverage, a topic that may be personally sensitive or evoke strong opinions for some
+    participants; you are not asked to share your views on vaccination, and you may skip any task or
+    withdraw at any time without penalty." Request form 9 already promises this disclosure "in the
+    recruitment materials and consent form"; the 2026-09-21 consent form did not carry it. The
+    recruitment materials must say it too.
+  - *Consent form, Confidentiality:* "Neon (managed by PostgreSQL)" is now "Neon (a managed
+    PostgreSQL service)", and "will have access to the data" is now "will have access to identifying
+    data".
+  - *Consent form, open question:* the form never mentions background questions, and About you now
+    asks age in years, role, field and health background (§6.2). Adding "and a few questions about
+    your background" to Procedures would make it complete. Eduardo's call.
+  - *Request form 5B:* "around 20 - 35 minutes" should read about 40 minutes; item 10's one-hour cap
+    stands. Its "Likert-scale post-task survey on perceived clarity, ease of use, confidence, and
+    cognitive load" should describe the new survey: after each part, the Paas rating and nine 7-point
+    items; after the interactive part, three more about the controls; after the second part, two
+    comparison questions and one optional open-ended question; and at the end, About you (§6).
+  - ***Request form 17 conflicts with About you. Settle before submission.*** It promises that
+    "Demographic questions will be limited to broad categories (age range, …)" and lists age among
+    the identifying information kept in a separate file. About you asks exact age, role (for example
+    "Faculty or staff"), field, and has two free-text "Other" boxes. On a small campus sample those
+    can combine to identify someone. Either amend item 17 and the consent form, or turn the age
+    question back into ranges.
+  - *Request form 18:* **`irb/questionnaire.pdf` must be re-exported.** Every screen it prints
+    changed: the instructions, the six-option items, the survey, About you and the practice-complete
+    screen. Re-export it once those screens are built, then attach it with the URL.
+  - *Measures:* Paas is kept, so RQ3's measure needs no amendment.
 - **Fixed in the 2026-09-21 revision:** "randomized" is now "counterbalanced" in both forms; "hovers"
   and "so findings aren't platform specific" are gone from the request form; both forms now name
   Neon; the consent form now states the two-week withdrawal window.

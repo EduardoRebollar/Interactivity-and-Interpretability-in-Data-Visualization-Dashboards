@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from src import logging as study_logging
+from src import tasks
 from src.logging import (
     EVENTS,
     SCHEMA_VERSION,
@@ -130,9 +131,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_eight():
-    """v8: the largest-rise item was dropped and T2-T6 renumbered, so they name new items."""
-    assert SCHEMA_VERSION == 8
+def test_schema_version_is_nine():
+    """v9: the redesign. Six options per item, the new survey and About you, new control events."""
+    assert SCHEMA_VERSION == 9
 
 
 def test_form_is_recorded_on_every_event():
@@ -170,29 +171,60 @@ def test_a_skipped_load_rating_is_recorded_as_null(logger):
     assert logger.rate_load(None)["payload"] == {"scale": "paas", "value": None}
 
 
-def test_the_survey_records_all_three_likert_items(logger):
-    record = logger.rate_survey({"clarity": 6, "ease_of_use": None, "confidence": 2})
+SURVEY = {f"a{n}": n % 7 + 1 for n in range(1, 10)}
+
+
+def test_the_survey_records_all_nine_items(logger):
+    record = logger.rate_survey({**SURVEY, "a4": None})
     assert record["event"] == "survey_rating"
-    assert record["payload"] == {
-        "scale": "likert7",
-        "clarity": 6,
-        "ease_of_use": None,
-        "confidence": 2,
-    }
+    assert record["payload"] == {"scale": "likert7", **SURVEY, "a4": None}
+
+
+def test_the_logged_items_are_the_ones_asked():
+    """A statement added to the survey without a key here would be asked and never recorded."""
+    assert EVENTS["survey_rating"] == ("scale", *tasks.LIKERT_ITEMS)
+    assert EVENTS["controls_rating"] == ("scale", *tasks.CONTROLS_ITEMS)
+    assert EVENTS["comparison"] == tasks.COMPARISON_KEYS
+    assert EVENTS["demographics"] == tasks.DEMOGRAPHIC_KEYS
 
 
 @pytest.mark.parametrize(
-    "ratings",
-    [
-        {"clarity": 8, "ease_of_use": 1, "confidence": 1},
-        {"clarity": 0, "ease_of_use": 1, "confidence": 1},
-        {"clarity": 1, "ease_of_use": 1},
-        {"clarity": 1, "ease_of_use": 1, "confidence": 1, "fun": 3},
-    ],
+    "change",
+    [{"a1": 8}, {"a1": 0}, {"a1": "7"}, {"fun": 3}],
+    ids=["above 7", "below 1", "text", "unknown item"],
 )
-def test_the_survey_rejects_off_scale_or_misnamed_items(logger, ratings):
+def test_the_survey_rejects_off_scale_or_misnamed_items(logger, change):
     with pytest.raises(LogError):
-        logger.rate_survey(ratings)
+        logger.rate_survey({**SURVEY, **change})
+    missing = dict(SURVEY)
+    del missing["a9"]
+    with pytest.raises(LogError):
+        logger.rate_survey(missing)
+
+
+def test_the_controls_are_rated_after_the_interactive_condition_only(logger, tmp_path):
+    record = logger.rate_controls({"b1": 5, "b2": None, "b3": 7})
+    assert record["event"] == "controls_rating"
+    assert record["payload"] == {"scale": "likert7", "b1": 5, "b2": None, "b3": 7}
+    with pytest.raises(LogError, match="1-7"):
+        logger.rate_controls({"b1": 9, "b2": 1, "b3": 1})
+    static = StudyLogger("P07", condition_order=1, interactive=False, log_dir=tmp_path)
+    with pytest.raises(LogError, match="interactive condition only"):
+        static.rate_controls({"b1": 5, "b2": 5, "b3": 5})
+    static.close()
+
+
+def test_the_versions_are_compared_after_the_second_condition_only(logger, tmp_path):
+    answers = {"c1": "No difference", "c2": None, "c3": "The hover helped."}
+    with pytest.raises(LogError, match="second condition only"):
+        logger.record_comparison(answers)
+    second = StudyLogger("P07", condition_order=2, interactive=False, log_dir=tmp_path)
+    assert second.record_comparison(answers)["payload"] == answers
+    with pytest.raises(LogError, match="text or null"):
+        second.record_comparison({**answers, "c1": 2})
+    with pytest.raises(LogError, match="Comparison must be"):
+        second.record_comparison({"c1": None})
+    second.close()
 
 
 def test_demographics_must_name_exactly_the_documented_items(logger):
@@ -200,6 +232,20 @@ def test_demographics_must_name_exactly_the_documented_items(logger):
     assert logger.record_demographics(answers)["payload"] == answers
     with pytest.raises(LogError):
         logger.record_demographics({"age_range": "18–24"})
+
+
+def test_demographics_can_follow_the_sessions_end(tmp_path):
+    """About you is written after the second survey has closed the session: a logger resumed on the
+    same session_id writes it, so the participant still has exactly two sessions."""
+    closing = StudyLogger("P07", condition_order=2, interactive=True, log_dir=tmp_path)
+    closing.close()
+    resumed = StudyLogger(
+        "P07", condition_order=2, interactive=True, session_id=closing.session_id, log_dir=tmp_path
+    )
+    resumed.record_demographics(dict.fromkeys(EVENTS["demographics"]))
+    records = read_log(next(tmp_path.glob("*.jsonl")))
+    assert [r["event"] for r in records] == ["session_start", "session_end", "demographics"]
+    assert {r["session_id"] for r in records} == {closing.session_id}
 
 
 def test_a_skipped_answer_is_null_and_named_in_skipped(logger):
@@ -445,6 +491,7 @@ def test_an_invalid_duration_is_recorded_absent_with_its_reason(logger):
 
 
 def test_new_events_are_documented():
+    assert EVENTS["view_reset"] == ("previous",)
     assert EVENTS["consent"] == ("consented_at", "consent_version", "signature_method")
     assert EVENTS["sink_recovered"] == ("spooled", "dropped")
     assert "duration_invalid" in EVENTS["answer_submit"]

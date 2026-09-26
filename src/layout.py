@@ -1,11 +1,13 @@
 """Shared layout components and the study flow screens. No pandas — this ships to production.
 
-Every screen is used by BOTH conditions. Only two things branch on `interactive`:
+Every screen is used by BOTH conditions. Only these branch on `interactive`:
 
 1. The Plotly config passed to `chart()` — `figures.graph_config`, the single decision point.
-2. `instructions_screen`, which must describe the affordances that actually exist. Telling static
+2. The task screen's controls (`task_controls`), which exist only in the interactive condition.
+3. `instructions_screen`, which must describe the affordances that actually exist. Telling static
    participants about hover, or failing to tell interactive participants, would handicap one
    condition procedurally. That is a difference in instructions, not in the visual design.
+4. `load_screen`, which asks about the chart controls only after the condition that had them.
 
 Nothing else may differ. `tests/test_conditions.py` enforces the figure half of that.
 """
@@ -14,13 +16,30 @@ from __future__ import annotations
 
 from dash import dcc, html
 
-from src import config, consent, figures
+from src import config, consent, figures, tasks
 from src.tasks import (
-    DEMOGRAPHIC_ITEMS,
+    ABOUT_INTRO,
+    ABOUT_SECTIONS,
+    COMPARISON_CHOICES,
+    COMPARISON_OPTIONS,
+    COMPARISON_SECTION,
+    COMPARISON_TEXT,
+    COMPARISON_TEXT_HELP,
+    COMPARISON_TEXT_KEY,
+    CONTROLS_HELP,
+    CONTROLS_ITEMS,
+    CONTROLS_SECTION,
+    EXPERIENCE_SECTION,
     JUSTIFICATION_PROMPT,
     LIKERT_ANCHORS,
     LIKERT_ITEMS,
     LIKERT_POINTS,
+    LOAD_ANCHORS,
+    LOAD_PROMPT,
+    OTHER,
+    PREFER_NOT,
+    SKIP_NOTE,
+    SURVEY_INTRO,
 )
 
 # Shared page chrome, so both conditions are laid out identically.
@@ -469,8 +488,6 @@ SUBHEADING_STYLE = {
     "margin": "20px 0 6px 0",
 }
 
-SKIP_NOTE = "You may skip any question. If you leave one unanswered, you will be asked to confirm."
-
 
 def choice_question(element_id: str, question: str, options) -> html.Div:
     """A question and its radio options. Native radios: keyboard-navigable (CLAUDE.md baseline)."""
@@ -660,22 +677,119 @@ def participant_screen() -> html.Div:
     )
 
 
-def demographics_screen() -> html.Div:
-    """Broad-category background questions, once per participant. study-design.md section 6.2."""
-    questions = [
-        choice_question(f"demo-{key}", question, [{"label": o, "value": o} for o in options])
-        for key, (question, options) in DEMOGRAPHIC_ITEMS.items()
+def about_id(item: str) -> dict[str, str]:
+    """An About-you field's pattern id. The callback reads every one with `ALL`."""
+    return {"type": "about", "item": item}
+
+
+def survey_id(item: str) -> dict[str, str]:
+    """A survey field's pattern id. The fields differ by condition and half, so the callback reads
+    whichever are on the page with `ALL` rather than naming them."""
+    return {"type": "survey", "item": item}
+
+
+def _about_question(question) -> list:
+    """One About-you question and its fields. The ids are what `app._demographic_answers` reads."""
+    text = [
+        html.P(question.text, style={**PROMPT_STYLE, "fontWeight": "600", "margin": "20px 0 4px"})
     ]
+    if question.help:
+        text.append(html.P(question.help, style={**MUTED_STYLE, "margin": "0 0 8px"}))
+    if question.kind == "age":
+        low, high = tasks.AGE_RANGE
+        return [
+            *text,
+            dcc.Input(
+                id=about_id("age"), type="number", min=low, max=high, step=1, style=FIELD_STYLE
+            ),
+            dcc.Checklist(
+                id=about_id("age_prefer_not"),
+                options=[{"label": PREFER_NOT, "value": PREFER_NOT}],
+                value=[],
+                inputStyle={"marginRight": "8px"},
+                style={"marginTop": "8px"},
+            ),
+        ]
+    if question.kind == "matrix":
+        rows = []
+        for row in question.rows:
+            rows += [
+                html.P(row, style={"margin": "10px 0 4px"}),
+                dcc.RadioItems(
+                    id=about_id(f"{question.key}/{row}"),
+                    options=[{"label": o, "value": o} for o in question.options],
+                    value=None,
+                    labelStyle={"display": "inline-block", "marginRight": "16px"},
+                    inputStyle={"marginRight": "6px"},
+                ),
+            ]
+        return [*text, *rows]
+    fields = [
+        dcc.RadioItems(
+            id=about_id(question.key),
+            options=[{"label": o, "value": o} for o in question.options],
+            value=None,
+            labelStyle={"display": "block", "margin": "6px 0"},
+            inputStyle={"marginRight": "8px"},
+        )
+    ]
+    if question.other_key is not None:
+        fields.append(
+            dcc.Input(
+                id=about_id(question.other_key),
+                type="text",
+                placeholder=f"{OTHER}: please say",
+                maxLength=200,
+                style=FIELD_STYLE,
+            )
+        )
+    return [*text, *fields]
+
+
+def demographics_screen() -> html.Div:
+    """About you: once per participant, at the end. docs/study-design.md section 6.2.
+
+    Every question on one page for now; the design handoff's one-per-page version replaces it.
+    """
+    body = []
+    for title, questions in ABOUT_SECTIONS:
+        body.append(html.H2(title, style=SUBHEADING_STYLE))
+        for question in questions:
+            body += _about_question(question)
     return page(
         heading("About you"),
+        html.P(ABOUT_INTRO, style=PROMPT_STYLE),
+        html.P(SKIP_NOTE, style=MUTED_STYLE),
+        *body,
+        primary_button("Continue", "demographics-button"),
+    )
+
+
+def practice_complete_screen() -> html.Div:
+    """Between the practice and the first scored task, first condition only. The design handoff's
+    screen 6 (docs/study-design.md section 8)."""
+    return page(
+        heading("Practice Complete!"),
+        html.P("That was the practice question. It was not scored.", style=PROMPT_STYLE),
         html.P(
-            "A few questions about your background. The answers are broad categories and cannot "
-            "identify you.",
+            "The next six questions are the ones that count. The charts use the same version "
+            "(static/interactive) that you experienced in the practice question.",
             style=PROMPT_STYLE,
         ),
-        html.P(SKIP_NOTE, style=MUTED_STYLE),
-        *questions,
-        primary_button("Continue", "demographics-button"),
+        html.P(
+            "For each question, choose one answer, then write a short sentence response about your "
+            "decision. After the sixth question, there are a few quick reflecting questions about "
+            "your experience with this version.",
+            style=PROMPT_STYLE,
+        ),
+        html.P(
+            "You may skip a question at any time. If you leave one unanswered, you will be asked "
+            "to confirm.",
+            style=PROMPT_STYLE,
+        ),
+        # Its own id: `begin-button` leaves the instructions, and sharing it would make the two
+        # indistinguishable in the callback -- how the break once skipped the instructions.
+        primary_button("Start the questions", "practice-done-button"),
     )
 
 
@@ -793,43 +907,71 @@ def task_screen(
     return page(*children)
 
 
-def load_screen(prompt: str, anchors: dict[int, str]) -> html.Div:
-    """The post-condition survey, asked after EACH condition. study-design.md section 6.1.
-
-    Paas mental effort (the RQ3 measure) first, then the three 7-point Likert items. The screen is
-    identical in both conditions; the statements say "in this part", never which version it was.
-    """
-    likert = [
-        choice_question(
-            f"likert-{key}",
-            statement,
-            [
-                {
-                    "label": f"{n} — {LIKERT_ANCHORS[n]}" if n in LIKERT_ANCHORS else str(n),
-                    "value": n,
-                }
-                for n in range(1, LIKERT_POINTS + 1)
-            ],
-        )
-        for key, statement in LIKERT_ITEMS.items()
+def _scale(item: str, question: str, points: int, anchors: dict[int, str], help_text: str = ""):
+    options = [
+        {"label": f"{n} — {anchors[n]}" if n in anchors else str(n), "value": n}
+        for n in range(1, points + 1)
     ]
-    return page(
-        heading("A few quick questions about this part"),
-        html.P(SKIP_NOTE, style=MUTED_STYLE),
-        choice_question(
-            "load-input",
-            prompt,
-            [
-                {"label": f"{n} — {anchors[n]}" if n in anchors else str(n), "value": n}
-                for n in range(1, 10)
+    block = choice_question(survey_id(item), question, options)
+    if help_text:
+        block.children.insert(1, html.P(help_text, style={**MUTED_STYLE, "margin": "0 0 8px"}))
+    return block
+
+
+def load_screen(interactive: bool, second_half: bool) -> html.Div:
+    """The post-condition survey, asked after EACH condition. docs/study-design.md section 6.1.
+
+    Paas first (the RQ3 measure), then a1-a9. The chart-controls items b1-b3 follow after the
+    interactive condition only, and the comparison c1-c3 after the second condition only. The
+    statements never say which version it was. Every question on one page for now; the design
+    handoff's one-per-page version replaces it.
+    """
+    sections = [
+        html.H2(EXPERIENCE_SECTION, style=SUBHEADING_STYLE),
+        _scale("paas", LOAD_PROMPT, 9, LOAD_ANCHORS),
+        *[
+            _scale(key, statement, LIKERT_POINTS, LIKERT_ANCHORS)
+            for key, statement in LIKERT_ITEMS.items()
+        ],
+    ]
+    if interactive:
+        sections += [
+            html.H2(CONTROLS_SECTION, style=SUBHEADING_STYLE),
+            *[
+                _scale(key, statement, LIKERT_POINTS, LIKERT_ANCHORS, CONTROLS_HELP)
+                for key, statement in CONTROLS_ITEMS.items()
             ],
-        ),
-        html.P(
-            "How much do you agree with each statement? "
-            f"1 = {LIKERT_ANCHORS[1]}, {LIKERT_POINTS} = {LIKERT_ANCHORS[LIKERT_POINTS]}.",
-            style={**PROMPT_STYLE, "marginTop": "28px"},
-        ),
-        *likert,
+        ]
+    if second_half:
+        sections += [
+            html.H2(COMPARISON_SECTION, style=SUBHEADING_STYLE),
+            *[
+                choice_question(
+                    survey_id(key), question, [{"label": o, "value": o} for o in COMPARISON_OPTIONS]
+                )
+                for key, question in COMPARISON_CHOICES.items()
+            ],
+            html.P(
+                COMPARISON_TEXT, style={**PROMPT_STYLE, "fontWeight": "600", "margin": "20px 0 4px"}
+            ),
+            html.P(COMPARISON_TEXT_HELP, style={**MUTED_STYLE, "margin": "0 0 8px"}),
+            dcc.Textarea(
+                id=survey_id(COMPARISON_TEXT_KEY),
+                maxLength=tasks.MAX_TEXT,
+                style={
+                    "fontFamily": config.FONT_FAMILY,
+                    "fontSize": f"{config.FONT_SIZE_BASE}px",
+                    "width": "100%",
+                    "height": "90px",
+                    "padding": "8px",
+                },
+            ),
+        ]
+    return page(
+        heading("About this part"),
+        html.P(SURVEY_INTRO["second" if second_half else "first"], style=PROMPT_STYLE),
+        html.P(SKIP_NOTE, style=MUTED_STYLE),
+        *sections,
         primary_button("Continue", "load-button"),
     )
 

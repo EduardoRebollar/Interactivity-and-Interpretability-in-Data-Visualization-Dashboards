@@ -125,6 +125,8 @@ def test_no_answer_position_holds_more_than_a_third_of_the_keys():
         positions.append(task.options.index(key.correct))
     most = max(positions.count(p) for p in set(positions))
     assert most <= len(positions) / 3, f"one position holds {most} of {len(positions)} keys"
+    # The spread section 5 records, first to sixth (2026-09-25, six options per item).
+    assert [positions.count(p) for p in range(6)] == [1, 2, 4, 2, 3, 0]
 
 
 def test_scoring_is_strict_and_the_practice_is_unscored():
@@ -202,6 +204,59 @@ def test_the_items_as_first_specified_are_refused(
     task = _task(kind, sorted(entities), options, chart=chart, years=years)
     with pytest.raises(keys.KeyDerivationError, match=reason):
         keys.derive(task)
+
+
+@needs_data
+def test_the_design_handoffs_a_t1_option_is_refused(params):
+    """The 2026-09-25 handoff offered 2012 as A-T1's sixth option. Ukraine is 23 in 2014, 4 points
+    off its low; read a year early that is 2013, nearest 2012. Eduardo chose 2004 instead."""
+    params[("Z", "T1")] = {"entity": "Ukraine"}
+    a_t1 = next(t for t in tasks.for_form("A") if t.task_id == "T1")
+    options = ("2008", "2012", "2016", "2019", "2022", "2024")
+    with pytest.raises(keys.KeyDerivationError, match="read as 2013, is nearest 2012"):
+        keys.derive(_task("lowest", a_t1.entities, options))
+
+
+# The handoff's map set reaches three countries outside the locked scope, so their 2013 values are
+# injected here, as the Our World in Data export gives them.
+_OUTSIDE_SCOPE_2013 = {
+    "Guinea": ("GIN", 56.0),
+    "Senegal": ("SEN", 92.0),
+    "South Sudan": ("SSD", 53.0),
+}
+
+
+@needs_data
+def test_the_design_handoffs_map_set_is_refused(params):
+    """The handoff's 13 for A-T5. South Sudan (53), Guinea (56) and Ethiopia (59) sit within 10
+    points of 50% in 2013; Eduardo kept the existing 13 (study-design.md section 4)."""
+    params[("Z", "T1")] = {"threshold": 50}
+    rows = runtime_data.load_rows() + tuple(
+        Row(name, code, 2013, "DTP3", value) for name, (code, value) in _OUTSIDE_SCOPE_2013.items()
+    )
+    handoff = (
+        "Burkina Faso",
+        "Cameroon",
+        "Central African Republic",
+        "Chad",
+        "Ethiopia",
+        "Guinea",
+        "Kenya",
+        "Mali",
+        "Niger",
+        "Nigeria",
+        "Senegal",
+        "South Sudan",
+        "Uganda",
+    )
+    task = _task("threshold", handoff, tasks.COUNT_OPTIONS, **MAP)
+    with pytest.raises(keys.KeyDerivationError, match=r"South Sudan \(53\)"):
+        keys.derive(task, rows)
+    # Each of the three is too close on its own, not only the closest.
+    for name in ("South Sudan", "Guinea", "Ethiopia"):
+        alone = ("Central African Republic", "Kenya", name)
+        with pytest.raises(keys.KeyDerivationError, match=name):
+            keys.derive(_task("threshold", alone, tasks.COUNT_OPTIONS, **MAP), rows)
 
 
 # --- T1: the lowest point -----------------------------------------------------------------------
@@ -383,11 +438,13 @@ def test_threshold_counts_the_countries_strictly_below(params):
     assert key.evidence["closest_pp"] == 11.0
 
 
-def test_threshold_counts_four_or_more_as_one_option(params):
+def test_threshold_counts_five_or_more_as_one_option(params):
     params[("Z", "T1")] = {"threshold": 50}
     rows = _map({"A": 20.0, "B": 25.0, "C": 30.0, "D": 35.0, "E": 38.0, "F": 80.0})
     key = keys.derive(_task("threshold", "ABCDEF", tasks.COUNT_OPTIONS, **MAP), rows)
-    assert key.correct == "4 or more"
+    assert key.correct == "5 or more"
+    rows = _map({"A": 20.0, "B": 25.0, "C": 30.0, "D": 35.0, "F": 80.0})
+    assert keys.derive(_task("threshold", "ABCDF", tasks.COUNT_OPTIONS, **MAP), rows).correct == "4"
 
 
 @pytest.mark.parametrize("value", [53.0, 47.0, 50.0], ids=["3 above", "3 below", "on the line"])
@@ -532,10 +589,13 @@ def test_b_t7_is_refused_with_the_world_line_and_a_t7_is_not(params):
 
 
 def test_band_for_refuses_a_year_no_band_covers():
+    assert keys.band_for(2000) == "2000-2003"
     assert keys.band_for(2004) == "2004-2008"
     assert keys.band_for(2024) == "2021-2024"
+    with pytest.raises(keys.KeyDerivationError, match="No answer band contains 2025"):
+        keys.band_for(2025)
     with pytest.raises(keys.KeyDerivationError, match="No answer band contains 2003"):
-        keys.band_for(2003)
+        keys.band_for(2003, bands=("2004-2008", "2009-2012"))
 
 
 @pytest.mark.parametrize(
@@ -544,10 +604,11 @@ def test_band_for_refuses_a_year_no_band_covers():
         (2007, {"2004-2008"}),
         (2020, {"2017-2020", "2021-2024"}),
         (2013, {"2009-2012", "2013-2016"}),
-        (2004, {"2004-2008"}),
+        (2004, {"2000-2003", "2004-2008"}),
+        (2000, {"2000-2003"}),
         (2024, {"2021-2024"}),
     ],
-    ids=["mid-band", "band end", "band start", "first year", "last year"],
+    ids=["mid-band", "band end", "band start", "after 2000-2003", "first year", "last year"],
 )
 def test_adjacent_bands_credit_the_band_a_year_either_side(year, accepted):
     assert keys.adjacent_bands(year) == accepted

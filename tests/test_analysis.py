@@ -52,6 +52,15 @@ def _participant_for(first_condition: str, first_form: str) -> str:
     raise AssertionError("no id found")
 
 
+SURVEY = {
+    **dict.fromkeys(tasks.LIKERT_ITEMS, 5),
+    **dict.fromkeys(tasks.CONTROLS_ITEMS, 6),
+    "c1": "The charts with controls",
+    "c2": "No difference",
+    "c3": "The hover gave exact values.",
+}
+
+
 def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5):
     """Drive a complete session through app.step. `answer_for(form, task_id)` picks each answer."""
     session = log = None
@@ -68,11 +77,11 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5)
     )
     click("consent-clock", consented_at=record["consented_at"], consent_record=record)
     click("participant-button", participant_id=participant_id)
-    click("demographics-clock", demographics={"age_range": "25–34"})
     for condition in range(2):
         click("begin-button")
         if condition == 0:
             click("submit-clock", answer="It fell", justification="Practice.", duration_ms=4000.0)
+            click("practice-done-button")
         for _ in range(len(tasks.for_form("A"))):
             state = SessionState.from_dict(session)
             form = flow.current_form(state)
@@ -85,9 +94,12 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5)
                 if callable(duration_ms)
                 else duration_ms,
             )
-        click("survey-clock", load=load, survey={"clarity": 5, "ease_of_use": 5, "confidence": 5})
+        # Every survey item; `step` records only those the screen asks (b after the interactive
+        # condition, c after the second).
+        click("survey-clock", survey={**SURVEY, "paas": load})
         if condition == 0:
             click("resume-button")
+    click("demographics-clock", demographics={"age": 25, "role": "Graduate student"})
     assert SessionState.from_dict(session).stage is Stage.COMPLETE
 
 

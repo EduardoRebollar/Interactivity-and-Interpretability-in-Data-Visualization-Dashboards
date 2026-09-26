@@ -37,13 +37,22 @@ INVESTIGATOR = "Eduardo Rebollar"
 SUPERVISOR = "Hector M. Camarillo Abad"
 RESEARCHER_EMAIL = "rebollar@oxy.edu"
 
-# (heading, paragraph). A heading of None is an unheaded paragraph.
+# The form's own heading: two centred lines above the body.
+FORM_HEADING = ("OCCIDENTAL COLLEGE", "INFORMED CONSENT FORM")
+
+# (heading, paragraph), in the form's order and with its own capitalisation. A heading ending in a
+# colon runs in to its paragraph; one without (CONSENT STATEMENT) stands on a line of its own. A
+# heading of None is an unheaded paragraph.
+#
+# Transcribed 2026-09-25 from the design handoff's screen 1, which reproduces the finalized form
+# (docs/study-redesign.md section 3.6). Against the 2026-09-21 transcription it says about 40
+# minutes instead of 20 to 35 (twice), adds the sentence on vaccination as a sensitive topic to
+# Risks, says "Neon (a managed PostgreSQL service)", and gives access to "identifying data" rather
+# than "the data". The apostrophe in "study’s" is the form's curly one.
 SECTIONS: tuple[tuple[str | None, str], ...] = (
-    (
-        None,
-        "Title of Study: Interactivity and Interpretability in Data Visualization Dashboards. "
-        "Student Investigator: Eduardo Rebollar. Faculty Supervisor: Hector M. Camarillo Abad.",
-    ),
+    ("Title of Study:", TITLE),
+    ("Student Investigator:", INVESTIGATOR),
+    ("Faculty Supervisor:", SUPERVISOR),
     (
         None,
         "You are invited to participate in a research study conducted by Eduardo Rebollar, a "
@@ -52,24 +61,24 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "this form and ask any questions you may have before agreeing to participate in the study.",
     ),
     (
-        "Purpose of study",
+        "PURPOSE OF STUDY:",
         "The purpose of this study is to investigate whether interactive features in data "
         "visualization dashboards (such as filtering, sorting, and line isolation, along with "
         "directional change indicators) improve users' ability to interpret data compared with "
         "static visualizations of the same information, or whether they primarily reduce "
         "perceived cognitive load without changing the accuracy or depth of interpretation. You "
         "were selected to participate because you are an adult (18 or older) who is willing to "
-        "spend approximately 20 to 35 minutes viewing dashboards and answering interpretation "
+        "spend approximately 40 minutes viewing dashboards and answering interpretation "
         "questions. Data collected from this study will be used for the researcher's senior "
         "comprehensive project (a final written thesis and public presentation at Occidental "
-        "College), and "
-        "de-identified findings will later be shared in a public repository on GitHub.",
+        "College), and de-identified findings will later be shared in a public repository on "
+        "GitHub.",
     ),
     (
-        "Procedures",
+        "PROCEDURES:",
         "If you agree to take part in this study, you will be asked to complete a single session "
-        "lasting approximately 20 to 35 minutes. In the session, you will view two versions of the "
-        "same time-series data dashboard: one static version with no interactive controls, and one "
+        "lasting approximately 40 minutes. In the session, you will view two versions of the same "
+        "time-series data dashboard: one static version with no interactive controls, and one "
         "interactive version that allows filtering, sorting, and line isolation, and that displays "
         "directional (year-over-year) change indicators. The order in which you see the two "
         "versions will be counterbalanced. For each version, you will answer a short set of "
@@ -83,7 +92,7 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "any question you do not wish to answer.",
     ),
     (
-        "Voluntary participation",
+        "VOLUNTARY PARTICIPATION:",
         "Participation in this study is voluntary. You may skip any questions that you do not want "
         "to answer or stop participating at any time. You are free to withdraw from the study at "
         "any time without penalty, with no loss of benefits to which you were otherwise entitled. "
@@ -93,11 +102,15 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "can no longer be pulled out.",
     ),
     (
-        "Risks and benefits",
+        "RISKS and BENEFITS:",
         "There are no anticipated risks or discomforts to your participation in this study other "
         "than those encountered in daily life. Reading and interpreting data visualizations may "
         "involve mild mental effort, similar to reading a chart in a news article. If you "
-        "experience eye strain or fatigue, you may pause or stop at any time.",
+        "experience eye strain or fatigue, you may pause or stop at any time. The dashboards "
+        "display real data on childhood vaccination coverage, a topic that may be personally "
+        "sensitive or evoke strong opinions for some participants; you are not asked to share "
+        "your views on vaccination, and you may skip any task or withdraw at any time without "
+        "penalty.",
     ),
     (
         None,
@@ -108,21 +121,21 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "real decisions.",
     ),
     (
-        "Confidentiality",
+        "CONFIDENTIALITY:",
         "Your responses will be kept confidential. You will not be identified by name in any "
-        "reported data, as each participant will be assigned a random participant id. The study's "
-        "web application writes this data to an encrypted Neon (managed by PostgreSQL) database "
-        "hosted in the U.S. The file linking ids to any identifying information (such as email "
-        "addresses used for scheduling) will be stored in an encrypted file separate from the Neon "
-        "study database. Only the researcher and the faculty "
-        "supervisor will have access to the data. All study data and signed consent forms will be "
+        "reported data, as each participant will be assigned a random participant id. The "
+        "study’s web application writes this data to an encrypted Neon (a managed PostgreSQL "
+        "service) database hosted in the U.S. The file linking ids to any identifying information "
+        "(such as email addresses used for scheduling) will be stored in an encrypted file "
+        "separate from the Neon study database. Only the researcher and the faculty supervisor "
+        "will have access to identifying data. All study data and signed consent forms will be "
         "kept on a password-protected computer and, where applicable, in a locked office at "
         "Occidental College. De-identified data will be shared in a public repository on GitHub. "
         "No information that could identify you will be included in any public release.",
     ),
-    ("Compensation", "You will not be paid for participating in this study."),
+    ("COMPENSATION:", "You will not be paid for participating in this study."),
     (
-        "Contact information",
+        "CONTACT INFORMATION:",
         "If you have any questions or concerns about the research, you can contact Eduardo "
         "Rebollar at rebollar@oxy.edu or Hector M. Camarillo Abad at camarilloabad@oxy.edu. If you "
         "have any questions or concerns regarding your rights as a subject in this study, you may "
@@ -130,7 +143,7 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "90041 at hsrrc@oxy.edu.",
     ),
     (
-        "Consent statement",
+        "CONSENT STATEMENT",
         "I am at least eighteen years of age. I have read this form and the research study has "
         "been explained to me. I am fully aware of the nature and extent of my participation in "
         "this research project and the possible risks as outlined above. I understand that I may "
@@ -139,9 +152,19 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
     ),
 )
 
-CONSENT_TEXT = "\n\n".join(
-    f"{heading.upper()}: {body}" if heading else body for heading, body in SECTIONS
-)
+
+def runs_in(heading: str | None) -> bool:
+    """Whether a heading runs in to its paragraph ("PROCEDURES: If you agree ...")."""
+    return heading is not None and heading.endswith(":")
+
+
+def _joined(heading: str | None, body: str) -> str:
+    if heading is None:
+        return body
+    return f"{heading} {body}" if runs_in(heading) else f"{heading}\n{body}"
+
+
+CONSENT_TEXT = "\n\n".join([*FORM_HEADING, *(_joined(heading, body) for heading, body in SECTIONS)])
 
 # Recorded on every consent event and record, so a change to the wording mid-study shows up in the
 # data rather than depending on anyone's memory of when the text was edited.
@@ -306,9 +329,12 @@ def copy_html(record: dict[str, Any]) -> str:
     """
     esc = html.escape
     paragraphs = "\n".join(
-        (f"<h2>{esc(heading)}</h2>" if heading else "") + f"<p>{esc(body)}</p>"
+        f"<p><b>{esc(heading)}</b> {esc(body)}</p>"
+        if runs_in(heading)
+        else (f"<p><b>{esc(heading)}</b></p>" if heading else "") + f"<p>{esc(body)}</p>"
         for heading, body in SECTIONS
     )
+    title = "<br>".join(esc(line) for line in FORM_HEADING)
     if record.get("signature_method") == "paper":
         signature = "<p><em>Signed on a paper copy of this form with the researcher.</em></p>"
     else:
@@ -323,7 +349,7 @@ h1 {{ font-size: 20px; text-align: center; }} h2 {{ font-size: 15px; margin: 18p
 .line {{ border-top: 1px solid #1A1A1A; margin-top: 8px; padding-top: 4px; font-size: 13px; }}
 .meta {{ color: #595959; font-size: 12px; }}
 </style></head><body>
-<h1>Occidental College<br>Informed Consent Form</h1>
+<h1>{title}</h1>
 {paragraphs}
 <h2>Participant signature and date / printed name</h2>
 {signature}
@@ -344,6 +370,7 @@ __all__ = [
     "CONSENT_TEXT",
     "CONSENT_VERSION",
     "ConsentError",
+    "FORM_HEADING",
     "SECTIONS",
     "build_record",
     "copy_html",

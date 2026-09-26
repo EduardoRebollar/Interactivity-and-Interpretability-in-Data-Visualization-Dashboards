@@ -50,10 +50,16 @@ def test_every_question_and_its_options_are_in_the_questionnaire(page, task):
 def test_every_survey_and_background_question_is_in_it(page):
     expected = [tasks.JUSTIFICATION_PROMPT, tasks.LOAD_PROMPT, *tasks.LOAD_ANCHORS.values()]
     expected += list(tasks.LIKERT_ITEMS.values()) + list(tasks.LIKERT_ANCHORS.values())
-    for question, options in tasks.DEMOGRAPHIC_ITEMS.values():
-        expected += [question, *options]
+    expected += list(tasks.CONTROLS_ITEMS.values()) + list(tasks.COMPARISON_CHOICES.values())
+    expected += [*tasks.COMPARISON_OPTIONS, tasks.COMPARISON_TEXT]
+    for question in tasks.ABOUT_QUESTIONS:
+        expected += [question.text, *question.options, *question.rows]
     for text in expected:
         assert html.escape(text) in page, text
+
+
+def test_the_practice_complete_screen_is_in_it(page):
+    assert "That was the practice question. It was not scored." in page
 
 
 def test_both_versions_of_the_instructions_are_in_it(page):

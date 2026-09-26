@@ -1,11 +1,12 @@
 """Study session flow. Pure state transitions, no Dash and no I/O.
 
-    consent -> participant id -> demographics -> instructions -> practice -> tasks -> load -> break
-       |  ^                                          ^                                        |
-       v  |                                          +-------------- resume ------------------+
-     declined                                   instructions -> tasks -> load -> done
+    consent -> participant id -> instructions -> practice -> practice complete -> tasks -> load
+       |  ^                           ^                                                      |
+       v  |                           +------------------ resume <-- break <-----------------+
+     declined                   instructions -> tasks -> load -> about you -> done
 
-`load` is the whole post-condition survey: the Paas rating and the three Likert items.
+`load` is the whole post-condition survey: the Paas rating first, then the rest
+(docs/study-design.md section 6.1). About you (`demographics`) comes once, at the very end.
 
 Two asymmetries are deliberate, and both implement `docs/study-design.md` section 8:
 
@@ -43,17 +44,25 @@ class Stage(StrEnum):
     # anywhere before consent, so the screen can truthfully say no data was collected.
     DECLINED = "declined"
     PARTICIPANT_ID = "participant_id"
-    # Broad-category questions, once per participant. docs/study-design.md section 6.2.
-    DEMOGRAPHICS = "demographics"
     INSTRUCTIONS = "instructions"
     PRACTICE = "practice"
+    # Between the practice and the first scored task, first condition only: says the practice is
+    # over and the next six count. docs/study-design.md section 8.
+    PRACTICE_COMPLETE = "practice_complete"
     TASK = "task"
     # The Paas mental-effort rating, asked once per condition. A stage rather than a screen the
     # callback conjures mid-flight, so that `condition_index` can advance here — at LOAD the state
     # still names the condition just finished, which is the one being rated.
     LOAD = "load"
     BREAK = "break"
+    # About you, once per participant, after the second condition's survey. The value keeps the
+    # event's name. docs/study-design.md section 6.2.
+    DEMOGRAPHICS = "demographics"
     COMPLETE = "complete"
+
+
+# The header's stepper, in order (docs/study-design.md section 8). Display only.
+STEPS = ("Consent", "Practice", "Part 1", "Break", "Part 2", "About you", "Finished")
 
 
 class FlowError(RuntimeError):
@@ -100,9 +109,6 @@ class SessionState:
     # "drawn" or "paper": how the consent form was signed. The signature itself never enters session
     # state or the study log -- it lives only in the separate consent record. See src/consent.py.
     consent_method: str | None = None
-    # The demographic answers, held for the same reason as `consent_at`: they are given before any
-    # logger can exist, and are written when condition 1's logger opens.
-    demographics: dict[str, str | None] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -114,7 +120,6 @@ class SessionState:
             "task_index": self.task_index,
             "consent_at": self.consent_at,
             "consent_method": self.consent_method,
-            "demographics": self.demographics,
         }
 
     @classmethod
@@ -131,7 +136,6 @@ class SessionState:
                 task_index=int(raw.get("task_index", 0)),
                 consent_at=raw.get("consent_at"),
                 consent_method=raw.get("consent_method"),
-                demographics=raw.get("demographics"),
             )
         except (KeyError, ValueError) as exc:
             raise FlowError(f"Malformed session state: {exc}") from exc
@@ -185,6 +189,30 @@ def condition_order(state: SessionState) -> int:
     return state.condition_index + 1
 
 
+def step_index(state: SessionState) -> int:
+    """Which of `STEPS` the header marks as current.
+
+    The first condition's instructions, practice and practice-complete screen are "Practice"; its
+    tasks and survey are "Part 1". The second condition's instructions, tasks and survey are all
+    "Part 2". `submit_load` advances `condition_index` on its way to the break, so the break itself
+    already sits at index 1 and is named by its stage.
+    """
+    stage = state.stage
+    if stage in (Stage.CONSENT, Stage.DECLINED, Stage.PARTICIPANT_ID):
+        return 0
+    if stage is Stage.BREAK:
+        return 3
+    if stage is Stage.DEMOGRAPHICS:
+        return 5
+    if stage is Stage.COMPLETE:
+        return 6
+    if state.condition_index == 0:
+        if stage in (Stage.INSTRUCTIONS, Stage.PRACTICE, Stage.PRACTICE_COMPLETE):
+            return 1
+        return 2
+    return 4
+
+
 def current_task(state: SessionState, tasks: Sequence[Task]) -> Task:
     if state.stage is not Stage.TASK:
         raise FlowError(f"Not on a task; stage is {state.stage.value}")
@@ -230,20 +258,11 @@ def set_participant(
         raise FlowError(f"Unknown form {first_form!r}")
     return replace(
         state,
-        stage=Stage.DEMOGRAPHICS,
+        stage=Stage.INSTRUCTIONS,
         participant_id=cleaned,
         first_condition=first_condition,
         first_form=first_form,
     )
-
-
-def submit_demographics(state: SessionState, answers: dict[str, str | None]) -> SessionState:
-    """Hold the demographic answers until a logger exists, and move on to the instructions.
-
-    Any answer may be None: every question may be skipped (IRB form item 10).
-    """
-    _require(state, Stage.DEMOGRAPHICS)
-    return replace(state, stage=Stage.INSTRUCTIONS, demographics=dict(answers))
 
 
 def begin_practice(state: SessionState) -> SessionState:
@@ -260,9 +279,16 @@ def begin_practice(state: SessionState) -> SessionState:
     return replace(state, stage=Stage.PRACTICE)
 
 
+def finish_practice(state: SessionState) -> SessionState:
+    """The practice is answered: say so before the first scored task (first condition only)."""
+    _require(state, Stage.PRACTICE)
+    return replace(state, stage=Stage.PRACTICE_COMPLETE)
+
+
 def begin_tasks(state: SessionState) -> SessionState:
-    """Leave practice (or, in the second condition, instructions) for the first scored task."""
-    _require(state, Stage.INSTRUCTIONS, Stage.PRACTICE)
+    """Leave the practice-complete screen (or, in the second condition, the instructions) for the
+    first scored task."""
+    _require(state, Stage.INSTRUCTIONS, Stage.PRACTICE_COMPLETE)
     if state.first_condition is None:
         raise FlowError("Cannot begin tasks before a condition is assigned")
     return replace(state, stage=Stage.TASK, task_index=0)
@@ -286,15 +312,23 @@ def complete_task(state: SessionState, tasks: Sequence[Task]) -> SessionState:
 
 
 def submit_load(state: SessionState) -> SessionState:
-    """Record that the load rating is in and end the condition.
+    """Record that the survey is in and end the condition.
 
-    **This is where `condition_index` advances.** Keeping it here rather than in `complete_task` is
-    what lets every event from the last task through the load rating be attributed to the condition
-    that produced it, without the caller having to rewind the state to work out which that was.
+    **This is where `condition_index` advances** -- after the first condition only. Keeping it here
+    rather than in `complete_task` is what lets every event from the last task through the survey be
+    attributed to the condition that produced it, without the caller having to rewind the state to
+    work out which that was. After the second condition it stays put, so About you is attributed to
+    the second condition's log session.
     """
     _require(state, Stage.LOAD)
     if state.condition_index + 1 < CONDITIONS_PER_SESSION:
         return replace(state, stage=Stage.BREAK, condition_index=state.condition_index + 1)
+    return replace(state, stage=Stage.DEMOGRAPHICS)
+
+
+def submit_demographics(state: SessionState) -> SessionState:
+    """About you is in: the study is finished. Every answer may have been skipped (IRB item 10)."""
+    _require(state, Stage.DEMOGRAPHICS)
     return replace(state, stage=Stage.COMPLETE)
 
 

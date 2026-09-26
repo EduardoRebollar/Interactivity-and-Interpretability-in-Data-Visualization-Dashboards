@@ -207,7 +207,6 @@ def _screens() -> list[tuple[str, str, object]]:
             layout.declined_screen(),
         ),
         ("Participant ID", "After consent.", layout.participant_screen()),
-        ("About you", "Once, after the participant ID.", layout.demographics_screen()),
     ]
     for interactive in (False, True):
         version = "interactive" if interactive else "static"
@@ -233,6 +232,13 @@ def _screens() -> list[tuple[str, str, object]]:
             "Practice question",
             "Unscored. Shown once, in the first half, to teach the interface.",
             layout.task_screen(tasks.PRACTICE, False, index=0, total=0, practice=True),
+        )
+    )
+    screens.append(
+        (
+            "After the practice question",
+            "First half only, between the practice and the first scored question.",
+            layout.practice_complete_screen(),
         )
     )
     for form in sorted(tasks.FORMS):
@@ -264,10 +270,18 @@ def _screens() -> list[tuple[str, str, object]]:
     screens += [
         (
             "Survey after each half",
-            "Asked after each half, so each version is rated on its own.",
-            layout.load_screen(tasks.LOAD_PROMPT, tasks.LOAD_ANCHORS),
+            "Asked after each half, so each version is rated on its own. The questions about the "
+            "chart controls are asked only after the interactive half, and the comparison of the "
+            "two versions only after the second half. Shown here as after an interactive second "
+            "half, which asks every section.",
+            layout.load_screen(interactive=True, second_half=True),
         ),
         ("Between the halves", "After the first half's survey.", layout.break_screen()),
+        (
+            "About you",
+            "Once, at the end, after the second half's survey.",
+            layout.demographics_screen(),
+        ),
         (
             "The end",
             f"The participant's own ID is shown; {EXAMPLE_ID} is an example.",
@@ -327,14 +341,15 @@ Faculty supervisor: {html.escape(consent.SUPERVISOR)}.</p>
 <p>IRB approval request form, item 18: every screen and question a participant sees in the study's
 web application, in the order they are shown.</p>
 {location}
-<p>One session, 20 to 35 minutes:</p>
+<p>One session, about 40 minutes:</p>
 <ol>
-<li>informed consent (attached separately), then a participant ID and four background
-questions;</li>
+<li>informed consent (attached separately), then a participant ID;</li>
 <li>instructions, one practice question, six questions, and a short survey, using one version of
 the charts;</li>
 <li>a break;</li>
-<li>instructions, six different questions, and the same survey, using the other version.</li>
+<li>instructions, six different questions, and the same survey, using the other version, followed
+by two questions comparing the versions;</li>
+<li>ten background questions.</li>
 </ol>
 <p>Every question may be skipped. Each half asks about five kinds of chart: line charts, a bar
 chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;

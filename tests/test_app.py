@@ -36,13 +36,51 @@ CONSENTED_AT = "2026-09-16T10:00:00.000Z"
 ANSWER_KWARGS = {"answer": "1", "justification": "because the line is higher"}
 # A drawn signature: two strokes, comfortably over consent.MIN_POINTS.
 SIGNATURE = [[[10 + 4 * i, 40 + (i % 3)] for i in range(12)], [[30, 60], [80, 64], [120, 58]]]
+# The About-you fields as the screen hands them over: a question's key, the text beside "Other",
+# the age box and its "Prefer not to say", and one entry per row of the tools matrix.
 DEMOGRAPHICS = {
-    "age_range": "18–24",
-    "field": "Engineering",
-    "chart_frequency": None,
-    "dashboard_familiarity": "Slightly familiar",
+    "pointer": "Trackpad / touchpad",
+    "pointer_other": "ignored: Other was not chosen",
+    "age": 21,
+    "role": "Undergraduate student",
+    "field": tasks.OTHER,
+    "field_other": "  Architecture  ",
+    "read_charts": "About weekly",
+    "tools/Tableau": "Used a few times",
+    "tools/Power BI": "Never heard of it",
 }
-SURVEY_KWARGS = {"load": 5, "survey": {"clarity": 6, "ease_of_use": 5, "confidence": 4}}
+# ...and what the `demographics` event records from them.
+DEMOGRAPHICS_LOGGED = {
+    "pointer": "Trackpad / touchpad",
+    "pointer_other": None,
+    "age": 21,
+    "role": "Undergraduate student",
+    "field": tasks.OTHER,
+    "field_other": "Architecture",
+    "read_charts": "About weekly",
+    "make_charts": None,
+    "stats_course": None,
+    "tools": {
+        "Tableau": "Used a few times",
+        "Plotly or Plotly Dash": None,
+        "Microsoft Excel or Google Sheets charts": None,
+        "Power BI": "Never heard of it",
+        "Our World in Data charts": None,
+    },
+    "topic_familiarity": None,
+    "health_background": None,
+}
+# Every survey field; `step` records only those the screen asks.
+SURVEY_KWARGS = {
+    "survey": {
+        "paas": 5,
+        **{key: 4 for key in tasks.LIKERT_ITEMS},
+        **{key: 6 for key in tasks.CONTROLS_ITEMS},
+        "c1": "The charts with controls",
+        "c2": "No difference",
+        "c3": "The hover gave exact values.",
+    }
+}
 
 
 def _consent_kwargs(**overrides) -> dict:
@@ -119,18 +157,20 @@ def _run_session(log_dir, participant_id: str = "P01") -> list[dict]:
 
     click("consent-clock", **_consent_kwargs())
     click("participant-button", participant_id=participant_id)
-    click("demographics-clock", demographics=DEMOGRAPHICS)
 
     for condition in range(2):
         click("begin-button")
         if condition == 0:
-            # The practice item, which uses the same screen as a scored task.
+            # The practice item, which uses the same screen as a scored task, then the screen that
+            # says it is over.
             click("submit-clock", **ANSWER_KWARGS, duration_ms=1234.5)
+            click("practice-done-button")
         for _ in range(len(tasks.for_form("A"))):
             click("submit-clock", **ANSWER_KWARGS, duration_ms=1000.0)
         click("survey-clock", **SURVEY_KWARGS)
         if condition == 0:
             click("resume-button")
+    click("demographics-clock", demographics=DEMOGRAPHICS)
 
     assert SessionState.from_dict(session).stage is Stage.COMPLETE
     return _events(log_dir)
@@ -164,6 +204,7 @@ def test_every_stage_carries_the_error_slot():
         (Stage.DEMOGRAPHICS, "demographics-button"),
         (Stage.INSTRUCTIONS, "begin-button"),
         (Stage.PRACTICE, "submit-button"),
+        (Stage.PRACTICE_COMPLETE, "practice-done-button"),
         (Stage.TASK, "submit-button"),
         (Stage.LOAD, "load-button"),
         (Stage.BREAK, "resume-button"),
@@ -216,7 +257,9 @@ def test_no_callback_is_dead_on_the_screens_that_trigger_it():
         present = base | _ids(screen)
         for key, callback in instance.callback_map.items():
             inputs = {i["id"] for i in callback["inputs"]}
-            states = {s["id"] for s in callback["state"]}
+            # A pattern-matching State (`ALL`) collects whatever matches, none included, so it can
+            # never kill a callback. Dash writes its id as JSON; the survey and About you use them.
+            states = {s["id"] for s in callback["state"] if not s["id"].startswith("{")}
             if not (inputs - base) & present:
                 continue  # nothing on this screen can trigger it
             missing = (inputs | states) - present
@@ -234,6 +277,7 @@ def test_button_callbacks_ignore_the_click_count_of_a_freshly_rendered_button():
         "resume-button",
         "decline-button",
         "reconsider-button",
+        "practice-done-button",
         "demographics-clock",
         "survey-clock",
     }
@@ -270,7 +314,7 @@ def test_enter_in_the_id_box_submits_it(monkeypatch):
         0, 1, "P01", at_id_screen, None, None
     )
     assert error == ""
-    assert SessionState.from_dict(session).stage is Stage.DEMOGRAPHICS
+    assert SessionState.from_dict(session).stage is Stage.INSTRUCTIONS
 
 
 def test_the_id_screen_does_not_promise_a_resume_that_does_not_exist():
@@ -291,12 +335,50 @@ def test_the_chart_holds_its_height_before_plotly_has_loaded():
     assert containers[0] == containers[1] == {"height": f"{layout.config.CHART_HEIGHT}px"}
 
 
+def _items(component, kind: str) -> set[str]:
+    """The `item` of every pattern-matching id of one `type` in a rendered tree."""
+    found: set[str] = set()
+
+    def walk(node) -> None:
+        component_id = getattr(node, "id", None)
+        if isinstance(component_id, dict) and component_id.get("type") == kind:
+            found.add(component_id["item"])
+        children = getattr(node, "children", None)
+        if isinstance(children, (list, tuple)):
+            for child in children:
+                walk(child)
+        elif children is not None:
+            walk(children)
+
+    walk(component)
+    return found
+
+
+@pytest.mark.parametrize("condition_index", [0, 1])
+@pytest.mark.parametrize("first_condition", ["static", "interactive"])
+def test_the_survey_asks_what_its_condition_and_half_call_for(first_condition, condition_index):
+    """Paas and a1-a9 always; b1-b3 after the interactive condition; c1-c3 after the second."""
+    state = _state(Stage.LOAD, first_condition=first_condition, condition_index=condition_index)
+    expected = {"paas", *tasks.LIKERT_ITEMS}
+    if flow.is_interactive(state):
+        expected |= set(tasks.CONTROLS_ITEMS)
+    if condition_index == 1:
+        expected |= set(tasks.COMPARISON_KEYS)
+    assert _items(app.render(state), "survey") == expected
+
+
+def test_about_you_supplies_every_field_the_answers_are_read_from():
+    fields = {"age_prefer_not"}
+    for question in tasks.ABOUT_QUESTIONS:
+        if question.kind == "matrix":
+            fields |= {f"{question.key}/{row}" for row in question.rows}
+        else:
+            fields |= {question.key} | ({question.other_key} - {None})
+    assert _items(app.render(_state(Stage.DEMOGRAPHICS)), "about") == fields
+
+
 def test_inputs_the_callback_reads_exist_on_the_screens_that_supply_them():
     assert "participant-input" in _ids(app.render(_state(Stage.PARTICIPANT_ID)))
-    load = _ids(app.render(_state(Stage.LOAD)))
-    assert {"load-input", *(f"likert-{key}" for key in tasks.LIKERT_ITEMS)} <= load
-    demographics = _ids(app.render(_state(Stage.DEMOGRAPHICS)))
-    assert {f"demo-{key}" for key in tasks.DEMOGRAPHIC_ITEMS} <= demographics
     consent_ids = _ids(app.render(_state(Stage.CONSENT)))
     assert {"consent-name", "consent-date", "consent-paper", "signature-pad"} <= consent_ids
     for stage in (Stage.PRACTICE, Stage.TASK):
@@ -345,6 +427,10 @@ def test_both_conditions_are_logged_and_both_are_closed(tmp_path):
     for session_id in sessions:
         names = [e["event"] for e in events if e["session_id"] == session_id]
         assert names[0] == "session_start"
+        # About you is the one record written after a session_end, into the second session
+        # (study-design.md section 6.2), so stopping there still leaves both sessions complete.
+        if names[-1] == "demographics":
+            names = names[:-1]
         assert names[-1] == "session_end", "every condition must close its session"
         assert names.count("condition_start") == 1
         assert names.count("condition_end") == 1
@@ -443,7 +529,13 @@ def _task_state():
     return _state(Stage.TASK, first_condition="interactive").to_dict()
 
 
-def _interact(triggered, tmp_path, control_state=None, **kwargs):
+def _practice_state():
+    """The interactive condition's practice item: Brazil and World, the one chart that draws World
+    since T1 dropped it (2026-09-25)."""
+    return _state(Stage.PRACTICE, first_condition="interactive").to_dict()
+
+
+def _interact(triggered, tmp_path, control_state=None, state=None, **kwargs):
     """Run one control interaction and return (the four chart outputs, events logged by it).
 
     The fifth output, the spool, is `no_update` whenever the database is healthy; the tests that
@@ -451,7 +543,7 @@ def _interact(triggered, tmp_path, control_state=None, **kwargs):
     """
     log_state = {"session_id": str(uuid.uuid4())}
     result = app.control_step(
-        triggered, _task_state(), log_state, control_state, log_dir=tmp_path, **kwargs
+        triggered, state or _task_state(), log_state, control_state, log_dir=tmp_path, **kwargs
     )
     assert result[4] is no_update, "a healthy write must not touch the spool store"
     return result[:4], [e for e in _events(tmp_path) if e["event"] != "session_start"]
@@ -481,7 +573,7 @@ def test_filtering_hides_a_series_and_logs_it(tmp_path):
     assert "Nigeria" in payload["previous"]
 
     assert control["selected"] == keep
-    assert {t.name for t in figure.data if t.visible} == set(keep) | {"World"}
+    assert {t.name for t in figure.data if t.visible} == set(keep)
     assert value == keep
     assert [o["value"] for o in options] == layout.filterable(list(_first_task().entities))
 
@@ -500,11 +592,24 @@ def test_the_world_reference_is_never_filterable():
             assert "World" not in layout.filterable(list(task.entities))
 
 
-def test_the_world_reference_stays_on_the_chart_when_countries_are_hidden(tmp_path):
+def test_the_world_reference_stays_on_the_chart_when_a_line_is_isolated(tmp_path):
     (figure, _options, _value, _ctl), _events = _interact(
-        "entity-filter.value", tmp_path, selected=["China"]
+        "chart.clickData",
+        tmp_path,
+        state=_practice_state(),
+        click_data={"points": [{"curveNumber": 0}]},
     )
-    assert {t.name for t in figure.data if t.visible} == {"China", "World"}
+    assert {t.name for t in figure.data if t.visible} == {"Brazil", "World"}
+
+
+def test_the_practice_offers_no_chip_for_world_and_keeps_its_one_country(tmp_path):
+    """World cannot be hidden, and the filter never removes the last country."""
+    assert layout.filterable(list(tasks.PRACTICE.entities)) == ["Brazil"]
+    result, events = _interact(
+        "entity-filter.value", tmp_path, state=_practice_state(), selected=[]
+    )
+    assert result == (no_update,) * 4
+    assert events == []
 
 
 def test_sorting_reorders_the_control_list_and_logs_it(tmp_path):
@@ -543,7 +648,7 @@ def test_clicking_a_line_isolates_it_and_logs_it(tmp_path):
     assert set(events[0]["payload"]) == {"entity", "isolated"}
     assert events[0]["payload"] == {"entity": task.entities[0], "isolated": True}
     assert control["isolated"] == task.entities[0]
-    assert {t.name for t in figure.data if t.visible} == {task.entities[0], "World"}
+    assert {t.name for t in figure.data if t.visible} == {task.entities[0]}
 
 
 def test_clicking_an_isolated_line_again_releases_it(tmp_path):
@@ -561,10 +666,12 @@ def test_clicking_an_isolated_line_again_releases_it(tmp_path):
 
 
 def test_clicking_the_world_reference_does_nothing(tmp_path):
-    task = _first_task()
-    world_index = list(task.entities).index("World")
+    world_index = list(tasks.PRACTICE.entities).index("World")
     result, events = _interact(
-        "chart.clickData", tmp_path, click_data={"points": [{"curveNumber": world_index}]}
+        "chart.clickData",
+        tmp_path,
+        state=_practice_state(),
+        click_data={"points": [{"curveNumber": world_index}]},
     )
     assert result == (no_update,) * 4
     assert events == []
@@ -616,7 +723,7 @@ def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
 
     assert [e["event"] for e in events] == ["view_change"]
     assert control["isolated"] == task.entities[0], "a zoom must not release the isolation"
-    assert {t.name for t in figure.data if t.visible} == {task.entities[0], "World"}
+    assert {t.name for t in figure.data if t.visible} == {task.entities[0]}
 
 
 def test_a_render_time_relayout_is_not_logged_as_an_interaction(tmp_path):
@@ -664,7 +771,7 @@ def test_a_stale_control_state_from_the_previous_task_is_discarded(tmp_path):
     )
     assert control["isolated"] is None, "an isolation on an absent series must not survive"
     assert control["selected"] == ["China", "India"]
-    assert {t.name for t in figure.data if t.visible} == {"China", "India", "World"}
+    assert {t.name for t in figure.data if t.visible} == {"China", "India"}
 
 
 def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_path):
@@ -884,7 +991,12 @@ def test_the_bar_and_map_controls_have_callbacks_of_their_own():
             "could not be read",
         ),
         (Stage.CONSENT, "consent-clock", {"consented_at": CONSENTED_AT}, "sign"),
-        (Stage.LOAD, "survey-clock", {"load": "lots"}, "could not be read"),
+        (Stage.LOAD, "survey-clock", {"survey": {"paas": "lots"}}, "could not be read"),
+        (Stage.LOAD, "survey-clock", {"survey": {"a1": 8}}, "could not be read"),
+        (Stage.LOAD, "survey-clock", {"survey": {"paas": 10}}, "could not be read"),
+        (Stage.DEMOGRAPHICS, "demographics-clock", {"demographics": {"age": 17}}, "18 to 99"),
+        (Stage.DEMOGRAPHICS, "demographics-clock", {"demographics": {"age": 21.5}}, "18 to 99"),
+        (Stage.DEMOGRAPHICS, "demographics-clock", {"demographics": {"age": "x"}}, "18 to 99"),
     ],
 )
 def test_incomplete_input_is_refused_without_advancing(stage, trigger, kwargs, expected, tmp_path):
@@ -1099,9 +1211,9 @@ def _through_practice(log_dir):
     for trigger, kwargs in [
         ("consent-clock", _consent_kwargs()),
         ("participant-button", {"participant_id": "P01"}),
-        ("demographics-clock", {"demographics": DEMOGRAPHICS}),
         ("begin-button", {}),
         ("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1000.0}),
+        ("practice-done-button", {}),
     ]:
         session, log, _screen, error, _spool = app.step(
             trigger, session, log, log_dir=log_dir, **kwargs
@@ -1225,18 +1337,19 @@ def _full_session_steps():
     steps = [
         ("consent-clock", _consent_kwargs()),
         ("participant-button", {"participant_id": "P01"}),
-        ("demographics-clock", {"demographics": DEMOGRAPHICS}),
     ]
     for condition in range(2):
         steps.append(("begin-button", {}))
         if condition == 0:
             steps.append(("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1234.5}))
+            steps.append(("practice-done-button", {}))
         steps += [("submit-clock", {**ANSWER_KWARGS, "duration_ms": 1000.0})] * len(
             tasks.for_form("A")
         )
         steps.append(("survey-clock", SURVEY_KWARGS))
         if condition == 0:
             steps.append(("resume-button", {}))
+    steps.append(("demographics-clock", {"demographics": DEMOGRAPHICS}))
     return steps
 
 
@@ -1279,7 +1392,8 @@ def test_an_outage_costs_retry_time_once_not_on_every_event(database):
 
 def test_spooled_events_are_replayed_in_order_when_the_database_returns(database):
     steps = _full_session_steps()
-    session, log, spool, _errors = _drive_with_spool(steps[:4])
+    # Through the practice and its complete screen, leaving the session on T1.
+    session, log, spool, _errors = _drive_with_spool(steps[:5])
     backlog = [record["event_uid"] for record in spool["pending"]]
     assert backlog
 
@@ -1474,7 +1588,7 @@ def test_a_watchdog_whose_button_has_gone_leaves_the_page_alone():
     # One harness run each: the harness fires every timer armed so far, so cases would mix.
     cases = [
         [app.SUBMIT_JS, 1, True, ["1", "why"], True, ["submit-button"]],
-        [app.confirm_js("load-button"), 1, True, [5], True, ["load-button"]],
+        [app.confirm_js("load-button"), 1, True, [[5], [{"item": "paas"}]], True, ["load-button"]],
         [app.PARTICIPANT_DISABLE_JS, 1, True, [None], True, ["participant-button"]],
     ]
     for case in cases:
@@ -1505,13 +1619,18 @@ def test_cancelling_the_skip_popup_leaves_the_participant_on_the_task():
     assert cancelled["timers"] == []
 
 
+def _survey_ids(*items):
+    return [{"type": "survey", "item": item} for item in items]
+
+
 def test_the_questionnaire_screens_confirm_skips_and_count_them():
     source = app.confirm_js("load-button")
+    ids = _survey_ids("paas", "a1", "a2", "c3")
     complete, partial, cancelled = _run_js(
         [
-            [source, 1, False, [5, 6, 7, 1]],
-            [source, 1, False, [5, None, "", 1], True],
-            [source, 2, False, [None, 6, 7, 1], False],
+            [source, 1, False, [[5, 6, 7, "x"], ids]],
+            [source, 1, False, [[5, None, "", "x"], ids], True],
+            [source, 2, False, [[None, 6, 7, "x"], ids], False],
         ]
     )
     assert complete["result"][0]["skipped"] == 0
@@ -1521,6 +1640,20 @@ def test_the_questionnaire_screens_confirm_skips_and_count_them():
         partial["calls"]
     )
     assert cancelled["result"] == ["NO_UPDATE", "NO_UPDATE"]
+
+
+def test_about_you_counts_questions_not_their_extra_boxes():
+    """The text beside "Other" is not a question of its own, and ticking "Prefer not to say"
+    answers the age question even with the number box empty."""
+    source = app.confirm_js("demographics-button")
+    about = [{"type": "about", "item": item} for item in ("pointer", "pointer_other", "age")]
+    declined = about + [{"type": "about", "item": "age_prefer_not"}]
+    (answered,) = _run_js(
+        [[source, 1, False, [["Mouse", None, None, ["Prefer not to say"]], declined]]]
+    )
+    assert answered["result"][0]["skipped"] == 0
+    (blank_age,) = _run_js([[source, 1, False, [["Mouse", "", None], about], True]])
+    assert blank_age["result"][0]["skipped"] == 1
 
 
 def test_the_signed_copy_downloads_from_the_browser():
@@ -1669,8 +1802,7 @@ def test_a_skipped_survey_is_recorded_as_null_not_refused(tmp_path):
         state.to_dict(),
         {"session_id": str(uuid.uuid4())},
         log_dir=tmp_path,
-        load=None,
-        survey={"clarity": 3},
+        survey={"a1": 3},
     )
     assert error == ""
     assert SessionState.from_dict(session).stage is Stage.BREAK
@@ -1678,25 +1810,50 @@ def test_a_skipped_survey_is_recorded_as_null_not_refused(tmp_path):
     assert events["load_rating"]["value"] is None
     assert events["survey_rating"] == {
         "scale": "likert7",
-        "clarity": 3,
-        "ease_of_use": None,
-        "confidence": None,
+        **dict.fromkeys(tasks.LIKERT_ITEMS),
+        "a1": 3,
     }
 
 
 def test_the_survey_is_logged_once_per_condition(tmp_path):
-    names = [e["event"] for e in _run_session(tmp_path)]
+    events = _run_session(tmp_path)
+    names = [e["event"] for e in events]
     assert names.count("survey_rating") == 2
     assert names.count("load_rating") == 2
+    (controls,) = [e for e in events if e["event"] == "controls_rating"]
+    assert controls["condition"] == "interactive", "the controls are rated where they existed"
+    (comparison,) = [e for e in events if e["event"] == "comparison"]
+    assert comparison["condition_order"] == 2, "the versions are compared once both are seen"
+    assert comparison["payload"]["c3"] == "The hover gave exact values."
 
 
-def test_demographics_are_logged_once_right_after_consent(tmp_path):
+def test_a_skipped_comparison_is_recorded_as_null(tmp_path):
+    state = _state(Stage.LOAD, condition_index=1)
+    session, _log, _screen, error, _spool = app.step(
+        "survey-clock",
+        state.to_dict(),
+        {"session_id": str(uuid.uuid4())},
+        log_dir=tmp_path,
+        survey={"c3": "   "},
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).stage is Stage.DEMOGRAPHICS
+    events = {e["event"]: e["payload"] for e in _events(tmp_path)}
+    assert events["comparison"] == {"c1": None, "c2": None, "c3": None}
+
+
+def test_about_you_is_logged_once_after_the_second_survey(tmp_path):
+    """About you moved to the end (2026-09-25). It goes into the second condition's session, after
+    that session's end, so a participant who stops at About you still has two complete sessions."""
     events = _run_session(tmp_path)
     demographics = [e for e in events if e["event"] == "demographics"]
     assert len(demographics) == 1
-    assert demographics[0]["payload"] == DEMOGRAPHICS
-    first = [e["event"] for e in events if e["session_id"] == demographics[0]["session_id"]]
-    assert first.index("consent") < first.index("demographics") < first.index("condition_start")
+    assert demographics[0]["payload"] == DEMOGRAPHICS_LOGGED
+    assert demographics[0]["condition_order"] == 2
+    session = [e["event"] for e in events if e["session_id"] == demographics[0]["session_id"]]
+    assert session[-1] == "demographics"
+    assert session.index("survey_rating") < session.index("session_end") < len(session) - 1
+    assert len({e["session_id"] for e in events}) == 2, "no third session for About you"
 
 
 def test_an_unrecognised_demographic_answer_is_refused(tmp_path):
@@ -1705,9 +1862,26 @@ def test_an_unrecognised_demographic_answer_is_refused(tmp_path):
         _state(Stage.DEMOGRAPHICS).to_dict(),
         {},
         log_dir=tmp_path,
-        demographics={"age_range": "12"},
+        demographics={"role": "Astronaut"},
     )
     assert "Unrecognised answer" in error
+    _session, _log, _screen, error, _spool = app.step(
+        "demographics-clock",
+        _state(Stage.DEMOGRAPHICS).to_dict(),
+        {},
+        log_dir=tmp_path,
+        demographics={"tools/Tableau": "Daily"},
+    )
+    assert "Unrecognised answer for Tableau" in error
+    assert not list(tmp_path.glob("*.jsonl"))
+
+
+def test_prefer_not_to_say_answers_the_age_question(tmp_path):
+    """The box beside the age wins over any number typed, and records the choice itself."""
+    answers = app._demographic_answers({"age": 40, "age_prefer_not": [tasks.PREFER_NOT]})
+    assert answers["age"] == tasks.PREFER_NOT
+    assert app._demographic_answers({"age": ""})["age"] is None
+    assert app._demographic_answers({"age": 99.0})["age"] == 99
 
 
 def test_declining_writes_nothing_anywhere(tmp_path):

@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 import dash
-from dash import Input, Output, State, callback_context, dcc, html, no_update
+from dash import ALL, Input, Output, State, callback_context, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 
 from src import config, consent, db, figures, flow, layout, tasks
@@ -128,6 +128,8 @@ def render(state: SessionState) -> html.Div:
         return layout.participant_screen()
     if state.stage is Stage.DEMOGRAPHICS:
         return layout.demographics_screen()
+    if state.stage is Stage.PRACTICE_COMPLETE:
+        return layout.practice_complete_screen()
     if state.stage is Stage.INSTRUCTIONS:
         # Practice precedes the first condition only; the second reaches this screen from the break.
         return layout.instructions_screen(
@@ -138,7 +140,11 @@ def render(state: SessionState) -> html.Div:
             tasks.PRACTICE, flow.is_interactive(state), index=0, total=0, practice=True
         )
     if state.stage is Stage.LOAD:
-        return layout.load_screen(tasks.LOAD_PROMPT, tasks.LOAD_ANCHORS)
+        # The controls are rated after the interactive condition only, and the two versions compared
+        # after the second only (docs/study-design.md section 6.1).
+        return layout.load_screen(
+            interactive=flow.is_interactive(state), second_half=state.condition_index == 1
+        )
     if state.stage is Stage.BREAK:
         return layout.break_screen()
     if state.stage is Stage.COMPLETE:
@@ -227,9 +233,8 @@ def step(
     participant_id: str | None = None,
     answer: str | None = None,
     justification: str | None = None,
-    load: int | None = None,
-    survey: dict[str, int | None] | None = None,
-    demographics: dict[str, str | None] | None = None,
+    survey: dict[str, Any] | None = None,
+    demographics: dict[str, Any] | None = None,
     duration_ms: float | None = None,
     duration_invalid: str | None = None,
     consented_at: str | None = None,
@@ -247,6 +252,10 @@ def step(
     **Any question may be skipped** (IRB form item 10). The browser asks the participant to confirm
     before a skip reaches here, so a missing answer, justification or rating is recorded as absent,
     never refused. Only consent and the participant ID are required.
+
+    `survey` maps each survey item on screen to its value: "paas", a1-a9, and b1-b3 or c1-c3 where
+    they are asked. `demographics` maps each About-you field on screen to its value, as
+    `_demographic_answers` reads them.
 
     `consent_dir` is for tests, like `log_dir`; when only `log_dir` is given, consent records go to
     a `consent/` folder inside it, never beside the event files.
@@ -294,7 +303,18 @@ def step(
             state = flow.set_participant(state, participant_id.strip(), condition, form)
 
         elif triggered == "demographics-clock":
-            state = flow.submit_demographics(state, _demographic_answers(demographics))
+            # About you, at the very end (docs/study-design.md section 6.2). Transition first, so a
+            # stale tab that is not on this screen is refused before anything is written; then read
+            # every answer before writing any of them.
+            finished = flow.submit_demographics(state)
+            answers = _demographic_answers(demographics)
+            # Into the second condition's session, which its survey has already closed: stopping
+            # here must still leave two complete sessions.
+            logger = _logger(state, log_state, log_dir, carried)
+            logger.record_demographics(answers)
+            carried.take(logger)
+            state = finished
+            log_state = {}
 
         elif triggered == "begin-button":
             # Leaving the instructions starts the condition, practice included — so the log session
@@ -309,9 +329,6 @@ def step(
                 # Once per participant, first in their record. It could not be written at the
                 # consent click itself, before any participant ID existed.
                 logger.record_consent(state.consent_at, CONSENT_VERSION, state.consent_method)
-            if state.condition_index == 0 and state.demographics is not None:
-                # Held since the demographics screen, for the same reason.
-                logger.record_demographics(state.demographics)
             logger.event(
                 "condition_start",
                 interactive=flow.is_interactive(state),
@@ -322,6 +339,9 @@ def step(
 
         elif triggered == "resume-button":
             state = flow.resume_after_break(state)
+
+        elif triggered == "practice-done-button":
+            state = flow.begin_tasks(state)
 
         elif triggered == "submit-clock":
             # No refusal for a blank answer or justification: the browser has already asked the
@@ -348,7 +368,7 @@ def step(
                     duration_ms=duration_ms,
                     duration_invalid=duration_invalid,
                 )
-                state = flow.begin_tasks(state)
+                state = flow.finish_practice(state)
             else:
                 items = tasks.for_form(flow.current_form(state))
                 task = flow.current_task(state, items)
@@ -376,11 +396,22 @@ def step(
                 raise flow.FlowError(f"Expected stage load, got {state.stage.value}")
             # Read every value before writing anything, so a malformed one refuses the step
             # without leaving half the survey in the log.
-            paas = _rating(load)
-            ratings = {key: _rating((survey or {}).get(key)) for key in tasks.LIKERT_ITEMS}
+            answers = survey or {}
+            paas = _rating(answers.get("paas"), 9)
+            ratings = {key: _rating(answers.get(key), 7) for key in tasks.LIKERT_ITEMS}
+            controls = (
+                {key: _rating(answers.get(key), 7) for key in tasks.CONTROLS_ITEMS}
+                if flow.is_interactive(state)
+                else None
+            )
+            comparison = _comparison(answers) if flow.condition_order(state) == 2 else None
             logger = _logger(state, log_state, log_dir, carried)
             logger.rate_load(paas)
             logger.rate_survey(ratings)
+            if controls is not None:
+                logger.rate_controls(controls)
+            if comparison is not None:
+                logger.record_comparison(comparison)
             logger.event(
                 "condition_end",
                 interactive=flow.is_interactive(state),
@@ -390,8 +421,12 @@ def step(
             # with one session carrying a session_end and one without.
             logger.close()
             carried.take(logger)
-            log_state = {}
             state = flow.submit_load(state)
+            # About you follows the second survey and is written into that session, so its id is
+            # kept; after the first survey nothing more belongs to the session.
+            log_state = (
+                {"session_id": logger.session_id} if state.stage is Stage.DEMOGRAPHICS else {}
+            )
 
     except flow.FlowError as exc:
         return refuse(str(exc))
@@ -449,24 +484,101 @@ def consent_step(
     return (*outputs, consent.copy_html(record) if advanced else no_update)
 
 
-def _rating(value: Any) -> int | None:
-    """A radio value as a scale point. None stays None: that is a skip, not a zero."""
-    return None if value is None else int(value)
+def _rating(value: Any, top: int) -> int | None:
+    """A radio value as a point on a 1-`top` scale. None stays None: that is a skip, not a zero.
+
+    A value off the scale cannot come from the radio buttons. It is refused here, as a ValueError,
+    before anything is written -- not left for the logger to reject after the survey is half in.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool) or int(value) != value or not 1 <= int(value) <= top:
+        raise ValueError(f"{value!r} is not on a 1-{top} scale")
+    return int(value)
 
 
-def _demographic_answers(raw: dict[str, Any] | None) -> dict[str, str | None]:
-    """Every demographic key, each an offered option or None (skipped).
+# The About-you "Other" boxes: long enough for any answer, short enough that nothing pasted in can
+# swell the log.
+MAX_OTHER = 200
+
+AGE_MESSAGE = "Please enter your age as a whole number from 18 to 99, or tick Prefer not to say."
+
+
+def _text(value: Any, limit: int) -> str | None:
+    """Typed text, trimmed and capped. Blank is None: a skip, not an empty answer."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"expected text, got {value!r}")
+    return value.strip()[:limit] or None
+
+
+def _comparison(raw: dict[str, Any]) -> dict[str, str | None]:
+    """c1 and c2, each one of the offered options or None, and c3's free text."""
+    answers: dict[str, str | None] = {}
+    for key in tasks.COMPARISON_CHOICES:
+        value = raw.get(key)
+        if value is not None and value not in tasks.COMPARISON_OPTIONS:
+            raise flow.FlowError("Unrecognised answer. Please choose again.")
+        answers[key] = value
+    answers[tasks.COMPARISON_TEXT_KEY] = _text(raw.get(tasks.COMPARISON_TEXT_KEY), tasks.MAX_TEXT)
+    return answers
+
+
+def _age(raw: dict[str, Any]) -> int | str | None:
+    """B1: a whole number in `tasks.AGE_RANGE`, "Prefer not to say" when its box is ticked, or None.
+
+    The only About-you answer typed as a number. Anything else is refused with a message the
+    participant can act on, rather than stored: an age of 7 or 700 cannot be analysed.
+    """
+    if raw.get("age_prefer_not"):
+        return tasks.PREFER_NOT
+    value = raw.get("age")
+    if value is None or value == "":
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise flow.FlowError(AGE_MESSAGE) from None
+    low, high = tasks.AGE_RANGE
+    if isinstance(value, bool) or number != int(number) or not low <= number <= high:
+        raise flow.FlowError(AGE_MESSAGE)
+    return int(number)
+
+
+def _demographic_answers(raw: dict[str, Any] | None) -> dict[str, Any]:
+    """Every About-you key (`tasks.DEMOGRAPHIC_KEYS`), each an offered option or None (skipped).
+
+    `raw` maps each field on screen to its value: a question's key, `<key>_other` for the text
+    beside "Other", `age` and `age_prefer_not`, and `tools/<tool>` for each row of the tools matrix.
 
     A value that is not one of the options cannot come from the radio buttons, so it is refused
-    rather than stored: this is study data, and an unrecognised category cannot be analysed.
+    rather than stored: this is study data, and an unrecognised category cannot be analysed. Text
+    typed beside "Other" is kept only when "Other" is the answer.
     """
     raw = raw or {}
-    answers: dict[str, str | None] = {}
-    for key, (_question, options) in tasks.DEMOGRAPHIC_ITEMS.items():
-        value = raw.get(key)
-        if value is not None and value not in options:
-            raise flow.FlowError(f"Unrecognised answer for {key}. Please choose again.")
-        answers[key] = value
+    answers: dict[str, Any] = {}
+    for question in tasks.ABOUT_QUESTIONS:
+        if question.kind == "age":
+            answers[question.key] = _age(raw)
+        elif question.kind == "matrix":
+            rows = {}
+            for row in question.rows:
+                value = raw.get(f"{question.key}/{row}")
+                if value is not None and value not in question.options:
+                    raise flow.FlowError(f"Unrecognised answer for {row}. Please choose again.")
+                rows[row] = value
+            answers[question.key] = rows
+        else:
+            value = raw.get(question.key)
+            if value is not None and value not in question.options:
+                raise flow.FlowError(
+                    f"Unrecognised answer for {question.code}. Please choose again."
+                )
+            answers[question.key] = value
+            if question.other_key is not None:
+                typed = _text(raw.get(question.other_key), MAX_OTHER)
+                answers[question.other_key] = typed if value == tasks.OTHER else None
     return answers
 
 
@@ -885,21 +997,28 @@ def _register_callbacks(app: dash.Dash) -> None:
             "participant-button", stored, log_state, participant_id=participant_id, spool=spool
         )
 
+    # About you and the survey read their fields by PATTERN (`ALL`), not by listing each id. The
+    # survey's fields differ between conditions and halves (b1-b3 after the interactive condition,
+    # c1-c3 after the second), and a State naming a component that is not on the page kills the
+    # callback in the browser; a pattern collects whatever is there.
     @app.callback(
         *_step_outputs(),
         Input("demographics-clock", "data"),
-        *[State(f"demo-{key}", "value") for key in tasks.DEMOGRAPHIC_ITEMS],
+        State({"type": "about", "item": ALL}, "value"),
+        State({"type": "about", "item": ALL}, "id"),
         *_session_states(),
         prevent_initial_call=True,
     )
-    def demographics(clock, *values):
+    def demographics(clock, values, ids, stored, log_state, spool):
         if not clock:
             raise PreventUpdate
-        answers = dict(
-            zip(tasks.DEMOGRAPHIC_ITEMS, values[: len(tasks.DEMOGRAPHIC_ITEMS)], strict=True)
+        return step(
+            "demographics-clock",
+            stored,
+            log_state,
+            demographics=_by_item(values, ids),
+            spool=spool,
         )
-        stored, log_state, spool = values[len(tasks.DEMOGRAPHIC_ITEMS) :]
-        return step("demographics-clock", stored, log_state, demographics=answers, spool=spool)
 
     @app.callback(
         *_step_outputs(),
@@ -922,6 +1041,18 @@ def _register_callbacks(app: dash.Dash) -> None:
         if not n:
             raise PreventUpdate
         return step("resume-button", stored, log_state, spool=spool)
+
+    # Its own id, like the break's: this leads from the practice-complete screen to the first task.
+    @app.callback(
+        *_step_outputs(),
+        Input("practice-done-button", "n_clicks"),
+        *_session_states(),
+        prevent_initial_call=True,
+    )
+    def practice_done(n, stored, log_state, spool):
+        if not n:
+            raise PreventUpdate
+        return step("practice-done-button", stored, log_state, spool=spool)
 
     # Triggered by the submit CLOCK, not the button: the clientside callback below stamps the
     # browser time first, so by the time this runs the timestamp is guaranteed fresh rather than
@@ -952,17 +1083,15 @@ def _register_callbacks(app: dash.Dash) -> None:
     @app.callback(
         *_step_outputs(),
         Input("survey-clock", "data"),
-        State("load-input", "value"),
-        *[State(f"likert-{key}", "value") for key in tasks.LIKERT_ITEMS],
+        State({"type": "survey", "item": ALL}, "value"),
+        State({"type": "survey", "item": ALL}, "id"),
         *_session_states(),
         prevent_initial_call=True,
     )
-    def rate_survey(clock, load, *values):
+    def rate_survey(clock, values, ids, stored, log_state, spool):
         if not clock:
             raise PreventUpdate
-        ratings = dict(zip(tasks.LIKERT_ITEMS, values[: len(tasks.LIKERT_ITEMS)], strict=True))
-        stored, log_state, spool = values[len(tasks.LIKERT_ITEMS) :]
-        return step("survey-clock", stored, log_state, load=load, survey=ratings, spool=spool)
+        return step("survey-clock", stored, log_state, survey=_by_item(values, ids), spool=spool)
 
     @app.callback(
         Output("chart", "figure", allow_duplicate=True),
@@ -1130,7 +1259,8 @@ def _register_callbacks(app: dash.Dash) -> None:
         Output("demographics-clock", "data"),
         Output("demographics-button", "disabled"),
         Input("demographics-button", "n_clicks"),
-        *[State(f"demo-{key}", "value") for key in tasks.DEMOGRAPHIC_ITEMS],
+        State({"type": "about", "item": ALL}, "value"),
+        State({"type": "about", "item": ALL}, "id"),
         prevent_initial_call=True,
     )
     app.clientside_callback(
@@ -1138,8 +1268,8 @@ def _register_callbacks(app: dash.Dash) -> None:
         Output("survey-clock", "data"),
         Output("load-button", "disabled"),
         Input("load-button", "n_clicks"),
-        State("load-input", "value"),
-        *[State(f"likert-{key}", "value") for key in tasks.LIKERT_ITEMS],
+        State({"type": "survey", "item": ALL}, "value"),
+        State({"type": "survey", "item": ALL}, "id"),
         prevent_initial_call=True,
     )
     for button in ("demographics-button", "load-button"):
@@ -1251,17 +1381,30 @@ SUBMIT_JS = """function(n, answer, justification) {
 def confirm_js(button: str) -> str:
     """Continue on a questionnaire screen: confirm any skipped questions, then fire.
 
-    Returns [clock, button.disabled]. The State values follow `n` in the order the callback lists
-    them; any that is null or empty counts as skipped. The clock carries the time, so every press is
-    a distinct value -- the survey screen's button starts again at n_clicks 1 in the second
-    condition, and the store must not look unchanged.
+    Returns [clock, button.disabled]. Called with the screen's field values and their pattern ids,
+    in matching order. A field that is null, empty or an empty checklist counts as skipped, except
+    the text box beside "Other" (not a question of its own) and the age box's "Prefer not to say",
+    which answers the age question when ticked. The clock carries the time, so every press is a
+    distinct value -- the survey screen's button starts again at n_clicks 1 in the second condition,
+    and the store must not look unchanged.
     """
-    return f"""function(n) {{
+    return f"""function(n, values, ids) {{
     var no = window.dash_clientside.no_update;
     if (!n) {{ return [no, no]; }}
-    var values = Array.prototype.slice.call(arguments, 1);
-    var skipped = values.filter(function (v) {{
-        return v === null || v === undefined || v === "";
+    values = values || [];
+    ids = ids || [];
+    var blank = function (v) {{
+        return v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length);
+    }};
+    var ageDeclined = false;
+    ids.forEach(function (id, i) {{
+        if (id.item === "age_prefer_not" && !blank(values[i])) {{ ageDeclined = true; }}
+    }});
+    var skipped = values.filter(function (v, i) {{
+        var item = (ids[i] || {{}}).item || "";
+        if (/_other$/.test(item) || item === "age_prefer_not") {{ return false; }}
+        if (item === "age" && ageDeclined) {{ return false; }}
+        return blank(v);
     }}).length;
     if (skipped && !window.confirm(
         "You have left " + skipped + (skipped === 1 ? " question" : " questions") +
@@ -1307,6 +1450,11 @@ PARTICIPANT_ENABLE_JS = """function(message) {
 CONSENT_CLOCK_JS = """function(n) {
     return n ? new Date().toISOString() : window.dash_clientside.no_update;
 }"""
+
+
+def _by_item(values: list[Any] | None, ids: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """Pattern-matched fields as {item: value}. Dash hands the two lists over in the same order."""
+    return {pattern["item"]: value for pattern, value in zip(ids or [], values or [], strict=True)}
 
 
 def _elapsed(started_at: Any, submitted_at: Any) -> tuple[float | None, str | None]:

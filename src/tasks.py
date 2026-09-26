@@ -19,13 +19,17 @@ document first, then this file.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from src.flow import Task
 
-COUNT_OPTIONS = ("0", "1", "2", "3", "4 or more")
+# Six options, like every other item (2026-09-25): "4 or more" became "4" and "5 or more".
+COUNT_OPTIONS = ("0", "1", "2", "3", "4", "5 or more")
 
 # The crossing item's options. Bands rather than years, because the static condition has no hover
 # and an exact crossing year cannot be read from the chart. Inclusive at both ends, contiguous.
-CROSSING_BANDS = ("2004-2008", "2009-2012", "2013-2016", "2017-2020", "2021-2024")
+# 2000-2003 added 2026-09-25, so the crossing item offers six options like every other.
+CROSSING_BANDS = ("2000-2003", "2004-2008", "2009-2012", "2013-2016", "2017-2020", "2021-2024")
 
 # The heatmap's columns: every fifth year, and the last.
 HEATMAP_YEARS = (2000, 2005, 2010, 2015, 2020, 2024)
@@ -62,7 +66,8 @@ FORM_A: tuple[Task, ...] = (
         kind="lowest",
         prompt="Focus on Ukraine's line. In which year was its coverage at its lowest point?",
         vaccine="DTP3",
-        # Eight countries and World: the tangle the isolation control cuts through.
+        # Eight countries, no World line (2026-09-25): the tangle the isolation control cuts
+        # through.
         entities=(
             "Brazil",
             "China",
@@ -72,11 +77,11 @@ FORM_A: tuple[Task, ...] = (
             "Nigeria",
             "Pakistan",
             "Ukraine",
-            "World",
         ),
-        # Not 2010 or 2013: Ukraine is 23 in 2014 and 2015, too close to its low of 19 in 2016 to
-        # tell apart, and both years sit nearer 2013 than 2016. docs/study-design.md section 4.
-        options=("2008", "2016", "2019", "2022", "2024"),
+        # Not 2010-2015: Ukraine is 23 in 2014 and 2015, too close to its low of 19 in 2016 to tell
+        # apart, and a year either side of them must still be nearest 2016. The handoff's 2012
+        # failed exactly that way. docs/study-design.md section 4.
+        options=("2004", "2008", "2016", "2019", "2022", "2024"),
     ),
     Task(
         task_id="T2",
@@ -87,7 +92,7 @@ FORM_A: tuple[Task, ...] = (
         prompt="The bars show coverage in 2017. Which country had the third-highest coverage?",
         vaccine="DTP3",
         entities=("Brazil", "China", "Ethiopia", "India", "Nigeria", "Pakistan", "Vietnam"),
-        options=("Brazil", "China", "Ethiopia", "India", "Vietnam"),
+        options=("Brazil", "China", "Ethiopia", "India", "Nigeria", "Vietnam"),
     ),
     Task(
         task_id="T3",
@@ -103,7 +108,7 @@ FORM_A: tuple[Task, ...] = (
         vaccine="DTP3",
         # Not Angola or DR Congo: their dots sit within 2 points of Nigeria's and would hide it.
         entities=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger", "Nigeria"),
-        options=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger"),
+        options=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger", "Nigeria"),
     ),
     Task(
         task_id="T4",
@@ -126,7 +131,14 @@ FORM_A: tuple[Task, ...] = (
             "Mali",
             "Pakistan",
         ),
-        options=("Burkina Faso", "Central African Republic", "Chad", "Mali", "Pakistan"),
+        options=(
+            "Burkina Faso",
+            "Central African Republic",
+            "Chad",
+            "India",
+            "Mali",
+            "Pakistan",
+        ),
     ),
     Task(
         task_id="T5",
@@ -191,9 +203,9 @@ FORM_B: tuple[Task, ...] = (
             "Myanmar",
             "Nigeria",
             "Pakistan",
-            "World",
         ),
-        options=("2009", "2013", "2017", "2021", "2024"),
+        # 2005 mirrors A-T1's 2004: a year four before the first option. No World line, as in A.
+        options=("2005", "2009", "2013", "2017", "2021", "2024"),
     ),
     Task(
         task_id="T2",
@@ -212,7 +224,7 @@ FORM_B: tuple[Task, ...] = (
             "Nigeria",
             "United States",
         ),
-        options=("Cambodia", "Colombia", "Egypt", "Ethiopia", "United States"),
+        options=("Cambodia", "Colombia", "Egypt", "Ethiopia", "Nigeria", "United States"),
     ),
     Task(
         task_id="T3",
@@ -228,7 +240,7 @@ FORM_B: tuple[Task, ...] = (
         vaccine="DTP3",
         # Not Afghanistan: its +35 all but ties India's +36.
         entities=("Bangladesh", "Cambodia", "India", "Indonesia", "Nepal", "Pakistan"),
-        options=("Bangladesh", "Cambodia", "India", "Nepal", "Pakistan"),
+        options=("Bangladesh", "Cambodia", "India", "Indonesia", "Nepal", "Pakistan"),
     ),
     Task(
         task_id="T4",
@@ -251,7 +263,7 @@ FORM_B: tuple[Task, ...] = (
             "Pakistan",
             "Uganda",
         ),
-        options=("Afghanistan", "Mali", "Niger", "Pakistan", "Uganda"),
+        options=("Afghanistan", "Madagascar", "Mali", "Niger", "Pakistan", "Uganda"),
     ),
     Task(
         task_id="T5",
@@ -299,69 +311,264 @@ FORM_B: tuple[Task, ...] = (
 
 FORMS: dict[str, tuple[Task, ...]] = {"A": FORM_A, "B": FORM_B}
 
-JUSTIFICATION_PROMPT = "In one sentence, how did you decide?"
+JUSTIFICATION_PROMPT = "In one sentence, describe why you chose your answer."
 
-# Paas single-item mental effort, asked once per condition. See docs/study-design.md section 6.
+# The first step's heading on a task screen, by item kind. The design handoff's wording.
+CHOOSE_PROMPTS: dict[str, str] = {
+    "practice": "Choose an answer:",
+    "lowest": "Choose one year:",
+    "rank": "Choose one country:",
+    "improved": "Choose one country:",
+    "cell": "Choose one country:",
+    "threshold": "Choose one number:",
+    "crossing": "Choose a range:",
+}
+
+SKIP_NOTE = "You may skip any question. If you leave one unanswered, you will be asked to confirm."
+
+# --- The post-condition survey: docs/study-design.md section 6.1 ---------------------------------
+#
+# Asked after EACH condition, one question per page. Paas first, then the design handoff's items,
+# verbatim. The statements say "in this part" or "the charts", never which version it was.
+
+# Paas single-item mental effort, the RQ3 measure. Kept 2026-09-25 as the survey's first question.
 LOAD_PROMPT = "In solving the preceding tasks, I invested:"
 LOAD_ANCHORS = {1: "very, very low mental effort", 9: "very, very high mental effort"}
 
-# The rest of the post-condition survey: 7-point agreement items, asked after EACH condition, as the
-# consent form states. See docs/study-design.md section 6.1. Key -> statement.
-LIKERT_ITEMS: dict[str, str] = {
-    "clarity": "The charts in this part made the information clear.",
-    "ease_of_use": "The charts in this part were easy to use.",
-    "confidence": "I am confident in my answers in this part.",
+SURVEY_INTRO = {
+    "first": "A few questions about the charts you just used.",
+    "second": "A few questions about the charts you just used, then a comparison of both versions.",
 }
-LIKERT_ANCHORS = {1: "strongly disagree", 4: "neither agree nor disagree", 7: "strongly agree"}
-LIKERT_POINTS = 7
 
-# Asked once, after the participant ID. Broad categories only (IRB form item 17), so no answer can
-# re-identify anyone. See docs/study-design.md section 6.2. Key -> (question, options).
-PREFER_NOT = "Prefer not to say"
-DEMOGRAPHIC_ITEMS: dict[str, tuple[str, tuple[str, ...]]] = {
-    "age_range": (
-        "What is your age range?",
-        ("18–24", "25–34", "35–44", "45–54", "55–64", "65 or older", PREFER_NOT),
-    ),
-    "field": (
-        "What is your main field of study or work?",
-        (
-            "Arts and humanities",
-            "Social sciences",
-            "Natural sciences",
-            "Mathematics, statistics or computer science",
-            "Engineering",
-            "Health or medicine",
-            "Business or economics",
-            "Education",
-            "Other",
-            PREFER_NOT,
-        ),
-    ),
-    "chart_frequency": (
-        "How often do you read charts or graphs, for example in the news, at work, or in class?",
-        (
-            "Never",
-            "Less than once a month",
-            "A few times a month",
-            "A few times a week",
-            "Daily",
-            PREFER_NOT,
-        ),
-    ),
-    "dashboard_familiarity": (
-        "How familiar are you with interactive data dashboards, such as Tableau, Power BI, or "
-        "online COVID-19 trackers?",
-        (
-            "Not at all familiar",
-            "Slightly familiar",
-            "Moderately familiar",
-            "Very familiar",
-            "Extremely familiar",
-            PREFER_NOT,
-        ),
-    ),
+# 7-point agreement, every point labelled.
+LIKERT_POINTS = 7
+LIKERT_ANCHORS = {
+    1: "Strongly disagree",
+    2: "Disagree",
+    3: "Somewhat disagree",
+    4: "Neither agree nor disagree",
+    5: "Somewhat agree",
+    6: "Agree",
+    7: "Strongly agree",
 }
+
+# Section title -> (key -> statement). Asked after every condition; Paas opens the first section.
+EXPERIENCE_SECTION = "Your experience"
+LIKERT_ITEMS: dict[str, str] = {
+    "a1": "I am confident that my answers in this part were correct.",
+    "a2": "The charts were easy to understand.",
+    "a3": "I could quickly find the information I needed.",
+    "a4": "I could read values from the charts as precisely as the questions required.",
+    "a5": "It was easy to see where coverage increased or decreased.",
+    "a6": "It was easy to compare countries with each other.",
+    "a7": "Answering the questions took a lot of mental effort.",
+    "a8": "I felt frustrated while answering the questions.",
+    "a9": "I felt rushed while answering the questions.",
+}
+
+# Asked after the INTERACTIVE condition only: the static condition has no controls to rate.
+CONTROLS_SECTION = "Chart controls"
+CONTROLS_HELP = "About the controls on the charts."
+CONTROLS_ITEMS: dict[str, str] = {
+    "b1": "I could figure out how to use the chart controls without instructions.",
+    "b2": "The chart controls helped me answer the questions.",
+    "b3": "The chart controls were easy to use.",
+}
+
+# Asked after the SECOND condition only, once both versions have been used.
+COMPARISON_SECTION = "Comparing the two versions"
+COMPARISON_OPTIONS = ("The charts with controls", "The charts without controls", "No difference")
+COMPARISON_CHOICES: dict[str, str] = {
+    "c1": "Which charts helped you answer more accurately?",
+    "c2": "Which charts did you prefer using?",
+}
+# Free text. The handoff labels it "Optional", though every question may be skipped.
+COMPARISON_TEXT_KEY = "c3"
+COMPARISON_TEXT = "What made one set of charts easier or harder to use than the other?"
+COMPARISON_TEXT_HELP = "Optional"
+COMPARISON_KEYS = (*COMPARISON_CHOICES, COMPARISON_TEXT_KEY)
+# A free-text answer longer than this is cut: long enough for any reply, short enough that a stuck
+# key cannot fill the log.
+MAX_TEXT = 2000
+
+# --- About you: docs/study-design.md section 6.2 ------------------------------------------------
+#
+# Asked once, at the END, one question per page. The handoff's wording (`auBuild()`), verbatim. Not
+# all broad categories: age in years and the two "Other" text boxes are on the IRB list in
+# study-design.md section 10.
+
+PREFER_NOT = "Prefer not to say"
+OTHER = "Other"
+AGE_RANGE = (18, 99)
+
+
+@dataclass(frozen=True, slots=True)
+class Question:
+    """One About-you question.
+
+    `kind` is "choice" (one of `options`), "age" (a whole number in `AGE_RANGE`, or `PREFER_NOT`)
+    or "matrix" (one of `options` for each of `rows`). A choice whose options include `OTHER` has a
+    text box beside it, logged under `other_key`. `prefer_not_inline` marks the one question whose
+    "Prefer not to say" is an ordinary option rather than set apart beneath the others.
+    """
+
+    key: str
+    code: str
+    text: str
+    options: tuple[str, ...] = ()
+    kind: str = "choice"
+    help: str = ""
+    ordinal: bool = False
+    rows: tuple[str, ...] = ()
+    prefer_not_inline: bool = False
+
+    @property
+    def other_key(self) -> str | None:
+        return f"{self.key}_other" if OTHER in self.options else None
+
+
+TOOL_LEVELS = ("Never heard of it", "Heard of it, never used", "Used a few times", "Use regularly")
+
+ABOUT_INTRO = "A few questions about your setup and background."
+
+# (section title, questions), in the order they are asked.
+ABOUT_SECTIONS: tuple[tuple[str, tuple[Question, ...]], ...] = (
+    (
+        "Session setup",
+        (
+            Question(
+                "pointer",
+                "A1",
+                "What are you using to control the pointer right now?",
+                ("Mouse", "Trackpad / touchpad", "Touchscreen", OTHER),
+            ),
+        ),
+    ),
+    (
+        "Background",
+        (
+            Question("age", "B1", "What is your age (in years)?", kind="age"),
+            Question(
+                "role",
+                "B2",
+                "Which best describes your current role?",
+                (
+                    "Undergraduate student",
+                    "Graduate student",
+                    "Faculty or staff",
+                    "Not affiliated with a college or university",
+                    PREFER_NOT,
+                ),
+            ),
+            Question(
+                "field",
+                "B3",
+                "What is your primary field of study or work?",
+                (
+                    "Computer science, math, or statistics",
+                    "Natural or physical sciences (e.g., biology, chemistry, physics)",
+                    "Health or life sciences (e.g., kinesiology, public health, pre-med)",
+                    "Social sciences (e.g., economics, psychology, politics)",
+                    "Humanities or arts",
+                    OTHER,
+                    PREFER_NOT,
+                ),
+                help=(
+                    "(If you have more than one, choose the one closest to how you spend most of "
+                    "your time.)"
+                ),
+            ),
+        ),
+    ),
+    (
+        "Experience with data visualization",
+        (
+            Question(
+                "read_charts",
+                "C1",
+                "How often do you read or use charts, graphs, or dashboards (for school, work, or "
+                "personal interest)?",
+                (
+                    "Rarely or never",
+                    "A few times a year",
+                    "About monthly",
+                    "About weekly",
+                    "Daily or almost daily",
+                    PREFER_NOT,
+                ),
+                ordinal=True,
+            ),
+            Question(
+                "make_charts",
+                "C2",
+                "How often do you create charts, graphs, or dashboards?",
+                (
+                    "Never",
+                    "A few times ever",
+                    "A few times a year",
+                    "About monthly",
+                    "About weekly or more",
+                    PREFER_NOT,
+                ),
+                ordinal=True,
+            ),
+            Question(
+                "stats_course",
+                "C3",
+                "Have you taken a course where data visualization or statistics was a major part?",
+                ("Yes", "No", "Not sure", PREFER_NOT),
+            ),
+            Question(
+                "tools",
+                "C4",
+                "How familiar are you with each of these tools?",
+                (*TOOL_LEVELS, PREFER_NOT),
+                kind="matrix",
+                rows=(
+                    "Tableau",
+                    "Plotly or Plotly Dash",
+                    "Microsoft Excel or Google Sheets charts",
+                    "Power BI",
+                    "Our World in Data charts",
+                ),
+            ),
+        ),
+    ),
+    (
+        "Topic familiarity",
+        (
+            Question(
+                "topic_familiarity",
+                "D1",
+                "Before today, how familiar were you with data on childhood vaccination rates "
+                "around the world?",
+                (
+                    "1 — Not at all familiar",
+                    "2 — Slightly familiar",
+                    "3 — Somewhat familiar",
+                    "4 — Very familiar",
+                    "5 — Extremely familiar",
+                    PREFER_NOT,
+                ),
+                ordinal=True,
+            ),
+            Question(
+                "health_background",
+                "D2",
+                "Have you studied or worked in public health, medicine, nursing, or epidemiology?",
+                ("Yes", "No", PREFER_NOT),
+                prefer_not_inline=True,
+            ),
+        ),
+    ),
+)
+
+ABOUT_QUESTIONS: tuple[Question, ...] = tuple(q for _, qs in ABOUT_SECTIONS for q in qs)
+
+# Every key the `demographics` event carries: one per question, plus each "Other" text box.
+DEMOGRAPHIC_KEYS: tuple[str, ...] = tuple(
+    key for q in ABOUT_QUESTIONS for key in (q.key, q.other_key) if key is not None
+)
 
 
 def for_form(form: str) -> tuple[Task, ...]:

@@ -53,6 +53,23 @@ def test_matched_items_offer_the_same_number_of_options():
         )
 
 
+@pytest.mark.parametrize("form", FORMS)
+def test_every_scored_item_offers_six_options(form):
+    """The design handoff gives every item six answer tiles (2026-09-25). Chance is one in six on
+    every item, so no item is easier to guess than another."""
+    for task in tasks.for_form(form):
+        assert len(task.options) == 6, f"{form}-{task.task_id}"
+
+
+def test_the_isolation_item_draws_no_world_line():
+    """T1 dropped World in the redesign, in both forms, so both draw eight lines
+    (study-design.md section 4)."""
+    for form in FORMS:
+        (t1,) = [t for t in tasks.for_form(form) if t.task_id == "T1"]
+        assert "World" not in t1.entities, form
+        assert len(t1.entities) == 8, form
+
+
 def test_matched_items_draw_the_same_number_of_entities():
     """A chart with more lines, dots, bars or rows is a harder read. The map is the exception:
     each form colours the countries clear of the threshold in its own year (study-design.md
@@ -195,7 +212,7 @@ def test_year_options_are_in_calendar_order_and_on_the_chart():
 
 
 def test_counts_stay_in_their_natural_order():
-    assert tasks.COUNT_OPTIONS == ("0", "1", "2", "3", "4 or more")
+    assert tasks.COUNT_OPTIONS == ("0", "1", "2", "3", "4", "5 or more")
     for form in FORMS:
         for task in tasks.for_form(form):
             if task.kind == "threshold":
@@ -203,11 +220,12 @@ def test_counts_stay_in_their_natural_order():
 
 
 def test_crossing_options_are_the_bands_in_calendar_order():
-    """Contiguous, inclusive at both ends, and running to the last year of the data, so every
-    crossing year after 2003 has exactly one band."""
+    """Contiguous, inclusive at both ends, and spanning the data's whole range, so every crossing
+    year has exactly one band."""
     spans = [tuple(int(y) for y in band.split("-")) for band in tasks.CROSSING_BANDS]
     assert all(start <= end for start, end in spans)
     assert all(nxt[0] == prev[1] + 1 for prev, nxt in zip(spans, spans[1:], strict=False))
+    assert spans[0][0] == config.YEAR_MIN
     assert spans[-1][1] == config.YEAR_MAX
     for form in FORMS:
         for task in tasks.for_form(form):
@@ -270,3 +288,71 @@ def test_practice_task_shows_no_missing_data():
 def test_load_scale_is_the_paas_nine_point():
     assert set(tasks.LOAD_ANCHORS) == {1, 9}
     assert tasks.LOAD_PROMPT.strip()
+
+
+# --- The task screen's copy ---------------------------------------------------------------------
+
+
+def test_every_item_kind_says_what_to_choose():
+    kinds = {task.kind for form in FORMS for task in tasks.for_form(form)} | {"practice"}
+    assert kinds <= set(tasks.CHOOSE_PROMPTS)
+    assert tasks.CHOOSE_PROMPTS["crossing"] == "Choose a range:"
+
+
+def test_the_justification_prompt_is_a_sentence_not_a_question():
+    """docs/study-redesign.md section 5: the handoff's label ended in a question mark."""
+    assert tasks.JUSTIFICATION_PROMPT == "In one sentence, describe why you chose your answer."
+
+
+# --- The survey and About you (study-design.md section 6) ----------------------------------------
+
+
+def test_the_survey_is_the_handoffs_three_sections():
+    assert list(tasks.LIKERT_ITEMS) == [f"a{n}" for n in range(1, 10)]
+    assert list(tasks.CONTROLS_ITEMS) == ["b1", "b2", "b3"]
+    assert tasks.COMPARISON_KEYS == ("c1", "c2", "c3")
+    assert tasks.LIKERT_POINTS == 7
+    assert set(tasks.LIKERT_ANCHORS) == set(range(1, 8)), "every point is labelled"
+    assert len(tasks.COMPARISON_OPTIONS) == 3
+
+
+def test_about_you_is_ten_questions_in_four_sections():
+    assert [title for title, _ in tasks.ABOUT_SECTIONS] == [
+        "Session setup",
+        "Background",
+        "Experience with data visualization",
+        "Topic familiarity",
+    ]
+    codes = [q.code for q in tasks.ABOUT_QUESTIONS]
+    assert codes == ["A1", "B1", "B2", "B3", "C1", "C2", "C3", "C4", "D1", "D2"]
+    assert len({q.key for q in tasks.ABOUT_QUESTIONS}) == 10
+
+
+@pytest.mark.parametrize("question", tasks.ABOUT_QUESTIONS, ids=lambda q: q.code)
+def test_each_about_you_question_is_well_formed(question):
+    assert question.text.strip()
+    assert question.kind in ("choice", "age", "matrix")
+    if question.kind == "age":
+        assert question.options == ()
+        return
+    assert len(set(question.options)) == len(question.options)
+    if tasks.PREFER_NOT in question.options:
+        assert question.options[-1] == tasks.PREFER_NOT, "Prefer not to say comes last"
+    if question.kind == "matrix":
+        assert question.rows and len(set(question.rows)) == len(question.rows)
+    if tasks.OTHER in question.options:
+        assert question.other_key == f"{question.key}_other"
+        assert question.other_key in tasks.DEMOGRAPHIC_KEYS
+    else:
+        assert question.other_key is None
+
+
+def test_only_the_pointer_question_lacks_prefer_not_to_say():
+    """The handoff offers no "Prefer not to say" for the pointer device, which identifies no one.
+    Age offers it as a checkbox beside the number box, not as an option."""
+    lacking = [
+        q.code
+        for q in tasks.ABOUT_QUESTIONS
+        if q.kind != "age" and tasks.PREFER_NOT not in q.options
+    ]
+    assert lacking == ["A1"]

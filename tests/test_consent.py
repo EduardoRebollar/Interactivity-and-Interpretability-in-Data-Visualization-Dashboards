@@ -41,8 +41,10 @@ def _record(**overrides):
 
 
 def test_the_consent_text_is_pinned():
-    """Changing the wording changes CONSENT_VERSION. It must match the HSRRC-approved form."""
-    assert consent.CONSENT_VERSION == "dc272a0a5568629c"
+    """Changing the wording changes CONSENT_VERSION. It must match the HSRRC-approved form.
+
+    Re-pinned 2026-09-25 for the design handoff's screen 1 (docs/study-design.md section 9)."""
+    assert consent.CONSENT_VERSION == "aaf479bb3c24c1de"
 
 
 @pytest.mark.parametrize(
@@ -57,11 +59,26 @@ def test_the_consent_text_is_pinned():
         "I hereby agree to participate in this research project.",
         "The order in which you see the two versions will be counterbalanced.",
         "up to two weeks after your session by emailing me at rebollar@oxy.edu",
-        "encrypted Neon (managed by PostgreSQL) database hosted in the U.S.",
+        "encrypted Neon (a managed PostgreSQL service) database hosted in the U.S.",
+        # The 2026-09-25 revision (screen 1 of the design handoff).
+        "willing to spend approximately 40 minutes viewing dashboards",
+        "a single session lasting approximately 40 minutes.",
+        "a topic that may be personally sensitive or evoke strong opinions for some participants",
+        "Only the researcher and the faculty supervisor will have access to identifying data.",
+        "The study’s web application",
     ],
 )
 def test_the_form_says_what_the_irb_submission_says(phrase):
     assert phrase in consent.CONSENT_TEXT
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    ["20 to 35 minutes", "Neon (managed by PostgreSQL)", "will have access to the data."],
+)
+def test_the_superseded_wording_is_gone(phrase):
+    """The 2026-09-21 transcription's words, replaced by screen 1 of the design handoff."""
+    assert phrase not in consent.CONSENT_TEXT
 
 
 def test_the_approval_flag_is_not_part_of_the_hash():
