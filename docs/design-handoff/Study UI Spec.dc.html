@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="assets/study.css">
+<style>body{background:#FFFFFF;} a{color:#5A4034;} a:hover{color:#4A342A;}</style>
+</helmet>
+<div style="max-width:1120px;margin:0 auto;padding:56px 32px 96px;font-family:Helvetica, Arial, sans-serif;color:#241C18;display:flex;flex-direction:column;gap:56px;">
+
+<header style="display:flex;flex-direction:column;gap:10px;">
+<p style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Participant UI · style spec · for implementation in Plotly Dash</p>
+<h1 style="margin:0;font-size:40px;line-height:1.1;">Style spec</h1>
+<p style="margin:0;font-size:17px;line-height:1.55;max-width:76ch;">Everything here is implemented in <code>assets/study.css</code>. Drop it into <code>src/assets/</code> and Dash loads it automatically. Mockups: <a href="Study UI Screens.dc.html">Study UI Screens</a>. Screen 5 is the task-screen reference; component states are in <a href="Study UI Components.dc.html">Study UI Components</a>.</p>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:16px;">
+<h2 style="margin:0;font-size:26px;">1 · Colour</h2>
+<p style="margin:0;font-size:15px;color:#5F544D;max-width:76ch;">WCAG 2.1 ratios. Chart palette (Okabe–Ito series + Cividis) is unchanged and colourblind-safe; no chrome colour is used inside the chart.</p>
+<div style="display:grid;grid-template-columns:44px 150px 90px minmax(0,1fr) 230px;border-top:1px solid #E4D8CC;font-size:14px;">
+<sc-for list="{{ colors }}" as="c" hint-placeholder-count="12">
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;"><div style="width:28px;height:28px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(36,28,24,.15);background:{{ c.hex }};"></div></div>
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;font:13px ui-monospace, Menlo, monospace;display:flex;align-items:center;">{{ c.token }}</div>
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;font:13px ui-monospace, Menlo, monospace;display:flex;align-items:center;">{{ c.hex }}</div>
+<div style="padding:8px 12px 8px 0;border-bottom:1px solid #E4D8CC;display:flex;align-items:center;">{{ c.use }}</div>
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;display:flex;align-items:center;font-variant-numeric:tabular-nums;color:#5F544D;">{{ c.ratio }}</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:48px;">
+<div style="display:flex;flex-direction:column;gap:12px;">
+<h2 style="margin:0 0 4px;font-size:26px;">2 · Type scale</h2>
+<p style="margin:0;font-size:14px;color:#5F544D;">Helvetica, Arial, sans-serif. No web fonts. Consent sheet only: Times New Roman 20 px.</p>
+<sc-for list="{{ type }}" as="t" hint-placeholder-count="8">
+<div style="display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:baseline;border-bottom:1px solid #E4D8CC;padding-bottom:8px;">
+<span style="font:12px ui-monospace, Menlo, monospace;color:#5F544D;">{{ t.role }}<br>{{ t.spec }}</span>
+<span style="font-size:{{ t.size }};font-weight:{{ t.w }};line-height:1.3;">{{ t.sample }}</span>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;">
+<h2 style="margin:0 0 4px;font-size:26px;">3 · Space, radii, heights</h2>
+<sc-for list="{{ space }}" as="s" hint-placeholder-count="7">
+<div style="display:grid;grid-template-columns:70px 48px 1fr;gap:12px;align-items:center;font-size:14px;">
+<span style="font:12px ui-monospace, Menlo, monospace;color:#5F544D;">{{ s.token }}</span><span>{{ s.v }}</span><div style="display:flex;align-items:center;gap:12px;"><span style="height:10px;width:{{ s.v }};background:#5A4034;border-radius:2px;flex:none;"></span><span style="color:#5F544D;font-size:13px;">{{ s.use }}</span></div>
+</div>
+</sc-for>
+<div style="display:grid;grid-template-columns:120px 1fr;gap:8px 12px;font-size:14px;line-height:1.45;margin-top:12px;">
+<sc-for list="{{ shape }}" as="s" hint-placeholder-count="6"><span style="font:12px ui-monospace, Menlo, monospace;color:#5F544D;">{{ s.k }}</span><span>{{ s.v }}</span></sc-for>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px;">
+<h2 style="margin:0;font-size:26px;">4 · Control states</h2>
+<p style="margin:0;font-size:15px;color:#5F544D;max-width:76ch;">Live samples rendered from study.css. Focus is keyboard only (<code>:focus-visible</code>): 2 px white gap + 2 px cocoa ring, 9.47:1 on white.</p>
+<div style="display:grid;grid-template-columns:120px repeat(6,minmax(0,1fr));gap:14px 16px;align-items:center;font-size:13px;color:#5F544D;padding:24px;background:#F8F3EE;border-radius:12px;">
+<span></span><span>default</span><span>hover</span><span>selected</span><span>focus</span><span>error</span><span>disabled</span>
+
+<span style="color:#241C18;font-weight:700;">Primary</span>
+<button class="btn btn-primary">Continue</button>
+<button class="btn btn-primary" style="background:#4A342A;border-color:#4A342A;">Continue</button>
+<span>—</span>
+<button class="btn btn-primary" style="box-shadow:0 0 0 2px #fff, 0 0 0 4px #5A4034;">Continue</button>
+<span>—</span>
+<button class="btn btn-primary" disabled="disabled">Continue</button>
+
+<span style="color:#241C18;font-weight:700;">Secondary</span>
+<button class="btn btn-secondary" style="padding:0 12px;">Download</button>
+<button class="btn btn-secondary" style="padding:0 12px;background:#EFE4DA;">Download</button>
+<span>—</span>
+<button class="btn btn-secondary" style="padding:0 12px;box-shadow:0 0 0 2px #fff, 0 0 0 4px #5A4034;">Download</button>
+<span>—</span>
+<button class="btn btn-secondary" style="padding:0 12px;" disabled="disabled">Download</button>
+
+<span style="color:#241C18;font-weight:700;">Show all (xs)</span>
+<div><button class="btn btn-quiet btn-xs">Show all</button></div>
+<div><button class="btn btn-quiet btn-xs" style="border-color:#5A4034;background:#F8F3EE;">Show all</button></div>
+<span>—</span>
+<div><button class="btn btn-quiet btn-xs" style="box-shadow:0 0 0 2px #fff, 0 0 0 4px #5A4034;">Show all</button></div>
+<span>—</span>
+<div><button class="btn btn-quiet btn-xs" disabled="disabled">Show all</button></div>
+
+<span style="color:#241C18;font-weight:700;">Answer tile</span>
+<div style="background:#EFE4DA;padding:6px;border-radius:8px;"><label class="ui-tile"><input type="radio" name="st-a"><span class="ui-tile-label">2016</span></label></div>
+<div style="background:#EFE4DA;padding:6px;border-radius:8px;"><label class="ui-tile is-hover"><input type="radio" name="st-b"><span class="ui-tile-label">2016</span></label></div>
+<div style="background:#EFE4DA;padding:6px;border-radius:8px;"><label class="ui-tile"><input type="radio" name="st-c" data-checked="1"><span class="ui-tile-label">2016</span></label></div>
+<div style="background:#EFE4DA;padding:6px;border-radius:8px;"><label class="ui-tile is-focus"><input type="radio" name="st-d"><span class="ui-tile-label">2016</span></label></div>
+<div style="background:#EFE4DA;padding:6px;border-radius:8px;"><label class="ui-tile is-error"><input type="radio" name="st-e"><span class="ui-tile-label">2016</span></label></div>
+<div style="background:#EFE4DA;padding:6px;border-radius:8px;"><label class="ui-tile"><input type="radio" name="st-f" disabled="disabled"><span class="ui-tile-label">2016</span></label></div>
+
+<span style="color:#241C18;font-weight:700;">Chip</span>
+<div class="ui-controls" style="margin:0;padding:6px;background:#FFFFFF;border-radius:8px;"><div class="chips ui-chips"><label class="chip"><input type="checkbox"><span>Nigeria</span></label></div></div>
+<div class="ui-controls" style="margin:0;padding:6px;background:#FFFFFF;border-radius:8px;"><div class="chips ui-chips"><label class="chip is-hover"><input type="checkbox"><span>Nigeria</span></label></div></div>
+<div class="ui-controls" style="margin:0;padding:6px;background:#FFFFFF;border-radius:8px;"><div class="chips ui-chips"><label class="chip"><input type="checkbox" data-checked="1"><span>Nigeria</span></label></div></div>
+<div class="ui-controls" style="margin:0;padding:6px;background:#FFFFFF;border-radius:8px;"><div class="chips ui-chips"><label class="chip is-focus"><input type="checkbox" data-checked="1"><span>Nigeria</span></label></div></div>
+<span>—</span>
+<div class="ui-controls" style="margin:0;padding:6px;background:#FFFFFF;border-radius:8px;"><div class="chips ui-chips"><label class="chip"><input type="checkbox" disabled="disabled"><span>Nigeria</span></label></div></div>
+
+<span style="color:#241C18;font-weight:700;">Segmented</span>
+<div class="seg ui-seg"><label class="seg-item"><input type="radio" name="sg-a">as listed</label></div>
+<div class="seg ui-seg"><label class="seg-item is-hover"><input type="radio" name="sg-b">as listed</label></div>
+<div class="seg ui-seg"><label class="seg-item"><input type="radio" name="sg-c" data-checked="1">as listed</label></div>
+<div class="seg ui-seg"><label class="seg-item is-focus"><input type="radio" name="sg-d">as listed</label></div>
+<span>—</span>
+<div class="seg ui-seg"><label class="seg-item"><input type="radio" name="sg-f" disabled="disabled">as listed</label></div>
+
+<span style="color:#241C18;font-weight:700;">Text field</span>
+<input class="field" placeholder="e.g. P07" style="max-width:140px;">
+<input class="field" placeholder="e.g. P07" style="max-width:140px;border-color:#5A4034;">
+<span>—</span>
+<input class="field" placeholder="e.g. P07" style="max-width:140px;border-color:#5A4034;box-shadow:0 0 0 2px #fff, 0 0 0 4px #5A4034;">
+<div><input class="field" placeholder="e.g. P07" aria-invalid="true" style="max-width:140px;"><p class="field-error" style="font-size:13px;">Please enter your ID.</p></div>
+<input class="field" placeholder="e.g. P07" disabled="disabled" style="max-width:140px;">
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px 40px;font-size:14px;line-height:1.5;">
+<sc-for list="{{ states }}" as="s" hint-placeholder-count="7"><p style="margin:0;"><strong>{{ s.k }}.</strong> {{ s.v }}</p></sc-for>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:16px;">
+<h2 style="margin:0;font-size:26px;">5 · Task screen layout budget</h2>
+<p style="margin:0;font-size:15px;color:#5F544D;max-width:76ch;">Screen 5 at 1440 × 900 with a one-line question. Positions are from the top of the viewport, measured in the rendered mockup. The chart sits in the same place in static and interactive; static omits the controls strip and hint row.</p>
+<div style="display:grid;grid-template-columns:140px 110px minmax(0,1fr);border-top:1px solid #E4D8CC;font-size:14px;">
+<sc-for list="{{ budget }}" as="b" hint-placeholder-count="8">
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;font-weight:700;">{{ b.k }}</div>
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;font-variant-numeric:tabular-nums;font-family:ui-monospace, Menlo, monospace;font-size:13px;">{{ b.y }}</div>
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;">{{ b.v }}</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:16px;">
+<h2 style="margin:0;font-size:26px;">6 · Dash hooks</h2>
+<div style="display:grid;grid-template-columns:180px minmax(0,1fr);gap:0;border-top:1px solid #E4D8CC;font-size:14px;">
+<sc-for list="{{ hooks }}" as="h" hint-placeholder-count="12">
+<div style="padding:8px 12px 8px 0;border-bottom:1px solid #E4D8CC;font-weight:700;">{{ h.k }}</div>
+<div style="padding:8px 0;border-bottom:1px solid #E4D8CC;font:13px/1.5 ui-monospace, Menlo, monospace;">{{ h.v }}</div>
+</sc-for>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() { this.apply(); }
+  componentDidUpdate() { this.apply(); }
+  apply() { document.querySelectorAll('[data-checked="1"]').forEach(el => { el.checked = true; }); }
+  renderVals() {
+    return {
+      colors: [
+        { token: '--c-page', hex: '#F8F3EE', use: 'Oat ground; segmented track; Reset view fill', ratio: 'ground' },
+        { token: '--c-card', hex: '#FFFFFF', use: 'Cards; chart ground; answer tiles; textarea', ratio: 'ground' },
+        { token: '--c-band', hex: '#EFE4DA', use: 'Header band; answer panel; chips + selected segment on the controls strip; selected tile fill', ratio: 'ground' },
+        { token: '--c-ink', hex: '#241C18', use: 'Text', ratio: '16.74 card · 15.18 page · 13.38 band' },
+        { token: '--c-muted', hex: '#5F544D', use: 'Position label, hints, notes, unchecked chips, upcoming steps', ratio: '7.34 card · 6.66 page · 5.86 band' },
+        { token: '--c-accent', hex: '#5A4034', use: 'Primary fill, selected edge, focus ring, links, done/current step', ratio: 'white on it 9.47 · 8.59 page' },
+        { token: '--c-accent-hov', hex: '#4A342A', use: 'Primary hover', ratio: 'white on it 11.57' },
+        { token: '--c-accent-busy', hex: '#91796E', use: 'Submit while saving (aria-busy)', ratio: 'white on it ≈3.9 (below 4.5)' },
+        { token: '--c-line', hex: '#8F8076', use: 'Tile / field / textarea / quiet-button edges; step connectors', ratio: '3.81 card (non-text 3:1)' },
+        { token: '--c-line-soft', hex: '#E4D8CC', use: 'Decorative dividers only', ratio: '—' },
+        { token: '--c-group', hex: '#DDC8B8', use: 'Legend-group outline (Countries, View)', ratio: 'decorative' },
+        { token: '--c-soft-hov', hex: '#E6D6C8', use: 'Soft button hover', ratio: '—' },
+        { token: '--c-disabled-bg', hex: '#E6DDD4', use: 'Disabled fill; label in --c-muted', ratio: 'muted on it 5.47' },
+        { token: '--c-error', hex: '#C35600', use: 'Invalid field border, error icon', ratio: '4.51 card (non-text)' },
+        { token: '--c-error-text', hex: '#A34700', use: 'Error message text', ratio: '6.02 card · 5.46 page' },
+      ],
+      type: [
+        { role: 'Page title', spec: '36 / 700 / 1.2', size: '36px', w: 700, sample: 'About you' },
+        { role: 'Question', spec: '20 / 700 / 1.3', size: '20px', w: 700, sample: 'In which year was it lowest?' },
+        { role: 'Section label', spec: '18 / 700 / 1.3', size: '18px', w: 700, sample: 'What is your age range?' },
+        { role: 'Body (short screens)', spec: '20 / 400 / 1.55', size: '20px', w: 400, sample: 'Thank you for signing.' },
+        { role: 'Body / options', spec: '18 / 400 / 1.3', size: '18px', w: 400, sample: 'A few times a month' },
+        { role: 'Control text', spec: '16 / 400–700', size: '16px', w: 400, sample: 'Fields, rail labels, buttons (700)' },
+        { role: 'Helper', spec: '15 / 400, muted', size: '15px', w: 400, sample: 'You may skip any question.' },
+        { role: 'Hint / meta', spec: '14 / 400, muted', size: '14px', w: 400, sample: 'Click a line to show it on its own' },
+        { role: 'Position (heading line)', spec: '18 / 700 caps .06em', size: '18px', w: 700, sample: 'QUESTION 1 OF 6' },
+        { role: 'Step heading', spec: '21 / 700, 26 px number', size: '21px', w: 700, sample: 'Choose one year:' },
+        { role: 'Answer tile', spec: '17 / 700 tabular', size: '17px', w: 700, sample: '2019' },
+        { role: 'Group legend', spec: '13 / 700 caps .06em', size: '13px', w: 700, sample: 'COUNTRIES' },
+      ],
+      space: [
+        { token: '--s-1', v: '4px', use: 'Submit top offset in the decide step' },
+        { token: '--s-2', v: '8px', use: 'tile gap, chart → controls, decide-step gap' },
+        { token: '--s-3', v: '12px', use: 'panel item gap, tiles → decide step' },
+        { token: '--s-4', v: '16px', use: 'chart column side padding, heading line → card' },
+        { token: '--s-5', v: '24px', use: 'between control groups, page side padding' },
+        { token: '--s-6', v: '32px', use: 'between question groups, before actions' },
+        { token: '--s-7', v: '48px', use: 'short-screen card padding' },
+      ],
+      shape: [
+        { k: '--r-1  6px', v: 'Buttons, fields, tiles, textarea, segmented' },
+        { k: '--r-group  8px', v: 'Legend groups on the controls strip' },
+        { k: '--r-2  12px', v: 'Cards; the panel takes the task card\'s right corners' },
+        { k: 'pill  999px', v: 'Chips, current step' },
+        { k: 'elevation', v: 'One level only: 0 1px 2px / 0 8px 28px rgba(36,28,24,.06). Cards only; no outlines on containers.' },
+        { k: 'height 44 / 56', v: 'Buttons and text fields 44; answer tiles 56' },
+        { k: 'height 30 / 26', v: 'Chips and Reset view 30; segmented items, Show all and number input 26' },
+      ],
+      states: [
+        { k: 'Buttons', v: 'Primary is the only filled control on a screen. Secondary = white, 2 px cocoa edge and label; used for Download and "I do not agree". Quiet = 1 px --c-line edge: Show all (xs) and Reset view (sm).' },
+        { k: 'Answer tile', v: 'White, 1 px --c-line edge. Hover: --c-page fill + cocoa edge. Selected: --c-band fill + 2 px cocoa edge + filled radio. Error: 2 px --c-error edge. Never green or red.' },
+        { k: 'Chip', v: 'On the controls strip (white). Unchecked: transparent, muted text, empty checkbox. Checked: --c-band pill, ink text, 1 px shadow, ticked box. Hover: --c-page fill + 1 px --c-line edge.' },
+        { k: 'Segmented', v: 'Stacked. Track --c-page, 2 px inset. Selected segment is a --c-band pill, 700 weight. Native radio visually hidden but focusable. Disabled: struck through.' },
+        { k: 'Field', v: 'Hover and focus: cocoa border (+ ring on focus). Error: border only turns --c-error; message sits 6 px below the field as icon + --c-error-text, linked with aria-describedby.' },
+        { k: 'Disabled', v: '--c-disabled-bg fill, --c-muted text, cursor not-allowed. Submit disables on press (--c-accent-busy, aria-busy); label and position unchanged.' },
+        { k: 'Step indicator', v: 'Not links. Done: filled cocoa circle with ✓. Current: white pill, 2 px cocoa ring with number, 700. Upcoming: 1 px --c-line circle, muted. Set aria-current="step" on the current li.' },
+      ],
+      budget: [
+        { k: 'Header band', y: '0–48', v: 'Title (18/700 with chart icon) left; step indicator right.' },
+        { k: 'Heading line', y: '64–93', v: '.ui-head: position label (18/700 caps) + question (20/700) on one baseline. A second question line adds ≈26 px to everything below.' },
+        { k: 'Card', y: '109', v: '.ui-card.ui-card--task: chart column 1082 (1050 + 2 × 16) + panel minmax(0, 1fr) = 310 at 1440, 252 at 1366. Panel is the card\'s right edge on the band tint.' },
+        { k: 'Chart', y: '123–643', v: '1050 × 520, fixed. Plotly margins in px.' },
+        { k: 'Controls', y: '653–752', v: '.ui-controls, interactive only: Countries group (two chip rows) grows; View / Sort / Highlight group fits its content. Legend labels sit on the group border.' },
+        { k: 'Hint row', y: '760–790', v: '.ui-hint-row: hint text left, Reset view (30 px) right.' },
+        { k: 'Card end', y: '802', v: 'Panel content (step 1, tiles, step 2, textarea, Submit 738–782) fills the card height; the textarea flexes.' },
+        { k: 'Laptop fold', y: '790', v: '1440 × 900 Chrome (macOS, no bookmarks bar). Chart, controls, hint row and Submit are in view; the card\'s last 12 px sit below.' },
+        { k: 'Compact', y: '≤ 800 tall', v: 'Add .is-compact to .app: header 44, page top 8, heading gap 8, chart column padding 8 / 6 and gaps 6. Moves the chart up ≈26 px and shortens the card 16 px; at 1366 × 768 full screen the card ends ≈2 px above the fold.' },
+      ],
+      hooks: [
+        { k: 'header band', v: 'html.Header(className="appbar") > [html.P(className="appbar-title"), html.Div(className="appbar-right") > [html.Ol(className="steps") > html.Li(className="is-done"|"is-current")]]' },
+        { k: 'heading line', v: 'html.Div(className="ui-head") > html.P(className="position") + html.H1(id="task-q", className="question")' },
+        { k: 'task body', v: 'html.Div(className="ui-card ui-card--task") > [html.Div(className="ui-main") > [html.Div(dcc.Graph(config={"responsive": False}), className="chart-box"), controls or None, hint row or None], html.Div(className="ui-panel")]. Figure layout width 1050, height 520.' },
+        { k: 'controls', v: 'html.Div(className="ui-controls") > [html.Div(role="group", **{"aria-label": "Countries"}, className="ui-group ui-group--grow") > [html.Span("Countries", className="ui-legend"), entity-filter × 2 rows], html.Div(role="group", className="ui-group ui-group--fit") > [html.Span("View", className="ui-legend"), html.Div([entity-sort, Show all], className="ui-stack")]]' },
+        { k: 'entity-filter', v: 'dcc.Checklist(className="chips ui-chips", labelClassName="chip", inline=True); option label = html.Span([html.Img(src=flag, className="chip-flag"), name], className="chip-name"). Line charts: justify-content space-between.' },
+        { k: 'entity-sort / bar-sort', v: 'dcc.RadioItems(className="seg ui-seg ui-seg--stack", labelClassName="seg-item"). Legend: "View" (line), "Sort" (bar), "Sort rows" (heatmap).' },
+        { k: 'Show all', v: 'html.Button("Show all", className="btn btn-quiet btn-xs"), line charts only, under the segmented control' },
+        { k: 'map threshold', v: 'html.Div(className="ui-group ui-group--fit") > [html.Span("Highlight", className="ui-legend"), html.Label(["Below", dcc.Input(type="number", min=0, max=100, className="tb-num"), "%"], className="tb-inline")]' },
+        { k: 'hint row', v: 'html.Div(className="ui-hint-row") > [html.P(className="tb-hint"), html.Button([icon, "Reset view"], className="btn btn-quiet btn-sm btn-reset")]' },
+        { k: 'answer step', v: 'html.P([html.Span("1", className="ui-step-n"), "Choose one year:"], className="ui-step ui-step--nowrap") + dcc.RadioItems(className="ui-tiles", labelClassName="ui-tile", style={"gridTemplateColumns": "1fr 1fr"}); option label = html.Span(value, className="ui-tile-label")' },
+        { k: 'decide step', v: 'html.Div(className="ui-decide") > [html.Label([html.Span("2", className="ui-step-n"), text], htmlFor="just", className="ui-step"), dcc.Textarea(id="just", className="ui-textarea"), html.Button("Submit", className="btn btn-primary btn-block"), html.Div(className="msg msg-error", role="alert")]' },
+        { k: 'submit while saving', v: 'disabled=True + **{"aria-busy": "true"} on the Submit button; label unchanged' },
+        { k: 'about you', v: 'html.Div(className="screen-head") > H1 + P + P(className="note"); html.Div(className="qgrid") > html.Div([P(className="q-text"), RadioItems(className="options options--compact")]) × 4' },
+        { k: 'participant ID', v: 'Input(className="field", **{"aria-invalid": "true", "aria-describedby": "pid-error"}) + html.P(id="pid-error", className="field-error", role="alert")' },
+        { k: 'step errors', v: 'html.Div(className="msg msg-error", role="alert"). Empty collapses. Blocking: "msg msg-block msg-block--system". Pending approval: html.P(className="banner banner--static", role="alert").' },
+        { k: 'backgrounds', v: 'Task: className="app". Short screens: "app app--deco". Halfway/Finished: "app app--celebrate". Both are a faint vertical fade, no shapes.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="assets/study.css">
+
+<style>body{background:#E9E8E4 !important;} a{color:#5A4034;} a:hover{color:#4A342A;}</style>
+</helmet>
+<div style="padding:48px;display:flex;justify-content:center;font-family:Helvetica, Arial, sans-serif;">
+<div class="app" style="width:1440px;min-height:auto;box-shadow:0 1px 3px rgba(0,0,0,.15);">
+<header class="appbar"><p class="appbar-title">Vaccination coverage study</p><div class="appbar-right"><ol class="steps"><sc-for list="{{ steps }}" as="s" hint-placeholder-count="6"><li class="{{ s.cls }}" aria-current="{{ s.cur }}">{{ s.label }}</li></sc-for></ol></div></header>
+<div class="page" style="display:flex;flex-direction:column;gap:32px;padding-bottom:48px;">
+
+<div class="ui-head" style="margin:0;"><p class="position">Component sheet</p><h1 class="question">Study UI components and states · reference 16b</h1></div>
+
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px;">
+
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:16px;padding:22px 20px 20px;"><span class="ui-legend">Header · stepper (display only)</span>
+<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;font-size:14px;color:#5F544D;">
+<ol class="steps"><li class="is-done">Done</li><li class="is-current" aria-current="step">Current</li><li>Upcoming</li></ol>
+</div>
+<p class="ui-help">Done: filled cocoa circle with a check. Current: white pill, 2 px cocoa ring, bold label. Upcoming: 1 px outlined number, muted label. Three cues each (shape, weight, fill), not colour alone. Not focusable or clickable.</p>
+</div>
+
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:16px;padding:22px 20px 20px;"><span class="ui-legend">Heading line</span>
+<div class="ui-head" style="margin:0;"><p class="position">Question 1 of 6</p><h2 class="question">Focus on Ukraine's line. In which year was its coverage at its lowest point?</h2></div>
+<div class="ui-head" style="margin:0;"><p class="position">Step 2 of 6</p><h2 class="question">Participant ID</h2></div>
+<p class="ui-help">Label 15 px bold, uppercase, .06em tracking, muted. Heading 20 px bold, ink. 12 px gap, baseline-aligned, wraps under itself.</p>
+</div>
+
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px;">
+<p class="position" style="margin:0;">Card + panel</p>
+<div class="ui-card" style="--panel-w:310px;">
+<div class="ui-main ui-main--pad" style="gap:16px;">
+<div class="ui-group" style="flex-direction:row;justify-content:flex-start;gap:24px;"><span class="ui-legend">Countries</span>
+<div class="ui-chips"><label class="chip"><input type="checkbox" data-checked="1"><span>Checked</span></label><label class="chip"><input type="checkbox"><span>Unchecked</span></label><label class="chip is-hover"><input type="checkbox"><span>Hover</span></label><label class="chip is-focus"><input type="checkbox" data-checked="1"><span>Focus</span></label><label class="chip"><input type="checkbox" disabled="disabled"><span>Disabled</span></label></div>
+</div>
+<p class="ui-help">Main area: white, 12 px radius, soft shadow. Groups: 1 px sand outline, 8 px radius, legend on the top border. The panel on the right shares the card; it is not a separate box.</p>
+</div>
+<div class="ui-panel">
+<p class="ui-step"><span class="ui-step-n">1</span>Numbered step</p>
+<p class="ui-help">Helper text sits next to what it describes.</p>
+<p class="ui-step"><span class="ui-step-n">2</span>Second step, wrapping onto a second line</p>
+<button class="btn btn-primary btn-block ui-push">Primary action</button>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;">
+
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:16px;padding:22px 20px 20px;"><span class="ui-legend">Option tile · radio</span>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;">
+<sc-for list="{{ tileStates }}" as="t" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;gap:6px;"><label class="{{ t.cls }}"><input type="radio" name="{{ t.name }}" data-checked="{{ t.c }}" disabled="{{ t.d }}"><span>2019</span></label><span class="ui-help" style="font-size:13px;">{{ t.label }}</span></div></sc-for>
+</div>
+<div class="ui-tiles ui-tiles--pns" style="grid-template-columns:repeat(2,minmax(0,1fr));"><label class="ui-tile ui-tile--text"><input type="radio" name="tt"><span>Text tile (About you)</span></label><label class="ui-tile ui-tile--text"><input type="radio" name="tt" data-checked="1"><span>Selected text tile</span></label><label class="ui-tile ui-tile--text"><input type="radio" name="tt"><span>Prefer not to say</span></label></div>
+<div class="ui-scale ui-scale--7"><sc-for list="{{ scale }}" as="p" hint-placeholder-count="7"><label class="ui-tile ui-tile--scale"><input type="radio" name="sc" data-checked="{{ p.c }}"><span>{{ p.n }}</span></label></sc-for></div>
+<p class="ui-help">Hover: cocoa edge + oat fill. Selected: filled radio, 2 px cocoa edge, band fill. Focus: 2 px white gap + 2 px cocoa ring. Disabled: dashed edge, grey fill, muted text, not-allowed cursor. Error: 2 px error edge plus the message below the group.</p>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:32px;">
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:16px;padding:22px 20px 20px;"><span class="ui-legend">Segmented control</span>
+<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+<div class="seg ui-seg ui-seg--stack"><label class="seg-item"><input type="radio" name="sg1" data-checked="1">as listed</label><label class="seg-item"><input type="radio" name="sg1">by coverage</label></div>
+<div class="seg ui-seg"><label class="seg-item"><input type="radio" name="sg2">as listed</label><label class="seg-item"><input type="radio" name="sg2" data-checked="1">by coverage</label></div>
+<div class="seg ui-seg"><label class="seg-item is-hover"><input type="radio" name="sg3">hover</label><label class="seg-item is-focus"><input type="radio" name="sg3">focus</label><label class="seg-item"><input type="radio" name="sg3" disabled="disabled">disabled</label></div>
+</div>
+<p class="ui-help">Stacked or inline. Selected: band pill, bold, raised. Disabled: struck through.</p>
+</div>
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:12px;padding:22px 20px 20px;"><span class="ui-legend">Buttons</span>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
+<button class="btn btn-primary">Primary</button><button class="btn btn-primary is-hover">Hover</button><button class="btn btn-primary is-focus">Focus</button><button class="btn btn-primary" disabled="disabled">Disabled</button>
+<button class="btn btn-soft">Soft</button><button class="btn btn-soft is-hover">Hover</button><button class="btn btn-soft is-focus">Focus</button><button class="btn btn-soft" disabled="disabled">Disabled</button>
+</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn btn-soft btn-sm">Small soft</button><button class="btn btn-soft btn-xs">Show all</button><button class="btn btn-soft btn-xs is-hover">Show all · hover</button><button class="btn btn-soft btn-xs is-focus">Show all · focus</button></div>
+<p class="ui-help">Primary is always full-width at the foot of its panel. Soft (beige) is for secondary actions; on a beige panel it turns white.</p>
+</div>
+</div>
+
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;">
+
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:16px;padding:22px 20px 20px;"><span class="ui-legend">Inputs</span>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px;">
+<div><label class="ui-label" for="i1">Default</label><input class="field" id="i1" placeholder="e.g. P07"></div>
+<div><label class="ui-label" for="i2">Hover</label><input class="field is-hover" id="i2" placeholder="e.g. P07"></div>
+<div><label class="ui-label" for="i3">Focus</label><input class="field is-focus" id="i3" data-value="P0"></div>
+<div><label class="ui-label" for="i4">Filled</label><input class="field" id="i4" data-value="P07"></div>
+<div><label class="ui-label" for="i5">Error</label><input class="field" id="i5" aria-invalid="true" aria-describedby="e5"><p class="field-error" id="e5">Please enter your participant ID.</p></div>
+<div><label class="ui-label" for="i6">Disabled</label><input class="field" id="i6" disabled="disabled" data-value="P07"></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+<div><label class="ui-label" for="t1">Textarea</label><textarea class="ui-textarea" id="t1" style="min-height:88px;"></textarea></div>
+<div><label class="ui-label" for="t2">Textarea · error</label><textarea class="ui-textarea" id="t2" aria-invalid="true" style="min-height:88px;"></textarea></div>
+</div>
+<label class="check" style="margin:0;"><input type="checkbox"><span>Checkbox row (hover tints the row)</span></label>
+</div>
+
+<div class="ui-group" style="--legend-bg:#F8F3EE;justify-content:flex-start;gap:16px;padding:22px 20px 20px;"><span class="ui-legend">Error states</span>
+<div class="ui-group is-error" style="--legend-bg:#FFFFFF;background:#FFFFFF;"><span class="ui-legend">Group error</span><div class="ui-tiles"><label class="ui-tile is-error"><input type="radio" name="er"><span>2016</span></label><label class="ui-tile is-error"><input type="radio" name="er"><span>2019</span></label></div></div>
+<div class="msg msg-error">We could not record your consent. Please wait a moment and press "I agree to participate" again.</div>
+<div class="ui-alert" style="background:#FFFFFF;"><strong>The study cannot save responses right now, so it cannot continue. Please contact the researcher.</strong></div>
+<p class="banner" style="position:static;margin:0;">PENDING HSRRC APPROVAL — banner</p>
+<p class="ui-help">Every error pairs the orange edge with a "!" icon and a written message.</p>
+</div>
+
+</div>
+</div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() { this.apply(); }
+  componentDidUpdate() { this.apply(); }
+  apply() {
+    document.querySelectorAll('[data-checked="1"]').forEach(el => { el.checked = true; });
+    document.querySelectorAll('[data-value]').forEach(el => { if (!el.value) el.value = el.dataset.value; });
+    document.querySelectorAll('input[disabled="false"]').forEach(el => { el.disabled = false; el.removeAttribute('disabled'); });
+  }
+  renderVals() {
+    const t = (label, cls, c, d) => ({ label, cls: 'ui-tile ' + cls, c: c ? '1' : '0', d: d ? true : undefined, name: 'ts-' + label });
+    return {
+      steps: ['Consent', 'About you', 'Part 1', 'Break', 'Part 2', 'Finished'].map((label, i) => ({ label, cls: i < 2 ? 'is-done' : i === 2 ? 'is-current' : '', cur: i === 2 ? 'step' : undefined })),
+      tileStates: [t('Default', ''), t('Hover', 'is-hover'), t('Focus', 'is-focus'), t('Selected', '', 1), t('Selected + focus', 'is-selected is-focus', 1), t('Disabled', '', 0, 1), t('Error', 'is-error'), t('Selected, disabled', '', 1, 1)],
+      scale: Array.from({ length: 7 }, (_, i) => ({ n: i + 1, c: i === 4 ? '1' : '0' })),
+    };
+  }
+}
+</script>
+</body>
+</html>

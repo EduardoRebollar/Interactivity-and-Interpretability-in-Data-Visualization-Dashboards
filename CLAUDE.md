@@ -34,6 +34,8 @@ These are methodological requirements, not preferences. Do not relax them withou
 - Any deviation breaks the core methodological claim that observed differences are attributable to
   interactivity, not aesthetics.
 - `docs/visual-spec.md` is the source of truth. Change the spec first, then the code.
+- `docs/study-redesign.md` — the redesign brief; read before any UI or study-content work.
+
 
 ### Static vs. interactive is a single toggle
 
@@ -351,6 +353,7 @@ tests/
 - `docs/study-design.md` is the source of truth for the protocol. Change it before `src/tasks.py`.
   **The IRB approval request form (`irb/`, local only) outranks it.** Where they disagree, change the
   doc to match, or list the mismatch in `study-design.md` §10 so the IRB paperwork is amended.
+- `docs/study-redesign.md` — the redesign brief; read before any UI or study-content work.
 - **The consent text in `src/consent.py` is the HSRRC-submitted form, word for word.** Its hash is
   pinned in `tests/test_consent.py`. Change the wording only to match an approved form, and re-pin
   the hash when you do. `consent.APPROVED` stays False until HSRRC approves; while False, the screen

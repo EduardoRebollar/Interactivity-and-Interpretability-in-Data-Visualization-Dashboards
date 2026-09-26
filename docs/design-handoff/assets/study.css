@@ -1,0 +1,483 @@
+/* ==========================================================================
+   Vaccination coverage study — participant chrome · palette E "Cocoa & Oat"
+   Drop into src/assets/. The only stylesheet: base layer, then the .ui-* component layer
+   (task card + panel, legend groups, numbered steps, tiles). No fonts, no frameworks, nothing fetched.
+   Chart series (#0072B2 #D55E00 #009E73 #CC79A7 #960600 #062AA8 #246648 #845472) and Cividis
+   are not used. Every ratio is measured (WCAG 2.1). "Nearest" = nearest chart colour, OKLab ΔE.
+   ========================================================================== */
+
+:root {
+  /* --- Colour ------------------------------------------------------------------------------ */
+  --c-page:        #F8F3EE;  /* oat ground, every screen            · nearest #CC79A7 ΔE 0.31 */
+  --c-card:        #FFFFFF;  /* cards; the chart's ground                                     */
+  --c-band:        #EFE4DA;  /* header band, selected fill           · nearest #CC79A7 ΔE 0.27 */
+  --c-ink:         #241C18;  /* text  16.74 card · 15.18 page · 13.38 band  · nearest #246648 ΔE 0.24 */
+  --c-muted:       #5F544D;  /* secondary text 7.34 card · 6.66 page · 5.86 band · 5.47 disabled · #246648 ΔE 0.09 */
+  --c-accent:      #5A4034;  /* cocoa: primary fill (white 9.47), selected edge, focus, links
+                                9.47 card · 8.59 page · 7.57 band      · nearest #246648 ΔE 0.12 */
+  --c-accent-hov:  #4A342A;  /* primary hover; white 11.57              · nearest #246648 ΔE 0.15 */
+  --c-line:        #8F8076;  /* control edges 3.81 card · 3.45 page · 3.04 band · Cividis #958F78 ΔE 0.04 — edges only */
+  --c-line-soft:   #E4D8CC;  /* decorative dividers only (1.40)                                */
+  --c-disabled-bg: #E6DDD4;  /* disabled fill; muted label 5.47                               */
+  --c-deco-1:      #DDC8B8;  /* sand shapes, non-task screens only    · Cividis #CBBA69 ΔE 0.10 */
+  --c-deco-2:      #E9D9C9;  /* light sand shapes, non-task only      · nearest #CC79A7 ΔE 0.24 */
+  --c-error:       #C35600;  /* error borders + icon only (4.51 on white, 3:1+ non-text on every ground) */
+  --c-error-text:  #A34700;  /* error text: 6.02 card · 5.46 page · 4.81 band                 */
+  --c-focus:       #5A4034;  /* 2 px ring + 2 px white gap: 9.47 card · 8.59 page            */
+
+  /* --- Type -------------------------------------------------------------------------------- */
+  --font: Helvetica, Arial, sans-serif;
+  --fs-12: 14px; --fs-13: 15px; --fs-14: 16px; --fs-16: 18px; --fs-18: 20px; --fs-20: 22px; --fs-32: 36px;
+  --lh-tight: 1.3; --lh-body: 1.55; --measure: 70ch;
+
+  /* --- Space, shape, motion ---------------------------------------------------------------- */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+  --r-1: 6px;   /* controls */
+  --r-2: 12px;  /* cards    */
+  --shadow-card: 0 1px 2px rgba(36, 28, 24, .06), 0 8px 28px rgba(36, 28, 24, .06);
+  --focus-ring: 0 0 0 2px var(--c-card), 0 0 0 4px var(--c-focus);
+  --t-enter: 180ms;   /* non-task screens only */
+
+  /* --- Task layout (fixed by method) -------------------------------------------------------- */
+  --chart-w: 1050px; --chart-h: 520px; --slot-h: 64px;
+  --card-pad-x: 16px; --card-pad-top: 8px; --card-pad-bottom: 16px;
+  --ctl-h: 44px;      /* buttons, fields, answer rows */
+  --ctl-h-sm: 26px;   /* toolbar controls, chips, segmented, number inputs */
+  --rail-min: 200px; --rail-max: 360px;
+}
+
+/* ---- Base ------------------------------------------------------------------------------------ */
+html, body { margin: 0; background: var(--c-page); }
+body { font-family: var(--font); font-size: var(--fs-14); color: var(--c-ink); line-height: var(--lh-body); }
+a { color: var(--c-accent); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--c-accent-hov); text-decoration-thickness: 2px; }
+*:focus { outline: none; }
+*:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--r-1); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* app root: html.Div(className="app") around the whole layout */
+.app { container-type: inline-size; min-height: 100vh; display: flex; flex-direction: column; background: var(--c-page); }
+/* Non-task screens: abstract sand shapes painted as CSS gradients (no images, nothing fetched) */
+/* Non-task screens: one quiet warm fade toward the bottom, no shapes */
+.app--deco { background: linear-gradient(180deg, var(--c-page) 45%, var(--c-deco-2) 160%); }
+.app--celebrate { background: linear-gradient(180deg, var(--c-page) 30%, var(--c-deco-2) 120%); }
+/* Non-task screens: slow drifting sand glows behind content (CSS only; off for reduced motion) */
+.app--deco, .app--celebrate { isolation: isolate; }
+.app--deco::before, .app--celebrate::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(closest-side, rgba(221,200,184,.55), rgba(221,200,184,0)) 0 0 / 60% 70% no-repeat,
+    radial-gradient(closest-side, rgba(233,217,201,.7), rgba(233,217,201,0)) 0 0 / 50% 60% no-repeat;
+  animation: deco-drift 28s ease-in-out infinite alternate; }
+@keyframes deco-drift {
+  0%   { background-position: 5% 90%, 95% 10%; }
+  50%  { background-position: 35% 60%, 70% 40%; }
+  100% { background-position: 15% 20%, 85% 85%; } }
+@media (prefers-reduced-motion: reduce) { .app--deco::before, .app--celebrate::before { animation: none; } }
+
+/* ---- Header band: html.Header(className="appbar") -------------------------------------------- */
+.appbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5);
+          height: 48px; padding: 0 var(--s-5); background: var(--c-band); flex: none;
+          box-shadow: inset 0 -1px 0 rgba(36, 28, 24, .08); }
+.appbar-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: var(--fs-16); font-weight: 700; letter-spacing: -.01em; color: var(--c-ink); white-space: nowrap; }
+/* Chart icon: cocoa tile with a white trend line (pure CSS, no asset). Dash: same ::before, nothing to add to the layout. */
+.appbar-title::before { content: ""; width: 26px; height: 26px; border-radius: 7px; flex: none;
+  background: var(--c-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,17 11,12 14,15 20,8'/%3E%3Cline x1='6' y1='20' x2='20' y2='20' stroke-opacity='.55'/%3E%3C/svg%3E") center / 26px 26px no-repeat; }
+.appbar-right { display: flex; align-items: center; gap: var(--s-4); }
+.appbar-q { display: flex; align-items: center; gap: var(--s-4); font-size: var(--fs-12); font-weight: 700; color: var(--c-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.appbar-q::before { content: ""; width: 1px; height: 20px; background: var(--c-line); opacity: .5; }
+/* Step indicator (orientation only, not links). Dash: html.Ol(className="steps") with li.is-done / li.is-current + aria-current="step" */
+.steps { counter-reset: step; display: flex; align-items: center; margin: 0; padding: 0; list-style: none; font-size: var(--fs-12); color: var(--c-muted); }
+.steps li { counter-increment: step; position: relative; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 4px; border-radius: 999px; white-space: nowrap; }
+.steps li + li { margin-left: 24px; }
+.steps li + li::after { content: ""; position: absolute; left: -20px; top: 50%; width: 16px; height: 1px; background: var(--c-line); }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%;
+                    border: 1px solid var(--c-line); font-size: 12px; font-weight: 700; line-height: 1; }
+.steps li.is-done { color: var(--c-ink); }
+.steps li.is-done::before { content: "\2713"; background: var(--c-accent); border-color: var(--c-accent); color: #FFFFFF; }
+.steps li[aria-current="step"], .steps li.is-current { color: var(--c-ink); font-weight: 700; background: var(--c-card); box-shadow: 0 1px 2px rgba(36, 28, 24, .10); }
+.steps li[aria-current="step"]::before, .steps li.is-current::before { background: var(--c-card); border: 2px solid var(--c-accent); color: var(--c-accent); }
+
+.page { width: 100%; max-width: 1440px; margin: 0 auto; padding: var(--s-4) var(--s-5) var(--s-6); box-sizing: border-box; }
+@container (max-width: 1400px) { .page { padding-left: var(--s-4); padding-right: var(--s-4); } }
+
+/* ---- Copy -------------------------------------------------------------------------------------- */
+.position { margin: 0 0 var(--s-1); font-size: var(--fs-13); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c-muted); }
+.h1 { font-size: var(--fs-32); font-weight: 700; line-height: 1.2; margin: 0 0 var(--s-4); }
+.h2 { font-size: var(--fs-16); font-weight: 700; line-height: var(--lh-tight); margin: var(--s-5) 0 var(--s-1); }
+.prose { max-width: var(--measure); font-size: var(--fs-16); }
+.prose p, .body { font-size: var(--fs-16); line-height: var(--lh-body); margin: 0 0 var(--s-4); text-wrap: pretty; }
+.lead { font-weight: 700; }
+.note { font-size: var(--fs-13); color: var(--c-muted); margin: 0 0 var(--s-4); }
+
+/* ---- Short screens: a white card centred on the oat ground ------------------------------------ */
+.page--fill { flex: 1; display: flex; flex-direction: column; }
+.stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-bottom: var(--s-6); }
+.stage-col { width: min(100%, 760px); box-sizing: border-box; padding: var(--s-7) 56px; background: var(--c-card);
+             border-radius: var(--r-2); box-shadow: var(--shadow-card); animation: enter var(--t-enter) ease-out both; }
+.stage .prose { max-width: none; }
+.stage .prose p, .stage .label { font-size: var(--fs-18); }
+.stage .actions { margin-top: var(--s-6); }
+@keyframes enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---- Wide screens (About you, survey): one white sheet --------------------------------------- */
+.page--sheet { max-width: 1392px; margin: var(--s-5) auto; padding: var(--s-6) 40px; background: var(--c-card);
+               border-radius: var(--r-2); box-shadow: var(--shadow-card); animation: enter var(--t-enter) ease-out both; }
+@container (max-width: 1440px) { .page--sheet { margin-left: var(--s-5); margin-right: var(--s-5); width: auto; } }
+/* Title, then intro, then skip note, stacked */
+.screen-head { display: grid; gap: var(--s-2); max-width: var(--measure); margin: 0 0 var(--s-6); }
+.screen-head .h1 { margin: 0 0 var(--s-1); }
+.screen-head p { margin: 0; }
+/* Two columns; subgrid keeps each row's labels and option groups on shared lines */
+.qgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-6); row-gap: var(--s-6); }
+.qgrid > * { display: grid; grid-template-rows: subgrid; grid-row: span 2; row-gap: var(--s-3); }
+.qgrid .q-text { margin: 0; align-self: end; }
+.qgrid .options { grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; margin: 0; }
+/* "Prefer not to say" is always last: full width, set apart, quieter */
+.qgrid .option:last-child { grid-column: 1 / -1; margin-top: var(--s-2); color: var(--c-muted); }
+.likert-row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s-6); align-items: center; padding: var(--s-3) 0; border-top: 1px solid var(--c-line-soft); }
+.likert-row .q-text { margin: 0; }
+@container (max-width: 1100px) { .qgrid, .screen-head, .likert-row { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---- Task screen (no motion, no decoration) -------------------------------------------------- */
+.q-head { display: flex; align-items: baseline; gap: var(--s-3); margin: 0 0 var(--s-4); max-width: calc((100% - var(--s-5)) * .75); }
+.q-head .position { margin: 0; white-space: nowrap; flex: none; }
+.question { font-size: var(--fs-18); font-weight: 700; line-height: var(--lh-tight); margin: 0; text-wrap: pretty; }
+.task { display: grid; grid-template-columns: minmax(0, 3fr) minmax(var(--rail-min), 1fr);
+        column-gap: var(--s-5); align-items: stretch; }
+@container (max-width: 1330px) { .task { grid-template-columns: minmax(0, calc(var(--chart-w) + 2 * var(--card-pad-x))); row-gap: var(--s-5); } }
+/* White card: slot (toolbar or white) + chart, with white margin all round */
+.chart-card { background: var(--c-card); border-radius: var(--r-2); padding: var(--card-pad-top) var(--card-pad-x) var(--card-pad-bottom);
+              box-shadow: var(--shadow-card); }
+.slot { height: var(--slot-h); display: flex; flex-direction: column; justify-content: flex-end; }
+/* Chart scales with its 3/4 column at the 1050:520 shape. Dash: dcc.Graph(responsive=True, style={"width": "100%", "height": "100%"}) inside .chart-box; fonts and margins stay in px. */
+.chart-box { width: 100%; aspect-ratio: 1050 / 520; background: var(--c-card); }
+/* Rail: second card, same elevation, top level with the chart card */
+.rail { box-sizing: border-box; padding: var(--s-4); background: var(--c-card); border-radius: var(--r-2); box-shadow: var(--shadow-card);
+        display: flex; flex-direction: column; }
+.rail .decide { margin-top: auto; }
+.rail .options { margin: 0 0 var(--s-4); gap: var(--s-1); }
+.rail .option { min-height: 40px; }
+/* Justification + Submit: one grouped step */
+.decide { display: grid; gap: var(--s-2); padding: var(--s-3); background: var(--c-page); border-radius: var(--r-1); }
+.decide .label { margin: 0; font-size: var(--fs-14); font-weight: 700; line-height: var(--lh-tight); }
+.decide .actions { margin-top: var(--s-1); }
+.decide .msg-error { margin-top: 0; }
+
+/* ---- Chart toolbar (interactive only; bottom of .slot, flush with the chart) ------------------ */
+/* One tinted strip, no outline; rows of --ctl-h-sm controls. Show all is always the last control in its row. */
+.toolbar { background: var(--c-page); border-radius: var(--r-1); padding: var(--s-1) var(--s-2); display: grid; gap: var(--s-1); font-size: var(--fs-13); }
+.toolbar-row { display: flex; align-items: center; gap: var(--s-2); min-height: var(--ctl-h-sm); }
+.toolbar-row > .tb-label + * { margin-left: calc(-1 * var(--s-1)); }
+.toolbar-row > * + .btn-quiet { margin-left: var(--s-2); }
+.tb-label { font-weight: 700; color: var(--c-ink); white-space: nowrap; }
+.toolbar--line .tb-label { min-width: 52px; }
+.toolbar--line .toolbar-row:first-child .tb-label { min-width: 0; }
+.tb-hint { margin: 0; color: var(--c-muted); font-size: var(--fs-12); line-height: 1.3; }
+.toolbar-row .tb-hint { margin-left: var(--s-3); }
+/* Country toggle chips: dcc.Checklist(className="chips", labelClassName="chip") */
+.chips { display: flex; flex-wrap: nowrap; gap: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: var(--ctl-h-sm); padding: 0 6px 0 5px; border-radius: 999px; cursor: pointer; white-space: nowrap; color: var(--c-muted); }
+.chip:hover { background: var(--c-band); }
+.chip-val { font-size: var(--fs-12); color: var(--c-muted); font-variant-numeric: tabular-nums; }
+.chip input { margin: 0; width: 13px; height: 13px; accent-color: var(--c-accent); flex: none; }
+.chip:has(input:checked) { background: var(--c-card); color: var(--c-ink); box-shadow: 0 1px 2px rgba(36, 28, 24, .12); }
+.chip:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+/* Segmented: tinted track, selected segment is a raised white pill */
+.seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-1); background: var(--c-band); }
+.seg-item { display: flex; align-items: center; gap: 6px; height: calc(var(--ctl-h-sm) - 4px); padding: 0 var(--s-3); border-radius: 4px; cursor: pointer; color: var(--c-muted); }
+.seg-item:hover { color: var(--c-ink); }
+.seg-item:has(input:checked) { background: var(--c-card); color: var(--c-ink); font-weight: 700; box-shadow: 0 1px 2px rgba(36, 28, 24, .14); }
+.seg-item input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.seg-item:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+.toolbar .btn-quiet { min-height: var(--ctl-h-sm); }
+.tb-num { width: 64px; height: var(--ctl-h-sm); box-sizing: border-box; padding: 0 var(--s-2); font: inherit; font-size: var(--fs-14); color: var(--c-ink);
+          background: var(--c-card); border: 1px solid var(--c-line); border-radius: var(--r-1); text-align: right; }
+.tb-num:focus-visible { box-shadow: var(--focus-ring); }
+.tb-slider { flex: 1 1 420px; max-width: 520px; padding: 3px 10px 11px; align-self: flex-start; }
+
+/* rc-slider (dcc.RangeSlider) */
+.rc-slider { position: relative; height: 20px; touch-action: none; }
+.rc-slider-rail { position: absolute; top: 8px; left: 0; right: 0; height: 4px; background: var(--c-line); border-radius: 2px; }   /* 3.45 on toolbar */
+.rc-slider-track { position: absolute; top: 8px; height: 4px; background: var(--c-accent); border-radius: 2px; }
+.rc-slider-handle { position: absolute; top: 0; width: 20px; height: 20px; margin-left: -10px; box-sizing: border-box; background: var(--c-card);
+                    border: 2px solid var(--c-accent); border-radius: 50%; cursor: grab; transition: transform .12s; }
+.rc-slider-handle:hover { transform: scale(1.1); }
+.rc-slider-handle:focus-visible, .rc-slider-handle-dragging { box-shadow: var(--focus-ring); }
+.rc-slider-step { position: absolute; top: 8px; left: 0; right: 0; height: 4px; }
+.rc-slider-dot { position: absolute; top: -2px; width: 2px; height: 8px; margin-left: -1px; background: var(--c-line); border: 0; }
+.rc-slider-mark { position: absolute; top: 19px; left: 0; right: 0; }
+.rc-slider-mark-text { position: absolute; transform: translateX(-50%); font-size: 12px; line-height: 1; color: var(--c-muted); white-space: nowrap; }
+
+/* ---- Answer options: dcc.RadioItems(className="options", labelClassName="option") ------------- */
+/* Selectable rows: tint, no outline. Selected = band fill + 1.5 px cocoa inner edge + bold */
+.options { display: grid; gap: var(--s-1); margin: 0 0 var(--s-5); }
+.option { display: flex; align-items: center; gap: var(--s-3); min-height: var(--ctl-h); box-sizing: border-box; padding: var(--s-2) var(--s-3);
+          font-size: var(--fs-16); line-height: var(--lh-tight); background: var(--c-page); border-radius: var(--r-1);
+          cursor: pointer; transition: background-color .12s, box-shadow .12s; }
+.option:hover { background: var(--c-band); }
+.option input { margin: 0; width: 18px; height: 18px; flex: none; accent-color: var(--c-accent); cursor: pointer; }
+.option:has(input:checked) { background: var(--c-band); color: var(--c-ink); font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--c-accent); }
+.option:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+.option:has(input:checked:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--c-accent), var(--focus-ring); }
+.option:has(input:disabled) { color: var(--c-muted); background: var(--c-disabled-bg); cursor: not-allowed; }
+.options--compact .option { min-height: 40px; font-size: var(--fs-13); }
+
+/* ---- Fields ------------------------------------------------------------------------------------ */
+.label { display: block; font-size: var(--fs-16); margin: 0 0 var(--s-2); }
+.label--strong { font-weight: 700; font-size: var(--fs-14); }
+.field { display: block; box-sizing: border-box; width: 100%; max-width: 320px; min-height: 44px; padding: 10px var(--s-3);
+         font: inherit; font-size: var(--fs-16); color: var(--c-ink); background: var(--c-card); border: 1px solid var(--c-line); border-radius: var(--r-1); }
+.field::placeholder { color: var(--c-muted); }
+.field:hover { border-color: var(--c-accent); }
+.field:focus-visible { border-color: var(--c-accent); box-shadow: var(--focus-ring); }
+.field[aria-invalid="true"] { border-color: var(--c-error); box-shadow: inset 0 0 0 1px var(--c-error); }
+.field:disabled { color: var(--c-muted); background: var(--c-disabled-bg); border-color: var(--c-disabled-bg); cursor: not-allowed; }
+/* Inline field error: directly under the field, icon + error-coloured text, no box */
+.field-error, .stage .prose .field-error { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; font-size: var(--fs-13); line-height: 1.35; color: var(--c-error-text); }
+.stage .prose .field-error { font-size: var(--fs-13); margin: 6px 0 0; }
+.field-error::before { content: "!"; flex: none; display: grid; place-items: center; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%;
+                       background: var(--c-error); color: #FFFFFF; font-size: 11px; font-weight: 700; line-height: 1; }
+.field-error:empty { display: none; }
+textarea.field { max-width: none; min-height: 88px; resize: vertical; line-height: 1.45; font-size: var(--fs-14); }
+
+/* ---- Buttons ----------------------------------------------------------------------------------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-5);
+       font: inherit; font-size: var(--fs-16); font-weight: 700; border-radius: var(--r-1); cursor: pointer; transition: background-color .12s, border-color .12s; }
+.btn-primary   { color: #FFFFFF; background: var(--c-accent); border: 2px solid var(--c-accent); }
+.btn-primary:hover { background: var(--c-accent-hov); border-color: var(--c-accent-hov); }
+.btn-secondary { color: var(--c-accent); background: var(--c-card); border: 2px solid var(--c-accent); }
+.btn-secondary:hover { background: var(--c-band); }
+.btn-quiet { min-height: 30px; padding: 0 var(--s-3); font-size: var(--fs-13); font-weight: 400; color: var(--c-ink); background: var(--c-card); border: 1px solid var(--c-line); }
+.btn-quiet:hover { border-color: var(--c-accent); background: var(--c-page); }
+.btn:focus-visible { box-shadow: var(--focus-ring); }
+.btn:disabled, .btn[aria-disabled="true"] { color: var(--c-muted); background: var(--c-disabled-bg); border-color: var(--c-disabled-bg); cursor: not-allowed; }
+.btn-block { width: 100%; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+
+/* ---- Messages (error colour only here) --------------------------------------------------------- */
+.msg { font-size: var(--fs-14); line-height: 1.45; }
+.msg:empty { display: none; }
+/* Step-level errors (Submit refused, consent not recorded): same inline icon + text as .field-error */
+.msg-error { display: flex; align-items: flex-start; gap: 6px; margin-top: var(--s-2); font-size: var(--fs-13); color: var(--c-error-text); }
+.msg-error::before { content: "!"; flex: none; display: grid; place-items: center; width: 16px; height: 16px; margin-top: 2px; border-radius: 50%;
+                     background: var(--c-error); color: #FFFFFF; font-size: 11px; font-weight: 700; line-height: 1; }
+.msg-block { max-width: var(--measure); margin: var(--s-7) auto; padding: var(--s-5); font-size: var(--fs-16); color: var(--c-ink);
+             background: var(--c-card); border: 2px solid var(--c-error); border-radius: var(--r-2); }
+/* Pending-approval banner: solid error fill, white bold text 4.51 — louder than anything in the palette */
+.banner { position: sticky; top: var(--s-3); z-index: 2; margin: 0 0 var(--s-4); padding: var(--s-3) var(--s-4); font-size: var(--fs-16); font-weight: 700;
+          color: #FFFFFF; background: var(--c-error); border-radius: var(--r-1); box-shadow: 0 2px 8px rgba(36, 28, 24, .18); }
+
+/* ---- Consent: the finalized paper form + sticky signing panel ---------------------------------- */
+.page--desk { max-width: none; }
+.page--desk > * { max-width: 1392px; margin-left: auto; margin-right: auto; }
+.consent-grid { display: grid; grid-template-columns: 816px minmax(380px, 1fr); gap: var(--s-6); align-items: start; }
+@container (max-width: 1260px) { .consent-grid { grid-template-columns: minmax(0, 816px); } }
+.sheet { box-sizing: border-box; width: 100%; padding: 96px; background: #FFFFFF; color: #000000;
+         font-family: "Times New Roman", Times, serif; font-size: 20px; line-height: 1.2; box-shadow: var(--shadow-card); }
+.sheet b { font-weight: 700; }
+.sheet p { margin: 0; min-height: 1.15em; white-space: pre-wrap; }
+.sheet-footer { margin: 64px 0 0; font-size: 15px; }
+.consent-side { position: sticky; top: 84px; display: grid; gap: var(--s-5); padding: var(--s-5); background: var(--c-card);
+                border-top: 4px solid var(--c-accent); border-radius: var(--r-2); box-shadow: var(--shadow-card); }
+.signoff-fields { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: var(--s-4); }
+.consent-side .field { max-width: none; }
+.pad { display: block; width: 100%; aspect-ratio: 600 / 180; background: var(--c-card); color: var(--c-ink);
+       border: 1px solid var(--c-line); border-radius: var(--r-1); touch-action: none; cursor: crosshair; }
+.pad-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-2); }
+.check { display: flex; align-items: flex-start; gap: var(--s-2); font-size: var(--fs-14); cursor: pointer; padding: var(--s-2); margin: calc(-1 * var(--s-2)) 0 0 calc(-1 * var(--s-2)); border-radius: var(--r-1); }
+.check input { margin: 2px 0 0; width: 18px; height: 18px; flex: none; accent-color: var(--c-accent); }
+.check:hover { background: var(--c-page); }
+.check:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+.actions--split { margin-top: 0; }
+.actions--split .btn { flex: 1 1 0; padding: 0 var(--s-3); }
+.consent-side .msg-error { margin-top: calc(-1 * var(--s-2)); }
+
+/* ---- Survey scales: dcc.RadioItems(className="scale scale-9|scale-7", labelClassName="scale-pt") */
+.q { margin: 0 0 var(--s-6); }
+.q-text { font-size: var(--fs-16); font-weight: 700; margin: 0 0 var(--s-3); max-width: var(--measure); }
+.scale { display: grid; gap: 0; width: 100%; background: var(--c-card); border: 1px solid var(--c-line); border-radius: var(--r-1); overflow: hidden; }
+.scale-9 { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+.scale-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.scale-pt { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--s-2) var(--s-1) var(--s-3); cursor: pointer; text-align: center; }
+.scale-pt + .scale-pt { border-left: 1px solid var(--c-line-soft); }
+.scale-pt:hover { background: var(--c-page); }
+.scale-pt:has(input:checked) { background: var(--c-band); box-shadow: inset 0 0 0 2px var(--c-accent); }
+.scale-pt:has(input:focus-visible) { box-shadow: inset 0 0 0 2px var(--c-card), inset 0 0 0 4px var(--c-focus); }
+.scale-pt input { margin: 0; width: 18px; height: 18px; accent-color: var(--c-accent); cursor: pointer; }
+.scale-pt > span { display: grid; gap: 4px; justify-items: center; }
+.scale-num { font-size: var(--fs-16); font-weight: 700; }
+.scale-anchor { font-size: var(--fs-12); line-height: 1.3; color: var(--c-muted); }
+
+/* ==========================================================================
+   Component layer (.ui-*) — task card + panel, legend groups, numbered steps, option tiles,
+   soft buttons. State-preview classes (.is-hover/.is-focus/.is-selected) are for the
+   component sheet only and can be dropped in production.
+   ========================================================================== */
+:root {
+  --c-group: #DDC8B8;      /* legend-group outline (decorative, grouping only) */
+  --c-soft-hov: #E6D6C8;   /* soft (beige) button hover */
+  --r-group: 8px;
+  --tile-h: 56px; --tile-h-text: 48px;
+  --panel-w: 310px;
+  --c-accent-busy: #91796E; /* Submit while saving (disabled on click); white on it 3.9, bold 18px */
+}
+
+
+/* ---- Heading line: LABEL + bold heading on one line --------------------- */
+.ui-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 var(--s-4); }
+.ui-head .position { margin: 0; white-space: nowrap; font-size: var(--fs-16); }
+.ui-head .question { max-width: none; }
+
+/* ---- Unified card: main area + tinted panel on the right ---------------- */
+.ui-card { display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w); background: var(--c-card);
+           border-radius: var(--r-2); box-shadow: var(--shadow-card); }
+.ui-card--task { grid-template-columns: calc(var(--chart-w) + 2 * var(--card-pad-x)) minmax(0, 1fr); }
+.ui-card--consent { grid-template-columns: minmax(0, 1fr) 400px; }
+.ui-card--solo { grid-template-columns: minmax(0, 1fr); }
+.ui-card--short { min-height: 300px; }
+.ui-main { padding: 14px var(--card-pad-x) 12px; display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+.ui-main--pad { padding: 28px 32px 32px; gap: 28px; }
+.ui-panel { --legend-bg: var(--c-band); background: var(--c-band); border-radius: 0 var(--r-2) var(--r-2) 0;
+            padding: 20px; display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.ui-panel > .ui-push, .ui-panel-inner > .ui-push { margin-top: auto; }
+.ui-panel-inner { position: sticky; top: var(--s-4); display: flex; flex-direction: column; gap: var(--s-4); }
+.ui-short { max-width: 960px; margin: 0 auto; }
+
+/* Short-screen copy */
+.ui-prose { padding: 28px 32px 32px; font-size: var(--fs-16); line-height: var(--lh-body); }
+.ui-prose p { margin: 0 0 14px; max-width: 64ch; text-wrap: pretty; }
+.ui-prose p:last-child { margin-bottom: 0; }
+.ui-prose .lead { font-weight: 700; }
+.ui-help { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--c-muted); text-wrap: pretty; }
+.ui-text { margin: 0; font-size: var(--fs-14); line-height: 1.5; color: var(--c-ink); text-wrap: pretty; }
+
+/* ---- Task screen --------------------------------------------------------- */
+.ui-slot { height: 100px; margin-bottom: 2px; display: flex; align-items: stretch; gap: var(--s-5); }
+.ui-slot--band { --c-card: var(--c-band); }          /* chips / segmented / Show all fill with the panel tint */
+.ui-chart { width: var(--chart-w); height: var(--chart-h); flex: none; }
+.ui-hint { margin: 0; min-height: 18px; font-size: var(--fs-12); line-height: 1.3; color: var(--c-muted); }
+.ui-decide { flex: 1; margin-top: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
+.ui-decide > .btn-block { margin-top: var(--s-1); }
+/* Controls strip under the chart (screen 5): legend-labelled groups on the panel tint */
+.ui-controls { --c-card: var(--c-band); display: flex; align-items: stretch; gap: var(--s-5); margin-top: 2px; }
+.ui-controls .ui-group { padding: 9px 16px 7px; }
+.ui-controls .ui-group--grow { flex: 1; padding: 12px 16px 8px; justify-content: space-evenly; gap: 6px; }
+.ui-controls .ui-legend { background: #FFFFFF; font-size: 13px; }
+.ui-group--fit { flex: none; flex-direction: row; align-items: center; }
+.ui-stack { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.tb-inline { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-14); color: var(--c-ink); white-space: nowrap; }
+.ui-hint-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.ui-hint-row .tb-hint { min-width: 0; }
+/* Short windows (1366 × 768 full screen): tighten the chrome above the chart.
+   In Dash, add .is-compact to .app when window.innerHeight <= 800 (clientside callback),
+   or swap these three rules into @media (max-height: 800px). */
+.app.is-compact .appbar { height: 44px; }
+.app.is-compact .page { padding-top: var(--s-2); }
+.app.is-compact .q-head, .app.is-compact .ui-head { margin-bottom: var(--s-2); }
+.app.is-compact .ui-main { padding-top: var(--s-2); padding-bottom: 6px; gap: 6px; }   /* −16 px: card fits a 768 fold */
+
+/* ---- Legend-labelled group ---------------------------------------------- */
+.ui-group { position: relative; min-width: 0; padding: 18px 16px 14px; border: 1px solid var(--c-group); border-radius: var(--r-group);
+            display: flex; flex-direction: column; justify-content: center; gap: var(--s-2); }
+.ui-slot .ui-group { padding: 9px 16px 7px; }
+.ui-legend { position: absolute; top: -9px; left: 12px; padding: 0 6px; background: var(--legend-bg, var(--c-card)); line-height: 18px;
+             font-size: var(--fs-12); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c-muted); }
+.ui-slot--band .ui-legend { background: #FFFFFF; }
+.ui-group.is-error { border-color: var(--c-error); box-shadow: inset 0 0 0 1px var(--c-error); }
+.ui-group.is-error .ui-legend { color: var(--c-error-text); }
+.ui-group.is-error .ui-legend::before { content: "! "; }
+
+/* ---- Numbered step heading ------------------------------------------------ */
+.ui-step { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 21px; font-weight: 700; line-height: 26px; color: var(--c-ink); text-wrap: pretty; }
+.ui-step--nowrap { align-items: center; white-space: nowrap; }
+.ui-step-n { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%;
+             background: var(--c-accent); color: #FFFFFF; font-size: var(--fs-12); font-weight: 700; line-height: 1; }
+.ui-step-sub { display: block; font-size: var(--fs-13); font-weight: 400; line-height: 1.4; color: var(--c-muted); }
+.ui-label { display: block; margin: 0 0 6px; font-size: var(--fs-14); font-weight: 700; color: var(--c-ink); }
+
+/* ---- Option tiles (radio) ------------------------------------------------- */
+.ui-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+.ui-tile { display: flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--tile-h); min-width: 0; box-sizing: border-box; padding: 6px 8px; text-align: left;
+           background: #FFFFFF; border: 1px solid var(--c-line); border-radius: var(--r-1); font-size: var(--fs-18); font-weight: 700; line-height: 1.2;
+           color: var(--c-ink); cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color .12s, border-color .12s, box-shadow .12s; }
+.ui-tile-label { font-size: 17px; }
+.ui-tile input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--c-accent); cursor: pointer; }
+.ui-tile:hover, .ui-tile.is-hover { background: var(--c-page); border-color: var(--c-accent); }
+.ui-tile:has(input:checked), .ui-tile.is-selected { background: var(--c-band); border-color: var(--c-accent); box-shadow: inset 0 0 0 1px var(--c-accent); }
+.ui-tile:has(input:focus-visible), .ui-tile.is-focus { box-shadow: var(--focus-ring); }
+.ui-tile:has(input:checked:focus-visible), .ui-tile.is-selected.is-focus { box-shadow: inset 0 0 0 1px var(--c-accent), var(--focus-ring); }
+.ui-tile:has(input:disabled), .ui-tile.is-disabled { background: var(--c-disabled-bg); border: 1px dashed var(--c-line); color: var(--c-muted); cursor: not-allowed; }
+.ui-tile.is-error { border-color: var(--c-error); box-shadow: inset 0 0 0 1px var(--c-error); }
+/* Text answers (About you): left-aligned, a notch smaller */
+.ui-tile--text { justify-content: flex-start; text-align: left; min-height: var(--tile-h-text); font-size: 17px; }
+/* "Prefer not to say" is always last: full width, regular weight, muted */
+.ui-tiles--pns > .ui-tile:last-child { grid-column: 1 / -1; font-weight: 400; color: var(--c-muted); }
+.ui-tiles--pns > .ui-tile:last-child:has(input:checked) { font-weight: 700; color: var(--c-ink); }
+/* Rating scales: radio above the number */
+.ui-scale { display: grid; gap: 6px; }
+.ui-scale--9 { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+.ui-scale--7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.ui-tile--scale { flex-direction: column; gap: 6px; min-height: 64px; padding: 8px 4px; }
+.ui-anchors { display: grid; margin-top: 6px; font-size: var(--fs-12); line-height: 1.3; color: var(--c-muted); }
+.ui-q { display: flex; flex-direction: column; gap: var(--s-3); }
+.ui-qgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 40px; }
+.ui-qgrid > .ui-q { display: grid; grid-template-rows: subgrid; grid-row: span 2; row-gap: var(--s-3); }
+.ui-likert { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s-6); align-items: start; padding-top: var(--s-4); border-top: 1px solid var(--c-line-soft); }
+.ui-likert-q { margin: 0; padding-top: 18px; font-size: var(--fs-16); font-weight: 700; line-height: 1.35; }
+
+/* ---- Chips (multi-select): beige pill with a checkbox --------------------- */
+.ui-chips { --c-card: var(--c-band); display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.chip-name { display: inline-flex; align-items: center; gap: var(--s-2); }
+.chip-flag { display: block; width: 24px; height: 16px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(36, 28, 24, .15); }
+.ui-chips .chip { height: 30px; padding: 0 10px 0 8px; gap: 7px; font-size: var(--fs-14); }
+.ui-chips .chip input { width: 15px; height: 15px; }
+.ui-chips .chip.is-hover, .ui-chips .chip:not(:has(input:checked)):hover { background: var(--c-page); box-shadow: inset 0 0 0 1px var(--c-line); color: var(--c-ink); }
+.ui-chips .chip.is-focus { box-shadow: var(--focus-ring); }
+.chip:has(input:disabled) { color: var(--c-muted); background: var(--c-disabled-bg); box-shadow: inset 0 0 0 1px var(--c-line); outline: 1px dashed transparent; cursor: not-allowed; }
+
+/* ---- Segmented (compact mode switch) ------------------------------------- */
+.ui-seg { --c-card: var(--c-band); background: var(--c-page); }
+.ui-seg--stack { flex-direction: column; height: auto; align-items: stretch; }
+.ui-seg .seg-item.is-hover { color: var(--c-ink); }
+.ui-seg .seg-item.is-focus { box-shadow: var(--focus-ring); }
+.seg-item:has(input:disabled) { color: var(--c-muted); text-decoration: line-through; cursor: not-allowed; }
+
+/* ---- Buttons ---------------------------------------------------------------- */
+.btn-soft { color: var(--c-ink); background: var(--c-band); border: 1px solid var(--c-line); }
+.btn-soft:hover, .btn-soft.is-hover { background: var(--c-soft-hov); border-color: var(--c-accent); }
+.ui-panel .btn-soft { background: #FFFFFF; }
+.ui-panel .btn-soft:hover, .ui-panel .btn-soft.is-hover { background: var(--c-page); }
+.btn-sm { min-height: 30px; padding: 0 var(--s-3); white-space: nowrap; font-size: var(--fs-13); font-weight: 400; }
+.btn-xs { min-height: 26px; height: 26px; padding: 0 10px; white-space: nowrap; font-size: var(--fs-13); font-weight: 400; }
+.btn-reset { flex: none; height: 30px; gap: 6px; background: var(--c-page); white-space: nowrap; }
+.btn-primary[aria-busy="true"] { color: #FFFFFF; background: var(--c-accent-busy); border-color: var(--c-accent-busy); cursor: progress; }
+.btn-primary.is-hover { background: var(--c-accent-hov); border-color: var(--c-accent-hov); }
+.btn.is-focus { box-shadow: var(--focus-ring); }
+
+/* ---- Inputs ------------------------------------------------------------------ */
+.ui-panel .field, .ui-field { max-width: none; }
+.field.is-hover, .ui-textarea.is-hover, .ui-textarea:hover { border-color: var(--c-accent); }
+.field.is-focus, .ui-textarea.is-focus, .ui-textarea:focus-visible { border-color: var(--c-accent); box-shadow: var(--focus-ring); }
+.ui-textarea { flex: 1; display: block; box-sizing: border-box; width: 100%; min-height: 96px; padding: 10px 12px; background: #FFFFFF;
+               border: 1px solid var(--c-line); border-radius: var(--r-1); font: 18px/1.45 var(--font); color: var(--c-ink); resize: vertical; }
+.ui-textarea[aria-invalid="true"] { border-color: var(--c-error); box-shadow: inset 0 0 0 1px var(--c-error); }
+.ui-textarea:disabled { color: var(--c-muted); background: var(--c-disabled-bg); border-color: var(--c-disabled-bg); }
+.ui-textarea::placeholder { color: var(--c-muted); }
+
+/* ---- Blocking alert --------------------------------------------------------- */
+.ui-alert { display: flex; align-items: flex-start; gap: var(--s-3); padding: 20px 24px; border: 2px solid var(--c-error); border-radius: var(--r-group);
+            font-size: var(--fs-16); line-height: 1.45; color: var(--c-ink); }
+.ui-alert::before { content: "!"; flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+                    background: var(--c-error); color: #FFFFFF; font-size: 15px; font-weight: 700; line-height: 1; }
+
+/* ---- Consent sheet (main area of the consent card) --------------------------- */
+.ui-sheet { padding: 56px 72px 64px; font-family: "Times New Roman", Times, serif; font-size: 19px; line-height: 1.25; color: #000000; }
+.ui-sheet p { margin: 0 0 1.15em; white-space: pre-wrap; }
+.ui-sheet .tight { margin: 0; }
+.ui-sheet-rule { margin: 2.4em 0 4px; border-top: 1px solid #000000; }
+
+/* ---- Screen-level variants ------------------------------------------------------ */
+.banner--static { position: static; text-align: center; }
+.msg-block--system { border-color: var(--c-accent); text-align: center; }
