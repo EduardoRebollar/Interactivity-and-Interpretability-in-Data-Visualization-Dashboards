@@ -15,8 +15,9 @@ Nothing else may differ. `tests/test_conditions.py` enforces the figure half of 
 The look comes from `src/assets/study.css`, the design handoff's stylesheet, copied unchanged,
 with `src/assets/zz-bridge.css` (generated) and `src/assets/zz-overrides.css` for what Dash 4's
 markup needs (docs/visual-spec.md section 10). Every screen sits in `shell`: the header band, the
-stepper, and the page's background. Screens not yet rebuilt on the stylesheet's classes use
-`interim_page`, today's look in a white box, until their phase of docs/study-redesign.md.
+stepper, and the page's background. The short screens are `stage_page`. Screens not yet rebuilt on
+the stylesheet's classes (consent, the survey, About you) use `interim_page`, the old look in a
+white box, until their phase of docs/study-redesign.md.
 """
 
 from __future__ import annotations
@@ -452,21 +453,50 @@ ERROR_STYLE = {
 }
 
 
-def error_slot(class_name: str = "msg msg-error") -> html.Div:
+def error_slot(class_name: str = "msg msg-error", element=html.Div, **attributes):
     """The one validation-error slot, `flow-error`, which every screen must carry somewhere.
 
     It is on EVERY screen, not only the ones that can produce an error. A Dash callback resolves its
     outputs against whatever is in the DOM, so an error output present on some screens and not
     others is a latent failure on exactly the screens that need it most. One id, always present, is
     the version that cannot misfire. Where it sits is the screen's business: under Submit on the
-    task screen, as in the handoff.
+    task screen, under the field on the participant-ID screen, as in the handoff.
     """
-    return html.Div(id="flow-error", className=class_name)
+    return element(id="flow-error", className=class_name, **attributes)
 
 
 def page(*children, class_name: str = "page") -> html.Main:
     """A screen's content, the `.page` inside the shell. The screen places its own error slot."""
     return html.Main(list(children), className=class_name)
+
+
+def stage_page(*children) -> html.Main:
+    """A short screen: its copy and buttons on one white card, centred on the page (the handoff's
+    screens 2, 3, 4, 6, 8, 9 and 11). The screen places its own error slot."""
+    return page(
+        html.Div(
+            html.Div(html.Div(list(children), className="prose"), className="stage-col"),
+            className="stage",
+        ),
+        class_name="page page--fill",
+    )
+
+
+def screen_title(text: str, emoji: str | None = None) -> html.H1:
+    """A short screen's heading. Its emoji is hidden from screen readers, which would read out the
+    emoji's name in the middle of the heading."""
+    if emoji is None:
+        return html.H1(text, className="h1")
+    return html.H1([f"{text} ", html.Span(emoji, **{"aria-hidden": "true"})], className="h1")
+
+
+def button(label, element_id: str, kind: str = "primary") -> html.Button:
+    """A native button, so keyboard-operable, in the stylesheet's look: `primary` or `secondary`."""
+    return html.Button(label, id=element_id, n_clicks=0, className=f"btn btn-{kind}")
+
+
+def actions(*buttons) -> html.Div:
+    return html.Div(list(buttons), className="actions")
 
 
 def interim_page(*children) -> html.Main:
@@ -673,66 +703,66 @@ def consent_screen() -> html.Div:
     )
 
 
-def declined_screen() -> html.Div:
+def declined_screen() -> html.Main:
     """IRB form item 12B. Nothing is written before consent, so the second sentence is true."""
-    return interim_page(
-        heading("Thank you for your time"),
+    return stage_page(
+        screen_title("Thank you for your time!"),
         html.P(
             "You chose not to take part in this study. No data has been collected. You can close "
-            "this tab.",
-            style=PROMPT_STYLE,
+            "this tab."
         ),
         html.P(
-            "If you chose this by mistake, you can go back to the consent form.",
-            style=MUTED_STYLE,
+            "If you chose this by mistake, you can go back to the consent form.", className="note"
         ),
-        secondary_button("Go back to the consent form", "reconsider-button"),
+        actions(button("Go back to the consent form", "reconsider-button", "secondary")),
+        error_slot(),
     )
 
 
-def participant_screen() -> html.Div:
-    return interim_page(
-        heading("Participant ID"),
-        # The copy is held in a memory store and lost on reload; the researcher can send one then.
-        html.P(
-            "Thank you for signing. You can keep a copy of the consent form you signed.",
-            style=PROMPT_STYLE,
-        ),
-        html.Button(
-            "Download your signed consent form",
-            id="consent-copy-button",
-            n_clicks=0,
-            style={
-                "fontFamily": config.FONT_FAMILY,
-                "fontSize": f"{config.FONT_SIZE_AXIS}px",
-                "padding": "6px 12px",
-                "marginBottom": "20px",
-                "color": config.TEXT_PRIMARY,
-                "backgroundColor": config.BACKGROUND,
-                "border": f"1px solid {config.AXIS_COLOR}",
-                "borderRadius": "4px",
-                "cursor": "pointer",
-            },
-        ),
+def participant_screen() -> html.Main:
+    """The participant ID, and the participant's copy of the consent form they signed (held in a
+    memory store and lost on reload; the researcher can send one then).
+
+    A refusal (S2) shows under the field, and `app.PARTICIPANT_ENABLE_JS` marks the field invalid
+    and points it at the message: `dcc.Input` has no `aria-*` properties to do it from here.
+    """
+    return stage_page(
+        screen_title("Participant ID", "👤"),
         # Resume is not implemented, so this must not promise it. docs/study-design.md section 8.
         html.P(
-            "Enter the ID you were given. Please complete the study in one sitting, in this tab "
-            "— closing it ends your session.",
-            style=PROMPT_STYLE,
+            [
+                "Thank you! Please download a copy of your signed consent form below.",
+                html.Br(),
+                html.Br(),
+                "Afterwards, enter the ID you were given by the student investigator in the "
+                "empty text area below. Please complete the study in one sitting, in this tab. "
+                "Closing it ends your session.",
+            ]
         ),
-        dcc.Input(
-            id="participant-input",
-            type="text",
-            debounce=True,
-            placeholder="e.g. P07",
-            style={
-                "fontFamily": config.FONT_FAMILY,
-                "fontSize": f"{config.FONT_SIZE_BASE}px",
-                "padding": "10px",
-                "width": "220px",
-            },
+        html.Div(
+            [
+                # A <label>, where the handoff hides "ID:" from screen readers: it names the field.
+                html.Label("ID:", htmlFor="participant-input", className="id-label"),
+                dcc.Input(
+                    id="participant-input",
+                    type="text",
+                    debounce=True,
+                    placeholder="e.g. 19",
+                    className="field",
+                ),
+            ],
+            className="id-row",
         ),
-        primary_button("Continue", "participant-button"),
+        error_slot("field-error", html.P, role="alert"),
+        actions(
+            html.Button(
+                [html.Span("↓", **{"aria-hidden": "true"}), "Download your signed consent form"],
+                id="consent-copy-button",
+                n_clicks=0,
+                className="btn btn-secondary",
+            ),
+            button("Continue", "participant-button"),
+        ),
     )
 
 
@@ -824,35 +854,87 @@ def demographics_screen() -> html.Div:
     )
 
 
-def practice_complete_screen() -> html.Div:
+def practice_complete_screen() -> html.Main:
     """Between the practice and the first scored task, first condition only. The design handoff's
     screen 6 (docs/study-design.md section 8)."""
-    return interim_page(
-        heading("Practice Complete!"),
-        html.P("That was the practice question. It was not scored.", style=PROMPT_STYLE),
+    return stage_page(
+        screen_title("Practice Complete!", "😉"),
+        html.P("That was the practice question. It was not scored."),
         html.P(
             "The next six questions are the ones that count. The charts use the same version "
-            "(static/interactive) that you experienced in the practice question.",
-            style=PROMPT_STYLE,
+            "(static/interactive) that you experienced in the practice question."
         ),
         html.P(
             "For each question, choose one answer, then write a short sentence response about your "
             "decision. After the sixth question, there are a few quick reflecting questions about "
-            "your experience with this version.",
-            style=PROMPT_STYLE,
+            "your experience with this version."
         ),
         html.P(
             "You may skip a question at any time. If you leave one unanswered, you will be asked "
-            "to confirm.",
-            style=PROMPT_STYLE,
+            "to confirm."
         ),
         # Its own id: `begin-button` leaves the instructions, and sharing it would make the two
         # indistinguishable in the callback -- how the break once skipped the instructions.
-        primary_button("Start the questions", "practice-done-button"),
+        actions(button("Start the questions", "practice-done-button")),
+        error_slot(),
     )
 
 
-def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
+# The instructions' wording: the design handoff's screens 4a, 4b, 9a and 9b, with the copy fixes in
+# docs/study-redesign.md section 5 and its interactive bullets rewritten to describe the controls
+# the charts have (docs/study-design.md section 8, where the approved wording is quoted).
+PRACTICE_INTRO = (
+    "Before the main set of questions, you'll try one practice question so you know what to "
+    "expect. It won't be scored.",
+    "You'll see a line chart of childhood vaccination coverage (the share of children who received "
+    "a vaccine each year). Answer the question, then explain in one sentence how you decided.",
+)
+STATIC_BULLET = "The chart is an image. Read values by comparing the line to the gridlines."
+INTERACTIVE_BULLETS = (
+    "The charts are interactive. Move your pointer over any line, bar, dot, cell or country to see "
+    "its value; on a line chart you also see its change from the year before.",
+    "Under each chart, the country buttons show or hide countries, and Reset view undoes your "
+    "changes.",
+    "On line charts you can also click a line, or double-click a name in the legend, to see one "
+    "country on its own; reorder the countries by coverage; and bring every line back with Show "
+    "all.",
+    "The bar chart and the coloured grid can sort their bars or rows. The map can highlight only "
+    "the countries below a coverage you type.",
+)
+GAP_BULLET = "A break in a line means no value was reported for those years."
+PRACTICE_SKIP_BULLET = (
+    "You can skip the question. If you leave it blank, you'll be asked to confirm."
+)
+OTHER_CHARTS = (
+    "In the main task, you'll see other kinds of charts too: bar charts, scatter plots, coloured "
+    "grids and maps."
+)
+# An addition to the handoff, so the static wording names the colour key the heatmap and the map
+# are read against, as the 2026-09-23 wording did.
+STATIC_OTHER_CHARTS = (
+    "Those are images too: read them against the gridlines, or against the colour key where there "
+    "is one."
+)
+SECOND_HALF_INTRO = (
+    "This half uses a different version of the charts. The tasks are similar, but the charts work "
+    "differently."
+)
+SECOND_HALF_STATIC = (
+    " images. They don't respond to your mouse pointer and have no controls. Read them against the "
+    "gridlines, or against the colour key where there is one."
+)
+SECOND_HALF_POINTING = (
+    "Pointing at any line, bar, dot, cell or country shows its value. On line charts, it also "
+    "shows the change from the year before."
+)
+SECOND_HALF_CLOSE = (
+    "As before, you'll answer a question about each chart and then say in one sentence how you "
+    "decided. A break in a line means no value was reported for those years. You may skip any "
+    "question, and you'll be asked to confirm if you leave one blank."
+)
+
+
+def instructions_screen(interactive: bool, practice: bool = False) -> html.Main:
     """Instructions. The wording differs by condition ONLY in describing what the chart can do.
 
     Describing controls that are not present, or failing to describe controls that are, would be a
@@ -862,47 +944,69 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Div:
     **Shown before BOTH conditions.** `practice=True` marks the first, which is the only one leading
     into the practice item. The second condition reaches this screen from the break, and needs it
     precisely because its affordances differ from the first's — a participant who gets the
-    interactive version second would otherwise never learn the controls exist.
+    interactive version second would otherwise never learn the controls exist. Both halves'
+    interactive versions list the same controls.
+
+    The copy's sizes (21, 22 and 23 px) and its line breaks are the handoff's, screen by screen.
     """
-    shared = (
-        "You will see charts of childhood vaccination coverage — line charts, a bar chart, a "
-        "scatter plot, a grid of coloured cells and a map — and answer a question about each. "
-        "After each question you will be asked, in one sentence, how you decided."
-    )
-    specific = (
-        "You can hover over any line, bar, dot, cell or country to read its exact value; on a "
-        "line chart you also see its change from the year before. Some charts have controls "
-        "above them: on line charts you can filter, sort and isolate countries, on the bar chart "
-        "you can sort the bars, and on the map you can show only the countries within a coverage "
-        "range."
-        if interactive
-        else "The charts are images: read values against the gridlines, or against the colour "
-        "key where there is one."
-    )
-    intro = (
-        []
-        if practice
-        else [
-            html.P(
-                "This half uses a different version of the chart from the one you have just used. "
-                "Please read on — what the chart can do has changed.",
-                style={**PROMPT_STYLE, "fontWeight": "600"},
+    if practice:
+        bullets = [*(INTERACTIVE_BULLETS if interactive else [STATIC_BULLET])]
+        bullets += [GAP_BULLET, PRACTICE_SKIP_BULLET]
+        closing = OTHER_CHARTS if interactive else f"{OTHER_CHARTS} {STATIC_OTHER_CHARTS}"
+        subtitle = "Practice Question"
+        body = html.Div(
+            [
+                PRACTICE_INTRO[0],
+                html.Br(),
+                html.Br(),
+                PRACTICE_INTRO[1],
+                html.Ul([html.Li(bullet) for bullet in bullets]),
+                closing,
+            ],
+            className="copy-21",
+        )
+    elif interactive:
+        subtitle = "Second Half"
+        body = html.Div(
+            [
+                SECOND_HALF_INTRO,
+                html.Br(),
+                html.Br(),
+                "The charts in this half are ",
+                html.B("interactive"),
+                ":",
+                html.Ul([html.Li(b) for b in (SECOND_HALF_POINTING, *INTERACTIVE_BULLETS[1:])]),
+                SECOND_HALF_CLOSE,
+            ],
+            className="copy-22",
+        )
+    else:
+        subtitle = "Second Half"
+        body = html.P(
+            [
+                SECOND_HALF_INTRO,
+                html.Br(),
+                html.Br(),
+                "The charts in this half are ",
+                html.B("static"),
+                SECOND_HALF_STATIC,
+                html.Br(),
+                html.Br(),
+                SECOND_HALF_CLOSE,
+            ],
+            className="copy-23",
+        )
+    return stage_page(
+        screen_title("Instructions", "📜"),
+        html.P(subtitle, className="lead copy-26"),
+        body,
+        actions(
+            button(
+                "Start the practice question" if practice else "Start the questions",
+                "begin-button",
             )
-        ]
-    )
-    return interim_page(
-        heading("Instructions"),
-        *intro,
-        html.P(shared, style=PROMPT_STYLE),
-        html.P(specific, style=PROMPT_STYLE),
-        html.P(
-            "A break in a line means no value was reported for those years.",
-            style=PROMPT_STYLE,
         ),
-        html.P(SKIP_NOTE, style=PROMPT_STYLE),
-        primary_button(
-            "Start the practice question" if practice else "Start the questions", "begin-button"
-        ),
+        error_slot(),
     )
 
 
@@ -1039,34 +1143,37 @@ def load_screen(interactive: bool, second_half: bool) -> html.Div:
     )
 
 
-def break_screen() -> html.Div:
-    return interim_page(
-        heading("Halfway"),
+def break_screen() -> html.Main:
+    return stage_page(
+        screen_title("Halfway There!", "😊"),
         html.P(
-            "That is the first half finished. The next set uses a different version of the chart "
-            "and different questions. Take a moment, then continue when you are ready.",
-            style=PROMPT_STYLE,
+            "Congratulations! The first half of the study is complete! The next set will ask "
+            "different questions using the other version (static/interactive). Take a moment, then "
+            "continue when you are ready.",
+            className="copy-21",
         ),
         # Its own id, not `begin-button`: this leads to the second condition's INSTRUCTIONS, whereas
         # `begin-button` starts the tasks. Sharing an id would make the two indistinguishable in the
         # callback and is how the second condition lost its instructions in the first place.
-        primary_button("Continue", "resume-button"),
+        actions(button("Continue", "resume-button")),
+        error_slot(),
     )
 
 
-def complete_screen(participant_id: str | None = None) -> html.Div:
+def complete_screen(participant_id: str | None = None) -> html.Main:
     """The end, with the withdrawal right IRB form item 13 promises to remind participants of."""
     who = f" (your participant ID is {participant_id})" if participant_id else ""
-    return interim_page(
-        heading("Finished — thank you"),
+    email = consent.RESEARCHER_EMAIL
+    return stage_page(
+        screen_title("Finished! Thank you!", "🙂"),
+        html.P("Your responses have been successfully recorded. You can close this tab."),
         html.P(
-            "Your responses have been recorded. You can close this tab.",
-            style=PROMPT_STYLE,
+            [
+                "If you change your mind, you can withdraw your responses within two weeks of "
+                "today, without giving a reason. Email ",
+                html.A(email, href=f"mailto:{email}"),
+                f" and include your participant ID{who}.",
+            ]
         ),
-        html.P(
-            "If you change your mind, you can withdraw your responses within two weeks of today, "
-            f"without giving a reason. Email {consent.RESEARCHER_EMAIL} and include your "
-            f"participant ID{who}.",
-            style=PROMPT_STYLE,
-        ),
+        error_slot(),
     )

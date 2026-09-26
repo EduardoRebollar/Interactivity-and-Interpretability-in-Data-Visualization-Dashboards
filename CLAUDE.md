@@ -327,7 +327,7 @@ src/
   assets/
     study.css           # the design handoff's stylesheet, copied unchanged (visual-spec.md §10)
     zz-bridge.css       # study.css's option rules re-aimed at Dash 4's markup (generated; committed)
-    zz-overrides.css    # the few rules Dash's markup needs; loads after study.css, each one explained
+    zz-overrides.css    # hand-written rules for Dash's markup and the short screens, each explained
     signature.js        # the consent screen's signature pad; Dash serves assets/ automatically
     geo_africa.js       # the map's country shapes, Plotly's own file (generated; committed)
     flags/              # a PNG per country for the chips, from flagcdn.com (generated; committed)
@@ -559,7 +559,7 @@ context cheap and the reports as long as they need to be.
 - 2026-09-25 — **Largest-rise item dropped** (uncommitted at time of writing), so line charts carry
   two items per form. T3–T7 renumbered T2–T6; schema v8. 853 tests. Four sessions, one per
   counterbalancing cell, driven in headless Chrome: every derived key matched what was logged.
-- 2026-09-25 — **Redesign, phases 1–4 of `docs/study-redesign.md`** (uncommitted at time of writing).
+- 2026-09-25 — **Redesign, phases 1–5 of `docs/study-redesign.md`** (uncommitted at time of writing).
   - Phase 1: the §4 decisions (below) and the plan.
   - Phase 2: `study-design.md` and `visual-spec.md` amended; six options per item; T1 without World;
     consent text from the handoff's screen 1 (hash re-pinned); practice-complete stage; About you
@@ -576,6 +576,11 @@ context cheap and the reports as long as they need to be.
     control by pattern. Dash 4 bridge stylesheet. 1083 tests. A full session in headless Chrome, 38
     checks, no console errors; every event logged, none in the static half. Open: the scatter and
     map task cards overflow a 768 px window in the interactive condition only.
+  - Phase 5 (2026-09-26): the short screens on the handoff's centred card (declined, ID with S2,
+    the four instructions, practice complete, break, finished), with the approved wording. 1089
+    tests. Both orders in headless Chrome at 1440 × 790 and 1366 × 768: 66 checks each, no console
+    errors. Open: the instructions overflow a 790 px window except 9a; 4b's button is 260 px
+    below it.
 - **Still to do before the pilot:**
   - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
     and the URL for item 18.
@@ -686,6 +691,9 @@ context cheap and the reports as long as they need to be.
   - A reorder of the chips rebuilds their group; sending the two checklists new options made
     Dash 4's renderer throw when a flag-and-name label moved between rows.
   - Chips toggled from the legend follow it, and an isolated line shows as its chip alone.
+- 2026-09-26 — **Phase 5, taken without asking** (reported for review): the handoff's inline sizes
+  on the short screens are classes in `zz-overrides.css`; "ID:" is a `<label>`, not hidden; only
+  an empty ID marks the field invalid, by a clientside script, since `dcc.Input` has no `aria-*`.
 - 2026-09-23 — Box and lasso select removed from every chart's modebar, including the line charts,
   where they had been since the start: they dim marks with no event recorded. `visual-spec.md` §7.5.
 

@@ -68,7 +68,9 @@ _TAGS = {
     "Span": "span",
     "Label": "label",
     "Strong": "strong",
+    "B": "b",
     "Em": "em",
+    "A": "a",
     "Ul": "ul",
     "Li": "li",
 }
@@ -112,6 +114,8 @@ class Renderer:
         inner = self.render(props.get("children"))
         if kind == "Button":
             return f"<button disabled{style}>{inner}</button>"
+        if kind == "Br":
+            return "<br>"
         tag = _TAGS.get(kind, "div")
         return f"<{tag}{style}>{inner}</{tag}>"
 

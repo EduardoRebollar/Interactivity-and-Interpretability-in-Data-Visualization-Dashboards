@@ -8,7 +8,8 @@ the class on each label: `.chip`, `.ui-tile`, `.seg-item`. Dash 4's `dcc.RadioIt
 input. The list's own `className` does reach the element around the labels, so every such rule
 can be matched as ".dash-options-list-option whose parent carries the list's class". Likewise
 `dcc.Input` puts its `className` on a box around the `<input>`, so a state of the input itself,
-such as `:focus-visible`, has to be read through that box with `:has()`.
+such as `:focus-visible` or `[aria-invalid="true"]`, has to be read through that box with
+`:has()`, and its placeholder reached inside it.
 
 This script copies every study.css rule that names one of those classes, with the selector
 rewritten that way and the declarations untouched, so the bridge can never drift from the
@@ -39,7 +40,14 @@ OPTION_LISTS = {
     "seg-item": "seg",
 }
 # Classes study.css puts on an <input>, which dcc.Input puts on the box around it instead.
-INPUT_BOXES = ("tb-num",)
+INPUT_BOXES = ("tb-num", "field")
+# A state study.css reads from the <input> itself, and how it is read through dcc.Input's box.
+INPUT_STATES = {
+    ":focus-visible": ":has(:focus-visible)",
+    ":disabled": ":has(> :disabled)",
+    '[aria-invalid="true"]': ':has(> [aria-invalid="true"])',
+    "::placeholder": " > .dash-input-element::placeholder",
+}
 
 DASH_OPTION = "dash-options-list-option"
 PREVIEW_ONLY = re.compile(r"\.is-(?:hover|focus|selected|disabled|error)(?![\w-])")
@@ -68,11 +76,12 @@ def translate(selector: str) -> str | None:
     for label, listing in OPTION_LISTS.items():
         bridged = _class(label).sub(f".{DASH_OPTION}:is(.{listing} > *)", bridged)
     for box in INPUT_BOXES:
-        bridged = re.sub(
-            r"\." + re.escape(box) + r":focus-visible(?![\w-])",
-            f".{box}:has(:focus-visible)",
-            bridged,
-        )
+        for state, through_box in INPUT_STATES.items():
+            bridged = re.sub(
+                r"\." + re.escape(box) + re.escape(state) + r"(?![\w-])",
+                f".{box}{through_box}",
+                bridged,
+            )
     return bridged if bridged != selector else None
 
 

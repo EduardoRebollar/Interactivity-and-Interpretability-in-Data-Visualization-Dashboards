@@ -131,6 +131,19 @@ def test_the_bridge_re_aims_whole_classes_only():
     assert translate(".tb-num:focus-visible") == ".tb-num:has(:focus-visible)"
 
 
+def test_the_bridge_reads_an_input_boxs_states_through_the_box():
+    """dcc.Input puts `.field` on a box around the <input>: the input's own states, its invalid
+    mark (S2) and its placeholder are read through that box."""
+    translate = _bridge_script().translate
+    assert translate(".field:focus-visible") == ".field:has(:focus-visible)"
+    assert translate('.field[aria-invalid="true"]') == '.field:has(> [aria-invalid="true"])'
+    assert translate(".field:disabled") == ".field:has(> :disabled)"
+    assert translate(".field::placeholder") == ".field > .dash-input-element::placeholder"
+    assert translate(".field:hover") is None, "the box itself is hovered"
+    assert translate(".field-error") is None
+    assert translate("textarea.field") is None
+
+
 def test_the_bridge_copies_declarations_untouched():
     """Every bridged rule says exactly what the study.css rule it came from says."""
     script = _bridge_script()
@@ -168,6 +181,20 @@ def test_every_class_a_screen_uses_is_defined():
             missing = _classes(node) - defined
             if missing:
                 problems.append(f"{name}: {sorted(missing)}")
+    assert not problems, "\n".join(sorted(set(problems)))
+
+
+def test_the_short_screens_carry_no_inline_style():
+    """Their look is the stylesheet's classes (visual-spec.md section 10): the handoff's own inline
+    sizes and centring are classes in zz-overrides.css, so none is set from layout.py."""
+    short = {"declined", "participant_id", "instructions", "practice_complete", "break", "complete"}
+    problems = [
+        f"{name}: {type(node).__name__}"
+        for name, screen in _screens()
+        if name.split("/")[0] in short
+        for node in _walk(screen)
+        if getattr(node, "style", None)
+    ]
     assert not problems, "\n".join(sorted(set(problems)))
 
 

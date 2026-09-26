@@ -63,10 +63,13 @@ def test_the_practice_complete_screen_is_in_it(page):
 
 
 def test_both_versions_of_the_instructions_are_in_it(page):
-    """They differ only in what the chart can do; the IRB sees both."""
-    assert html.escape("The charts are images: read values against the gridlines") in page
-    assert html.escape("You can hover over any line, bar, dot, cell or country") in page
-    assert html.escape(layout.SKIP_NOTE) in page
+    """They differ only in what the chart can do; the IRB sees both, before each half."""
+    wording = [layout.STATIC_BULLET, layout.STATIC_OTHER_CHARTS, *layout.INTERACTIVE_BULLETS]
+    wording += [layout.SECOND_HALF_POINTING, layout.SECOND_HALF_STATIC.strip()]
+    wording += [*layout.PRACTICE_INTRO, layout.SECOND_HALF_INTRO, layout.SECOND_HALF_CLOSE]
+    for text in wording:
+        assert html.escape(text) in page, text
+    assert "<b>static</b>" in page and "<b>interactive</b>" in page
 
 
 def test_every_chart_is_drawn(page):

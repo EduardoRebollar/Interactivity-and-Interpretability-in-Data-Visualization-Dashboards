@@ -52,3 +52,38 @@
 /* The practice's third answer spans both columns, as in the handoff, where an inline style does
    it. The rule is general: a last tile alone on its row, in any odd-numbered set. */
 .ui-tiles > .dash-options-list-option:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* study.css's .field is display: block, for an <input>. dcc.Input puts the class on its box around
+   the input, where block leaves the input at its own narrow width; a block-level flex box, like
+   Dash's own inline-flex, lets it fill the field. */
+.dash-input-container.field { display: flex; }
+
+/* ---- The short screens -----------------------------------------------------------------------
+   Declined, the participant ID, the instructions, practice complete, the break and the finish
+   (the handoff's screens 2, 3, 4, 6, 8, 9 and 11). The handoff's Screens file centres their copy
+   and sizes it screen by screen with inline styles, which layout.py does not use; these rules
+   carry its values. */
+.stage .prose { text-align: center; }
+.stage .prose .actions { justify-content: center; }
+.stage .prose .field-error,
+.stage .prose .msg-error { justify-content: center; }
+
+/* The copy's size where the handoff sets one other than study.css's 20 px: the instructions'
+   subtitle, their text and the break's. The declined screen's note keeps .note's 15 px, which
+   study.css's rule for a short screen's paragraphs would otherwise raise to 20 px. */
+.stage .prose .copy-21 { font-size: 21px; }
+.stage .prose .copy-22 { font-size: 22px; }
+.stage .prose .copy-23 { font-size: 23px; }
+.stage .prose .copy-26 { font-size: 26px; }
+.stage .prose .note { font-size: var(--fs-13); }
+
+/* The participant ID: "ID:" beside the field, the pair centred 32 px under the copy (a spacer
+   in the handoff). */
+.id-row { display: flex; align-items: center; justify-content: center; gap: var(--s-3); margin-top: var(--s-6); }
+.id-label { font-size: 23px; font-weight: 700; }
+.id-row .field { max-width: 260px; margin: 0; text-align: left; }
+
+/* study.css hides an empty .field-error, but its own rule for one on a short screen outranks
+   that and would draw the "!" with no message: the error slot is always on the page, empty until
+   a refusal. */
+.stage .prose .field-error:empty { display: none; }

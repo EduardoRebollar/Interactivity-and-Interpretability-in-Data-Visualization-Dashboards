@@ -48,6 +48,9 @@ CONSENT_UNSAVED = (
     '"I agree to participate" again.'
 )
 
+# The participant-ID screen's refusal of an empty ID (the handoff's S2), which marks the field.
+ID_MISSING = "Please enter your participant ID."
+
 # Shown when responses cannot be saved at all, as opposed to a database that is briefly unreachable.
 UNSAVEABLE = (
     "The study cannot save responses right now, so it cannot continue. "
@@ -325,7 +328,7 @@ def step(
 
         elif triggered == "participant-button":
             if not (participant_id or "").strip():
-                return refuse("Please enter your participant ID.")
+                return refuse(ID_MISSING)
             condition, form = _assign(participant_id.strip())
             state = flow.set_participant(state, participant_id.strip(), condition, form)
 
@@ -1638,9 +1641,19 @@ PARTICIPANT_DISABLE_JS = """function(n, nSubmit) {
     return true;
 }"""
 
+# A refusal also marks the field (S2): invalid when the ID is what was refused, not when the
+# database was, and described by the message under it. By hand, because dcc.Input takes no aria-*
+# property; React leaves attributes it does not manage alone, and a refusal does not re-render the
+# screen.
 PARTICIPANT_ENABLE_JS = """function(message) {
+    var field = document.getElementById("participant-input");
+    if (field) {
+        field.setAttribute("aria-describedby", "flow-error");
+        if (message === ID_MISSING) { field.setAttribute("aria-invalid", "true"); }
+        else { field.removeAttribute("aria-invalid"); }
+    }
     return message ? false : window.dash_clientside.no_update;
-}"""
+}""".replace("ID_MISSING", json.dumps(ID_MISSING))
 
 CONSENT_CLOCK_JS = """function(n) {
     return n ? new Date().toISOString() : window.dash_clientside.no_update;

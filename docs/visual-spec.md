@@ -483,8 +483,17 @@ strip and the hint row under the chart (§7).
   `study.css` by `scripts/bridge_stylesheet.py`, copies every such rule with its selector re-aimed at
   Dash's label inside the list that carries the handoff's list class (`.chips`, `.ui-tiles`, `.seg`),
   declarations untouched; a test holds it to the stylesheet. `dcc.Input` puts its class on a box
-  around the input, so the number box's focus is read through that box. Dash's own accent colour
-  and focus outlines are overridden in `zz-overrides.css`.
+  around the input, so the number box's and the ID field's states (focus, the invalid mark, the
+  placeholder) are read through that box. Dash's own accent colour and focus outlines are
+  overridden in `zz-overrides.css`.
+- **The short screens (2026-09-26).** Declined, the participant ID, the instructions, practice
+  complete, the break and the finish: one white card centred on the page. The handoff's Screens
+  file centres their copy and sizes it screen by screen with inline styles (21 to 26 px, against
+  the stylesheet's 20); those values are classes in `zz-overrides.css` (`copy-21` to `copy-26`,
+  `id-row`), so `layout.py` still sets no style. The ID field's "ID:" is a `<label>`, where the
+  handoff hides it from screen readers, so the field has a name. An empty ID marks the field
+  `aria-invalid` and links it to the message under it (S2); a database refusal leaves it
+  unmarked.
 - **Two palettes that never mix.** The chrome's colours (the stylesheet's `:root` tokens: oat page
   `#F8F3EE`, band `#EFE4DA`, ink `#241C18`, muted `#5F544D`, cocoa accent `#5A4034`, error `#C35600`
   and the rest) are never used inside the chart, and the series colours and Cividis (§4) are never

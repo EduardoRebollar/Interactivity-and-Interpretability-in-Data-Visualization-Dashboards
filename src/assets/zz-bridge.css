@@ -14,6 +14,10 @@
 .dash-options-list-option:is(.seg > *) input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
 .dash-options-list-option:is(.seg > *):has(input:focus-visible) { box-shadow: var(--focus-ring); }
 .tb-num:has(:focus-visible) { box-shadow: var(--focus-ring); }
+.field > .dash-input-element::placeholder { color: var(--c-muted); }
+.field:has(:focus-visible) { border-color: var(--c-accent); box-shadow: var(--focus-ring); }
+.field:has(> [aria-invalid="true"]) { border-color: var(--c-error); box-shadow: inset 0 0 0 1px var(--c-error); }
+.field:has(> :disabled) { color: var(--c-muted); background: var(--c-disabled-bg); border-color: var(--c-disabled-bg); cursor: not-allowed; }
 .dash-options-list-option:is(.ui-tiles > *) { display: flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--tile-h); min-width: 0; box-sizing: border-box; padding: 6px 8px; text-align: left; background: #FFFFFF; border: 1px solid var(--c-line); border-radius: var(--r-1); font-size: var(--fs-18); font-weight: 700; line-height: 1.2; color: var(--c-ink); cursor: pointer; font-variant-numeric: tabular-nums; transition: background-color .12s, border-color .12s, box-shadow .12s; }
 .dash-options-list-option:is(.ui-tiles > *) input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--c-accent); cursor: pointer; }
 .dash-options-list-option:is(.ui-tiles > *):hover { background: var(--c-page); border-color: var(--c-accent); }

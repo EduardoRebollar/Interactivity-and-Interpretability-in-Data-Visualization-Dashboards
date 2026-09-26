@@ -100,23 +100,21 @@ def _consent_kwargs(**overrides) -> dict:
 # --- Helpers --------------------------------------------------------------------------------------
 
 
+def _nodes(component) -> list:
+    """Every node of a rendered tree, components and text, in document order."""
+    found = [component]
+    children = getattr(component, "children", None)
+    if isinstance(children, (list, tuple)):
+        for child in children:
+            found += _nodes(child)
+    elif children is not None:
+        found += _nodes(children)
+    return found
+
+
 def _ids(component) -> set[str]:
     """Every component id anywhere in a rendered tree."""
-    found: set[str] = set()
-
-    def walk(node) -> None:
-        component_id = getattr(node, "id", None)
-        if isinstance(component_id, str):
-            found.add(component_id)
-        children = getattr(node, "children", None)
-        if isinstance(children, (list, tuple)):
-            for child in children:
-                walk(child)
-        elif children is not None:
-            walk(children)
-
-    walk(component)
-    return found
+    return {node.id for node in _nodes(component) if isinstance(getattr(node, "id", None), str)}
 
 
 def _state(stage: Stage, **kwargs) -> SessionState:
@@ -225,7 +223,7 @@ def test_every_screen_sits_in_the_shell_with_its_step_marked(stage, index):
     assert [item.get("className") for item in items] == [
         "is-done" if i < current else None for i in range(len(flow.STEPS))
     ]
-    assert screen.children[1].className == "page"
+    assert "page" in screen.children[1].className.split()
 
 
 def test_the_background_follows_the_handoffs_screens():
@@ -485,9 +483,29 @@ def test_practice_is_offered_before_the_first_condition_only():
 
 def test_the_second_conditions_instructions_describe_the_condition_about_to_start():
     """Whoever gets interactive second must be told the controls exist."""
-    screen = app.render(_state(Stage.INSTRUCTIONS, first_condition="static", condition_index=1))
-    text = json.dumps(screen.to_plotly_json(), default=str)
-    assert "hover" in text, "the second condition is interactive; its affordances must be described"
+    text = _content_text(_state(Stage.INSTRUCTIONS, first_condition="static", condition_index=1))
+    assert layout.SECOND_HALF_POINTING in text, "hover must be described"
+    static = _content_text(
+        _state(Stage.INSTRUCTIONS, first_condition="interactive", condition_index=1)
+    )
+    assert layout.SECOND_HALF_POINTING not in static
+    assert "have no controls" in static
+
+
+def test_both_halves_interactive_instructions_list_the_same_controls():
+    """Whoever gets interactive first meets every chart's controls too, not only the line chart's
+    hover (docs/study-design.md section 8)."""
+    first = _content_text(_state(Stage.INSTRUCTIONS, first_condition="interactive"))
+    second = _content_text(_state(Stage.INSTRUCTIONS, first_condition="static", condition_index=1))
+    for bullet in layout.INTERACTIVE_BULLETS[1:]:
+        assert bullet in first and bullet in second, bullet
+
+
+def test_a_short_screens_emoji_is_hidden_from_screen_readers():
+    for stage in (Stage.PARTICIPANT_ID, Stage.INSTRUCTIONS, Stage.BREAK, Stage.COMPLETE):
+        (heading,) = [n for n in _nodes(app._screen(_state(stage))) if type(n).__name__ == "H1"]
+        text, emoji = heading.children
+        assert text.endswith(" ") and emoji.to_plotly_json()["props"]["aria-hidden"] == "true"
 
 
 # --- A whole session ------------------------------------------------------------------------------
@@ -1893,8 +1911,14 @@ const window = {
   setTimeout: (fn, ms) => timers.push([fn, ms]),
   confirm: (message) => { calls.push(["confirm", message]); return window.confirmAnswer; },
 };
-// Every id is on the page unless a case lists it as gone, as when the screen has moved on.
-const document = { getElementById: (id) => (window.gone.includes(id) ? null : { id }) };
+// Every id is on the page unless a case lists it as gone, as when the screen has moved on. An
+// attribute set or removed on an element is recorded as ["attr", id, name, value or null].
+const element = (id) => ({
+  id,
+  setAttribute: (name, value) => calls.push(["attr", id, name, value]),
+  removeAttribute: (name) => calls.push(["attr", id, name, null]),
+});
+const document = { getElementById: (id) => (window.gone.includes(id) ? null : element(id)) };
 const cases = JSON.parse(process.argv[1]);
 const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer, gone]) => {
   window.confirmAnswer = confirmAnswer !== false;
@@ -2138,12 +2162,41 @@ def test_continue_is_disabled_on_click_or_enter_and_the_watchdog_re_enables_it()
 def test_a_refused_id_re_enables_continue():
     refused, cleared = _run_js(
         [
-            [app.PARTICIPANT_ENABLE_JS, "Please enter your participant ID.", False],
+            [app.PARTICIPANT_ENABLE_JS, app.ID_MISSING, False],
             [app.PARTICIPANT_ENABLE_JS, "", False],
         ]
     )
     assert refused["result"] is False
     assert cleared["result"] == "NO_UPDATE"
+
+
+def test_a_missing_id_marks_the_field_and_points_it_at_the_message():
+    """S2: aria-invalid on the field, described by the message under it. A database refusal is
+    not the field's fault, so it leaves the field unmarked."""
+    (missing,) = _run_js([[app.PARTICIPANT_ENABLE_JS, app.ID_MISSING, False]])
+    assert missing["calls"] == [
+        ["attr", "participant-input", "aria-describedby", "flow-error"],
+        ["attr", "participant-input", "aria-invalid", "true"],
+    ]
+    (database,) = _run_js([[app.PARTICIPANT_ENABLE_JS, "Something went wrong saving that.", False]])
+    assert ["attr", "participant-input", "aria-invalid", None] in database["calls"]
+    (gone,) = _run_js([[app.PARTICIPANT_ENABLE_JS, "", False, None, True, ["participant-input"]]])
+    assert gone["calls"] == [], "the screen has moved on; nothing to mark"
+    assert app.ID_MISSING in json.dumps(app.step("participant-button", None, None)[3])
+
+
+def test_the_id_error_sits_under_the_field_as_an_alert():
+    """The handoff's S2: the message is a field error between the field and the buttons, announced
+    when it appears."""
+    screen = app._screen(_state(Stage.PARTICIPANT_ID))
+    ids = [node.id for node in _nodes(screen) if getattr(node, "id", None)]
+    field, error, button = (
+        ids.index(i) for i in ("participant-input", "flow-error", "participant-button")
+    )
+    assert field < error < button
+    (slot,) = [node for node in _nodes(screen) if getattr(node, "id", None) == "flow-error"]
+    assert slot.className == "field-error"
+    assert slot.to_plotly_json()["props"]["role"] == "alert"
 
 
 def test_the_consent_clock_is_an_iso_timestamp():
