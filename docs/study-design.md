@@ -8,9 +8,9 @@ Status: **draft, 2026-09-15; revised 2026-09-21 to match the IRB submission; tas
 2026-09-22, then replaced 2026-09-23 by a redesigned task bank on five chart types, with a
 crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4); redesigned
 2026-09-25 from the design handoff (`docs/design-handoff/`, `docs/study-redesign.md`): six options
-per item, controls on every chart, a new survey, and About you, which moves to the end.** The
-consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a
-participant until approved.
+per item, controls on every chart, a new survey, and About you, which moves to the end; built and
+verified in headless Chrome 2026-09-26.** The consent text in §9 is the form submitted to
+Occidental's HSRRC and must not be shown to a participant until approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -186,8 +186,9 @@ L*, so 10 points is at least 7.3 L*.
 A bar, dot, cell or country with no reported value is refused outright: the chart would have nothing
 to show exactly where the question looks. A crossing is judged only on years both lines report. An
 item that fails any part is refused by `analysis/keys.py` with `KeyDerivationError`, so a fragile
-item fails the test suite exactly as a wrong key does, including after a data refresh. `tests/test_scoring.py` also runs each spec item
-that was changed on the real data and checks that it is still refused.
+item fails the test suite exactly as a wrong key does, including after a data refresh.
+`tests/test_scoring.py` also runs each spec item that was changed on the real data and checks that
+it is still refused.
 
 ### T1 — Lowest point (line, isolation)
 
@@ -616,8 +617,8 @@ interactive answer may rest on an unlogged hover, and the write-up says so.
 | `notes_uncertainty` | flags missing data, an estimate, or ambiguity |
 
 Depth score 0–3. Code blind to condition. A skipped justification has no text to code; it is
-absent from the coding sheet and missing, not zero, in the depth analysis. A second coder scores 20% of the justifications;
-report Cohen's κ.
+absent from the coding sheet and missing, not zero, in the depth analysis. A second coder scores 20%
+of the justifications; report Cohen's κ.
 
 Blinding is enforced by the harness, not by discipline (`analysis/coding.py`): the coding sheet
 carries only an opaque unit id and the justification text — no condition, no form, no participant,
@@ -633,9 +634,14 @@ reported as such rather than as a number. At n ≥ 25 the double-coded sample is
 conventional, but thin, and the write-up should say so.
 
 **Cognitive load (RQ3).** Paas score per condition, 1–9. A skipped rating is missing for that
-participant × condition. The survey items a1–a9, b1–b3 and c1–c2 (§6.1) are reported descriptively
-per condition. c3's free text is reported descriptively too; it is not part of the RQ2 coding, which
-covers task justifications only. a7 (mental effort) is reported beside Paas, never in its place.
+participant × condition. The survey (§6.1) is reported descriptively: a1–a9 per condition, b1–b3
+for the interactive condition (the only one that asks them), and c1–c2 as a count of each answer
+(`analysis/report`). c3's free text is reported descriptively too; it is not part of the RQ2
+coding, which covers task justifications only. a7 (mental effort) is reported beside Paas, never in
+its place.
+
+**About you (§6.2)** describes the sample, as counts of each answer and the median age; it is not an
+outcome and enters no test.
 
 **Time on task.** From the browser clock (`performance.now()`), never the server, so cold starts and
 network latency do not enter a dependent variable.
@@ -811,9 +817,11 @@ coverage data: a missing value is missing, never silently filled. Those rows kee
 leave time-on-task analysis (§7).
 
 **One answer per task.** Submit is disabled in the browser the moment it is pressed, and re-enabled
-if the step is refused (an unanswered question) or if no response arrives within 15 seconds, so a
-participant is never left with a dead button. This is the guard that matters: two rapid clicks send
-two requests that both carry the same pre-click session state, so the server cannot tell them apart.
+if the step is refused (an answer that cannot be read, or a database error; a blank answer is not
+refused but confirmed in the browser before Submit is sent, §5) or if no response arrives within 15
+seconds, so a participant is never left with a dead button. Disabling it is the guard that matters:
+two rapid clicks send two requests that both carry the same pre-click session state, so the server
+cannot tell them apart.
 Behind it, the app refuses an answer for a task already recorded in the session, and the database
 refuses a second `answer_submit` for the same session and task through a unique index. Without these
 a double-click writes a duplicate answer and a duplicate `task_end`; it does not skip an item, since
@@ -828,7 +836,10 @@ session: events are retried, then spooled in the browser and replayed later (CLA
 When a response cannot be saved anywhere, the screen's content is replaced by a blocking message:
 *"The study cannot save responses right now, so it cannot continue. Please contact the
 researcher."* That happens when the log sink cannot be opened or written at all, and when the
-browser spool is full, so the next answer or rating would be dropped rather than kept.
+browser spool is full, so the next answer or rating would be dropped rather than kept. Built
+2026-09-26: the header stays, with the position label of the screen replaced ("Question 3 of 6"),
+and the session's stores keep whatever was written, so reloading the tab shows that stage again.
+The researcher, who is present, decides whether to continue.
 
 **Finished.** Heading "Finished! Thank you!": "Your responses have been successfully recorded. You
 can close this tab." and "If you change your mind, you can withdraw your responses within two weeks
@@ -843,7 +854,9 @@ The consent screen shows the Occidental informed consent form submitted to HSRRC
 "pending approval" banner** (`consent.APPROVED = False`), and no participant may be run.
 
 **Revised 2026-09-25** to the design handoff's screen 1, which reproduces the finalized form as a
-Letter sheet in Times New Roman, with the signing fields inside the sheet. Its wording differs from
+Letter sheet in Times New Roman, with the signing fields inside the sheet: the signature pad
+(600 × 150), the date and the printed name on one line, and a "Clear signature" button that appears
+after the first stroke. Its wording differs from
 the 2026-09-21 transcription in four places, all listed in §10 for the IRB paperwork: about 40
 minutes instead of 20 to 35 (twice), a new sentence in Risks on childhood vaccination as a sensitive
 topic, "Neon (a managed PostgreSQL service)" instead of "Neon (managed by PostgreSQL)", and access to
@@ -854,7 +867,8 @@ topic, "Neon (a managed PostgreSQL service)" instead of "Neon (managed by Postgr
 IRB form item 12A: the participant types their **printed name** and the **date**, **signs**, and
 presses **"I agree to participate"**. The signature is drawn with a mouse, trackpad or finger on a
 signature pad. A participant who cannot or prefers not to draw one signs the paper copy the
-researcher brings instead, and ticks "I have signed a paper copy of this form with the researcher".
+researcher brings instead, and ticks "I have signed a paper copy of this form with the researcher
+instead", a checkbox that works from the keyboard, which the pad does not.
 "I do not agree" is always available (item 12B). The app refuses to go on without a name, a date, and
 either a drawn signature or the paper box ticked.
 
@@ -902,8 +916,8 @@ detectable in the data rather than being a matter of recollection.
 
 IRB form item 13: a participant may withdraw their data **up to two weeks after the session**,
 without giving a reason. The consent form says the same, and adds that after two weeks "your
-responses will have been merged into the de-identified dataset and can no longer be pulled out". The final screen tells them so, shows their participant ID, and gives the
-researcher's email.
+responses will have been merged into the de-identified dataset and can no longer be pulled out".
+The final screen tells them so, shows their participant ID, and gives the researcher's email.
 
 The researcher runs `scripts/withdraw_participant.py <ID>`. It is a dry run by default. `--apply`
 deletes every study event for that ID — from the database, from `data/study_logs/`, and from any
@@ -941,7 +955,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 - **Keyboard-only participants.** Hover, clicking a line and clicking the legend are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
   with only the row sort. The chips, the sorts, the highlight, Show all and Reset view all work from
-  the keyboard (`docs/visual-spec.md` §8).
+  the keyboard (`docs/visual-spec.md` §8); a whole session was run from the keyboard alone on
+  2026-09-26, consent (by the paper-copy box) to About you.
 - ~~Whether the items can be answered without hover.~~ Resolved 2026-09-22 by the item acceptance
   rule, and kept for the 2026-09-23 bank, which was re-tuned to pass it (§4).
 - **Session resume is not implemented.** The participant-ID screen no longer promises it; it asks
@@ -956,15 +971,18 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     a scatter plot, a heatmap and a map. Both versions still share every visual choice. The consent
     form's "two versions of the same time-series data dashboard" remains true.
   - *Request form 9 and the consent form:* the interactive version "allows filtering, sorting, and
-    line isolation". Still true; it now also sorts the bar chart and filters the map by a coverage
-    range, which the form's "filtering, sorting" covers.
+    line isolation". Still true. Since the 2026-09-25 redesign it also shows or hides countries with
+    a button per country on every chart, hides lines from a legend, sorts the bar chart and the
+    heatmap's rows, highlights the map's countries below a typed coverage, and has Reset view. The
+    form's "filtering, sorting" covers them.
   - *Both forms:* "explicit directional (year-over-year) change indicators". Year-over-year change
     appears only in the hover tooltip (`visual-spec.md` §7.1).
   - *Request form 5B:* "value retrieval" tasks. No item may ask for an exact value (§2).
   - *Request form 18* is blank, and it asks for the survey's URL and a PDF copy of it. The PDF is
     `irb/questionnaire.pdf`, generated by `scripts/export_questionnaire.py` from the app's own screen
-    code. Regenerated for the redesign on 2026-09-26; attach that copy. The URL is the deployed
-    Vercel address.
+    code, and re-exported on 2026-09-26 after every screen was rebuilt: it prints each screen in the
+    app's own styles, landscape, with every survey and About-you question shown at once. Attach it
+    with the deployed Vercel address.
   - *Request form 15:* "no personal identifying information is present or ever written into the
     database". **Not true of the signed consent.** The typed name and drawn signature are written to
     Neon's `consent_records` table (§9), kept separate from the study data and deleted from Neon once
@@ -1001,10 +1019,6 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     "Faculty or staff"), field, and has two free-text "Other" boxes. On a small campus sample those
     can combine to identify someone. Either amend item 17 and the consent form, or turn the age
     question back into ranges.
-  - *Request form 18:* `irb/questionnaire.pdf` was re-exported on 2026-09-26, after every screen
-    was rebuilt: the instructions, the six-option items, the survey, About you and the
-    practice-complete screen. It prints each screen in the app's own styles, landscape, with every
-    survey and About-you question shown at once. Attach it with the URL.
   - *Measures:* Paas is kept, so RQ3's measure needs no amendment.
 - **Fixed in the 2026-09-21 revision:** "randomized" is now "counterbalanced" in both forms; "hovers"
   and "so findings aren't platform specific" are gone from the request form; both forms now name
