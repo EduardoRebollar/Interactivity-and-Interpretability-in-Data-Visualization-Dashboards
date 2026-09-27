@@ -19,7 +19,15 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from test_analysis import _participant_for, _script, correct_answer, run_session, wrong_answer
+from test_analysis import (
+    GOOD_T1,
+    _participant_for,
+    _script,
+    coders,
+    correct_answer,
+    run_session,
+    wrong_answer,
+)
 
 from analysis import reshape, sources, viewer_app
 from analysis import viewer_data as vd
@@ -269,7 +277,7 @@ def test_a_wrong_key_refuses_scoring(complete_records):
 
 def test_the_overview_shows_progress_accuracy_and_paas(complete_records):
     records = _fresh(complete_records)
-    scoring = vd.score(records, key_problems=[])
+    scoring = vd.score(records, key_problems=[], rubric=coders(reshape.events_frame(records)))
     overview = vd.participant_overview(records, scoring, now=_latest(records)).set_index("id")
     right, wrong = _participant_for("static", "A"), _participant_for("interactive", "B")
 
@@ -280,6 +288,14 @@ def test_the_overview_shows_progress_accuracy_and_paas(complete_records):
     assert overview.loc[right, "static accuracy"] == 1.0
     assert overview.loc[wrong, "interactive accuracy"] == 0.0
     assert overview.loc[right, "static Paas"] == 5
+
+
+def test_the_overview_leaves_accuracy_blank_until_t1_is_coded(complete_records):
+    """Section 7: no RQ1 proportion while the participant's T1 waits for the coders."""
+    records = _fresh(complete_records)
+    scoring = vd.score(records, key_problems=[], rubric={})
+    overview = vd.participant_overview(records, scoring, now=_latest(records)).set_index("id")
+    assert overview[["static accuracy", "interactive accuracy"]].isna().all().all()
 
 
 def test_the_overview_lists_a_registered_participant_with_no_events(complete_records):
@@ -306,19 +322,31 @@ def test_justifications_are_hidden_unless_asked_for(complete_records):
     records = _fresh(complete_records)
     scoring = vd.score(records, key_problems=[])
 
+    # T1's description is coded blind too, for RQ1 and RQ2, so it is hidden by the same switch.
+    written = set(GOOD_T1.values())
     hidden = vd.answers(records, scoring)
-    assert set(hidden["justification"]) == {vd.HIDDEN}
+    is_t1 = hidden["task_id"] == "T1"
+    assert set(hidden.loc[~is_t1, "justification"]) == {vd.HIDDEN}
+    assert hidden.loc[is_t1, "justification"].isna().all(), "T1 asks for none"
+    assert set(hidden.loc[is_t1, "answer"]) == {vd.HIDDEN}
+    assert "Brazil" in set(hidden["answer"]), "a multiple-choice answer is not masked"
     shown = vd.answers(records, scoring, show_justifications=True)
-    assert "Because of the T1 lines." in set(shown["justification"])
+    assert "Because of the T2 lines." in set(shown["justification"])
+    assert written & set(shown["answer"])
 
     events = vd.events_table(records)
     submits = events[events["event"] == "answer_submit"]
-    assert all(json.loads(p)["justification"] == vd.HIDDEN for p in submits["payload"])
-    assert "Because of" not in "".join(events["payload"])
+    for payload in map(json.loads, submits["payload"]):
+        assert payload["justification"] in (vd.HIDDEN, None)
+    joined = "".join(events["payload"])
+    assert "Because of" not in joined
+    assert not any(text in joined for text in written)
 
     participant = records[0]["participant_id"]
     for detail in vd.participant_detail(records, scoring, participant):
-        assert "Because of" not in detail.answers.to_json() + detail.events.to_json()
+        dumped = detail.answers.to_json() + detail.events.to_json()
+        assert "Because of" not in dumped
+        assert not any(text in dumped for text in written)
 
 
 def test_the_participant_detail_has_one_block_per_session_in_order(complete_records):

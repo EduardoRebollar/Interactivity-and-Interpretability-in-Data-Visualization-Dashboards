@@ -7,6 +7,10 @@ beside it, the survey (a1-a9; b1-b3 after the interactive condition; the compari
 second), and time on task. Plus the exclusion table section 7 requires, and About you, which
 describes the sample. Inferential tests are deliberately absent: they belong in the analysis
 notebook, run once, on the frames this package produces.
+
+T1 is scored by rubric (section 7). A participant whose T1 is not yet coded has no RQ1 proportion
+for that condition, so the accuracy tables count only fully scored participants, and the report says
+how many T1 answers still wait for coders.
 """
 
 from __future__ import annotations
@@ -17,22 +21,32 @@ from analysis.exclusions import Exclusion
 from src import tasks as study_tasks
 
 
+def _per_participant(usable: pd.DataFrame) -> pd.Series:
+    """Each participant's proportion correct per condition, left out while their T1 is uncoded."""
+    from analysis.reshape import proportion_if_coded
+
+    grouped = usable.groupby(["condition", "participant_id"])["correct"]
+    return grouped.agg(proportion_if_coded).dropna().rename("prop_correct")
+
+
 def accuracy(tasks: pd.DataFrame) -> pd.DataFrame:
     """Proportion correct over T1-T6 per participant per condition, summarised by condition."""
     usable = tasks[tasks["use_accuracy"]]
-    per_participant = (
-        usable.groupby(["condition", "participant_id"])["correct"].mean().rename("prop_correct")
-    )
-    return per_participant.groupby("condition").agg(["count", "mean", "std"])
+    return _per_participant(usable).groupby("condition").agg(["count", "mean", "std"])
 
 
 def accuracy_answered(tasks: pd.DataFrame) -> pd.DataFrame:
     """Secondary: proportion correct among ANSWERED items only, skips excluded (section 7)."""
     usable = tasks[tasks["use_accuracy"] & ~tasks["skipped_answer"].astype(bool)]
-    per_participant = (
-        usable.groupby(["condition", "participant_id"])["correct"].mean().rename("prop_correct")
+    return _per_participant(usable).groupby("condition").agg(["count", "mean", "std"])
+
+
+def uncoded(tasks: pd.DataFrame) -> pd.DataFrame:
+    """T1 answers the rubric coders have not scored yet, by condition. Zero before RQ1 is read."""
+    usable = tasks[tasks["use_accuracy"] & (tasks["kind"] == "describe")]
+    return usable.groupby("condition").agg(
+        answers=("task_id", "count"), uncoded=("correct", lambda c: int(c.isna().sum()))
     )
-    return per_participant.groupby("condition").agg(["count", "mean", "std"])
 
 
 def by_item(tasks: pd.DataFrame) -> pd.DataFrame:
@@ -44,7 +58,8 @@ def by_item(tasks: pd.DataFrame) -> pd.DataFrame:
     """
     usable = tasks[tasks["use_accuracy"]]
     return usable.groupby(["task_id", "chart", "kind", "condition"]).agg(
-        n=("correct", "count"),
+        n=("task_id", "count"),
+        # Over coded answers: an uncoded T1 is neither right nor wrong yet.
         correct=("correct", "mean"),
         median_ms=("duration_ms", "median"),
     )
@@ -171,6 +186,7 @@ def render(
     included = set(tasks.loc[tasks["use_accuracy"], "participant_id"].astype(str))
     sections = [
         ("Exclusions (study-design.md section 7)", exclusion_table(exclusions)),
+        ("T1 written answers awaiting the rubric coders", uncoded(tasks)),
         ("Accuracy, RQ1 primary: proportion correct per participant, T1-T6", accuracy(tasks)),
         ("Accuracy, secondary: answered items only, skips excluded", accuracy_answered(tasks)),
         ("Crossing item, secondary: strict vs adjacent-band credit", crossing_adjacent(tasks)),

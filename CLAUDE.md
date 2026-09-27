@@ -171,6 +171,16 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v11 (2026-09-27).** T1 is a written description of two trends, scored by rubric
+(`study-design.md` §4, §7).
+- Its `answer_submit.answer` is free text, capped at 2000 characters, where a v10 T1 answer was a
+  year. Its `justification` is always null, and its `skipped` can hold only `answer`
+  (`submit_answer(..., justification_asked=False)`).
+- The screen keeps a hidden `justification-input` and adds an `answer-format` store, because the
+  submit callbacks name them.
+- No new event, key, table or column, so `init_db.py` needs no re-run. Nothing collected, so no
+  migration.
+
 **Schema v10 (2026-09-26).** New event `window_size` (`width`, `height`: the window's inner size
 in CSS pixels), once per participant, written at the first Begin right after `consent`.
 Participants use their own computers, and on a window 790 px tall or less the interactive scatter
@@ -445,8 +455,10 @@ tests/
   line chart two. T6, the crossing item, also gets adjacent-band credit as a pre-registered
   secondary, reported beside the strict score and never in the RQ1 proportion. Options that are
   countries are alphabetical, like the chart's entities; years and year bands run in calendar
-  order; every item offers six options (2026-09-25); no answer position holds more than a third of
-  the twelve keys.
+  order; every multiple-choice item offers six options (2026-09-25); no answer position holds more
+  than a third of the keys. **T1 is written, not chosen** (2026-09-27): a description of two
+  trends, scored by rubric by two blind coders, still in RQ1 (`study-design.md` §4, §7). A
+  participant's T1–T6 proportion is not computed while their T1 is uncoded.
 - **`analysis/` must never ship.** Everything under `src/` is uploaded to Vercel, so the key cannot
   live there. `analysis/**` is in `vercel.json`'s `excludeFiles`, a test asserts that it stays there,
   and another asserts no runtime module imports it. pandas is allowed freely in `analysis/` —
@@ -619,7 +631,23 @@ context cheap and the reports as long as they need to be.
     Four sessions, one per counterbalancing cell, in headless Chrome: 62 checks, every answer the
     derived key, every control's event, none in a static half. A keyboard-only session (24
     checks) and S4 in a browser. Every screen compared with the handoff's screenshots.
+- 2026-09-27 — **T1 becomes a written two-trend comparison** (uncommitted at time of writing).
+  - Docs first (`study-design.md` §2, §4, §5, §7, §10; `visual-spec.md` §10), then code.
+  - Schema v11. The `describe` rule in `analysis/keys.py` enforces T1's acceptance rule.
+  - Rubric scoring: `scripts/code_justifications.py rubric-sheets` / `rubric`, then
+    `score_study.py`.
+  - T1's text is masked in the viewer. The practice moved to Myanmar.
+  - 1216 tests.
+  - Five sessions covering all four cells in headless Chrome, plus one keyboard-only T1, with no
+    console errors:
+    - T1's box renders in both conditions with no justification box;
+    - a blank T1 asks once and logs `skipped: ["answer"]`;
+    - T2–T6 logged their derived keys;
+    - T1's chips and Reset view were logged only in interactive halves.
+  - `irb/questionnaire.pdf` re-exported (36 pages).
 - **Still to do before the pilot:**
+  - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
+    written description (`study-design.md` §10).
   - The IRB forms were revised 2026-09-26 and match the app. Before sending, fix the request
     form's typos, submission date and signature dates listed in `study-design.md` §10, then send
     both forms with `irb/questionnaire.pdf` (item 18).
@@ -760,6 +788,14 @@ context cheap and the reports as long as they need to be.
 - 2026-09-26 — **Window size logged once, at the start** (Eduardo; schema v10), so the pilot can
   tell who had to scroll on the interactive T3 and T5 cards. Request form 5B's list of what is
   logged does not name it yet (`study-design.md` §10).
+- 2026-09-27 — **T1 replaced by a written comparison of two trends** (Eduardo), because no item
+  asked for an interpretation of a time series, which the title promises.
+  - Kept in RQ1. Correct only if all three rubric parts are stated and none is contradicted.
+  - Form A: India and Ukraine (chart unchanged). Form B: Brazil and Uganda; B's chart swaps India
+    and Myanmar for Uganda and Nepal.
+  - The practice moves from Brazil to Myanmar.
+  - Ukraine's collapse has no match in scope, so the forms match in structure, not size; this is a
+    pilot check. `study-design.md` §4.
 - 2026-09-23 — Box and lasso select removed from every chart's modebar, including the line charts,
   where they had been since the start: they dim marks with no event recorded. `visual-spec.md` §7.5.
 

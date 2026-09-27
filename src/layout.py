@@ -1282,7 +1282,7 @@ def task_screen(
     The chart column is the chart, the gap caption in both conditions, and in the interactive
     condition only the controls strip and the hint row, all under the chart, so the chart stands
     in the same place in both. The panel is the numbered steps: choose an answer, then say why,
-    then Submit.
+    then Submit. A written item (T1) has one step instead: write the description, then Submit.
 
     The practice item uses this same screen, so what it teaches is the interface the scored tasks
     actually use.
@@ -1297,34 +1297,62 @@ def task_screen(
     if interactive:
         column += [task_controls(task), hint_row(task)]
 
-    panel = [
-        html.P(
-            [html.Span("1", className="ui-step-n"), tasks.CHOOSE_PROMPTS[task.kind]],
-            className="ui-step ui-step--nowrap",
-        ),
-        dcc.RadioItems(
-            id="answer-input",
-            options=[{"label": option, "value": option} for option in task.options],
-            value=None,
-            className="ui-tiles",
-            labelClassName="ui-tile-label",
-        ),
-        html.Div(
-            [
-                html.Label(
-                    [html.Span("2", className="ui-step-n"), JUSTIFICATION_PROMPT],
-                    htmlFor="justification-input",
-                    className="ui-step",
-                ),
-                dcc.Textarea(id="justification-input", className="ui-textarea"),
-                html.Button(
-                    "Submit", id="submit-button", n_clicks=0, className="btn btn-primary btn-block"
-                ),
-                error_slot(),
-            ],
-            className="ui-decide",
-        ),
-    ]
+    submit = html.Button(
+        "Submit", id="submit-button", n_clicks=0, className="btn btn-primary btn-block"
+    )
+    if tasks.is_written(task):
+        # T1 (2026-09-27): one text box, which grows into the space the tiles and the justification
+        # take on every other task, so Submit stays put. No justification is asked: the
+        # description is the reasoning. The justification box is still in the page, hidden and
+        # never filled, because the submit callbacks name it and a State naming a missing
+        # component kills the callback.
+        panel = [
+            html.Label(
+                [html.Span("1", className="ui-step-n"), tasks.CHOOSE_PROMPTS[task.kind]],
+                htmlFor="answer-input",
+                className="ui-step ui-step--nowrap",
+            ),
+            html.Div(
+                [
+                    dcc.Textarea(
+                        id="answer-input", className="ui-textarea", maxLength=tasks.MAX_TEXT
+                    ),
+                    html.Div(dcc.Textarea(id="justification-input"), hidden=True),
+                    dcc.Store(id="answer-format", data="written"),
+                    submit,
+                    error_slot(),
+                ],
+                className="ui-decide",
+            ),
+        ]
+    else:
+        panel = [
+            html.P(
+                [html.Span("1", className="ui-step-n"), tasks.CHOOSE_PROMPTS[task.kind]],
+                className="ui-step ui-step--nowrap",
+            ),
+            dcc.RadioItems(
+                id="answer-input",
+                options=[{"label": option, "value": option} for option in task.options],
+                value=None,
+                className="ui-tiles",
+                labelClassName="ui-tile-label",
+            ),
+            html.Div(
+                [
+                    html.Label(
+                        [html.Span("2", className="ui-step-n"), JUSTIFICATION_PROMPT],
+                        htmlFor="justification-input",
+                        className="ui-step",
+                    ),
+                    dcc.Textarea(id="justification-input", className="ui-textarea"),
+                    dcc.Store(id="answer-format", data="choice"),
+                    submit,
+                    error_slot(),
+                ],
+                className="ui-decide",
+            ),
+        ]
     return page(
         html.Div(
             [html.P(position, className="position"), html.H1(task.prompt, className="question")],

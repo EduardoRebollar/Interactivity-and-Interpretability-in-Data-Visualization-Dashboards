@@ -123,6 +123,30 @@ def test_a_paper_signature_needs_no_drawing_and_keeps_none():
     assert record["signature"] is None, "a drawing does not belong beside a paper signature"
 
 
+def test_the_paper_box_alone_lets_the_participant_on():
+    """The paper copy carries the name, the date and the signature (IRB form item 12A)."""
+    record = _record(name="", date="", signature=None, paper=True)
+    assert consent.problem(record) is None
+    assert record["printed_name"] == "" and record["signed_date"] == ""
+    typed = _record(name="Ada Example", date="2026-09-21", signature=None, paper=True)
+    assert typed["printed_name"] == "Ada Example", "what was typed as well is kept"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected"),
+    [
+        ({"name": "x" * 300}, "too long"),
+        ({"name": ""}, None),
+    ],
+)
+def test_a_paper_record_still_needs_a_time_and_a_sane_name(overrides, expected):
+    record = _record(signature=None, paper=True, **overrides)
+    found = consent.problem(record)
+    assert found is None if expected is None else expected in found
+    record["consented_at"] = None
+    assert "press the button again" in consent.problem(record)
+
+
 def test_a_record_carries_no_participant_id():
     """IRB form items 15 and 17: it must not be joinable to the study data."""
     assert "participant_id" not in _record()

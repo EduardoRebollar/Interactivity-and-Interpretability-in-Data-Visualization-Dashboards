@@ -43,7 +43,8 @@ Within-subjects, 2 (condition: static / interactive) × 2 (form: A / B), fully c
 Target n ≥ 25.
 
 Each participant completes **6 scored tasks per condition, 12 in total**, plus one unscored practice
-task. All six make up the RQ1 accuracy score (§7). Expected duration about 40 minutes (the consent
+task. Five are multiple choice; one, T1, is a written description (2026-09-27). All six make up the
+RQ1 accuracy score (§7). Expected duration about 40 minutes (the consent
 form and request form 5B), capped at one hour (IRB form item 10). In person, on campus, on the
 participant's own computer (request form 5B).
 
@@ -135,7 +136,7 @@ read is costly and that affordance lowers the cost:
 
 | Item | Chart | Affordance | The static cost it lowers |
 |---|---|---|---|
-| T1 | line, 8 countries | isolating a line: a click, a legend double-click, or the chips | tracing one line through a tangle of crossings |
+| T1 | line, 8 countries | isolating lines: a click, a legend double-click, or the chips | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
 | T3 | scatter | hovering a dot; hiding dots with the chips | matching a dot to its legend entry |
 | T4 | heatmap | hovering a cell; sorting rows by lowest value | telling dark shades apart |
@@ -151,9 +152,10 @@ Chart type here is **variety** — evidence that an effect holds across formats 
 claim. Each type carries one item per form, the line chart two, so per-chart-type differences
 are reported descriptively and never tested (§7).
 
-T1–T5 each read one series or one set of values: a line's low point, a ranking, an extreme. T6 was
-added the same day, at Eduardo's request, as the one **relational** item: its answer is a relation
-between two series, when one overtakes the other.
+T2–T5 each read one set of values: a ranking, an extreme, a count. T6 was added the same day, at
+Eduardo's request, as a **relational** item: its answer is a relation between two series, when one
+overtakes the other. T1 (2026-09-27) is the one **interpretive** item: the participant describes two
+series over the whole period and how they compare, in their own words.
 
 ### Item acceptance rule (2026-09-22, extended 2026-09-23)
 
@@ -177,7 +179,7 @@ L*, so 10 points is at least 7.3 L*.
 
 | Item | The key must survive... |
 |---|---|
-| T1 lowest point | Every year within **5 points** of the line's minimum could be taken for it, and any may be read **one year off**; every such reading must be nearer the key option than any other, with no ties. The minimum itself is unique. |
+| T1 two trends | Each shape the rubric names is large: the riser gains at least **25 points** and never drops more than **12** below a previous peak; the other line drops at least **25 points** from a peak and recovers at least **15** from its trough. The two cross **once**, by the T6 rule's 5-point test. No other line runs within **5 points** of a named line for **5 or more consecutive years**; for the falling line, counted from its last peak before the trough. |
 | T2 rank | The key bar is at least **5 points** from the bars ranked just above and just below it. |
 | T3 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (12 px dots at 4 px a point: closer, and one hides the other). |
 | T4 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row. |
@@ -191,35 +193,59 @@ item fails the test suite exactly as a wrong key does, including after a data re
 `tests/test_scoring.py` also runs each spec item that was changed on the real data and checks that
 it is still refused.
 
-### T1 — Lowest point (line, isolation)
+### T1 — Two trends (line, isolation)
 
-*Focus on {country}'s line. In which year was its coverage at its lowest point?*
+*Look at the lines for {country} and {country}. Describe how their coverage changed between 2000 and
+2024, and how the two countries' trends were similar or different.*
+
+Answered in writing, in one text box, with no separate justification: the description is the
+reasoning (§5).
 
 | | Form A | Form B |
 |---|---|---|
-| Country | Ukraine | Myanmar |
-| Lowest point | **2016** (19%) | **2021** (37%) |
-| Within 5 points of it | 2014 and 2015 (23%) | none |
-| Options | 2004, 2008, 2016, 2019, 2022, 2024 | 2005, 2009, 2013, 2017, 2021, 2024 |
-| Next-lowest option | 2022 at 73%: 54 points above | 2024 at 71%: 34 points above |
-| Other lines | Brazil, China, Ethiopia, India, Indonesia, Nigeria, Pakistan (no World line) | same |
-| Key | **2016** | **2021** |
+| Named countries | India and Ukraine | Brazil and Uganda |
+| The riser | India: 58% → 94%; never more than 6 below a previous peak | Uganda: 52% → 91%; never more than 5 below |
+| The line that falls and recovers | Ukraine: 99% → **19%** (2016) → 88%; drop 80, recovery 69 | Brazil: 99% → **68%** (2021) → 91%; drop 31, recovery 23 |
+| Crossing (5-point test) | once: India above from 2009, 5 points clear from 2010 | once: Uganda above from 2016, 5 points clear from 2017 |
+| Gap in 2024 | India 6 points above | level |
+| Longest run of another line within 5 points of a named one, as the rule counts it | 4 years: Indonesia and India, 2014–2017; Brazil and Ukraine, 2004–2007 | 4 years: Indonesia and Uganda, 2009–2012 |
+| Other lines | Brazil, China, Ethiopia, Indonesia, Nigeria, Pakistan (no World line) | China, Ethiopia, Indonesia, Nepal, Nigeria, Pakistan (no World line) |
+| Crossings of the two named lines with the other six | 30 | 26 |
 
-The difficulty is finding and following the line, not reading it: both lows are far below every
-other option. The other lines are the tangle the isolation control cuts through: Ukraine's line
-crosses all seven of them, 23 times in all, and Myanmar's crosses six of seven, 16 times.
+Both forms tell one story: a country rising steadily from far below overtakes one that starts near
+the top, as that one falls, and the fallen country recovers to about where the riser ends. The
+countries are named alphabetically, so the riser is named first in A and second in B.
 
-> **Redesign, 2026-09-25.** The handoff dropped World from A-T1 and offered 2012 as a sixth option.
-> 2012 fails the rule: 2014, 4 points off the low, read a year early is 2013, nearest 2012. Eduardo
-> chose 2004 instead, and B-T1 gained 2005 to match: each form adds a year four before its first
-> option. B-T1 drops World too, so both forms draw eight lines. The margins are unchanged, because
-> 2004 (99%) and 2005 (73%) sit above each form's next-lowest option.
+**Rubric.** A description is **correct** if it states all three of the following and contradicts
+none of them:
 
-> **A-T1's options changed from the spec.** The spec offered 2010, 2013, 2016, 2019 and 2022.
-> Ukraine is at 23% in 2014 and 2015, too close to its 19% in 2016 to tell apart, and 2014 lies
-> nearer the 2013 option than the 2016 one. A participant who took 2014 for the low point would
-> have been scored wrong for reading the chart correctly. 2010 and 2013 were replaced by 2008 and
-> 2024. B-T1 is as specified.
+| Part | Form A | Form B |
+|---|---|---|
+| (a) the riser rose | India's coverage rose over the period | Uganda's coverage rose over the period |
+| (b) the other fell and recovered | Ukraine's coverage fell and then recovered | Brazil's coverage fell and then recovered |
+| (c) how the two relate | India overtook or passed Ukraine, **or** they ended close | Uganda overtook or passed Brazil, **or** they ended close or level |
+
+Years and values are neither required nor penalised unless they contradict a part: a static reader
+cannot read them exactly (§2). "Ukraine dropped to about 20% around 2015 and came back" states (b);
+"Ukraine's coverage declined" alone does not, and "Ukraine stayed high" contradicts it. Scoring is
+by two coders, blind to condition (§7).
+
+The difficulty is finding and following two lines through the tangle, then describing them. The
+isolation control, the chips and the legend all cut through it.
+
+> **Replaced 2026-09-27.** T1 asked for the year of one line's lowest point (Ukraine in A, Myanmar in
+> B). Every other item asked for a value or a relation, and none asked for an interpretation of a
+> time series, which the study's title promises. Eduardo chose to replace T1 with a written
+> comparison of two lines, kept in RQ1 and scored by rubric, over adding a seventh item or leaving
+> the bank as it was. The 2026-09-27 data search:
+> - Ukraine's 80-point collapse has no match in scope. Myanmar's 2021 dip lasts one year; Brazil
+>   and Mozambique fall about 30 points. The forms match the story's structure, not its size, and
+>   the pilot checks whether that is enough (§10).
+> - India cannot stay on B's chart: it runs within 5 points of Uganda for 19 of 25 years. B's chart
+>   swaps India and Myanmar for Uganda and Nepal, which gives the tangle nearest A's.
+> - A's chart is unchanged. Ukraine and Brazil sit together near 99% for eight years, 2000–2007,
+>   but only 2004–2007 falls after Ukraine's last peak, and all eight precede anything the rubric
+>   turns on. So the rule counts four.
 
 ### T2 — Third-highest bar (bar, sort)
 
@@ -367,14 +393,14 @@ line is rising. The line controls and zoom work here as on every line chart.
 
 | | T1 | T2 | T3 | T4 | T5 | T6 |
 |---|---|---|---|---|---|---|
-| Margin, form A | 54 | 5 / 6 | 6 | 11 | 11 | 1.79 years |
-| Margin, form B | 34 | 5 / 6 | 8 | 10 | 10 | 1.40 years |
-| Floor | 5 | 5 | 5 | 10 | 10 | 1 year |
+| Margin, form A | drop 80, rise 36 | 5 / 6 | 6 | 11 | 11 | 1.79 years |
+| Margin, form B | drop 31, rise 39 | 5 / 6 | 8 | 10 | 10 | 1.40 years |
+| Floor | drop 25, rise 25 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
 than quietly unbalancing the forms. Four known differences go to the pilot (§10):
-- T1's low point is a three-year trough in A and a one-year dip in B.
-- T1's tangle: Ukraine crosses its seven neighbours 23 times, Myanmar 16 times.
+- T1's falling line: Ukraine's collapse (80 points, 2008–2016) is far larger and faster than
+  Brazil's decline (31 points over a decade). A-T1 is probably the easier form.
 - B-T3's closest dots sit on the 4-point floor.
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
@@ -382,8 +408,8 @@ than quietly unbalancing the forms. Four known differences go to the pilot (§10
 
 ### Practice task (unscored)
 
-*Practice (not scored). Look at Brazil's line. Did coverage rise, fall, or stay level between 2015
-and 2021?* Brazil and World, DTP3, 2000–2024: a fall from 96% to 68%, unmissable. Shown in the
+*Practice (not scored). Look at Myanmar's line. Did coverage rise, fall, or stay level between 2015
+and 2021?* Myanmar and World, DTP3, 2000–2024: a fall from 89% to 37%, unmissable. Shown in the
 participant's first condition only, identical across forms, to teach the interface rather than the
 concept. It is a line chart, the type with the most controls. The other types' controls are
 described in the instructions and by the hint row under each chart in the interactive condition.
@@ -391,6 +417,11 @@ described in the instructions and by the hint row under each chart in the intera
 > **Changed 2026-09-23.** The practice was Ukraine's collapse between 2008 and 2016, and A-T1 now
 > asks for Ukraine's lowest year: a first half of form A would have been answered by its own
 > practice. No scored prompt names Brazil (`tests/test_tasks.py`).
+
+> **Changed 2026-09-27.** B-T1 now names Brazil, and the practice asked whether Brazil fell between
+> 2015 and 2021: exactly B-T1's story. The practice moved to Myanmar, which no scored prompt names
+> and which is no longer on either T1 chart. It appears elsewhere only as an unasked heatmap row in
+> B-T4, whose columns skip 2021.
 
 ### Revision 2026-09-23, in brief
 
@@ -436,23 +467,40 @@ the controls, not the questions or the keys.
   and a typed threshold on the map in place of the range slider (§2).
 - **Unchanged:** every key, every margin in the table above, and the scope (3900 rows).
 
+### Revision 2026-09-27: T1 becomes a written comparison
+
+- **Replaced:** T1's lowest-point question, with a written description of two named lines and how
+  they compare (T1 above). Kept in RQ1 and scored by rubric (§7).
+- **Charts:** A's is unchanged. B's swaps India and Myanmar for Uganda and Nepal.
+- **Practice:** moved from Brazil to Myanmar (above).
+- **Keys:** ten keys are now options, T2–T6 in both forms, spread first: 1, second: 2, third: 3,
+  fourth: 2, fifth: 2 (§5).
+- **Log schema v11:** T1's `answer` is free text, and a T1 record carries no justification
+  (`src/logging.py`). Nothing had been collected.
+
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
-and so is the rise item, with its rule and its values.
+and so are the rise item and the lowest-point T1, with their rules and values.
 
 ## 5. Answer format
 
-Every scored task collects two things:
+T2–T6 and the practice each collect two things:
 
 1. **A multiple-choice answer** — scored objectively, no rater judgement.
 2. **A short free-text justification** ("In one sentence, describe why you chose your answer.") —
    the material for RQ2.
 
+**T1 collects one thing (2026-09-27): a written description**, in a text box headed "Write your
+description:", in place of the options. There is no justification box: the description is the
+reasoning, and it is the RQ2 material for T1. It is capped at 2,000 characters (`tasks.MAX_TEXT`),
+the cap on the survey's free text. It is scored by rubric (§4, §7).
+
 **Both may be skipped (2026-09-21).** The IRB form (item 10) and the consent form promise that a
 participant may skip any question. Pressing Submit with either part empty opens a confirmation popup
 naming what is unanswered; confirming moves on, cancelling returns to the task. A skipped part is
 recorded as `null`, and `answer_submit` carries `skipped` — the list of parts left empty — so a skip
-is explicit in the data rather than inferred from a blank. The practice item works the same way. The
-justification is not length-constrained. Correct answers are **never** stored in
+is explicit in the data rather than inferred from a blank. The practice item works the same way. On
+T1 the popup names only the description, and `skipped` can hold only `answer`: no justification is
+asked, so none can be skipped. The justification is not length-constrained. Correct answers are **never** stored in
 `src/tasks.py`: that module ships to the browser, where an answer key would be readable in the page
 source. Scoring happens offline against §7.
 
@@ -461,10 +509,11 @@ source. Scoring happens offline against §7.
   which also sets each line's and dot's colour and the order of bars and rows, with World always last.
 - Years and year bands run in calendar order; counts in their natural order.
 - Which options an item offers is the one free choice. It is used to spread the key: no position
-  holds more than a third of the twelve keys. Every item offers six options (2026-09-25), and the
-  keys sit first: 1, second: 2, third: 4, fourth: 2, fifth: 3, sixth: 0. T6 has no free choice,
-  since it offers all six bands; its keys sit second and fifth. `tests/test_scoring.py` fails if any
-  position holds more than a third.
+  holds more than a third of the keys. Every multiple-choice item offers six options (2026-09-25).
+  Since T1 became a written item (2026-09-27), ten keys are options, and they sit first: 1,
+  second: 2, third: 3, fourth: 2, fifth: 2, sixth: 0. T6 has no free choice, since it offers all
+  six bands; its keys sit second and fifth. `tests/test_scoring.py` fails if any position holds
+  more than a third.
 
 Before this rule, the country options were sorted by how much each changed, which put the correct
 answer first in 7 of the then 12 items.
@@ -572,9 +621,28 @@ This section is a **pre-registration**. Every rule here is fixed before collecti
 choosing an exclusion rule after seeing the data is a methodological problem however reasonable the
 rule is. `analysis/` implements it; nothing is decided at analysis time.
 
-**Accuracy (RQ1).** Binary per task from the multiple choice. Primary outcome: proportion correct per
-participant per condition, **over T1–T6** (revised 2026-09-23: the old bank's gap item was reported
-separately, since its answer was printed on screen, and no item's answer is on screen now).
+**Accuracy (RQ1).** Binary per task: from the multiple choice for T2–T6, and from the rubric for T1
+(below). Primary outcome: proportion correct per participant per condition, **over T1–T6** (revised
+2026-09-23: the old bank's gap item was reported separately, since its answer was printed on
+screen, and no item's answer is on screen now).
+
+**T1 is scored by rubric (2026-09-27).** Two coders each code **every** T1 description, blind to
+condition, on four binary fields:
+
+- parts (a), (b) and (c) of §4's rubric, each present or not;
+- `contradicts`, set if the description states anything that contradicts one of them.
+
+A description is correct when (a), (b) and (c) are all present and `contradicts` is not set.
+
+- **Sheets.** They carry an opaque unit id and the text only, in a seeded shuffle, as for RQ2
+  (below). The rubric is printed per form, since the text names its countries anyway.
+- **Agreement.** Cohen's κ is reported per field, with prevalence, from the two independent codings,
+  before any disagreement is discussed.
+- **Disagreements** are settled by discussion, still blind, and the settled verdict is the score.
+  Scoring refuses a sheet with a disagreement left open.
+- **Uncoded answers.** A participant's T1–T6 proportion is not computed while their T1 is uncoded,
+  never quietly scored out of five.
+- **Skips.** A skipped description scores incorrect, like any skip.
 
 **A skipped answer scores as incorrect** in the primary analysis (ruled 2026-09-21), so every
 participant is scored out of six per condition. Dropping skips instead would let a condition that
@@ -586,8 +654,9 @@ both.
 credit — the key band, or the band containing the key year ± 1 (§4). Reported alongside the strict
 score, never in place of it, and never folded into the T1–T6 proportion.
 
-Scored by exact string equality against a key **derived from `data/deploy/coverage.csv`** by the
-rule each item states, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
+T2–T6 are scored by exact string equality against a key **derived from `data/deploy/coverage.csv`**
+by the rule each item states. T1 has no key to derive, but its acceptance rule is checked on the same
+data in the same place, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
 that disagrees with §4 fails the test suite. This exists because §4's prose key for an earlier item
 was wrong — it said 2, the data said 1 — and nothing would have caught it.
 
@@ -602,7 +671,7 @@ as per-chart-type effects.
 
 | Item | Affordance | Logged? |
 |---|---|---|
-| T1 | isolating a line (also chips, legend, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `legend`, `show-all`), `sort_change`, `view_change`, `view_reset` |
+| T1 | isolating lines (also chips, legend, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `legend`, `show-all`), `sort_change`, `view_change`, `view_reset` |
 | T2 | sorting the bars | yes — `sort_change` |
 | T3 | hover; hiding dots with the chips | the chips only — `filter_change` (`chips`) |
 | T4 | hover; sorting rows by lowest value | the sort only — `sort_change` |
@@ -620,6 +689,10 @@ interactive answer may rest on an unlogged hover, and the write-up says so.
 | `cites_values` | refers to specific levels or magnitudes, however approximate |
 | `compares_series` | refers to more than one country, not just the answer |
 | `notes_uncertainty` | flags missing data, an estimate, or ambiguity |
+
+T1 has no justification. Its description is coded in its place, on the same sheet (2026-09-27).
+Since T1 asks about two countries, `compares_series` will be present in nearly every T1 unit, and
+the write-up reports depth with and without T1.
 
 Depth score 0–3. Code blind to condition. A skipped justification has no text to code; it is
 absent from the coding sheet and missing, not zero, in the depth analysis. A second coder scores 20%
@@ -892,8 +965,9 @@ presses **"I agree to participate"**. The signature is drawn with a mouse, track
 signature pad. A participant who cannot or prefers not to draw one signs the paper copy the
 researcher brings instead, and ticks "I have signed a paper copy of this form with the researcher
 instead", a checkbox that works from the keyboard, which the pad does not.
-"I do not agree" is always available (item 12B). The app refuses to go on without a name, a date, and
-either a drawn signature or the paper box ticked.
+"I do not agree" is always available (item 12B). The app refuses to go on without a name, a date and
+a drawn signature, unless the paper box is ticked: the paper copy carries all three, so the box
+alone lets the participant on (2026-09-27). A name or date typed as well is kept in the record.
 
 Electronic documentation of consent is permitted by 45 CFR 46.117; confirm with HSRRC that Occidental
 accepts a drawn signature.
@@ -959,9 +1033,15 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
     mean the floor is too tight for that chart type.
-  - **Form equivalence.** T1's low point is a three-year trough in form A and a one-year dip in form
-    B, and its tangle differs: Ukraine crosses its neighbours 23 times, Myanmar 16. B-T3's two
-    closest dots sit exactly on the 4-point floor. The T6 crossings are drawn differently (§4).
+  - **Form equivalence.** T1's falling line is Ukraine's 80-point collapse in form A and Brazil's
+    31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor. The
+    T6 crossings are drawn differently (§4).
+  - **T1, the written item (2026-09-27).**
+    - Its time, since it is the only item written in full.
+    - Whether the rubric can be applied: κ per part, and how many descriptions the coders had to
+      discuss.
+    - Whether a part fails for nearly everyone in both conditions, which would point at the rubric
+      rather than the reading.
   - **T6 against its adjacent-band secondary.** If the two scores differ much, static readers are
     placing the crossing a band off, and the band edges are doing the work.
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
@@ -1026,7 +1106,12 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 - **To fix in the request form before sending** (as saved 2026-09-26):
   - item 9: "WHO/UNICEG" for WHO/UNICEF;
   - item 15: "the lasting records is the export";
-  - item 5B: "The participants answers six-multiple choice interpretation questions";
+  - item 5B: "The participants answers six-multiple choice interpretation questions". Since
+    2026-09-27 it should say five multiple-choice questions and one written description of two
+    trends per version, and the one-sentence explanation follows the five multiple-choice questions
+    only;
+  - item 18: `irb/questionnaire.pdf` was re-exported after the T1 change (2026-09-27, 36 pages);
+    attach that copy;
   - item 1: the initial submission date is still the placeholder "(Date sent to hsrrc@oxy.edu)";
   - the investigator signed 9/21/26 and the faculty supervisor 9/23/2026, both before this revision;
   - item 5B lists what the application logs, and since schema v10 (§8) it also logs the browser

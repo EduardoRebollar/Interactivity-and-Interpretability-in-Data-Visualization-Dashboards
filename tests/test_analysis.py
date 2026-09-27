@@ -106,18 +106,41 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5,
     assert SessionState.from_dict(session).stage is Stage.COMPLETE
 
 
+# T1 is written (2026-09-27). These stand for a description the rubric accepts and one it does
+# not; `coders` plays the two coders by recognising them.
+GOOD_T1 = {
+    "A": "India rose steadily; Ukraine collapsed around 2014 and recovered; India overtook it.",
+    "B": "Uganda climbed the whole time; Brazil fell after 2015 and came back; they ended level.",
+}
+BAD_T1 = "Both countries stayed about the same the whole time."
+
+
 def correct_answer(form, task_id):
+    if task_id == "T1":
+        return GOOD_T1[form]
     return keys.EXPECTED[(form, task_id)]
 
 
 def wrong_answer(form, task_id):
+    if task_id == "T1":
+        return BAD_T1
     task = next(t for t in tasks.for_form(form) if t.task_id == task_id)
     return next(option for option in task.options if option != keys.EXPECTED[(form, task_id)])
 
 
-def _score(log_dir):
+def coders(events: pd.DataFrame) -> dict[tuple[str, str], bool]:
+    """The settled rubric verdicts two coders would reach on these test descriptions."""
+    written = events[(events["event"] == "answer_submit") & (events["task_id"] == "T1")]
+    return {
+        (str(session), "T1"): payload.get("answer") in GOOD_T1.values()
+        for session, payload in zip(written["session_id"], written["payload"], strict=True)
+        if payload.get("answer")
+    }
+
+
+def _score(log_dir, coded=True):
     events = reshape.events_frame(study_logging.read_all(log_dir))
-    tasks_frame = reshape.tidy_tasks(events)
+    tasks_frame = reshape.tidy_tasks(events, rubric=coders(events) if coded else None)
     conditions = reshape.tidy_conditions(events, tasks_frame)
     return events, tasks_frame, conditions
 
@@ -156,6 +179,32 @@ def test_a_window_size_the_browser_did_not_send_stays_missing(tmp_path):
     _events, tasks_frame, _conditions = _score(tmp_path)
     assert tasks_frame["window_width"].isna().all()
     assert tasks_frame["window_height"].isna().all()
+
+
+def test_an_uncoded_t1_leaves_the_proportion_missing_not_out_of_five(tmp_path):
+    """Section 7: no participant's T1-T6 proportion is computed while their T1 is uncoded."""
+    run_session(tmp_path, _participant_for("static", "A"), correct_answer)
+    _events, tasks_frame, conditions = _score(tmp_path, coded=False)
+    t1 = tasks_frame[tasks_frame["task_id"] == "T1"]
+    assert t1["correct"].isna().all()
+    assert tasks_frame.loc[tasks_frame["task_id"] != "T1", "correct"].all()
+    assert conditions["prop_correct"].isna().all()
+    assert conditions["prop_correct_answered"].isna().all()
+    assert set(conditions["n_uncoded"]) == {1}
+    scored, excluded = exclusions.apply(tasks_frame, conditions)
+    assert study_report.accuracy(scored).empty, "nobody is scored until T1 is coded"
+    assert study_report.uncoded(scored)["uncoded"].to_dict() == {"interactive": 1, "static": 1}
+    assert "awaiting the rubric coders" in study_report.render(scored, conditions, excluded)
+
+
+def test_t1_is_the_description_and_asks_no_justification(tmp_path):
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    _events, tasks_frame, _conditions = _score(tmp_path)
+    t1 = tasks_frame[tasks_frame["task_id"] == "T1"]
+    assert set(t1["kind"]) == {"describe"}
+    assert set(t1["answer"]) == set(GOOD_T1.values())
+    assert t1["justification"].isna().all()
+    assert not t1["skipped_justification"].any(), "nothing asked is nothing skipped"
 
 
 def test_a_real_session_scores_all_wrong(tmp_path):
@@ -608,18 +657,61 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
         [_participant_for("static", "A"), _participant_for("interactive", "B")]
     )
 
+    assert "4 T1 answers are not coded yet" in printed
     scored = pd.read_csv(derived / "tasks.csv", dtype={"participant_id": str})
     assert len(scored) == 24
+    assert scored.loc[scored["task_id"] == "T1", "correct"].isna().all()
+    conditions = pd.read_csv(derived / "conditions.csv")
+    assert conditions["prop_correct"].isna().all(), "no RQ1 proportion before T1 is coded"
+
+    coding_dir = tmp_path / "coding"
+    code = _script("code_justifications")
+    tasks_arg = ["--tasks", str(derived / "tasks.csv"), "--out", str(coding_dir)]
+
+    # T1's rubric: both coders code every description, blind.
+    assert code.main(["rubric-sheets", *tasks_arg]) == 0
+    first = pd.read_csv(coding_dir / "rubric_coder1.csv", dtype=str)
+    second = pd.read_csv(coding_dir / "rubric_coder2.csv", dtype=str)
+    assert list(first.columns) == list(coding.RUBRIC_SHEET_COLUMNS)
+    assert len(first) == len(second) == 4
+    assert set(first["unit_id"]) == set(second["unit_id"])
+    for sheet in (first, second):
+        good = sheet["description"].isin(GOOD_T1.values())
+        for field in ("a", "b", "c"):
+            sheet[field] = good.map({True: "1", False: "0"})
+        sheet["contradicts"] = "0"
+    # One disagreement, for the settling step.
+    disputed = first.loc[first["description"].isin(GOOD_T1.values()), "unit_id"].iloc[0]
+    second.loc[second["unit_id"] == disputed, "c"] = "0"
+    first.to_csv(coding_dir / "rubric_coder1.csv", index=False)
+    second.to_csv(coding_dir / "rubric_coder2.csv", index=False)
+
+    assert code.main(["rubric", *tasks_arg]) == 1, "an unsettled disagreement stops scoring"
+    out = capsys.readouterr()
+    assert "Rubric agreement over 4" in out.out and "1 disagreements" in out.out
+    assert "not settled yet" in out.err
+    disagreements = pd.read_csv(coding_dir / "rubric_disagreements.csv", dtype=str)
+    assert list(disagreements["unit_id"]) == [disputed]
+    settled = disagreements[["unit_id"]].assign(a="1", b="1", c="1", contradicts="0")
+    settled.to_csv(coding_dir / "rubric_settled.csv", index=False)
+    assert code.main(["rubric", *tasks_arg]) == 0
+    assert "2 of 4 correct" in capsys.readouterr().out
+
+    verdicts = str(coding_dir / "rubric_verdicts.csv")
+    args = ["--events", str(events_csv), "--out", str(derived), "--rubric", verdicts]
+    assert score_study.main(args) == 0
+    assert "not coded yet" not in capsys.readouterr().out
+    scored = pd.read_csv(derived / "tasks.csv", dtype={"participant_id": str})
     by_participant = scored.groupby("participant_id")["correct"].mean().to_dict()
     assert by_participant == {
         _participant_for("static", "A"): 1.0,
         _participant_for("interactive", "B"): 0.0,
     }
 
-    coding_dir = tmp_path / "coding"
-    code = _script("code_justifications")
-    tasks_arg = ["--tasks", str(derived / "tasks.csv"), "--out", str(coding_dir)]
     assert code.main(["sheets", *tasks_arg]) == 0
+    # T1's description is its RQ2 unit, in place of a justification.
+    rq2 = pd.read_csv(coding_dir / "coder1.csv", dtype=str)
+    assert set(GOOD_T1.values()) | {BAD_T1} <= set(rq2["justification"])
 
     # Stand in for the coders: fill both sheets identically.
     for name in ("coder1.csv", "coder2.csv"):
@@ -635,6 +727,98 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
     depth = pd.read_csv(coding_dir / "depth.csv")
     assert len(depth) == 24
     assert set(depth["depth"]) <= {1, 2}
+
+
+# --- T1's rubric ---------------------------------------------------------------------------------
+
+
+def _rubric_units():
+    rows = [
+        {
+            "participant_id": f"P{n}",
+            "session_id": f"s{n}",
+            "condition": ("static", "interactive")[n % 2],
+            "form": "AB"[n % 2],
+            "task_id": "T1",
+            "kind": "describe",
+            "answer": f"description {n}",
+            "justification": None,
+        }
+        for n in range(4)
+    ]
+    # A multiple-choice row is not a rubric unit, and a skipped description is not coded.
+    rows.append({**rows[0], "session_id": "s9", "task_id": "T2", "kind": "rank", "answer": "x"})
+    rows.append({**rows[0], "session_id": "s8", "answer": None})
+    return coding.build_rubric_units(rows)
+
+
+def _fields(a=1, b=1, c=1, contradicts=0):
+    return {"a": a, "b": b, "c": c, "contradicts": contradicts}
+
+
+def test_rubric_units_are_the_written_descriptions_only():
+    units = _rubric_units()
+    assert sorted(u.session_id for u in units) == ["s0", "s1", "s2", "s3"]
+    assert {u.justification for u in units} == {f"description {n}" for n in range(4)}
+
+
+def test_the_rubric_sheet_is_blind_and_prints_each_forms_parts(tmp_path):
+    units = _rubric_units()
+    path = tmp_path / "rubric.csv"
+    coding.write_rubric_sheet(units, path)
+    sheet = pd.read_csv(path, dtype=str, keep_default_na=False)
+    assert list(sheet.columns) == list(coding.RUBRIC_SHEET_COLUMNS)
+    text = path.read_text(encoding="utf-8")
+    for unit in units:
+        for leaked in (unit.participant_id, unit.session_id, unit.condition):
+            assert leaked not in text
+    by_text = sheet.set_index("description")
+    assert by_text.loc["description 0", "part_a"] == keys.rubric_parts("A")["a"]
+    assert by_text.loc["description 1", "part_b"] == keys.rubric_parts("B")["b"]
+    assert (sheet[list(coding.RUBRIC_FIELDS)] == "").all().all()
+
+
+def test_a_description_is_correct_only_with_all_three_parts_and_no_contradiction():
+    assert coding.rubric_correct(_fields()) is True
+    for missing in ("a", "b", "c"):
+        assert coding.rubric_correct(_fields(**{missing: 0})) is False, missing
+    assert coding.rubric_correct(_fields(contradicts=1)) is False
+
+
+def test_settling_uses_agreement_where_there_is_one_and_refuses_what_is_open():
+    first = {"u1": _fields(), "u2": _fields(), "u3": _fields(c=0)}
+    second = {"u1": _fields(), "u2": _fields(b=0), "u3": _fields(c=0)}
+    assert coding.disagreements(first, second) == ["u2"]
+    with pytest.raises(coding.CodingError, match="1 rubric disagreements are not settled"):
+        coding.settle(first, second, {})
+    verdicts = coding.settle(first, second, {"u2": _fields(contradicts=1)})
+    assert verdicts == {"u1": True, "u2": False, "u3": False}
+    with pytest.raises(coding.CodingError, match="agreed on"):
+        coding.settle(first, second, {"u2": _fields(), "u1": _fields(a=0)})
+    with pytest.raises(coding.CodingError, match="same units"):
+        coding.disagreements(first, {"u1": _fields()})
+
+
+def test_rubric_kappa_is_reported_per_field():
+    first = {"u1": _fields(), "u2": _fields(a=0), "u3": _fields()}
+    report = coding.kappa_report(first, first, coding.RUBRIC_FIELDS)
+    assert set(report) == set(coding.RUBRIC_FIELDS)
+    assert report["a"]["kappa"] == 1.0
+    assert math.isnan(report["contradicts"]["kappa"])
+
+
+def test_verdicts_round_trip_and_an_absent_file_means_nothing_coded(tmp_path):
+    units = _rubric_units()
+    verdicts = {u.unit_id: u.session_id in ("s0", "s2") for u in units}
+    path = tmp_path / "verdicts.csv"
+    coding.write_verdicts(units, verdicts, path)
+    assert coding.read_verdicts(path) == {
+        ("s0", "T1"): True,
+        ("s1", "T1"): False,
+        ("s2", "T1"): True,
+        ("s3", "T1"): False,
+    }
+    assert coding.read_verdicts(tmp_path / "missing.csv") == {}
 
 
 def test_score_study_refuses_a_key_that_does_not_check_out(tmp_path, monkeypatch, capsys):
@@ -670,11 +854,12 @@ def test_a_skip_is_incorrect_in_the_primary_and_excluded_from_the_secondary(tmp_
         return None if task_id == "T1" else correct_answer(form, task_id)
 
     run_session(tmp_path, _participant_for("static", "A"), skip_t1)
-    _events, tasks_frame, conditions = _score(tmp_path)
+    # Uncoded: a skipped description needs no coder to score incorrect.
+    _events, tasks_frame, conditions = _score(tmp_path, coded=False)
 
     skipped = tasks_frame[tasks_frame["task_id"] == "T1"]
     assert skipped["skipped_answer"].all()
-    assert not skipped["correct"].any(), "a skip is incorrect under the primary rule"
+    assert (skipped["correct"] == False).all(), "a skip is incorrect under the primary rule"  # noqa: E712
     assert len(tasks_frame) == 12, "a skip is still an answer record"
     assert set(conditions["prop_correct"]) == {5 / 6}
     assert set(conditions["prop_correct_answered"]) == {1.0}

@@ -15,6 +15,13 @@ asking coders not to look:
 There is deliberately no automatic coding. A rule that marks `cites_values` whenever a digit appears
 would quietly become the coder.
 
+**T1's rubric (2026-09-27).** T1 is a written description of two trends, and its RQ1 score comes
+from coders, not a key (section 7). Both coders code **every** T1 description, blind, on the
+rubric's three parts and a `contradicts` flag. Kappa is computed from the two independent sheets;
+disagreements are then settled by discussion into a third file, and scoring refuses to go on while
+one is open. The same sheet machinery serves both: opaque ids, a seeded shuffle, and a key file
+coders never see. T1's description is also its RQ2 unit, in place of a justification.
+
 Stdlib only; kappa for binary codes is a few lines and does not justify a dependency.
 """
 
@@ -29,7 +36,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from analysis import keys as answer_keys
+from src import config
+
 CODES = ("cites_values", "compares_series", "notes_uncertainty")
+WRITTEN_KIND = "describe"
+# T1's rubric: the three parts of study-design.md section 4, and whether anything contradicts one.
+RUBRIC_FIELDS = ("a", "b", "c", "contradicts")
+RUBRIC_SHEET_COLUMNS = ("unit_id", "description", "part_a", "part_b", "part_c", *RUBRIC_FIELDS)
+SETTLED_COLUMNS = ("unit_id", *RUBRIC_FIELDS)
+VERDICT_COLUMNS = ("session_id", "task_id", "correct")
+# Where `scripts/code_justifications.py rubric` writes the settled verdicts, and where scoring
+# and the viewer read them. Participant data: gitignored under data/study_logs/.
+VERDICTS_PATH = config.STUDY_LOGS_DIR / "coding" / "rubric_verdicts.csv"
 SEED = 20260915
 DOUBLE_CODED_FRACTION = 0.20
 SHEET_COLUMNS = ("unit_id", "justification", *CODES)
@@ -57,10 +76,18 @@ def unit_id(session_id: str, task_id: str) -> str:
 
 
 def build_units(rows: Iterable[dict[str, Any]]) -> list[Unit]:
-    """Units from tidy task rows (dicts of the tidy_tasks columns). Blank justifications skipped."""
+    """Units from tidy task rows (dicts of the tidy_tasks columns). Blank justifications skipped.
+
+    A written item's (T1's) unit is its description: it asks for no justification, and the
+    description is the reasoning.
+    """
     units = []
     for row in rows:
-        text = (row.get("justification") or "").strip()
+        text = row.get("answer" if row.get("kind") == WRITTEN_KIND else "justification")
+        # A CSV round trip turns an empty cell into NaN.
+        if not isinstance(text, str):
+            text = ""
+        text = text.strip()
         if not text:
             continue
         units.append(
@@ -118,12 +145,20 @@ def write_key(units: Sequence[Unit], path: Path) -> None:
             writer.writerow([getattr(unit, column) for column in KEY_COLUMNS])
 
 
-def read_sheet(path: Path, expected_ids: set[str] | None = None) -> dict[str, dict[str, int]]:
-    """A completed sheet as {unit_id: {code: 0 or 1}}. Refuses anything incomplete or unexpected."""
+def read_sheet(
+    path: Path,
+    expected_ids: set[str] | None = None,
+    codes_read: Sequence[str] = CODES,
+    columns: Sequence[str] = SHEET_COLUMNS,
+) -> dict[str, dict[str, int]]:
+    """A completed sheet as {unit_id: {code: 0 or 1}}. Refuses anything incomplete or unexpected.
+
+    `codes_read` and `columns` default to the RQ2 sheet; the rubric sheets pass their own.
+    """
     codes: dict[str, dict[str, int]] = {}
     with path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
-        missing_columns = set(SHEET_COLUMNS) - set(reader.fieldnames or ())
+        missing_columns = set(columns) - set(reader.fieldnames or ())
         if missing_columns:
             raise CodingError(f"{path.name} is missing columns {sorted(missing_columns)}")
         for line, row in enumerate(reader, start=2):
@@ -131,7 +166,7 @@ def read_sheet(path: Path, expected_ids: set[str] | None = None) -> dict[str, di
             if uid in codes:
                 raise CodingError(f"{path.name} line {line}: unit {uid} coded twice")
             values = {}
-            for code in CODES:
+            for code in codes_read:
                 raw = (row[code] or "").strip()
                 if raw not in ("0", "1"):
                     raise CodingError(
@@ -175,7 +210,9 @@ def cohens_kappa(first: Sequence[int], second: Sequence[int]) -> float:
 
 
 def kappa_report(
-    primary: dict[str, dict[str, int]], secondary: dict[str, dict[str, int]]
+    primary: dict[str, dict[str, int]],
+    secondary: dict[str, dict[str, int]],
+    codes: Sequence[str] = CODES,
 ) -> dict[str, dict[str, float]]:
     """Kappa per code with prevalence, over the units both coders coded.
 
@@ -186,7 +223,7 @@ def kappa_report(
     if len(shared) != len(secondary):
         raise CodingError("The second coder coded units the first coder did not")
     report = {}
-    for code in CODES:
+    for code in codes:
         a = [primary[u][code] for u in shared]
         b = [secondary[u][code] for u in shared]
         report[code] = {
@@ -202,3 +239,133 @@ def kappa_report(
 
 def format_kappa(value: float) -> str:
     return "undefined (no variance)" if math.isnan(value) else f"{value:.3f}"
+
+
+# --- T1's rubric ---------------------------------------------------------------------------------
+
+
+def build_rubric_units(rows: Iterable[dict[str, Any]]) -> list[Unit]:
+    """T1 descriptions to score, from tidy task rows. A skipped description is not coded: it
+    scores incorrect without a coder (study-design.md section 7)."""
+    return build_units(row for row in rows if row.get("kind") == WRITTEN_KIND)
+
+
+def write_rubric_sheet(units: Sequence[Unit], path: Path, seed: int = SEED) -> None:
+    """A blind rubric sheet: unit id, the description, its form's three parts, empty fields.
+
+    The parts name the form's countries, which the description names anyway; condition,
+    participant and session stay in the key file.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(RUBRIC_SHEET_COLUMNS)
+        for unit in shuffled(units, seed):
+            parts = answer_keys.rubric_parts(unit.form, unit.task_id)
+            writer.writerow(
+                [unit.unit_id, unit.justification, parts["a"], parts["b"], parts["c"]]
+                + [""] * len(RUBRIC_FIELDS)
+            )
+
+
+def read_rubric_sheet(path: Path, expected_ids: set[str]) -> dict[str, dict[str, int]]:
+    """A completed rubric sheet. Every unit must be coded: both coders code all of them."""
+    return read_sheet(path, expected_ids, RUBRIC_FIELDS, RUBRIC_SHEET_COLUMNS)
+
+
+def rubric_correct(fields: dict[str, int]) -> bool:
+    """Correct when all three parts are stated and none is contradicted (section 4)."""
+    return bool(fields["a"] and fields["b"] and fields["c"] and not fields["contradicts"])
+
+
+def disagreements(first: dict[str, dict[str, int]], second: dict[str, dict[str, int]]) -> list[str]:
+    """Unit ids on which the two coders differ in any field, sorted."""
+    if set(first) != set(second):
+        raise CodingError("The two rubric sheets do not cover the same units")
+    return sorted(uid for uid in first if first[uid] != second[uid])
+
+
+def write_disagreements(
+    units: Sequence[Unit],
+    first: dict[str, dict[str, int]],
+    second: dict[str, dict[str, int]],
+    path: Path,
+) -> int:
+    """The units to settle, still blind: both codings, and empty fields for the settled one."""
+    by_id = {unit.unit_id: unit for unit in units}
+    open_ids = disagreements(first, second)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            [
+                "unit_id",
+                "description",
+                *[f"coder1_{f}" for f in RUBRIC_FIELDS],
+                *[f"coder2_{f}" for f in RUBRIC_FIELDS],
+                *RUBRIC_FIELDS,
+            ]
+        )
+        for uid in open_ids:
+            writer.writerow(
+                [uid, by_id[uid].justification]
+                + [first[uid][f] for f in RUBRIC_FIELDS]
+                + [second[uid][f] for f in RUBRIC_FIELDS]
+                + [""] * len(RUBRIC_FIELDS)
+            )
+    return len(open_ids)
+
+
+def read_settled(path: Path, expected_ids: set[str]) -> dict[str, dict[str, int]]:
+    """The settled codings for the disagreements, keyed by unit. No file: nothing settled yet."""
+    if not path.exists():
+        return {}
+    # Only the disputed units are settled, so the file covers some of `expected_ids`, not all.
+    settled = read_sheet(path, None, RUBRIC_FIELDS, SETTLED_COLUMNS)
+    unknown = set(settled) - expected_ids
+    if unknown:
+        raise CodingError(f"{path.name} has units not in this study: {sorted(unknown)[:5]}")
+    return settled
+
+
+def settle(
+    first: dict[str, dict[str, int]],
+    second: dict[str, dict[str, int]],
+    settled: dict[str, dict[str, int]],
+) -> dict[str, bool]:
+    """Each unit's verdict: the coders' shared coding, or the settled one where they differed.
+
+    Refuses while any disagreement is unsettled, and refuses a settled coding for a unit the
+    coders agreed on, which would overrule an agreement nobody disputed.
+    """
+    open_ids = disagreements(first, second)
+    unsettled = [uid for uid in open_ids if uid not in settled]
+    if unsettled:
+        raise CodingError(f"{len(unsettled)} rubric disagreements are not settled yet")
+    extra = sorted(set(settled) - set(open_ids))
+    if extra:
+        raise CodingError(f"Settled codings for units the coders agreed on: {extra[:5]}")
+    return {uid: rubric_correct(settled.get(uid, first[uid])) for uid in first}
+
+
+def write_verdicts(units: Sequence[Unit], verdicts: dict[str, bool], path: Path) -> None:
+    """Unblinded verdicts, (session_id, task_id) -> correct, for `scripts/score_study.py`."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(VERDICT_COLUMNS)
+        for unit in sorted(units, key=lambda u: (u.session_id, u.task_id)):
+            writer.writerow([unit.session_id, unit.task_id, int(verdicts[unit.unit_id])])
+
+
+def read_verdicts(path: Path) -> dict[tuple[str, str], bool]:
+    """The verdicts file as `reshape.tidy_tasks` takes it. No file: nothing coded yet."""
+    if not path.exists():
+        return {}
+    verdicts: dict[tuple[str, str], bool] = {}
+    with path.open(newline="", encoding="utf-8") as handle:
+        for line, row in enumerate(csv.DictReader(handle), start=2):
+            if row["correct"] not in ("0", "1"):
+                raise CodingError(f"{path.name} line {line}: correct must be 0 or 1")
+            verdicts[(row["session_id"], row["task_id"])] = row["correct"] == "1"
+    return verdicts

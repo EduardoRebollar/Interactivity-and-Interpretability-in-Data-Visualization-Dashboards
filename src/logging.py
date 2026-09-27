@@ -60,6 +60,13 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v11 (2026-09-27): T1 is a written description of two trends, scored by rubric
+# (docs/study-design.md section 4). Its `answer_submit.answer` is free text, capped at 2000
+# characters, where a v10 T1 answer was a year: the same task id names a different kind of answer.
+# A T1 record's `justification` is always null, since none is asked, and its `skipped` can hold only
+# "answer". No new event, key or table, so no init_db.py re-run. Nothing has been collected, so no
+# migration.
+#
 # v10 (2026-09-26): new event `window_size` ({width, height}), once per participant, in the first
 # condition's session right after `consent`. Participants use their own computers (request form
 # 5B), and on a window 790 px tall or less the interactive scatter and map cards need scrolling
@@ -108,7 +115,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -669,6 +676,7 @@ class StudyLogger:
         answer: Any,
         *,
         justification: str | None = None,
+        justification_asked: bool = True,
         duration_ms: float | None = None,
         duration_invalid: str | None = None,
         client_elapsed_ms: float | None = None,
@@ -680,15 +688,20 @@ class StudyLogger:
 
         Either part may be skipped (IRB form item 10). A blank is recorded as None, and `skipped`
         names what was left empty, so analysis never has to guess whether "" meant a skip.
+
+        `justification_asked` is False for a written item (T1), whose description is its reasoning:
+        its justification is null and is never listed as skipped, since nothing was asked.
         """
         if answer == "":
             answer = None
-        justification = (justification or "").strip() or None
-        skipped = [
-            part
-            for part, value in (("answer", answer), ("justification", justification))
-            if value is None
-        ]
+        if not justification_asked:
+            if justification is not None:
+                raise ValueError("A justification was given for an item that asks for none")
+            parts = (("answer", answer),)
+        else:
+            justification = (justification or "").strip() or None
+            parts = (("answer", answer), ("justification", justification))
+        skipped = [part for part, value in parts if value is None]
         return self.event(
             "answer_submit",
             task_id=task_id,

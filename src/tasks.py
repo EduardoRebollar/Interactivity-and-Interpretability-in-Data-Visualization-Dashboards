@@ -38,36 +38,45 @@ HEATMAP_YEARS = (2000, 2005, 2010, 2015, 2020, 2024)
 SCATTER_YEARS = (2000, 2024)
 
 # The practice item is identical in both forms and is not scored. It teaches the interface, so it is
-# a line chart, the one chart type with every control, and its change is unmissable. Brazil, because
-# no scored item asks about Brazil: the old practice, Ukraine's collapse, would have primed A-T1.
+# a line chart, the one chart type with every control, and its change is unmissable. Myanmar,
+# because no scored item asks about it and neither T1 chart draws it. Brazil's fall, the practice
+# until 2026-09-27, is B-T1's story, as Ukraine's collapse was A-T1's before that.
 PRACTICE = Task(
     task_id="P0",
     form="both",
     kind="practice",
     prompt=(
-        "Practice (not scored). Look at Brazil's line. Did coverage rise, fall, or stay level "
+        "Practice (not scored). Look at Myanmar's line. Did coverage rise, fall, or stay level "
         "between 2015 and 2021?"
     ),
     vaccine="DTP3",
-    entities=("Brazil", "World"),
+    entities=("Myanmar", "World"),
     options=("It rose", "It fell", "It stayed about level"),
+)
+
+# T1 is written, not chosen (2026-09-27): the one item that asks for an interpretation of a time
+# series. Same wording in both forms, with the two countries alphabetical.
+DESCRIBE_PROMPT = (
+    "Look at the lines for {first} and {second}. Describe how their coverage changed between 2000 "
+    "and 2024, and how the two countries' trends were similar or different."
 )
 
 # Entities are listed alphabetically, World last, and country options follow the same order. The
 # order also assigns each line and dot its colour, so neither where the answer sits in the list nor
 # which colour it gets depends on the answer (docs/study-design.md section 5). Year options run in
 # calendar order. Which options are offered is the one free choice, and it is used to spread the key
-# across positions: no position holds more than a third of the twelve keys.
+# across positions: no position holds more than a third of the ten keys (T1 has none).
 
 FORM_A: tuple[Task, ...] = (
     Task(
         task_id="T1",
         form="A",
-        kind="lowest",
-        prompt="Focus on Ukraine's line. In which year was its coverage at its lowest point?",
+        kind="describe",
+        prompt=DESCRIBE_PROMPT.format(first="India", second="Ukraine"),
         vaccine="DTP3",
         # Eight countries, no World line (2026-09-25): the tangle the isolation control cuts
-        # through.
+        # through. India rises steadily; Ukraine collapses and recovers; India passes it in 2009.
+        # docs/study-design.md section 4.
         entities=(
             "Brazil",
             "China",
@@ -78,10 +87,6 @@ FORM_A: tuple[Task, ...] = (
             "Pakistan",
             "Ukraine",
         ),
-        # Not 2010-2015: Ukraine is 23 in 2014 and 2015, too close to its low of 19 in 2016 to tell
-        # apart, and a year either side of them must still be nearest 2016. The handoff's 2012
-        # failed exactly that way. docs/study-design.md section 4.
-        options=("2004", "2008", "2016", "2019", "2022", "2024"),
     ),
     Task(
         task_id="T2",
@@ -191,21 +196,22 @@ FORM_B: tuple[Task, ...] = (
     Task(
         task_id="T1",
         form="B",
-        kind="lowest",
-        prompt="Focus on Myanmar's line. In which year was its coverage at its lowest point?",
+        kind="describe",
+        prompt=DESCRIBE_PROMPT.format(first="Brazil", second="Uganda"),
         vaccine="DTP3",
+        # A's story: Uganda rises steadily; Brazil falls and recovers; Uganda passes it in 2016.
+        # Not India, which runs within 5 points of Uganda for 19 of 25 years; Nepal gives the
+        # tangle nearest A's. No World line, as in A.
         entities=(
             "Brazil",
             "China",
             "Ethiopia",
-            "India",
             "Indonesia",
-            "Myanmar",
+            "Nepal",
             "Nigeria",
             "Pakistan",
+            "Uganda",
         ),
-        # 2005 mirrors A-T1's 2004: a year four before the first option. No World line, as in A.
-        options=("2005", "2009", "2013", "2017", "2021", "2024"),
     ),
     Task(
         task_id="T2",
@@ -311,12 +317,18 @@ FORM_B: tuple[Task, ...] = (
 
 FORMS: dict[str, tuple[Task, ...]] = {"A": FORM_A, "B": FORM_B}
 
+
+def is_written(task: Task) -> bool:
+    """True for an item answered in a text box, with no options and no justification (T1)."""
+    return task.kind == "describe"
+
+
 JUSTIFICATION_PROMPT = "In one sentence, describe why you chose your answer."
 
 # The first step's heading on a task screen, by item kind. The design handoff's wording.
 CHOOSE_PROMPTS: dict[str, str] = {
     "practice": "Choose an answer:",
-    "lowest": "Choose one year:",
+    "describe": "Write your description:",
     "rank": "Choose one country:",
     "improved": "Choose one country:",
     "cell": "Choose one country:",

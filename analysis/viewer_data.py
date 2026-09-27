@@ -12,7 +12,9 @@ should. So the viewer has two layers:
 condition, and `analysis/coding.py` builds its sheets to guarantee it. A table that puts a
 justification beside its condition would quietly break that blind for whoever codes, so every
 function that can emit one takes `show_justifications` and defaults to hiding it. Downloads are the
-exception: they are the analysis input, and a masked copy would be silently wrong.
+exception: they are the analysis input, and a masked copy would be silently wrong. T1's answer is a
+written description (2026-09-27), coded blind like a justification and by rubric for RQ1, so it is
+masked by the same switch.
 
 Read-only. Nothing here writes to any sink.
 """
@@ -29,7 +31,7 @@ from typing import Any
 
 import pandas as pd
 
-from analysis import exclusions, keys, reshape
+from analysis import coding, exclusions, keys, reshape
 from analysis import report as study_report
 from src import db, tasks
 from src import logging as study_logging
@@ -196,6 +198,13 @@ def _running(stamp: datetime | None, now: datetime) -> bool:
 
 def mask(value: Any, show: bool) -> Any:
     return value if show or not value else HIDDEN
+
+
+def _written(form: str | None, task_id: str | None) -> bool:
+    """True for the written item (T1), whose answer is free text coded blind."""
+    if form not in tasks.FORMS:
+        return False
+    return any(t.task_id == task_id and tasks.is_written(t) for t in tasks.for_form(form))
 
 
 # --- Health --------------------------------------------------------------------------------------
@@ -515,20 +524,29 @@ def cell_balance(records: list[dict[str, Any]]) -> pd.DataFrame:
 # --- Scoring -------------------------------------------------------------------------------------
 
 
-def score(records: list[dict[str, Any]], *, key_problems: list[str] | None = None) -> Scoring:
-    """The score_study.py pipeline. Returns the refusal as `error` rather than raising."""
+def score(
+    records: list[dict[str, Any]],
+    *,
+    key_problems: list[str] | None = None,
+    rubric: dict[tuple[str, str], bool] | None = None,
+) -> Scoring:
+    """The score_study.py pipeline. Returns the refusal as `error` rather than raising.
+
+    `rubric` is T1's settled verdicts; by default the file `scripts/score_study.py` reads.
+    """
     key_problems = keys.check() if key_problems is None else key_problems
     if key_problems:
         return Scoring(error="The answer key does not check out: " + "; ".join(key_problems))
     if not records:
         return Scoring(error="No events recorded yet.")
     try:
+        rubric = coding.read_verdicts(coding.VERDICTS_PATH) if rubric is None else rubric
         events = reshape.events_frame(records)
-        tasks_frame = reshape.tidy_tasks(events)
+        tasks_frame = reshape.tidy_tasks(events, rubric=rubric)
         conditions = reshape.tidy_conditions(events, tasks_frame)
         participants = reshape.tidy_participants(events)
         scored, excluded = exclusions.apply(tasks_frame, conditions)
-    except reshape.ReshapeError as exc:
+    except (reshape.ReshapeError, coding.CodingError) as exc:
         return Scoring(error=f"Scoring refused: {exc}")
     except Exception as exc:  # the viewer must stay up to show what is wrong
         return Scoring(error=f"Scoring failed: {type(exc).__name__}: {exc}")
@@ -649,7 +667,8 @@ def participant_overview(
 ) -> pd.DataFrame:
     """One row per participant: cell, progress, Paas and accuracy per condition, exclusions.
 
-    Accuracy is the RQ1 score, over T1-T6 (study-design.md section 7).
+    Accuracy is the RQ1 score, over T1-T6 (study-design.md section 7), and blank while the
+    participant's T1 is not yet coded.
     """
     now = now or datetime.now(UTC)
     grouped = sessions(records)
@@ -658,7 +677,9 @@ def participant_overview(
     accuracy = {}
     if scoring.ok and not scoring.tasks.empty:
         accuracy = (
-            scoring.tasks.groupby(["participant_id", "condition"])["correct"].mean().to_dict()
+            scoring.tasks.groupby(["participant_id", "condition"])["correct"]
+            .agg(reshape.proportion_if_coded)
+            .to_dict()
         )
 
     rows = []
@@ -798,7 +819,9 @@ def answers(
                 "task_id": task_id,
                 "chart": _chart(record["form"], task_id),
                 "prompt": _prompt(record["form"], task_id),
-                "answer": payload.get("answer"),
+                "answer": mask(payload.get("answer"), show_justifications)
+                if _written(record["form"], task_id)
+                else payload.get("answer"),
                 "justification": mask(payload.get("justification"), show_justifications),
                 "correct": "practice" if task_id == PRACTICE_ID else correct,
                 "correct_adjacent": adjacent,
@@ -833,12 +856,14 @@ EVENT_TABLE_COLUMNS = [
 def events_table(
     records: list[dict[str, Any]], *, show_justifications: bool = False
 ) -> pd.DataFrame:
-    """Every event, payload as JSON text, justification masked unless asked for."""
+    """Every event, payload as JSON text, justification and T1's text masked unless asked for."""
     rows = []
     for record in records:
         payload = dict(record["payload"])
         if "justification" in payload:
             payload["justification"] = mask(payload["justification"], show_justifications)
+        if "answer" in payload and _written(record.get("form"), record.get("task_id")):
+            payload["answer"] = mask(payload["answer"], show_justifications)
         row = {column: record.get(column) for column in EVENT_TABLE_COLUMNS}
         row["payload"] = json.dumps(payload, ensure_ascii=False, default=str)
         rows.append(row)

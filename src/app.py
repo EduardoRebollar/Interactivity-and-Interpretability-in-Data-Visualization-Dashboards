@@ -424,10 +424,15 @@ def step(
             else:
                 items = tasks.for_form(flow.current_form(state))
                 task = flow.current_task(state, items)
+                written = tasks.is_written(task)
                 logger.submit_answer(
                     task.task_id,
-                    answer=answer,
-                    justification=justification,
+                    # A written answer is capped like the survey's free text; the box's maxLength
+                    # already stops the browser at the same length.
+                    answer=_text(answer, tasks.MAX_TEXT) if written else answer,
+                    # T1 asks for no justification, so its hidden box is never read.
+                    justification=None if written else justification,
+                    justification_asked=not written,
                     duration_ms=duration_ms,
                     duration_invalid=duration_invalid,
                 )
@@ -1474,6 +1479,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         Input("submit-button", "n_clicks"),
         State("answer-input", "value"),
         State("justification-input", "value"),
+        State("answer-format", "data"),
         prevent_initial_call=True,
     )
 
@@ -1654,20 +1660,34 @@ WINDOW_SIZE_JS = """function(_) {
 # only if there is one. After the last task the survey is on screen, with no Submit, and the
 # renderer threw on `set_props` for a missing id (found in headless Chrome, 2026-09-23). So every
 # watchdog checks that its button is still on the page first.
-SUBMIT_JS = """function(n, answer, justification) {
+#
+# `format` is "written" on T1, whose one text box is the whole answer: only it is checked, and the
+# hidden justification box is never asked about. Blank or whitespace is a skip, as the server
+# reads it.
+SUBMIT_JS = """function(n, answer, justification, format) {
     var no = window.dash_clientside.no_update;
     if (!n) { return [no, no, no]; }
     var stamp = {t: window.performance.now(), origin: window.performance.timeOrigin};
-    var missing = [];
-    if (answer === null || answer === undefined || answer === "") {
-        missing.push("the multiple-choice question");
+    var blank = function (v) { return v === null || v === undefined || !String(v).trim(); };
+    var message = null;
+    if (format === "written") {
+        if (blank(answer)) {
+            message = "You have not written a description. Continue without answering?";
+        }
+    } else {
+        var missing = [];
+        if (answer === null || answer === undefined || answer === "") {
+            missing.push("the multiple-choice question");
+        }
+        if (blank(justification)) {
+            missing.push("how you decided");
+        }
+        if (missing.length) {
+            message = "You have not answered " + missing.join(" or ") +
+                ". Continue without answering?";
+        }
     }
-    if (!justification || !String(justification).trim()) {
-        missing.push("how you decided");
-    }
-    if (missing.length && !window.confirm(
-        "You have not answered " + missing.join(" or ") + ". Continue without answering?"
-    )) {
+    if (message && !window.confirm(message)) {
         return [no, no, no];
     }
     window.setTimeout(function () {

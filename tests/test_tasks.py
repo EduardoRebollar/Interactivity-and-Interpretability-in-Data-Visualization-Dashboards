@@ -15,12 +15,17 @@ from src import config, figures, runtime_data, tasks
 from src.flow import Task
 
 FORMS = ("A", "B")
-EXPECTED_KINDS = ("lowest", "rank", "improved", "cell", "threshold", "crossing")
+EXPECTED_KINDS = ("describe", "rank", "improved", "cell", "threshold", "crossing")
 # One affordance per item, each on the chart type it helps most (study-design.md section 4).
 EXPECTED_CHARTS = ("line", "bar", "scatter", "heatmap", "map", "line")
-# The options are countries for these kinds, years for the line items, counts for the map.
+# The options are countries for these kinds, bands for the crossing, counts for the map. T1 is
+# written and has none (2026-09-27).
 COUNTRY_OPTION_KINDS = ("rank", "improved", "cell")
-YEAR_OPTION_KINDS = ("lowest",)
+
+
+def _chosen(form: str) -> list[Task]:
+    """The multiple-choice items: every scored item but the written T1."""
+    return [t for t in tasks.for_form(form) if not tasks.is_written(t)]
 
 
 # --- Form equivalence ----------------------------------------------------------------------------
@@ -54,11 +59,21 @@ def test_matched_items_offer_the_same_number_of_options():
 
 
 @pytest.mark.parametrize("form", FORMS)
-def test_every_scored_item_offers_six_options(form):
+def test_every_multiple_choice_item_offers_six_options(form):
     """The design handoff gives every item six answer tiles (2026-09-25). Chance is one in six on
     every item, so no item is easier to guess than another."""
-    for task in tasks.for_form(form):
+    for task in _chosen(form):
         assert len(task.options) == 6, f"{form}-{task.task_id}"
+
+
+@pytest.mark.parametrize("form", FORMS)
+def test_t1_alone_is_written_and_offers_no_options(form):
+    """T1 is a written description of two trends (study-design.md section 4, 2026-09-27). Options
+    on it would render tiles beside the text box."""
+    written = [t for t in tasks.for_form(form) if tasks.is_written(t)]
+    assert [t.task_id for t in written] == ["T1"]
+    assert written[0].options == ()
+    assert written[0].chart == "line"
 
 
 def test_the_isolation_item_draws_no_world_line():
@@ -88,8 +103,8 @@ def test_forms_never_ask_the_same_question_of_the_same_chart():
     """
     for a, b in zip(tasks.for_form("A"), tasks.for_form("B"), strict=True):
         assert (a.prompt, a.entities, a.years) != (b.prompt, b.entities, b.years), a.task_id
-        # Counts and year bands are the same options in both forms by design.
-        assert a.options != b.options or a.kind in ("threshold", "crossing"), a.task_id
+        # Counts and year bands are the same options in both forms by design; T1 has none.
+        assert a.options != b.options or a.kind in ("threshold", "crossing", "describe"), a.task_id
 
 
 @pytest.mark.parametrize("form", FORMS)
@@ -165,6 +180,8 @@ def test_every_task_builds_a_figure(task):
 @pytest.mark.parametrize("task", _all_tasks(), ids=lambda t: f"{t.form}-{t.task_id}")
 def test_tasks_have_a_prompt_and_options(task):
     assert task.prompt.strip()
+    if tasks.is_written(task):
+        return
     assert len(task.options) >= 2, f"{task.task_id} needs at least two options"
     assert len(set(task.options)) == len(task.options), f"{task.task_id} has duplicate options"
 
@@ -202,15 +219,6 @@ def test_country_options_are_alphabetical_and_on_the_chart():
                 assert set(task.options) <= set(task.entities), task.task_id
 
 
-def test_year_options_are_in_calendar_order_and_on_the_chart():
-    for form in FORMS:
-        for task in tasks.for_form(form):
-            if task.kind in YEAR_OPTION_KINDS:
-                years = [int(option) for option in task.options]
-                assert years == sorted(years), task.task_id
-                assert all(config.YEAR_MIN <= year <= config.YEAR_MAX for year in years)
-
-
 def test_counts_stay_in_their_natural_order():
     assert tasks.COUNT_OPTIONS == ("0", "1", "2", "3", "4", "5 or more")
     for form in FORMS:
@@ -244,8 +252,11 @@ def test_line_items_ask_about_a_country_on_the_chart():
                 assert named, task.task_id
                 assert set(named.groups()) <= set(task.entities), task.task_id
             elif task.chart == "line":
-                named = re.match(r"Focus on (.+)'s line\.", task.prompt)
-                assert named and named.group(1) in task.entities, task.task_id
+                named = re.match(r"Look at the lines for (.+) and (.+)\. Describe", task.prompt)
+                assert named, task.task_id
+                assert set(named.groups()) <= set(task.entities), task.task_id
+                # Named alphabetically, like the chart's entities (section 5).
+                assert list(named.groups()) == sorted(named.groups()), task.task_id
 
 
 def test_each_map_prompt_counts_the_countries_it_colours():
@@ -277,6 +288,15 @@ def test_the_practice_asks_about_no_scored_items_country():
             assert not any(country in task.prompt for country in practised), task.task_id
 
 
+def test_the_practice_country_is_on_neither_t1_chart():
+    """T1 asks for a trend in words. A practice that had just shown one of its lines rising or
+    falling would hand part of the description over (study-design.md section 4, 2026-09-27)."""
+    practised = {e for e in tasks.PRACTICE.entities if e != "World"}
+    for form in FORMS:
+        (t1,) = [t for t in tasks.for_form(form) if t.task_id == "T1"]
+        assert not practised & set(t1.entities), form
+
+
 def test_practice_task_shows_no_missing_data():
     """The practice teaches the interface on a complete line. A gap would need explaining first."""
     rows = runtime_data.load_rows()
@@ -297,6 +317,7 @@ def test_every_item_kind_says_what_to_choose():
     kinds = {task.kind for form in FORMS for task in tasks.for_form(form)} | {"practice"}
     assert kinds <= set(tasks.CHOOSE_PROMPTS)
     assert tasks.CHOOSE_PROMPTS["crossing"] == "Choose a range:"
+    assert tasks.CHOOSE_PROMPTS["describe"] == "Write your description:"
 
 
 def test_the_justification_prompt_is_a_sentence_not_a_question():

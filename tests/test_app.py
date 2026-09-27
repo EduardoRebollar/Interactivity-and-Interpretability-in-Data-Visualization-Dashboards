@@ -461,7 +461,77 @@ def test_inputs_the_callback_reads_exist_on_the_screens_that_supply_them():
     assert {"consent-name", "consent-date", "consent-paper", "signature-pad"} <= consent_ids
     for stage in (Stage.PRACTICE, Stage.TASK):
         ids = _ids(app.render(_state(stage)))
-        assert {"answer-input", "justification-input"} <= ids
+        assert {"answer-input", "justification-input", "answer-format"} <= ids
+
+
+@pytest.mark.parametrize("interactive", [False, True])
+@pytest.mark.parametrize("form", ["A", "B"])
+def test_every_task_screen_carries_what_the_submit_callbacks_read(form, interactive):
+    """The submit callbacks name the answer, the justification and the answer format. A State
+    naming a component missing from the page kills the callback, so T1, which asks for no
+    justification, must still carry the box, hidden."""
+    for index, task in enumerate(tasks.for_form(form)):
+        ids = _ids(layout.task_screen(task, interactive, index=index + 1, total=6))
+        assert {"answer-input", "justification-input", "answer-format"} <= ids, task.task_id
+
+
+def _by_id(component, component_id):
+    (found,) = [n for n in _nodes(component) if getattr(n, "id", None) == component_id]
+    return found
+
+
+def _parent_of(component, component_id):
+    (found,) = [
+        n
+        for n in _nodes(component)
+        if any(getattr(c, "id", None) == component_id for c in _children(n))
+    ]
+    return found
+
+
+def _children(node) -> list:
+    children = getattr(node, "children", None)
+    if children is None or isinstance(children, str):
+        return []
+    return list(children) if isinstance(children, (list, tuple)) else [children]
+
+
+@pytest.mark.parametrize("form", ["A", "B"])
+def test_t1_is_one_text_box_with_no_options_and_no_justification(form):
+    """study-design.md section 5 and visual-spec.md section 10 (2026-09-27)."""
+    (t1,) = [t for t in tasks.for_form(form) if t.task_id == "T1"]
+    # Static, so the View control's own radio buttons are not on the page.
+    screen = layout.task_screen(t1, False, index=1, total=6)
+    answer = _by_id(screen, "answer-input")
+    assert type(answer).__name__ == "Textarea"
+    assert answer.maxLength == tasks.MAX_TEXT
+    assert answer.className == "ui-textarea"
+    assert _parent_of(screen, "justification-input").hidden is True
+    assert _by_id(screen, "answer-format").data == "written"
+    text = " ".join(_texts(screen))
+    assert tasks.CHOOSE_PROMPTS["describe"] in text
+    assert tasks.JUSTIFICATION_PROMPT not in text
+    assert not [n for n in _nodes(screen) if type(n).__name__ == "RadioItems"]
+
+
+def test_the_other_items_keep_their_tiles_and_justification():
+    task = tasks.for_form("A")[1]
+    screen = layout.task_screen(task, False, index=2, total=6)
+    assert type(_by_id(screen, "answer-input")).__name__ == "RadioItems"
+    assert _by_id(screen, "answer-format").data == "choice"
+    assert tasks.JUSTIFICATION_PROMPT in " ".join(_texts(screen))
+
+
+@pytest.mark.parametrize("form", ["A", "B"])
+def test_t1s_answer_panel_is_the_same_in_both_conditions(form):
+    """Only the controls under the chart differ between conditions (visual-spec.md section 10)."""
+    (t1,) = [t for t in tasks.for_form(form) if t.task_id == "T1"]
+    panels = []
+    for interactive in (False, True):
+        screen = layout.task_screen(t1, interactive, index=1, total=6)
+        (panel,) = [n for n in _nodes(screen) if getattr(n, "className", None) == "ui-panel"]
+        panels.append(json.dumps(panel.to_plotly_json(), default=str, sort_keys=True))
+    assert panels[0] == panels[1]
 
 
 # --- Practice and the second condition's instructions ---------------------------------------------
@@ -612,7 +682,9 @@ def test_task_end_carries_the_browser_measured_duration(tmp_path):
 def test_answers_carry_their_justification_and_browser_timing(tmp_path):
     events = _run_session(tmp_path)
     for event in (e for e in events if e["event"] == "answer_submit"):
-        assert event["payload"]["justification"] == ANSWER_KWARGS["justification"]
+        # T1 asks for no justification: its hidden box is never read, whatever it holds.
+        expected = None if event["task_id"] == "T1" else ANSWER_KWARGS["justification"]
+        assert event["payload"]["justification"] == expected
         assert event["payload"]["duration_ms"] is not None
         assert event["client_elapsed_ms"] is None or event["client_elapsed_ms"] >= 0
 
@@ -633,7 +705,7 @@ def _task_state():
 
 
 def _practice_state():
-    """The interactive condition's practice item: Brazil and World, the one chart that draws World
+    """The interactive condition's practice item: Myanmar and World, the one chart that draws World
     since T1 dropped it (2026-09-25)."""
     return _state(Stage.PRACTICE, first_condition="interactive").to_dict()
 
@@ -729,14 +801,14 @@ def test_the_world_reference_stays_on_the_chart_when_a_line_is_isolated(tmp_path
         state=_practice_state(),
         click_data={"points": [{"curveNumber": 0}]},
     )
-    assert _drawn(result.figure) == {"Brazil", "World"}
+    assert _drawn(result.figure) == {"Myanmar", "World"}
 
 
 def test_the_practice_offers_no_chip_for_world_and_keeps_its_one_country(tmp_path):
     """World cannot be hidden, and the filter never removes the last country."""
-    assert layout.filterable(list(tasks.PRACTICE.entities)) == ["Brazil"]
+    assert layout.filterable(list(tasks.PRACTICE.entities)) == ["Myanmar"]
     result, events = _interact("chips", tmp_path, state=_practice_state(), chips=[])
-    assert _ticked(result) == ["Brazil"]
+    assert _ticked(result) == ["Myanmar"]
     assert events == []
 
 
@@ -1142,7 +1214,7 @@ def test_a_legend_double_click_that_hid_world_is_undone(tmp_path):
         restyle=_legend([world], ["legendonly"]),
     )
     assert events == []
-    assert _drawn(result.figure) == {"Brazil", "World"}
+    assert _drawn(result.figure) == {"Myanmar", "World"}
 
 
 @pytest.mark.parametrize(
@@ -1393,7 +1465,7 @@ def test_the_chips_group_is_rebuilt_only_when_the_order_changes(tmp_path):
 
 def test_the_practice_has_one_row_of_chips():
     """Its second row would be empty; an empty checklist is left out."""
-    group = layout.chip_group(tasks.PRACTICE, ["Brazil"], ["Brazil"])
+    group = layout.chip_group(tasks.PRACTICE, ["Myanmar"], ["Myanmar"])
     assert [getattr(node, "id", None) for node in group][1:] == [layout.control_id("chips", 0)]
 
 
@@ -2190,6 +2262,21 @@ def test_a_skip_asks_for_confirmation_naming_what_is_missing():
     assert skipped["result"][1] is True
 
 
+def test_a_written_item_asks_only_about_its_description():
+    """T1: a blank or whitespace description asks; a written one never asks about the hidden,
+    empty justification box."""
+    # One harness run each: its record of calls is shared by every case in a run.
+    (blank,) = _run_js([[app.SUBMIT_JS, 1, False, [None, None, "written"], True]])
+    (spaces,) = _run_js([[app.SUBMIT_JS, 1, False, ["   ", None, "written"], True]])
+    (written,) = _run_js([[app.SUBMIT_JS, 1, False, ["India rose.", None, "written"]]])
+    for skipped in (blank, spaces):
+        ((_kind, message),) = [call for call in skipped["calls"] if call[0] == "confirm"]
+        assert message == "You have not written a description. Continue without answering?"
+        assert skipped["result"][1] is True, "a confirmed skip still submits"
+    assert not [call for call in written["calls"] if call[0] == "confirm"]
+    assert written["result"][1] is True
+
+
 def test_cancelling_the_skip_popup_leaves_the_participant_on_the_task():
     """No stamp, no disabled button: the task simply carries on."""
     (cancelled,) = _run_js([[app.SUBMIT_JS, 1, True, ["1", ""], False]])
@@ -2635,19 +2722,44 @@ def test_the_signature_and_the_signed_copy_never_reach_session_storage():
 
 
 def test_a_skipped_task_advances_and_is_recorded_as_a_skip(tmp_path):
-    """IRB form item 10: any question may be skipped. The popup confirms; the server records it."""
+    """IRB form item 10: any question may be skipped. The popup confirms; the server records it.
+    T1 asks for no justification, so only its description can be skipped; T2 names both parts."""
     session, log = _through_practice(tmp_path)
-    session, log, _screen, error, _spool = app.step(
-        "submit-clock", session, log, log_dir=tmp_path, answer=None, justification="  "
+    for task_id, skipped in (("T1", ["answer"]), ("T2", ["answer", "justification"])):
+        session, log, _screen, error, _spool = app.step(
+            "submit-clock", session, log, log_dir=tmp_path, answer=None, justification="  "
+        )
+        assert error == ""
+        answer = next(
+            e
+            for e in _events(tmp_path)
+            if e["event"] == "answer_submit" and e["task_id"] == task_id
+        )
+        assert answer["payload"]["answer"] is None
+        assert answer["payload"]["justification"] is None
+        assert answer["payload"]["skipped"] == skipped, task_id
+    assert SessionState.from_dict(session).task_index == 2, "a skip moves on to the next task"
+
+
+def test_a_written_answer_is_trimmed_capped_and_logged_without_a_justification(tmp_path):
+    """T1's text is capped like the survey's free text; its hidden justification box is never
+    read, even if something filled it."""
+    session, log = _through_practice(tmp_path)
+    long_text = "  " + "India rose while Ukraine fell and recovered. " * 100
+    app.step(
+        "submit-clock",
+        session,
+        log,
+        log_dir=tmp_path,
+        answer=long_text,
+        justification="should never be logged",
     )
-    assert error == ""
-    assert SessionState.from_dict(session).task_index == 1, "a skip moves on to the next task"
     answer = next(
         e for e in _events(tmp_path) if e["event"] == "answer_submit" and e["task_id"] == "T1"
     )
-    assert answer["payload"]["answer"] is None
+    assert answer["payload"]["answer"] == long_text.strip()[: tasks.MAX_TEXT]
     assert answer["payload"]["justification"] is None
-    assert answer["payload"]["skipped"] == ["answer", "justification"]
+    assert answer["payload"]["skipped"] == []
 
 
 def test_a_skipped_survey_is_recorded_as_null_not_refused(tmp_path):
@@ -2779,6 +2891,18 @@ def test_a_paper_signature_is_accepted_without_a_drawing(tmp_path):
     assert SessionState.from_dict(session).consent_method == "paper"
     (record,) = consent.read_local(tmp_path / "consent")
     assert record["signature"] is None
+
+
+def test_the_paper_box_alone_moves_on_to_the_next_screen(tmp_path):
+    session, _log, _screen, error, _spool = app.step(
+        "consent-clock",
+        None,
+        None,
+        log_dir=tmp_path,
+        **_consent_kwargs(name="", date="", signature=None, paper=True),
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).stage is Stage.PARTICIPANT_ID
 
 
 def test_consent_is_refused_while_the_record_cannot_be_stored(database, monkeypatch):

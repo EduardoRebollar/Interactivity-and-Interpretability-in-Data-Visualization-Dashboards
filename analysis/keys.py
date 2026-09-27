@@ -58,16 +58,24 @@ MIN_DOT_DISTANCE_PP = 4.0
 # A crossing must be drawn at least this far inside its answer band, so a reading one year off
 # still lands in the right band.
 MIN_BAND_INSET_YEARS = 1.0
+# The written item (T1): every shape the rubric names must be large enough that a static reader
+# cannot miss it. A rise of 25 points is 100 px; a dip of 12 points inside it would read as a fall.
+MIN_TREND_PP = 25.0
+MAX_RISER_DIP_PP = 12.0
+MIN_RECOVERY_PP = 15.0
+# Another line within 5 points of a named one for this many years in a row runs alongside it long
+# enough to be followed by mistake.
+MAX_CLOSE_RUN_YEARS = 4
 
 # (form, task_id) -> what the rule needs that the chart does not.
 PARAMS: dict[tuple[str, str], dict[str, Any]] = {
-    ("A", "T1"): {"entity": "Ukraine"},
+    ("A", "T1"): {"riser": "India", "faller": "Ukraine"},
     ("A", "T2"): {"rank": 3},
     ("A", "T3"): {},
     ("A", "T4"): {},
     ("A", "T5"): {"threshold": 50},
     ("A", "T6"): {"overtaker": "Ethiopia", "overtaken": "Central African Republic"},
-    ("B", "T1"): {"entity": "Myanmar"},
+    ("B", "T1"): {"riser": "Uganda", "faller": "Brazil"},
     ("B", "T2"): {"rank": 3},
     ("B", "T3"): {},
     ("B", "T4"): {},
@@ -76,15 +84,17 @@ PARAMS: dict[tuple[str, str], dict[str, Any]] = {
 }
 
 # Transcribed BY HAND from docs/study-design.md section 4. Deliberately duplicated: a cross-check
-# that reads its own answer is not a check. Never generate this from `derive()`.
+# that reads its own answer is not a check. Never generate this from `derive()`. T1 is written and
+# scored by rubric, so its entry says so; `derive()` still checks its acceptance rule.
+RUBRIC = "rubric"
 EXPECTED: dict[tuple[str, str], str] = {
-    ("A", "T1"): "2016",
+    ("A", "T1"): RUBRIC,
     ("A", "T2"): "India",
     ("A", "T3"): "Niger",
     ("A", "T4"): "Chad",
     ("A", "T5"): "3",
     ("A", "T6"): "2004-2008",
-    ("B", "T1"): "2021",
+    ("B", "T1"): RUBRIC,
     ("B", "T2"): "Colombia",
     ("B", "T3"): "India",
     ("B", "T4"): "Afghanistan",
@@ -98,7 +108,7 @@ class DerivedKey:
     task_id: str
     form: str
     kind: str
-    correct: str  # the exact option label, which is exactly what `answer_submit` logs
+    correct: str  # the exact option label `answer_submit` logs, or RUBRIC for the written item
     rule: str  # one line of prose stating the rule applied, for the methods appendix
     evidence: dict[str, Any] = field(default_factory=dict)
 
@@ -131,13 +141,6 @@ def _reported(entity: str, vaccine: str, rows: tuple[Row, ...]) -> dict[int, flo
         for r in runtime_data.series(entity, vaccine, rows)
         if r.coverage_pct is not None
     }
-
-
-def _focus(task: Task, params: dict[str, Any]) -> str:
-    entity = params["entity"]
-    if entity not in task.entities:
-        raise KeyDerivationError(f"{task.form}-{task.task_id}: {entity} is not on the chart")
-    return entity
 
 
 # --- Bands -------------------------------------------------------------------------------------
@@ -175,70 +178,144 @@ def adjacent_bands(year: int, bands: tuple[str, ...] = tasks.CROSSING_BANDS) -> 
     return accepted
 
 
-# --- Years read one off -------------------------------------------------------------------------
-
-
-def _nearest_option(year: int, options: list[int]) -> int | None:
-    """The option year closest to `year`, or None on a tie: a reading halfway between two options
-    could go either way, so it cannot be counted on to reach the key."""
-    ranked = sorted((abs(year - option), option) for option in options)
-    if len(ranked) > 1 and ranked[0][0] == ranked[1][0]:
-        return None
-    return ranked[0][1]
-
-
-def _check_years_reach_key(task: Task, key: int, years: list[int], what: str) -> None:
-    """Every year in `years`, read one off either way, must be nearest the key option."""
-    options = [int(option) for option in task.options]
-    for year in sorted(set(years)):
-        for reading in (year - 1, year, year + 1):
-            if not config.YEAR_MIN <= reading <= config.YEAR_MAX:
-                continue
-            nearest = _nearest_option(reading, options)
-            if nearest != key:
-                raise KeyDerivationError(
-                    f"{task.form}-{task.task_id}: {what} {year}, read as {reading}, is nearest "
-                    f"{'no single option' if nearest is None else nearest}, not {key}"
-                )
-
-
 # --- Rules --------------------------------------------------------------------------------------
 
 
-def _lowest(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T1: the year of a line's lowest point.
+def _longest_close_run(a: dict[int, float], b: dict[int, float], years: list[int]) -> tuple:
+    """The longest run of consecutive `years` in which the two lines are within 5 points, as
+    (length, first year, last year). A year either line does not report breaks the run."""
+    best, run, start = (0, None, None), 0, None
+    for year in years:
+        if year in a and year in b and abs(a[year] - b[year]) < MIN_SEPARATION_PP:
+            run += 1
+            start = year if run == 1 else start
+            if run > best[0]:
+                best = (run, start, year)
+        else:
+            run = 0
+    return best
 
-    Acceptance: the participant finds the low point and reads its year. Every year within 5 points
-    of the minimum could be taken for it, and any of them may be read a year off, so every such
-    reading must be nearer the key option than any other.
+
+def _describe(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
+    """T1: a written description of two lines, scored by rubric (study-design.md sections 4 and 7).
+
+    There is no option to derive. What is checked is that every shape the rubric names is there,
+    large, and traceable without hover:
+    - the riser gains at least 25 points and never dips more than 12 below a previous peak;
+    - the faller drops at least 25 points from a peak and recovers at least 15 from its trough;
+    - the two cross once, counting only years they are at least 5 points apart, riser from below;
+    - no other line runs within 5 points of a named one for 5 or more consecutive years; for the
+      faller, counted from its last peak before the trough, where its story starts.
+    Both named lines must be reported in every year: a gap would be read as part of the trend.
     """
-    entity = _focus(task, params)
-    values = _reported(entity, task.vaccine, rows)
-    lowest = min(values.values())
-    at_lowest = sorted(year for year, value in values.items() if value == lowest)
-    if len(at_lowest) > 1:
+    riser, faller = params["riser"], params["faller"]
+    item = f"{task.form}-{task.task_id}"
+    years = list(range(config.YEAR_MIN, config.YEAR_MAX + 1))
+    series: dict[str, dict[int, float]] = {}
+    for entity in (riser, faller):
+        if entity not in task.entities:
+            raise KeyDerivationError(f"{item}: {entity} is not on the chart")
+        series[entity] = _reported(entity, task.vaccine, rows)
+        missing = [year for year in years if year not in series[entity]]
+        if missing:
+            raise KeyDerivationError(
+                f"{item}: {entity} is not reported in {missing}; a gap would read as part of its "
+                "trend"
+            )
+    up = [series[riser][year] for year in years]
+    down = [series[faller][year] for year in years]
+
+    rise = up[-1] - up[0]
+    riser_dip = max(max(up[: i + 1]) - value for i, value in enumerate(up))
+    if rise < MIN_TREND_PP or riser_dip > MAX_RISER_DIP_PP:
         raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {entity} is at its lowest ({lowest:g}) in {at_lowest}"
+            f"{item}: {riser} rises {rise:g} pts and dips {riser_dip:g} below a peak; the rubric "
+            f"needs a rise of at least {MIN_TREND_PP:g} with no dip over {MAX_RISER_DIP_PP:g}"
         )
-    key = at_lowest[0]
-    near = sorted(year for year, value in values.items() if value - lowest < MIN_SEPARATION_PP)
-    _check_years_reach_key(task, key, near, f"{entity}'s near-lowest year")
-    others = {int(o): values.get(int(o)) for o in task.options if int(o) != key}
-    margin = min(value - lowest for value in others.values() if value is not None)
+    trough = min(down)
+    trough_at = down.index(trough)
+    peak = max(down[: trough_at + 1])
+    # The last year at the peak: the fall starts there.
+    peak_at = max(i for i in range(trough_at + 1) if down[i] == peak)
+    drop, recovery = peak - trough, down[-1] - trough
+    if drop < MIN_TREND_PP or recovery < MIN_RECOVERY_PP:
+        raise KeyDerivationError(
+            f"{item}: {faller} drops {drop:g} pts and recovers {recovery:g}; the rubric needs a "
+            f"drop of at least {MIN_TREND_PP:g} and a recovery of at least {MIN_RECOVERY_PP:g}"
+        )
+
+    # Which line is ahead, in every year they are clearly apart.
+    sides = [
+        (year, 1 if gap > 0 else -1)
+        for year in years
+        if abs(gap := series[riser][year] - series[faller][year]) >= MIN_SEPARATION_PP
+    ]
+    changes = [
+        now for (_, before), (now, side) in zip(sides, sides[1:], strict=False) if side != before
+    ]
+    if len(changes) != 1 or sides[0][1] != -1:
+        raise KeyDerivationError(
+            f"{item}: {riser} and {faller} change places {len(changes)} times, starting with "
+            f"{riser} {'below' if sides[0][1] == -1 else 'above'}; the rubric needs {riser} to "
+            "pass from below exactly once"
+        )
+
+    fall_years = years[peak_at:]
+    clearance: dict[str, dict[str, tuple]] = {}
+    for other in task.entities:
+        if other in (riser, faller):
+            continue
+        values = _reported(other, task.vaccine, rows)
+        runs = {
+            riser: _longest_close_run(series[riser], values, years),
+            faller: _longest_close_run(series[faller], values, fall_years),
+        }
+        clearance[other] = runs
+        for named, (length, first, last) in runs.items():
+            if length > MAX_CLOSE_RUN_YEARS:
+                raise KeyDerivationError(
+                    f"{item}: {other}'s line runs within {MIN_SEPARATION_PP:g} pts of {named}'s "
+                    f"for {length} years ({first}-{last}); it could be followed by mistake"
+                )
+
     return DerivedKey(
         task.task_id,
         task.form,
         task.kind,
-        str(key),
-        f"year of {entity}'s lowest reported value",
+        RUBRIC,
+        f"written: {riser} rose, {faller} fell and recovered, {riser} passed {faller}",
         {
-            "entity": entity,
-            "lowest": (key, lowest),
-            "near_lowest_years": near,
-            "option_values": others,
-            "margin_pp": margin,
+            "riser": riser,
+            "faller": faller,
+            "rise_pp": rise,
+            "riser_dip_pp": riser_dip,
+            "faller_peak": (years[peak_at], peak),
+            "faller_trough": (years[trough_at], trough),
+            "drop_pp": drop,
+            "recovery_pp": recovery,
+            "clearly_ahead_from": changes[0],
+            "end_gap_pp": up[-1] - down[-1],
+            "longest_close_run_years": max(
+                (run[0] for runs in clearance.values() for run in runs.values()), default=0
+            ),
+            "clearance": clearance,
         },
     )
+
+
+def rubric_parts(form: str, task_id: str = "T1") -> dict[str, str]:
+    """The rubric's three parts for one form's written item, in the words coders are given.
+
+    Built from the same parameters the acceptance rule checks, so the sheet can never name a
+    different pair of countries than the chart drew.
+    """
+    params = PARAMS[(form, task_id)]
+    riser, faller = params["riser"], params["faller"]
+    return {
+        "a": f"{riser}'s coverage rose over the period",
+        "b": f"{faller}'s coverage fell and then recovered",
+        "c": f"{riser} overtook or passed {faller}, or the two ended close or level",
+    }
 
 
 def _rank(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
@@ -520,7 +597,7 @@ def _ordinal(n: int) -> str:
 
 
 _RULES = {
-    "lowest": _lowest,
+    "describe": _describe,
     "rank": _rank,
     "improved": _improved,
     "cell": _cell,
@@ -542,6 +619,8 @@ def derive(task: Task, rows: tuple[Row, ...] | None = None) -> DerivedKey:
     if rule is None:
         raise KeyDerivationError(f"No scoring rule for kind {task.kind!r}")
     key = rule(task, params, rows)
+    if tasks.is_written(task):
+        return key  # scored by rubric; there is no option to check the key against
     if key.correct not in task.options:
         raise KeyDerivationError(
             f"{task.form}-{task.task_id}: derived key {key.correct!r} is not one of the options "
@@ -587,12 +666,27 @@ def check(
     return problems
 
 
-def is_correct(form: str, task_id: str, answer: Any, keys: dict | None = None) -> bool | None:
-    """Strict scoring, the primary. None for the unscored practice item or an unknown item."""
+def is_correct(
+    form: str,
+    task_id: str,
+    answer: Any,
+    keys: dict | None = None,
+    verdict: bool | None = None,
+) -> bool | None:
+    """Strict scoring, the primary. None for the unscored practice item or an unknown item.
+
+    The written item (T1) is scored by rubric: `verdict` is the coders' settled verdict for this
+    answer, and None while it is uncoded, which returns None -- never a guess. A skipped written
+    answer is incorrect without coding, like any skip.
+    """
     keys = keys if keys is not None else key_table()
     key = keys.get((form, task_id))
     if key is None:
         return None
+    if key.correct == RUBRIC:
+        if answer is None or not str(answer).strip():
+            return False
+        return verdict
     return answer == key.correct
 
 

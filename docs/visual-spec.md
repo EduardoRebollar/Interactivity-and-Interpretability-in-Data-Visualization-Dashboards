@@ -554,6 +554,19 @@ strip and the hint row under the chart (§7).
   scatter's by 42 px, the map's by 30–66), so a participant scrolls to Submit there. The question
   wraps under the position label, and the map's chips take three rows. The static condition fits
   everywhere.
+- **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
+  panel has one numbered step:
+  - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,
+    in place of the six tiles;
+  - there is no step 2 and no justification box;
+  - the box fills the height the tiles and the justification took, so Submit stays where the tiles
+    would leave it. No new CSS: the handoff's own `.ui-decide` and `.ui-textarea` rules
+    (`flex: 1`) grow the box. Measured in headless Chrome (2026-09-27): Submit sits at the same
+    place in the card as on T6, the other line chart, in both conditions. The card's height is set
+    by the chart column, so line charts, which carry the most controls, set Submit 8 px lower than
+    the bar chart in the interactive condition, T1 and T6 alike.
+
+  It is identical in both conditions; the chart, the controls and the hint row are untouched.
 - **Header.** On every screen: a band with the title, "Vaccination coverage study", and a seven-step
   indicator: Consent, Practice, Part 1, Break, Part 2, About you, Finished. It is display only, not
   links. The current step carries `aria-current="step"`, and the steps before it are ticked. The

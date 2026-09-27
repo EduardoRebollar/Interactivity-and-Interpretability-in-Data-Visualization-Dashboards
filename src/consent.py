@@ -250,10 +250,14 @@ def problem(record: dict[str, Any] | None) -> str | None:
     if not record.get("consented_at"):
         # The browser failed to stamp the click. Consent without a time is not a record of consent.
         return "Please press the button again."
+    if len(record.get("printed_name") or "") > MAX_NAME:
+        return "That name is too long. Please type your name as you would sign it."
+    if record.get("signature_method") == "paper":
+        # Signed on the paper copy, which carries the name, the date and the signature (IRB form
+        # item 12A): the box alone lets the participant on. A name or date typed as well is kept.
+        return None
     if not record.get("printed_name"):
         return "Please type your full name."
-    if len(record["printed_name"]) > MAX_NAME:
-        return "That name is too long. Please type your name as you would sign it."
     if not record.get("signed_date"):
         return "Please enter today's date."
     if record.get("signature_method") not in METHODS:

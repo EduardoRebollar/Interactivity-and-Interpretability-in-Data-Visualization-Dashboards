@@ -11,6 +11,10 @@ The unscored practice item (`P0`) is dropped here, per study-design.md section 8
 T1-T6, counts towards the RQ1 accuracy score (section 7). The crossing item, T6, also carries its
 pre-registered secondary score, adjacent-band credit (`correct_adjacent`); every other item has None
 there.
+
+T1 is written and scored by rubric (section 7, 2026-09-27). Its `correct` comes from the coders'
+settled verdicts, passed in as `rubric`; an answer not yet coded has `correct` None, and a session
+holding one has no accuracy proportion rather than one out of five.
 """
 
 from __future__ import annotations
@@ -130,14 +134,22 @@ def events_frame(records: Iterable[dict[str, Any]]) -> pd.DataFrame:
     return frame
 
 
-def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFrame:
+def tidy_tasks(
+    events: pd.DataFrame,
+    key_table: dict | None = None,
+    rubric: dict[tuple[str, str], bool] | None = None,
+) -> pd.DataFrame:
     """One row per scored answer: participant x condition x task, with correctness attached.
 
     A skipped answer is `None`, which never equals a key, so `correct` is False for it: the primary
     rule in study-design.md section 7 scores a skip as incorrect. `skipped_answer` marks it, so the
     pre-registered secondary (skips excluded) and the per-condition skip counts can be computed.
+
+    `rubric` maps (session_id, task_id) to the settled verdict on a written answer (T1), as
+    `coding.read_verdicts` returns it. A written answer missing from it is uncoded: `correct` None.
     """
     key_table = key_table if key_table is not None else answer_keys.key_table()
+    rubric = rubric or {}
     charts = {(t.form, t.task_id): t.chart for form in tasks.FORMS for t in tasks.for_form(form)}
 
     answers = events[(events["event"] == "answer_submit") & (events["task_id"] != PRACTICE_ID)]
@@ -158,23 +170,33 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
                 "task_id": task_id,
                 "kind": key.kind,
                 # The chart type, so a per-affordance summary does not have to re-derive it. Each
-                # type carries one item per form, the line chart three: descriptive only, never a
+                # type carries one item per form, the line chart two: descriptive only, never a
                 # powered comparison.
                 "chart": charts.get((form, task_id)),
                 "answer": payload.get("answer"),
                 "justification": payload.get("justification"),
                 "duration_ms": payload.get("duration_ms"),
                 "duration_invalid": payload.get("duration_invalid"),
-                "correct": answer_keys.is_correct(form, task_id, payload.get("answer"), key_table),
+                "correct": answer_keys.is_correct(
+                    form,
+                    task_id,
+                    payload.get("answer"),
+                    key_table,
+                    verdict=rubric.get((str(record["session_id"]), task_id)),
+                ),
                 "correct_adjacent": answer_keys.is_correct_adjacent(
                     form, task_id, payload.get("answer"), key_table
                 ),
                 "skipped_answer": payload.get("answer") is None,
-                "skipped_justification": not (payload.get("justification") or "").strip(),
+                # T1 asks for no justification, so it can never be skipped there.
+                "skipped_justification": key.correct != answer_keys.RUBRIC
+                and not (payload.get("justification") or "").strip(),
             }
         )
     tasks_frame = pd.DataFrame(rows, columns=BASE_COLUMNS)
     tasks_frame["duration_ms"] = pd.to_numeric(tasks_frame["duration_ms"], errors="coerce")
+    # Nullable: an uncoded written answer is neither right nor wrong yet.
+    tasks_frame["correct"] = tasks_frame["correct"].astype("boolean")
 
     counts = _interaction_counts(events)
     for name in INTERACTION_EVENTS:
@@ -221,6 +243,13 @@ def _interaction_counts(events: pd.DataFrame) -> dict[tuple[str, str, str], int]
     return counts
 
 
+def proportion_if_coded(correct: pd.Series) -> float:
+    """The proportion correct, or NaN while any answer in it is uncoded."""
+    if correct.isna().any():
+        return float("nan")
+    return float(correct.astype(float).mean())
+
+
 def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataFrame:
     """One row per participant x condition log session: the RQ1 and RQ3 analysis unit."""
     sessions = events.drop_duplicates("session_id")[
@@ -253,12 +282,21 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
             )
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
-    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T6).
-    sessions["prop_correct"] = sessions["session_id"].map(by_session["correct"].mean())
+    # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T6). A
+    # session whose written answer is uncoded has no proportion yet, never one out of five.
+    sessions["prop_correct"] = sessions["session_id"].map(
+        by_session["correct"].agg(proportion_if_coded)
+    )
     # Secondary, pre-registered: among answered items only.
     answered = tasks_frame[~tasks_frame["skipped_answer"].astype(bool)]
     sessions["prop_correct_answered"] = sessions["session_id"].map(
-        answered.groupby("session_id")["correct"].mean()
+        answered.groupby("session_id")["correct"].agg(proportion_if_coded)
+    )
+    sessions["n_uncoded"] = (
+        sessions["session_id"]
+        .map(by_session["correct"].agg(lambda c: int(c.isna().sum())))
+        .fillna(0)
+        .astype(int)
     )
     sessions["n_skipped"] = (
         sessions["session_id"].map(by_session["skipped_answer"].sum()).fillna(0).astype(int)

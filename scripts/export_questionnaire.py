@@ -56,6 +56,7 @@ EXAMPLE_ID = "P07"
 SKIP_POPUPS = (
     "You have not answered the multiple-choice question or how you decided. Continue without "
     "answering?",
+    "You have not written a description. Continue without answering?",
     "You have left 1 question unanswered. Continue without answering?",
 )
 
@@ -431,8 +432,9 @@ web application, in the order they are shown.</p>
 <p>One session, about 40 minutes:</p>
 <ol>
 <li>informed consent (attached separately), then a participant ID;</li>
-<li>instructions, one practice question, six questions, and a short survey, using one version of
-the charts;</li>
+<li>instructions, one practice question, six questions (the first a short written description of
+two trends, the other five multiple choice), and a short survey, using one version of the
+charts;</li>
 <li>a break;</li>
 <li>instructions, six different questions, and the same survey, using the other version, followed
 by two questions comparing the versions;</li>

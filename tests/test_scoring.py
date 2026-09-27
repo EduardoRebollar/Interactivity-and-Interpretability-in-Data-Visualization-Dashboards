@@ -32,8 +32,6 @@ needs_data = pytest.mark.skipif(
     reason="deploy CSV absent; run scripts/export_deploy_data.py",
 )
 
-YEAR_OPTIONS = ("2008", "2016", "2019", "2022", "2024")
-
 
 def _rows(series: dict[str, dict[int, float | None]]) -> tuple[Row, ...]:
     """Synthetic DTP3 data: every listed entity over 2000-2024, None where a year is absent."""
@@ -68,10 +66,17 @@ def test_derived_keys_match_the_expected_table():
 
 @needs_data
 def test_a_wrong_transcription_is_caught():
-    wrong = {**keys.EXPECTED, ("A", "T1"): "2019"}
+    wrong = {**keys.EXPECTED, ("A", "T2"): "Vietnam"}
     problems = keys.check(wrong)
     assert len(problems) == 1
-    assert "A-T1" in problems[0] and "'2016'" in problems[0] and "'2019'" in problems[0]
+    assert "A-T2" in problems[0] and "'India'" in problems[0] and "'Vietnam'" in problems[0]
+
+
+@needs_data
+def test_a_written_item_transcribed_as_a_key_is_caught():
+    """T1 is scored by rubric. A table claiming an option key for it disagrees with the data."""
+    problems = keys.check({**keys.EXPECTED, ("B", "T1"): "2021"})
+    assert len(problems) == 1 and "B-T1" in problems[0] and "'rubric'" in problems[0]
 
 
 def test_expected_covers_every_scored_item():
@@ -84,7 +89,10 @@ def test_expected_covers_every_scored_item():
 def test_every_key_is_one_of_the_task_options():
     for (form, task_id), key in keys.key_table().items():
         task = next(t for t in tasks.for_form(form) if t.task_id == task_id)
-        assert key.correct in task.options
+        if tasks.is_written(task):
+            assert key.correct == keys.RUBRIC, (form, task_id)
+        else:
+            assert key.correct in task.options, (form, task_id)
 
 
 @needs_data
@@ -94,20 +102,27 @@ def test_the_margins_are_the_ones_study_design_records():
     margins = {
         item: key.evidence.get("margin_pp", key.evidence.get("closest_pp"))
         for item, key in table.items()
-        if key.kind not in ("rank", "crossing")
+        if key.kind not in ("rank", "crossing", "describe")
     }
     assert margins == {
-        ("A", "T1"): 54.0,
         ("A", "T3"): 6.0,
         ("A", "T4"): 11.0,
         ("A", "T5"): 11.0,
-        ("B", "T1"): 34.0,
         ("B", "T3"): 8.0,
         ("B", "T4"): 10.0,
         ("B", "T5"): 10.0,
     }
     for form in ("A", "B"):
         assert table[(form, "T2")].evidence["gaps_pp"] == {"above": 5.0, "below": 6.0}, form
+    # T1's are the sizes of the shapes its rubric names, and how close another line runs.
+    t1 = {form: table[(form, "T1")].evidence for form in ("A", "B")}
+    assert (t1["A"]["drop_pp"], t1["A"]["rise_pp"], t1["A"]["recovery_pp"]) == (80.0, 36.0, 69.0)
+    assert (t1["B"]["drop_pp"], t1["B"]["rise_pp"], t1["B"]["recovery_pp"]) == (31.0, 39.0, 23.0)
+    assert t1["A"]["faller_trough"] == (2016, 19.0)
+    assert t1["B"]["faller_trough"] == (2021, 68.0)
+    assert t1["A"]["clearly_ahead_from"] == 2010
+    assert t1["B"]["clearly_ahead_from"] == 2017
+    assert t1["A"]["longest_close_run_years"] == t1["B"]["longest_close_run_years"] == 4
     # T6's margin is in years: how far inside the key band the two lines meet.
     assert table[("A", "T6")].evidence["intersection"] == 2006.71
     assert table[("A", "T6")].evidence["band_inset_years"] == 1.79
@@ -118,15 +133,18 @@ def test_the_margins_are_the_ones_study_design_records():
 @needs_data
 def test_no_answer_position_holds_more_than_a_third_of_the_keys():
     """Section 5. Options were once sorted by effect size, which put the key first in 7 of the 12
-    items; a participant who noticed could score without reading a chart."""
+    items; a participant who noticed could score without reading a chart. T1 is written, so ten
+    keys have a position (2026-09-27)."""
     positions = []
     for (form, task_id), key in keys.key_table().items():
         task = next(t for t in tasks.for_form(form) if t.task_id == task_id)
-        positions.append(task.options.index(key.correct))
+        if not tasks.is_written(task):
+            positions.append(task.options.index(key.correct))
+    assert len(positions) == 10
     most = max(positions.count(p) for p in set(positions))
     assert most <= len(positions) / 3, f"one position holds {most} of {len(positions)} keys"
-    # The spread section 5 records, first to sixth (2026-09-25, six options per item).
-    assert [positions.count(p) for p in range(6)] == [1, 2, 4, 2, 3, 0]
+    # The spread section 5 records, first to sixth.
+    assert [positions.count(p) for p in range(6)] == [1, 2, 3, 2, 2, 0]
 
 
 def test_scoring_is_strict_and_the_practice_is_unscored():
@@ -135,6 +153,20 @@ def test_scoring_is_strict_and_the_practice_is_unscored():
     assert keys.is_correct("A", "T2", "Vietnam", table) is False
     assert keys.is_correct("A", "T2", None, table) is False, "a skip scores incorrect"
     assert keys.is_correct("A", "P0", "It fell", table) is None, "practice is unscored"
+
+
+def test_the_written_item_is_scored_by_the_coders_verdict():
+    """T1 has no option key. Its score is the settled rubric verdict, None while uncoded, and a
+    skipped description is incorrect without a coder, like any skip (study-design.md section 7)."""
+    table = {("A", "T1"): keys.DerivedKey("T1", "A", "describe", keys.RUBRIC, "rule", {})}
+    text = "India rose steadily; Ukraine fell sharply and recovered; India passed it."
+    assert keys.is_correct("A", "T1", text, table, verdict=True) is True
+    assert keys.is_correct("A", "T1", text, table, verdict=False) is False
+    assert keys.is_correct("A", "T1", text, table) is None, "uncoded is not a score"
+    assert keys.is_correct("A", "T1", None, table) is False, "a skip scores incorrect"
+    assert keys.is_correct("A", "T1", "   ", table) is False
+    # Even a text that happens to equal the sentinel is not scored by matching it.
+    assert keys.is_correct("A", "T1", keys.RUBRIC, table) is None
 
 
 # --- The items as first specified, 2026-09-23 ---------------------------------------------------
@@ -149,15 +181,6 @@ def test_scoring_is_strict_and_the_practice_is_unscored():
 @pytest.mark.parametrize(
     ("kind", "entities", "options", "chart", "years", "extra", "reason"),
     [
-        (
-            "lowest",
-            ("Brazil", "China", "Ethiopia", "India", "Indonesia", "Nigeria", "Pakistan", "Ukraine"),
-            ("2010", "2013", "2016", "2019", "2022"),
-            "line",
-            (),
-            {"entity": "Ukraine"},
-            "nearest 2013",
-        ),
         (
             "rank",
             ("Bangladesh", "Brazil", "China", "Egypt", "India", "Nigeria", "Vietnam"),
@@ -195,7 +218,7 @@ def test_scoring_is_strict_and_the_practice_is_unscored():
             "Somalia",
         ),
     ],
-    ids=["A-T1 options", "A-T2 bars", "B-T3 with Afghanistan", "A-T4 rows", "A-T5 pool"],
+    ids=["A-T2 bars", "B-T3 with Afghanistan", "A-T4 rows", "A-T5 pool"],
 )
 def test_the_items_as_first_specified_are_refused(
     params, kind, entities, options, chart, years, extra, reason
@@ -204,17 +227,6 @@ def test_the_items_as_first_specified_are_refused(
     task = _task(kind, sorted(entities), options, chart=chart, years=years)
     with pytest.raises(keys.KeyDerivationError, match=reason):
         keys.derive(task)
-
-
-@needs_data
-def test_the_design_handoffs_a_t1_option_is_refused(params):
-    """The 2026-09-25 handoff offered 2012 as A-T1's sixth option. Ukraine is 23 in 2014, 4 points
-    off its low; read a year early that is 2013, nearest 2012. Eduardo chose 2004 instead."""
-    params[("Z", "T1")] = {"entity": "Ukraine"}
-    a_t1 = next(t for t in tasks.for_form("A") if t.task_id == "T1")
-    options = ("2008", "2012", "2016", "2019", "2022", "2024")
-    with pytest.raises(keys.KeyDerivationError, match="read as 2013, is nearest 2012"):
-        keys.derive(_task("lowest", a_t1.entities, options))
 
 
 # The handoff's map set reaches three countries outside the locked scope, so their 2013 values are
@@ -259,60 +271,116 @@ def test_the_design_handoffs_map_set_is_refused(params):
             keys.derive(_task("threshold", alone, tasks.COUNT_OPTIONS, **MAP), rows)
 
 
-# --- T1: the lowest point -----------------------------------------------------------------------
+# --- T1: two trends, written ------------------------------------------------------------------
+
+RISER = {2000 + i: 50.0 + 1.5 * i for i in range(25)}  # 50 -> 86, steadily
+FALLER = (
+    {year: 95.0 for year in range(2000, 2008)}
+    | {2008: 80.0, 2009: 60.0, 2010: 40.0, 2011: 35.0, 2012: 40.0, 2013: 55.0}
+    | {year: 65.0 for year in range(2014, 2025)}
+)  # 95, down to 35 in 2011, back to 65: one crossing, the riser 5 points clear from 2010
+FAR_BELOW = {year: 10.0 for year in range(2000, 2025)}
 
 
-def _collapse(low_years: dict[int, float]) -> dict[int, float]:
-    """A line at 90 with a collapse wherever `low_years` says."""
-    return {year: 90.0 for year in range(2000, 2025)} | low_years
+def _describe(series: dict, entities=("R", "F", "X")) -> tuple[Task, tuple[Row, ...]]:
+    return _task("describe", entities, ()), _rows(series)
 
 
-def test_lowest_finds_the_year_of_the_minimum(params):
-    params[("Z", "T1")] = {"entity": "A"}
-    rows = _rows({"A": _collapse({2014: 23.0, 2015: 23.0, 2016: 19.0})})
-    key = keys.derive(_task("lowest", ("A",), YEAR_OPTIONS), rows)
-    assert key.correct == "2016"
-    assert key.evidence["near_lowest_years"] == [2014, 2015, 2016]
+def test_describe_accepts_a_rise_a_fall_and_recovery_and_one_crossing(params):
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    task, rows = _describe({"R": RISER, "F": FALLER, "X": FAR_BELOW})
+    key = keys.derive(task, rows)
+    assert key.correct == keys.RUBRIC
+    assert key.evidence["rise_pp"] == 36.0
+    assert key.evidence["drop_pp"] == 60.0 and key.evidence["recovery_pp"] == 30.0
+    assert key.evidence["faller_peak"] == (2007, 95.0)
+    assert key.evidence["clearly_ahead_from"] == 2010
 
 
-def test_lowest_refuses_a_near_minimum_year_nearest_another_option(params):
-    """A-T1 as specified: Ukraine is 23 in 2014, 4 points off its low, and 2014 is nearer 2013."""
-    params[("Z", "T1")] = {"entity": "A"}
-    rows = _rows({"A": _collapse({2014: 23.0, 2015: 23.0, 2016: 19.0})})
-    task = _task("lowest", ("A",), ("2010", "2013", "2016", "2019", "2022"))
-    with pytest.raises(keys.KeyDerivationError, match="read as 2013, is nearest 2013"):
+@pytest.mark.parametrize(
+    ("riser", "faller", "reason"),
+    [
+        ({y: 70.0 + 0.5 * (y - 2000) for y in range(2000, 2025)}, FALLER, "rises 12 pts"),
+        (RISER | {2012: 50.0}, FALLER, "dips 16.5"),
+        (RISER, {y: max(v, 75.0) for y, v in FALLER.items()}, "drops 20 pts"),
+        (RISER, FALLER | {y: 40.0 for y in range(2014, 2025)}, "recovers 5"),
+        (RISER, FALLER | {2023: 99.0, 2024: 99.0}, "change places 2 times"),
+        ({y: v + 50.0 for y, v in RISER.items()}, FALLER, "starting with R above"),
+    ],
+    ids=["flat riser", "riser dips", "shallow fall", "no recovery", "crosses back", "riser above"],
+)
+def test_describe_refuses_a_shape_the_rubric_names_that_is_not_there(params, riser, faller, reason):
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    task, rows = _describe({"R": riser, "F": faller, "X": FAR_BELOW})
+    with pytest.raises(keys.KeyDerivationError, match=reason):
         keys.derive(task, rows)
 
 
-def test_lowest_refuses_an_option_a_year_off_the_low_point(params):
-    params[("Z", "T1")] = {"entity": "A"}
-    rows = _rows({"A": _collapse({2016: 20.0})})
-    task = _task("lowest", ("A",), ("2008", "2015", "2016", "2020", "2024"))
-    with pytest.raises(keys.KeyDerivationError, match="nearest 2015"):
+def test_describe_refuses_a_line_running_alongside_a_named_one(params):
+    """Five years within 5 points of the riser: it could be followed by mistake."""
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    shadow = FAR_BELOW | {y: RISER[y] + 3 for y in range(2015, 2020)}
+    task, rows = _describe({"R": RISER, "F": FALLER, "X": shadow})
+    with pytest.raises(keys.KeyDerivationError, match="X's line runs within 5 pts of R's for 5"):
+        keys.derive(task, rows)
+    # Four years is allowed.
+    shadow = FAR_BELOW | {y: RISER[y] + 3 for y in range(2015, 2019)}
+    task, rows = _describe({"R": RISER, "F": FALLER, "X": shadow})
+    assert keys.derive(task, rows).evidence["longest_close_run_years"] == 4
+
+
+def test_describe_counts_closeness_to_the_faller_only_from_its_last_peak(params):
+    """Before the fall both lines can sit together at the top; the story starts at the peak."""
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    beside_early = FAR_BELOW | {y: 95.0 for y in range(2000, 2007)}
+    task, rows = _describe({"R": RISER, "F": FALLER, "X": beside_early})
+    assert keys.derive(task, rows).evidence["clearance"]["X"]["F"][0] == 0
+
+
+def test_describe_refuses_a_gap_in_a_named_line(params):
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    task, rows = _describe({"R": RISER | {2012: None}, "F": FALLER, "X": FAR_BELOW})
+    with pytest.raises(keys.KeyDerivationError, match=r"R is not reported in \[2012\]"):
         keys.derive(task, rows)
 
 
-def test_lowest_refuses_a_reading_halfway_between_two_options(params):
-    """2016 read a year late is 2017, exactly between the 2016 and 2018 options: a coin toss."""
-    params[("Z", "T1")] = {"entity": "A"}
-    rows = _rows({"A": _collapse({2016: 20.0})})
-    task = _task("lowest", ("A",), ("2004", "2008", "2016", "2018", "2024"))
-    with pytest.raises(keys.KeyDerivationError, match="read as 2017, is nearest no single option"):
+def test_describe_refuses_a_country_not_on_the_chart(params):
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    task, rows = _describe({"R": RISER, "F": FALLER, "X": FAR_BELOW}, entities=("R", "X"))
+    with pytest.raises(keys.KeyDerivationError, match="F is not on the chart"):
         keys.derive(task, rows)
 
 
-def test_lowest_refuses_a_tie_at_the_minimum(params):
-    params[("Z", "T1")] = {"entity": "A"}
-    rows = _rows({"A": _collapse({2008: 20.0, 2016: 20.0})})
-    with pytest.raises(keys.KeyDerivationError, match="lowest"):
-        keys.derive(_task("lowest", ("A",), YEAR_OPTIONS), rows)
+@needs_data
+def test_b_t1_with_india_on_the_chart_is_refused(params):
+    """India runs within 5 points of Uganda for years, which is why B's chart dropped it
+    (study-design.md section 4, 2026-09-27)."""
+    params[("Z", "T1")] = {"riser": "Uganda", "faller": "Brazil"}
+    b_t1 = next(t for t in tasks.for_form("B") if t.task_id == "T1")
+    with_india = tuple(sorted({*b_t1.entities, "India"} - {"Nepal"}))
+    with pytest.raises(keys.KeyDerivationError, match="India's line runs within 5 pts of Uganda"):
+        keys.derive(_task("describe", with_india, ()))
 
 
-def test_lowest_refuses_a_country_not_on_the_chart(params):
-    params[("Z", "T1")] = {"entity": "B"}
-    rows = _rows({"A": _collapse({2016: 20.0})})
-    with pytest.raises(keys.KeyDerivationError, match="not on the chart"):
-        keys.derive(_task("lowest", ("A",), YEAR_OPTIONS), rows)
+@needs_data
+def test_myanmar_and_ethiopia_are_refused_as_a_b_t1_pair(params):
+    """The first candidate for form B: their lines change places twice around Myanmar's 2021 dip."""
+    params[("Z", "T1")] = {"riser": "Ethiopia", "faller": "Myanmar"}
+    with pytest.raises(keys.KeyDerivationError, match="change places 2 times"):
+        keys.derive(_task("describe", ("Ethiopia", "Myanmar"), ()))
+
+
+def test_the_rubric_names_the_forms_own_countries():
+    assert keys.rubric_parts("A") == {
+        "a": "India's coverage rose over the period",
+        "b": "Ukraine's coverage fell and then recovered",
+        "c": "India overtook or passed Ukraine, or the two ended close or level",
+    }
+    assert "Uganda" in keys.rubric_parts("B")["a"] and "Brazil" in keys.rubric_parts("B")["b"]
+    for form in ("A", "B"):
+        (t1,) = [t for t in tasks.for_form(form) if t.task_id == "T1"]
+        params = keys.PARAMS[(form, "T1")]
+        assert params["riser"] in t1.prompt and params["faller"] in t1.prompt, form
 
 
 # --- T2: the third-highest bar ------------------------------------------------------------------

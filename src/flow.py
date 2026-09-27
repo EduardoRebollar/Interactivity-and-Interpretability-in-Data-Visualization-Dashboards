@@ -74,9 +74,10 @@ class Task:
     """One task presented to a participant.
 
     `kind` names the item type, which is what `analysis/keys.py` scores by; `chart` names the chart
-    it is asked about; `options` are the multiple-choice answers. `years` are the years the chart
-    shows: empty for a line chart, which always spans the whole range; one for a bar chart or map;
-    the two axes of a scatter; the columns of a heatmap.
+    it is asked about; `options` are the multiple-choice answers, and empty for a written item
+    (`kind` "describe", answered in a text box and scored by rubric). `years` are the years the
+    chart shows: empty for a line chart, which always spans the whole range; one for a bar chart or
+    map; the two axes of a scatter; the columns of a heatmap.
 
     Correct answers are deliberately NOT stored here — scoring happens offline against the rubric,
     so the answer key is never shipped to the browser where a participant could read it.
@@ -84,7 +85,7 @@ class Task:
 
     task_id: str
     form: str  # "A" | "B" | "both"
-    kind: str  # "lowest" | "rank" | "improved" | "cell" | "threshold" | "crossing" | "practice"
+    kind: str  # "describe" | "rank" | "improved" | "cell" | "threshold" | "crossing" | "practice"
     prompt: str
     vaccine: str
     entities: tuple[str, ...]

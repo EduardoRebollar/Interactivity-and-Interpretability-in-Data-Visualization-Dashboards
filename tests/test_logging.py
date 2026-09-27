@@ -131,9 +131,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_ten():
-    """v10: the `window_size` event, once per participant, beside consent."""
-    assert SCHEMA_VERSION == 10
+def test_schema_version_is_eleven():
+    """v11: T1's answer is a written description, and its record carries no justification."""
+    assert SCHEMA_VERSION == 11
 
 
 @pytest.mark.parametrize(
@@ -278,6 +278,28 @@ def test_a_skipped_answer_is_null_and_named_in_skipped(logger):
     answered = logger.submit_answer("T3", answer="Brazil", justification=" steepest ")
     assert answered["payload"]["justification"] == "steepest"
     assert answered["payload"]["skipped"] == []
+
+
+def test_a_written_item_records_no_justification_and_never_skips_one(logger):
+    """T1 asks for a description and no justification (schema v11). Nothing asked is nothing
+    skipped, so `skipped` can hold only the answer."""
+    logger.start_task("T1")
+    text = "India rose steadily while Ukraine fell and recovered."
+    written = logger.submit_answer("T1", answer=text, justification_asked=False)
+    assert written["payload"]["answer"] == text
+    assert written["payload"]["justification"] is None
+    assert written["payload"]["skipped"] == []
+    logger.end_task()
+    logger.start_task("T2")
+    blank = logger.submit_answer("T2", answer=None, justification_asked=False)
+    assert blank["payload"]["skipped"] == ["answer"]
+
+
+def test_a_justification_for_a_written_item_is_refused(logger):
+    """The app never sends one; a caller that did would put text where the schema says null."""
+    logger.start_task("T1")
+    with pytest.raises(ValueError, match="asks for none"):
+        logger.submit_answer("T1", answer="text", justification="why", justification_asked=False)
 
 
 def test_answer_carries_its_justification(logger):
