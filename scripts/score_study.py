@@ -2,7 +2,8 @@
 
 Reads events from Postgres when `DATABASE_URL` is set, from local JSONL sessions otherwise, or from
 a CSV written by `scripts/export_logs.py` with `--events`. Writes tidy frames under
-`data/study_logs/derived/` -- participant data, and gitignored -- and prints the descriptive report
+`data/study_logs/derived/` -- tasks, conditions (with the survey) and participants (About you);
+participant data, and gitignored -- and prints the descriptive report
 `docs/study-design.md` section 7 asks for.
 
 Refuses to run if the derived answer key disagrees with section 4: scoring against a key that is
@@ -46,6 +47,7 @@ def main(argv: list[str] | None = None) -> int:
         events = reshape.events_frame(records)
         tasks = reshape.tidy_tasks(events)
         conditions = reshape.tidy_conditions(events, tasks)
+        participants = reshape.tidy_participants(events)
     except (reshape.ReshapeError, db.DatabaseError) as exc:
         print(f"Cannot score: {exc}", file=sys.stderr)
         return 1
@@ -55,10 +57,12 @@ def main(argv: list[str] | None = None) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     scored.to_csv(args.out / "tasks.csv", index=False)
     conditions.to_csv(args.out / "conditions.csv", index=False)
+    participants.to_csv(args.out / "participants.csv", index=False)
 
     print(f"Read {len(events)} events from {source}\n")
-    print(study_report.render(scored, conditions, excluded))
-    print(f"Wrote {args.out / 'tasks.csv'} and {args.out / 'conditions.csv'}")
+    print(study_report.render(scored, conditions, excluded, participants))
+    written = ", ".join(str(args.out / name) for name in ("tasks.csv", "conditions.csv"))
+    print(f"Wrote {written} and {args.out / 'participants.csv'}")
     return 0
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import html
 import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -99,9 +100,31 @@ def test_the_interactive_controls_are_shown_once_per_chart_type(page):
         assert page.count(html.escape(hint)) == 1, hint
 
 
-def test_a_chips_country_names_print_without_its_flag(page):
-    """A chip's label is a flag and a name. The name must print, not the component's repr."""
+def test_a_chips_flag_and_name_print_not_the_components_repr(page):
+    """A chip's label is a flag and a name, as components. Both must print, never a repr, and the
+    flag from inside the page: the file goes to the IRB with nothing beside it."""
     assert "Img(" not in page and "Span(" not in page
+    assert 'class="chip-flag"' in page
+    assert 'src="assets/' not in page
+    assert 'src="data:image/png;base64,' in page
+
+
+def test_the_screens_print_in_the_apps_own_styles(page):
+    """The questionnaire shows the IRB what participants see: the app's three stylesheets are in
+    the page, and the markup carries the classes and Dash's option markup they style."""
+    for sheet in ("study.css", "zz-bridge.css", "zz-overrides.css"):
+        css = (ROOT / "src" / "assets" / sheet).read_text(encoding="utf-8")
+        assert css in page, sheet
+    assert 'class="dash-options-list-option"' in page
+    assert 'class="scale scale-7"' in page and 'class="stage-col pager"' in page
+
+
+def test_nothing_prints_disabled_and_the_tools_table_spans_its_columns(page):
+    """A disabled control is drawn greyed out, which no participant sees. The tools question's
+    radios span the five level columns, as on screen."""
+    markup = re.sub(r"<(style|script)\b.*?</\1>", "", page, flags=re.S)
+    assert not re.search(r"<[a-z]+\b[^>]*\sdisabled[\s=>]", markup)
+    assert page.count(f'colspan="{len(tasks.TOOL_LEVELS) + 1}"') == 5
 
 
 def test_the_skip_popups_match_the_app(page):

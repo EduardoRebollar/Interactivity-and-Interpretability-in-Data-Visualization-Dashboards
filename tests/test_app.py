@@ -1475,9 +1475,25 @@ def test_a_log_that_cannot_be_written_is_a_message_not_a_dead_button(tmp_path, m
     session, _log, screen, error, _spool = app.step(
         "begin-button", _state(Stage.INSTRUCTIONS).to_dict(), {}, log_dir=tmp_path
     )
-    assert error == app.UNSAVEABLE
+    assert error == ""
     assert session is no_update, "the session must not advance past a log that was never written"
-    assert screen is no_update
+    _assert_blocked(screen)
+
+
+def _assert_blocked(screen, position=None):
+    """S4: the screen's content is the blocking message alone, announced (the handoff's S4)."""
+    main = screen.children[1]
+    (block,) = [
+        n for n in _nodes(main) if "msg-block--system" in (getattr(n, "className", "") or "")
+    ]
+    assert block.to_plotly_json()["props"]["role"] == "alert"
+    text = " ".join(t for t in _nodes(block) if isinstance(t, str))
+    assert all(sentence in text for sentence in layout.BLOCKED)
+    assert " ".join(layout.BLOCKED) == app.UNSAVEABLE
+    labels = [n.children for n in _nodes(main) if getattr(n, "className", None) == "position"]
+    assert labels == ([position] if position else [])
+    assert screen.className == "app", "on the plain ground"
+    assert "flow-error" in _ids(screen)
 
 
 def test_a_deployment_without_a_database_refuses_instead_of_losing_the_data(monkeypatch):
@@ -1487,9 +1503,9 @@ def test_a_deployment_without_a_database_refuses_instead_of_losing_the_data(monk
     session, _log, screen, error, _spool = app.step(
         "begin-button", _state(Stage.INSTRUCTIONS).to_dict(), {}
     )
-    assert error == app.UNSAVEABLE
+    assert error == ""
     assert session is no_update
-    assert screen is no_update
+    _assert_blocked(screen)
 
 
 # --- Timing ---------------------------------------------------------------------------------------
@@ -1789,6 +1805,40 @@ def _full_session_steps():
             steps.append(("resume-button", {}))
     steps.append(("demographics-clock", {"demographics": DEMOGRAPHICS}))
     return steps
+
+
+def _to_first_task_offline():
+    """Consent to the first scored task with the database down: everything spooled."""
+    session, log, spool, errors = _drive_with_spool(_full_session_steps()[:5])
+    assert errors == [""] * 5 and spool["pending"] and spool["dropped"] == 0
+    state = SessionState.from_dict(session)
+    assert state.stage is Stage.TASK and state.task_index == 0
+    return session, log, spool
+
+
+def test_a_full_spool_stops_the_session_at_the_screen_it_was_on(database, monkeypatch):
+    """S4 also when the browser spool overflows: an answer that pushes the oldest spooled records
+    out is losing data, not holding it (docs/study-design.md section 8). The stores keep what was
+    written; the screen is S4, with the position of the task that was answered."""
+    session, log, spool = _to_first_task_offline()
+    monkeypatch.setattr("src.logging.MAX_PENDING", len(spool["pending"]))
+    new_session, _log, screen, error, new_spool = app.step(
+        "submit-clock", session, log, spool=spool, **ANSWER_KWARGS, duration_ms=1000.0
+    )
+    assert error == ""
+    assert new_spool["dropped"] > 0
+    assert SessionState.from_dict(new_session).task_index == 1, "the answer was written"
+    _assert_blocked(screen, "Question 1 of 6")
+
+
+def test_a_spool_with_room_carries_on(database):
+    session, log, spool = _to_first_task_offline()
+    _session, _log, screen, error, new_spool = app.step(
+        "submit-clock", session, log, spool=spool, **ANSWER_KWARGS, duration_ms=1000.0
+    )
+    assert error == "" and new_spool["dropped"] == 0
+    assert not [n for n in _nodes(screen) if "msg-block" in (getattr(n, "className", "") or "")]
+    assert "chart" in _ids(screen), "the next task"
 
 
 def test_a_session_completes_through_a_database_outage(database, tmp_path):

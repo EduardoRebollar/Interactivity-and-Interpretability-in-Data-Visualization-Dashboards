@@ -1,4 +1,5 @@
-"""Raw events to tidy frames: one row per task answered, and one per participant x condition.
+"""Raw events to tidy frames: one row per task answered, one per participant x condition, and
+one per participant for About you.
 
 Events arrive from three places with one important difference between them. `db.fetch_events`
 returns `payload` as a dict (psycopg decodes JSONB); `scripts/export_logs.py` writes it as a JSON
@@ -26,10 +27,11 @@ from analysis import keys as answer_keys
 from src import tasks
 
 PRACTICE_ID = tasks.PRACTICE.task_id
-INTERACTION_EVENTS = ("filter_change", "line_isolate", "sort_change", "view_change")
+INTERACTION_EVENTS = ("filter_change", "line_isolate", "sort_change", "view_change", "view_reset")
 # The events only the interactive condition's controls can produce. `view_change` is not among them:
-# the schema documents it as possible in both conditions (src/logging.py EVENTS).
-INTERACTIVE_ONLY_EVENTS = ("filter_change", "line_isolate", "sort_change")
+# the schema documents it as possible in both conditions (src/logging.py EVENTS). Reset view is a
+# control under the chart, in the interactive condition only.
+INTERACTIVE_ONLY_EVENTS = ("filter_change", "line_isolate", "sort_change", "view_reset")
 
 BASE_COLUMNS = [
     "participant_id",
@@ -51,8 +53,27 @@ BASE_COLUMNS = [
 ]
 TASK_COLUMNS = [*BASE_COLUMNS, *[f"n_{name}" for name in INTERACTION_EVENTS]]
 
-# The three 7-point Likert items asked after each condition (study-design.md section 6.1).
+# The survey after each condition (study-design.md section 6.1): a1-a9 always, b1-b3 after the
+# interactive condition only, c1-c3 after the second only. A key not asked is missing there.
 LIKERT_KEYS = tuple(tasks.LIKERT_ITEMS)
+CONTROLS_KEYS = tuple(tasks.CONTROLS_ITEMS)
+COMPARISON_KEYS = tuple(tasks.COMPARISON_KEYS)
+SURVEY_EVENTS = (
+    ("survey_rating", LIKERT_KEYS),
+    ("controls_rating", CONTROLS_KEYS),
+    ("comparison", COMPARISON_KEYS),
+)
+
+# About you, one column per answer: the tools question's rows each get their own.
+DEMOGRAPHIC_COLUMNS = [
+    column
+    for question in tasks.ABOUT_QUESTIONS
+    for column in (
+        [f"{question.key}: {row}" for row in question.rows]
+        if question.kind == "matrix"
+        else [question.key, *([question.other_key] if question.other_key else [])]
+    )
+]
 
 
 class ReshapeError(ValueError):
@@ -189,18 +210,24 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
         str(session): payload.get("value")
         for session, payload in zip(ratings["session_id"], ratings["payload"], strict=True)
     }
-    surveys = events[events["event"] == "survey_rating"]
-    likert = {
-        str(session): payload
-        for session, payload in zip(surveys["session_id"], surveys["payload"], strict=True)
-    }
+    answered_by_event = {}
+    for name, _keys in SURVEY_EVENTS:
+        chosen = events[events["event"] == name]
+        answered_by_event[name] = {
+            str(session): payload
+            for session, payload in zip(chosen["session_id"], chosen["payload"], strict=True)
+        }
     ended = set(events.loc[events["event"] == "session_end", "session_id"].astype(str))
     recovered = set(events.loc[events["event"] == "sink_recovered", "session_id"].astype(str))
 
     by_session = tasks_frame.groupby("session_id")
     sessions["paas"] = sessions["session_id"].map(paas)
-    for key in LIKERT_KEYS:
-        sessions[key] = sessions["session_id"].map(lambda s, k=key: (likert.get(s) or {}).get(k))
+    for name, keys in SURVEY_EVENTS:
+        given = answered_by_event[name]
+        for key in keys:
+            sessions[key] = sessions["session_id"].map(
+                lambda s, k=key, g=given: (g.get(s) or {}).get(k)
+            )
     sessions["n_answers"] = sessions["session_id"].map(by_session["task_id"].nunique()).fillna(0)
     sessions["n_answers"] = sessions["n_answers"].astype(int)
     # Primary: skips count as incorrect, so the denominator is every scored answer (T1-T6).
@@ -216,3 +243,28 @@ def tidy_conditions(events: pd.DataFrame, tasks_frame: pd.DataFrame) -> pd.DataF
     sessions["ended"] = sessions["session_id"].isin(ended)
     sessions["degraded"] = sessions["session_id"].isin(recovered)
     return sessions.sort_values(["participant_id", "condition_order"]).reset_index(drop=True)
+
+
+def tidy_participants(events: pd.DataFrame) -> pd.DataFrame:
+    """One row per participant: the About-you answers (study-design.md section 6.2).
+
+    Logged once, after the second session's end, so a participant who stopped earlier has no row.
+    The tools question's answer, an object from tool to answer, becomes one column per tool. Should
+    a participant somehow have two records, the later one stands.
+    """
+    about = events[events["event"] == "demographics"].sort_values("server_ts", kind="stable")
+    rows = []
+    for participant, payload in zip(about["participant_id"], about["payload"], strict=True):
+        row: dict[str, Any] = {"participant_id": participant}
+        for question in tasks.ABOUT_QUESTIONS:
+            if question.kind == "matrix":
+                answers = payload.get(question.key) or {}
+                for tool in question.rows:
+                    row[f"{question.key}: {tool}"] = answers.get(tool)
+            else:
+                row[question.key] = payload.get(question.key)
+                if question.other_key:
+                    row[question.other_key] = payload.get(question.other_key)
+        rows.append(row)
+    frame = pd.DataFrame(rows, columns=["participant_id", *DEMOGRAPHIC_COLUMNS])
+    return frame.drop_duplicates("participant_id", keep="last").reset_index(drop=True)

@@ -375,7 +375,7 @@ tests/
   test_viewer.py        # each health check trips on its fault; masking; download re-scores
   test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
   test_consent.py       # the pinned consent text, the signed record, export and withdrawal scripts
-  test_questionnaire.py # the IRB questionnaire carries every question and option, and no key
+  test_questionnaire.py # the IRB questionnaire: every question and option, the app's styles, no key
 ```
 
 ### Study protocol
@@ -559,7 +559,7 @@ context cheap and the reports as long as they need to be.
 - 2026-09-25 — **Largest-rise item dropped** (uncommitted at time of writing), so line charts carry
   two items per form. T3–T7 renumbered T2–T6; schema v8. 853 tests. Four sessions, one per
   counterbalancing cell, driven in headless Chrome: every derived key matched what was logged.
-- 2026-09-25 — **Redesign, phases 1–7 of `docs/study-redesign.md`** (uncommitted at time of writing).
+- 2026-09-25 — **Redesign, phases 1–8 of `docs/study-redesign.md`** (uncommitted at time of writing).
   - Phase 1: the §4 decisions (below) and the plan.
   - Phase 2: `study-design.md` and `visual-spec.md` amended; six options per item; T1 without World;
     consent text from the handoff's screen 1 (hash re-pinned); practice-complete stage; About you
@@ -574,13 +574,13 @@ context cheap and the reports as long as they need to be.
     chart, the line legend, View, Show all, Reset view, the three-way bar sort, the heatmap row
     sort, the map's "Below [n] %"; Submit busy while saving (S1). One `view` callback reads every
     control by pattern. Dash 4 bridge stylesheet. 1083 tests. A full session in headless Chrome, 38
-    checks, no console errors; every event logged, none in the static half. Open: the scatter and
-    map task cards overflow a 768 px window in the interactive condition only.
+    checks, no console errors; every event logged, none in the static half. The scatter and map
+    task cards overflow a 768 px window in the interactive condition only: scrolling accepted.
   - Phase 5 (2026-09-26): the short screens on the handoff's centred card (declined, ID with S2,
     the four instructions, practice complete, break, finished), with the approved wording. 1089
     tests. Both orders in headless Chrome at 1440 × 790 and 1366 × 768: 66 checks each, no console
-    errors. Open: the instructions overflow a 790 px window except 9a; 4b's button is 260 px
-    below it.
+    errors. The instructions overflow a 790 px window except 9a (4b's button is 260 px below
+    it): scrolling accepted.
   - Phase 6 (2026-09-26): consent as the handoff's Letter sheet, signed inside it, and S3. Pad
     600 × 150. 1094 tests. Headless Chrome at 1440 × 790 and 1366 × 768: 30 checks (layout, Tab
     order, focus rings, signing and clearing, a refusal, S3 forced by a blocked store, then
@@ -589,6 +589,12 @@ context cheap and the reports as long as they need to be.
     the pages move in the browser (`app.PAGER_JS`). 1111 tests. Both orders in headless Chrome
     (45–49 checks each): skips confirmed per page, the rail, keyboard, the age refused on its
     page, "Other", and every answer logged as given. Phases 4–6 re-run clean.
+  - Phase 8 (2026-09-26): S4 (the log cannot be written, or the spool overflows); `analysis/`
+    reads v9 (b1–b3, c1–c3, About you as `participants.csv`, a7 beside Paas, Reset view as an
+    interactive-only event); `irb/questionnaire.pdf` re-exported in the app's styles. 1119 tests.
+    Four sessions, one per counterbalancing cell, in headless Chrome: 62 checks, every answer the
+    derived key, every control's event, none in a static half. A keyboard-only session (24
+    checks) and S4 in a browser. Every screen compared with the handoff's screenshots.
 - **Still to do before the pilot:**
   - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
     and the URL for item 18.
@@ -711,6 +717,13 @@ context cheap and the reports as long as they need to be.
   the "Other" box is laid over its option's cell. Found and fixed: dcc.Input reports a number
   outside its `min`/`max` as null, so an age of 7 was logged as a skip since phase 2; the field
   now has no range and Next refuses it on its page.
+- 2026-09-26 — **Scrolling accepted** (Eduardo) for the two layouts left open by phases 4 and 5:
+  the instruction screens, and the interactive scatter and map task cards on a window 790 px tall
+  or less. The second makes interactive participants scroll to Submit on T3 and T5 where static
+  ones do not; it is listed for the pilot in `study-design.md` §10.
+- 2026-09-26 — **Phase 8, taken without asking** (reported for review): S4 keeps the stores as
+  written and shows the position of the screen it replaced; the questionnaire PDF prints the
+  screens in the app's own stylesheets, landscape, with every survey question shown.
 - 2026-09-23 — Box and lasso select removed from every chart's modebar, including the line charts,
   where they had been since the start: they dim marks with no event recorded. `visual-spec.md` §7.5.
 

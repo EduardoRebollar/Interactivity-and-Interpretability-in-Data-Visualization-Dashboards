@@ -61,6 +61,7 @@ class Scoring:
     tasks: pd.DataFrame | None = None
     conditions: pd.DataFrame | None = None
     exclusions: list[exclusions.Exclusion] = field(default_factory=list)
+    participants: pd.DataFrame | None = None
     error: str | None = None
 
     @property
@@ -525,15 +526,30 @@ def score(records: list[dict[str, Any]], *, key_problems: list[str] | None = Non
         events = reshape.events_frame(records)
         tasks_frame = reshape.tidy_tasks(events)
         conditions = reshape.tidy_conditions(events, tasks_frame)
+        participants = reshape.tidy_participants(events)
         scored, excluded = exclusions.apply(tasks_frame, conditions)
     except reshape.ReshapeError as exc:
         return Scoring(error=f"Scoring refused: {exc}")
     except Exception as exc:  # the viewer must stay up to show what is wrong
         return Scoring(error=f"Scoring failed: {type(exc).__name__}: {exc}")
-    return Scoring(tasks=scored, conditions=conditions, exclusions=excluded)
+    return Scoring(
+        tasks=scored, conditions=conditions, exclusions=excluded, participants=participants
+    )
 
 
 UNIT_NAMES = {"session:task": "answer"}
+
+
+def _flat(frame: pd.DataFrame) -> pd.DataFrame:
+    """Two-level column headers ("paas", "mean") as one ("paas mean"), for a plain table."""
+    frame = frame.copy()
+    frame.columns = [
+        " ".join(str(part) for part in column if str(part)).strip()
+        if isinstance(column, tuple)
+        else column
+        for column in frame.columns
+    ]
+    return frame
 
 
 def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
@@ -555,9 +571,25 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
             "Accuracy and time by item and chart type (descriptive, not tested)",
             study_report.by_item(tasks_frame),
         ),
-        ("Mental effort, RQ3: Paas 1-9", study_report.mental_effort(conditions, included)),
+        (
+            "Mental effort, RQ3: Paas 1-9, with a7 beside it",
+            study_report.mental_effort(conditions, included),
+        ),
+        ("Survey a1-a9 (1-7), descriptive", study_report.survey(conditions, included)),
+        (
+            "Chart controls b1-b3 (1-7), interactive condition",
+            study_report.controls(conditions, included),
+        ),
+        (
+            "Comparing the two versions, c1-c3, second condition",
+            study_report.comparison(conditions, included),
+        ),
         ("Time on task (ms), timing-usable rows only", study_report.time_on_task(tasks_frame)),
     ]
+    if scoring.participants is not None:
+        by_condition.append(
+            ("About you: the sample", study_report.about_you(scoring.participants, included))
+        )
     # report.exclusion_table puts each rule's unit in its own column, which leaves a sparse, float-
     # cast grid on screen. Same numbers, one "affected" column.
     exclusion_table = pd.DataFrame(
@@ -575,7 +607,7 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
     )
     return [
         ("Exclusions (study-design.md §7)", exclusion_table),
-        *[(title, frame.reset_index().round(3)) for title, frame in by_condition],
+        *[(title, _flat(frame.reset_index().round(3))) for title, frame in by_condition],
     ]
 
 

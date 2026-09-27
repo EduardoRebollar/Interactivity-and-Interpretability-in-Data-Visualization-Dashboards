@@ -583,6 +583,11 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
     assert score_study.main(["--events", str(events_csv), "--out", str(derived)]) == 0
     printed = capsys.readouterr().out
     assert "Exclusions" in printed and "Accuracy, RQ1" in printed and "Paas" in printed
+    assert "About you: the sample" in printed
+    about = pd.read_csv(derived / "participants.csv", dtype={"participant_id": str})
+    assert sorted(about["participant_id"]) == sorted(
+        [_participant_for("static", "A"), _participant_for("interactive", "B")]
+    )
 
     scored = pd.read_csv(derived / "tasks.csv", dtype={"participant_id": str})
     assert len(scored) == 24
@@ -735,4 +740,69 @@ def test_the_report_shows_the_secondary_accuracy_skips_and_survey(tmp_path):
     text = study_report.render(marked, conditions, found)
     assert "skips excluded" in text
     assert "Skipped answers" in text
-    assert "clarity" in text
+    assert "Survey a1-a9" in text
+
+
+def test_the_controls_and_comparison_reach_the_condition_frame_where_they_were_asked(tmp_path):
+    """b1-b3 after the interactive condition only, c1-c3 after the second only (section 6.1)."""
+    run_session(tmp_path, _participant_for("static", "A"), correct_answer)
+    _events, _tasks, conditions = _score(tmp_path)
+    rows = conditions.set_index("condition")
+    for key in reshape.CONTROLS_KEYS:
+        assert rows.loc["interactive", key] == 6 and pd.isna(rows.loc["static", key])
+    second = rows.loc["interactive"]  # static first, so interactive second
+    assert second["c1"] == "The charts with controls" and second["c3"].startswith("The hover")
+    assert all(pd.isna(rows.loc["static", key]) for key in reshape.COMPARISON_KEYS)
+
+
+def test_reset_view_is_an_interactive_only_event(tmp_path):
+    """Reset view sits under the chart in the interactive condition only: counted with the other
+    controls, and a manipulation failure if the static condition ever records one."""
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    records = study_logging.read_all(tmp_path)
+    t1 = {
+        condition: next(
+            r
+            for r in records
+            if r["event"] == "answer_submit"
+            and r["task_id"] == "T1"
+            and r["condition"] == condition
+        )
+        for condition in ("interactive", "static")
+    }
+    counted = [*records, {**t1["interactive"], "event": "view_reset", "payload": {"previous": {}}}]
+    tasks_frame = reshape.tidy_tasks(reshape.events_frame(counted))
+    assert tasks_frame["n_view_reset"].sum() == 1
+    leaked = [*records, {**t1["static"], "event": "view_reset", "payload": {"previous": {}}}]
+    with pytest.raises(reshape.ReshapeError, match="manipulation check"):
+        reshape.tidy_tasks(reshape.events_frame(leaked))
+
+
+def test_about_you_is_one_row_per_participant_with_a_column_per_tool(tmp_path):
+    participant = _participant_for("interactive", "B")
+    run_session(tmp_path, participant, correct_answer)
+    events, _tasks, _conditions = _score(tmp_path)
+    frame = reshape.tidy_participants(events)
+    assert list(frame.columns) == ["participant_id", *reshape.DEMOGRAPHIC_COLUMNS]
+    (row,) = frame.to_dict("records")
+    assert row["participant_id"] == participant
+    assert row["age"] == 25 and row["role"] == "Graduate student"
+    assert "tools: Tableau" in frame.columns and pd.isna(row["tools: Tableau"])
+
+
+def test_the_report_puts_a7_beside_paas_and_describes_the_sample(tmp_path):
+    run_session(tmp_path, _participant_for("static", "B"), correct_answer)
+    events, tasks_frame, conditions = _score(tmp_path)
+    marked, found = exclusions.apply(tasks_frame, conditions)
+    participants = reshape.tidy_participants(events)
+    effort = study_report.mental_effort(conditions, {_participant_for("static", "B")})
+    assert list(effort.columns.get_level_values(0).unique()) == ["paas", "a7"]
+    text = study_report.render(marked, conditions, found, participants)
+    for title in ("Chart controls b1-b3", "Comparing the two versions", "About you: the sample"):
+        assert title in text
+    counts = study_report.comparison(conditions, {_participant_for("static", "B")})
+    assert counts.loc[("c1", "The charts with controls"), "n"] == 1
+    assert counts.loc[("c2", "No difference"), "n"] == 1
+    sample = study_report.about_you(participants, {_participant_for("static", "B")})
+    assert sample.loc[("age", "median 25 (range 25-25)"), "n"] == 1
+    assert sample.loc[("role", "Graduate student"), "n"] == 1

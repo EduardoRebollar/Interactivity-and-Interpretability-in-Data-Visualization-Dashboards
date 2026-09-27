@@ -51,11 +51,8 @@ CONSENT_UNSAVED = (
 # The participant-ID screen's refusal of an empty ID (the handoff's S2), which marks the field.
 ID_MISSING = "Please enter your participant ID."
 
-# Shown when responses cannot be saved at all, as opposed to a database that is briefly unreachable.
-UNSAVEABLE = (
-    "The study cannot save responses right now, so it cannot continue. "
-    "Please contact the researcher."
-)
+# S4: responses cannot be saved at all, as opposed to a database that is briefly unreachable.
+UNSAVEABLE = " ".join(layout.BLOCKED)
 
 
 def create_app() -> dash.Dash:
@@ -146,6 +143,18 @@ def render(state: SessionState) -> html.Div:
     it, so adding a stage without one fails the suite rather than a participant's session.
     """
     return layout.shell(flow.step_index(state), SCREEN_BACKGROUND[state.stage], _screen(state))
+
+
+def render_blocked(state: SessionState) -> html.Div:
+    """S4 in the shell: the step and the position of the screen it replaces, on the plain ground
+    (the handoff's S4)."""
+    position = None
+    if state.stage is Stage.TASK:
+        total = len(tasks.for_form(flow.current_form(state)))
+        position = layout.position_label(state.task_index + 1, total)
+    elif state.stage is Stage.PRACTICE:
+        position = layout.position_label(0, 0, practice=True)
+    return layout.shell(flow.step_index(state), "plain", layout.blocking_screen(position))
 
 
 def _screen(state: SessionState) -> html.Main:
@@ -293,8 +302,10 @@ def step(
     if consent_dir is None and log_dir is not None:
         consent_dir = log_dir / "consent"
     state = SessionState.from_dict(stored)
+    start = state  # the screen the participant pressed on, which S4 replaces
     log_state = dict(log_state or {})
     carried = _Spool(spool)
+    dropped_before = carried.dropped
 
     def refuse(message: str) -> tuple[Any, Any, Any, str, Any]:
         # The spool is still returned: a refusal can follow writes that spooled.
@@ -473,11 +484,18 @@ def step(
     except (LogError, OSError) as exc:
         # The log sink itself could not be opened or written: no DATABASE_URL on a deployment, or a
         # JSONL file that cannot be created. Uncaught, this was an HTTP 500 -- a button that did
-        # nothing and said nothing. Retrying will not help, so the message does not suggest it.
+        # nothing and said nothing. Retrying will not help, so S4 replaces the screen and does not
+        # suggest it; the session stays where it was.
         print(f"[study] logging failed in step {triggered!r}: {exc}", file=sys.stderr)
-        return refuse(UNSAVEABLE)
+        return (no_update, no_update, render_blocked(start), "", carried.output())
 
     log_state = _open_task(state, log_state, log_dir, carried)
+    if carried.dropped > dropped_before:
+        # The browser spool is full, and this step pushed its oldest records out: answers are
+        # being lost, not held for later. The stores keep what was written, so a reload shows
+        # the next screen, but the participant is stopped here and told to fetch the researcher.
+        print(f"[study] the browser spool overflowed in step {triggered!r}", file=sys.stderr)
+        return state.to_dict(), log_state, render_blocked(start), "", carried.output()
     return state.to_dict(), log_state, render(state), "", carried.output()
 
 

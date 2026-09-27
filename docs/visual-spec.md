@@ -487,7 +487,9 @@ strip and the hint row under the chart (§7).
   placeholder) are read through that box. Dash's own accent colour and focus outlines are
   overridden in `zz-overrides.css`.
 - **The short screens (2026-09-26).** Declined, the participant ID, the instructions, practice
-  complete, the break and the finish: one white card centred on the page. The handoff's Screens
+  complete, the break and the finish: one white card centred on the page. The instructions scroll:
+  their approved wording runs past a 790 px window on every version but 9a (accepted by Eduardo,
+  2026-09-26; they are untimed). The handoff's Screens
   file centres their copy and sizes it screen by screen with inline styles (21 to 26 px, against
   the stylesheet's 20); those values are classes in `zz-overrides.css` (`copy-21` to `copy-26`,
   `id-row`), so `layout.py` still sets no style. The ID field's "ID:" is a `<label>`, where the
@@ -505,6 +507,10 @@ strip and the hint row under the chart (§7).
   S3 draws the pad at its proportions. A text field's focus ring is drawn on dcc.Input's box
   alone, and the date field's on any focus, since Chrome never gives a date input
   `:focus-visible`.
+- **S4, when nothing can be saved (2026-09-26).** The screen's content is replaced by the
+  handoff's blocking message, announced, on the plain ground, under the position label of the
+  screen it replaced (a task's "Question k of 6"); the header and stepper stay. The stores keep
+  what was written, so a reload shows the stage again, with the researcher at hand.
 - **The survey and About you (2026-09-26).** The handoff's screens 7 and 10: a band-coloured rail
   (title, intro, skip note, the sections with their progress) beside one question per page, with
   Back and Next, and Continue on the last page. Every page is on the screen and only shown or
@@ -527,7 +533,11 @@ strip and the hint row under the chart (§7).
   and the question on one line; one card holding the chart column (the 1050 px chart plus 16 px each
   side) and the answer panel. Under the chart: the gap caption (§3), then, in the interactive
   condition only, the controls strip and the hint row. Submit sits above the fold of a 1440 × 900
-  laptop with a one-line question.
+  laptop with a one-line question. **Scrolling accepted (Eduardo, 2026-09-26):** on a window 790 px
+  tall or less, the interactive scatter and map cards run past the fold (at 1366 × 768 the
+  scatter's by 42 px, the map's by 30–66), so a participant scrolls to Submit there. The question
+  wraps under the position label, and the map's chips take three rows. The static condition fits
+  everywhere.
 - **Header.** On every screen: a band with the title, "Vaccination coverage study", and a seven-step
   indicator: Consent, Practice, Part 1, Break, Part 2, About you, Finished. It is display only, not
   links. The current step carries `aria-current="step"`, and the steps before it are ticked. The
@@ -538,9 +548,9 @@ strip and the hint row under the chart (§7).
   the finished screen a warmer one. The handoff's README calls the survey and About you plain; its
   Screens file draws them with the fade, and the Screens file outranks it.
 - **Compact mode.** At a window height of 800 px or less, the chrome above the chart tightens so the
-  card fits a 1366 × 768 screen. The chart itself does not change size. It is a media query, not a
-  class set by script, so it applies before a screen first paints and nothing moves once a task's
-  clock has started.
+  card fits a 1366 × 768 screen, except the interactive scatter and map cards (above). The chart
+  itself does not change size. It is a media query, not a class set by script, so it applies before
+  a screen first paints and nothing moves once a task's clock has started.
 - **Motion.** Only on screens without a chart: cards fade in over 180 ms and a slow background glow
   drifts. None on the task screen, and none at all under `prefers-reduced-motion`.
 - **Flags.** The chips' flags are image files bundled under `src/assets/flags/` by

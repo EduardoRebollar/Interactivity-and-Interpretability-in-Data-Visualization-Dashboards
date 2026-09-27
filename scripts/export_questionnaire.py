@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
 import html
 import json
 import os
@@ -74,6 +75,10 @@ _TAGS = {
     "Ul": "ul",
     "Ol": "ol",
     "Li": "li",
+    "Main": "main",
+    "Aside": "aside",
+    "Header": "header",
+    "Article": "article",
     "Table": "table",
     "Thead": "thead",
     "Tbody": "tbody",
@@ -98,7 +103,13 @@ def _attr(name: str, value) -> str:
 
 
 class Renderer:
-    """Dash component trees to static HTML. Charts are collected and drawn by plotly.js on load."""
+    """Dash component trees to static HTML, with the app's classes and the markup Dash 4 renders for
+    option lists and inputs, so the app's own stylesheets draw them as participants see them.
+    Charts are collected and drawn by plotly.js on load.
+
+    Nothing is disabled: a disabled control is drawn greyed out, and the page has no script that
+    could submit anything anyway.
+    """
 
     def __init__(self) -> None:
         self.figures: list[str] = []
@@ -116,27 +127,40 @@ class Renderer:
             # The validation-error slot on every screen: always empty on a fresh one.
             return ""
         classes = (props.get("className") or "").split()
-        if props.get("aria-hidden") == "true" or "sr-only" in classes:
-            # Decoration a participant does not read (a heading's emoji, the survey rail's lines
-            # and bars), and names only a screen reader hears (each radio of the tools question).
+        if "sr-only" in classes:
+            # Names only a screen reader hears (each radio of the tools question).
             return ""
-        if kind == "Progress":
+        if kind == "Canvas":
+            return ""
+        if props.get("hidden") and "pager-page" not in classes:
+            # Hidden until something happens on screen. The survey's pages are the exception: the
+            # questionnaire shows every question, where the screen shows one at a time.
             return ""
         if spec["namespace"] == "dash_core_components":
             return self._core(kind, props)
-        style = _attr("style", _css(props.get("style")))
-        inner = self.render(props.get("children"))
-        if kind == "Button":
-            return f"<button disabled{style}>{inner}</button>"
+        attrs = _attr("class", props.get("className")) + _attr("style", _css(props.get("style")))
+        if kind == "Img":
+            size = _attr("width", props.get("width")) + _attr("height", props.get("height"))
+            return f'<img{attrs}{_attr("src", _embedded(props.get("src")))} alt=""{size}>'
         if kind == "Br":
             return "<br>"
+        if kind == "A":
+            attrs += _attr("href", props.get("href"))
+        if kind in ("Th", "Td"):
+            attrs += _attr("colspan", props.get("colSpan")) + _attr("scope", props.get("scope"))
+        if kind == "Progress":
+            attrs += _attr("value", props.get("value")) + _attr("max", props.get("max"))
+            return f"<progress{attrs}></progress>"
+        inner = self.render(props.get("children"))
+        if kind == "Button":
+            return f'<button type="button"{attrs}>{inner}</button>'
         tag = _TAGS.get(kind, "div")
-        return f"<{tag}{style}>{inner}</{tag}>"
+        return f"<{tag}{attrs}>{inner}</{tag}>"
 
     def _core(self, kind: str, props: dict) -> str:
-        style = _attr("style", _css(props.get("style")))
         if kind in _SKIPPED:
             return ""
+        classes = props.get("className") or ""
         if kind == "Graph":
             printed = go.Figure(props["figure"])
             printed.update_layout(width=PRINT_WIDTH)
@@ -149,7 +173,9 @@ class Renderer:
             chosen = props.get("value")
             chosen = chosen if isinstance(chosen, list) else [chosen]
             kind_of_input = "radio" if kind == "RadioItems" else "checkbox"
-            label_style = _attr("style", _css(props.get("labelStyle")))
+            text_class = " ".join(
+                filter(None, ["dash-options-list-option-text", props.get("labelClassName")])
+            )
             options = []
             for option in props.get("options", []):
                 label, value = (
@@ -158,25 +184,41 @@ class Renderer:
                     else (option,) * 2
                 )
                 checked = " checked" if value is not None and value in chosen else ""
-                # A chip's label is a flag and a name, as components; the name is what prints.
+                # A chip's label is a flag and a name, as components; a scale point's, a number
+                # and its anchor.
                 if isinstance(label, (list, Component)):
                     text = self.render(label)
                 else:
                     text = html.escape(str(label))
                 options.append(
-                    f'<label{label_style}><input type="{kind_of_input}" disabled{checked}> '
-                    f"{text}</label>"
+                    '<label class="dash-options-list-option">'
+                    '<span class="dash-options-list-option-wrapper">'
+                    f'<input type="{kind_of_input}" class="dash-options-list-option-checkbox"'
+                    f"{checked}></span>"
+                    f'<span class="{text_class}">{text}</span></label>'
                 )
-            return f"<div{style}>{''.join(options)}</div>"
+            return f"<div{_attr('class', classes)}>{''.join(options)}</div>"
         if kind == "Input":
+            box = " ".join(filter(None, ["dash-input-container", classes]))
             return (
-                f"<input disabled{_attr('type', props.get('type', 'text'))}"
+                f'<div class="{box}"><input class="dash-input-element"'
+                f"{_attr('type', props.get('type', 'text'))}"
                 f"{_attr('value', props.get('value'))}"
-                f"{_attr('placeholder', props.get('placeholder'))}{style}>"
+                f"{_attr('placeholder', props.get('placeholder'))}></div>"
             )
         if kind == "Textarea":
-            return f"<textarea disabled{style}></textarea>"
+            area = " ".join(filter(None, ["dash-textarea", classes]))
+            return f'<textarea class="{area}"{_attr("rows", props.get("rows"))}></textarea>'
         return self.render(props.get("children"))
+
+
+def _embedded(source: str | None) -> str | None:
+    """An image the app serves from src/assets (a chip's flag), as a data URI, so the file needs
+    nothing beside it. Anything else (the undo icon is already a data URI) as it is."""
+    if not source or not source.startswith("assets/"):
+        return source
+    data = (ROOT / "src" / source).read_bytes()
+    return "data:image/png;base64," + base64.b64encode(data).decode("ascii")
 
 
 def _hover_example() -> str:
@@ -314,20 +356,42 @@ def _screens() -> list[tuple[str, str, object]]:
     return screens
 
 
+# The app's stylesheets, in the order Dash loads them, so each screen prints as it looks.
+STYLESHEETS = [
+    ROOT / "src" / "assets" / name for name in ("study.css", "zz-bridge.css", "zz-overrides.css")
+]
+
 STYLE = """
-@page { size: Letter; margin: 0.5in; }
+@page { size: Letter landscape; margin: 0.5in; }
+/* Printed at once: a card caught mid-fade would print pale. */
+* { animation: none !important; transition: none !important; }
+html, body { background: #FFFFFF; }
 body { font-family: Helvetica, Arial, sans-serif; color: #1A1A1A; margin: 0; }
+.cover { max-width: 760px; }
 .cover h1 { font-size: 24px; margin: 0 0 8px; }
 .cover p, .cover li { font-size: 14px; line-height: 1.5; }
 section { break-before: page; }
-.label { font-size: 12px; color: #595959; text-transform: uppercase; letter-spacing: 0.04em;
-         border-bottom: 1px solid #B3B3B3; padding-bottom: 4px; margin: 0 0 6px; }
-.note { font-size: 13px; color: #595959; margin: 0 0 10px; line-height: 1.4; }
-/* Scaled as a whole, so proportions stay as on screen: a question with its chart fits one page. */
-.screen { border: 1px solid #B3B3B3; border-radius: 6px; zoom: 0.82; }
-.screen button { opacity: 1; }
-/* A chart is 1050 px wide on screen; scaled with its screen, this fits the page's 720 px. */
-.screen .chart { zoom: 0.83; }
+.q-label { font-size: 12px; color: #595959; text-transform: uppercase; letter-spacing: 0.04em;
+           border-bottom: 1px solid #B3B3B3; padding-bottom: 4px; margin: 0 0 6px; }
+.q-note { font-size: 13px; color: #595959; margin: 0 0 10px; line-height: 1.4; }
+/* Each screen at 0.6 of its size, on its oat ground: the widest, the task screen at 1440 px, fits
+   the landscape page's 960, and the longest instructions fit its height. */
+.screen { border: 1px solid #B3B3B3; border-radius: 6px; zoom: 0.6; background: var(--c-page); }
+/* The room a screen keeps below its content, for a window, is dropped on paper. */
+.screen .page, .screen .stage { padding-bottom: 0; }
+/* The part of Dash's own stylesheet a text box needs: the input fills the box the app's classes
+   style, in the box's font. */
+.dash-input-container { display: inline-flex; align-items: center; box-sizing: border-box; }
+.dash-input-element { flex: 1 1 0; min-width: 0; font: inherit; color: inherit; background: none;
+                      border: none; outline: none; }
+/* Chrome's printing does not place an absolutely positioned grid item in its grid cell, so the
+   text box laid over "Other" vanished from the PDF. On paper it is an ordinary item of the grid,
+   in the same cell as that option (the last of pointer's, the last but one of field's). */
+.screen .other-box { position: relative; inset: auto; z-index: 1; }
+.screen .choice-grid:has(.other-box--r2c1) .dash-options-list-option:last-child {
+  grid-row: 2 / 3; grid-column: 1 / 2; }
+.screen .choice-grid:has(.other-box--r3c2) .dash-options-list-option:nth-last-child(2) {
+  grid-row: 3 / 4; grid-column: 2 / 3; }
 .popup { border: 1px solid #404040; border-radius: 6px; padding: 12px 16px; margin: 8px 0;
          font-size: 14px; max-width: 520px; }
 """
@@ -339,16 +403,16 @@ def build_html(url: str | None = None) -> str:
     sections = []
     for number, (title, note, screen) in enumerate(_screens(), start=2):
         sections.append(
-            f'<section><p class="label">Screen {number}: {html.escape(title)}</p>'
-            f'<p class="note">{html.escape(note)}</p>'
+            f'<section><p class="q-label">Screen {number}: {html.escape(title)}</p>'
+            f'<p class="q-note">{html.escape(note)}</p>'
             f'<div class="screen">{renderer.render(screen)}</div></section>'
         )
     popups = "".join(f'<div class="popup">{html.escape(text)}</div>' for text in SKIP_POPUPS)
     sections.append(
-        '<section><p class="label">Skipping a question</p>'
-        '<p class="note">Any question may be skipped. Pressing Submit or Continue with a question '
-        "unanswered opens the browser's own confirmation popup, which names what is missing. "
-        "OK moves on; Cancel returns to the question. For example:</p>"
+        '<section><p class="q-label">Skipping a question</p>'
+        '<p class="q-note">Any question may be skipped. Pressing Submit or Continue with a '
+        "question unanswered opens the browser's own confirmation popup, which names what is "
+        "missing. OK moves on; Cancel returns to the question. For example:</p>"
         f"{popups}</section>"
     )
     location = (
@@ -381,14 +445,16 @@ country that hides or shows it, and Reset view; on the line charts a clickable l
 Show all and isolating a line; sorting on the bar chart and the grid; and a highlight on the map.
 Each participant answers form A with one version and form B with the other, in one of four
 counterbalanced orders.</p>
-<p class="note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the
+<p class="q-note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the
 application's own screen code. Consent text version {consent.CONSENT_VERSION}.</p>
 </div>"""
+    app_css = "\n".join(sheet.read_text(encoding="utf-8") for sheet in STYLESHEETS)
     payload = json.dumps(renderer.figures).replace("</", "<\\/")
     geometry = GEOMETRY.read_text(encoding="utf-8").replace("</", "<\\/")
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <title>Study questionnaire</title>
+<style>{app_css}</style>
 <style>{STYLE}</style>
 </head><body>
 {cover}

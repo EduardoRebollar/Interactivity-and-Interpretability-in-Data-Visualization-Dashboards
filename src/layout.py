@@ -1148,6 +1148,33 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Main:
     )
 
 
+def position_label(index: int, total: int, practice: bool = False) -> str:
+    """Where a task stands: the label above its question, and above S4 on a task's screen."""
+    return "Practice — not scored" if practice else f"Question {index} of {total}"
+
+
+# S4, word for word (docs/study-design.md section 8): the handoff breaks the line after the first
+# sentence.
+BLOCKED = (
+    "The study cannot save responses right now, so it cannot continue.",
+    "Please contact the researcher.",
+)
+
+
+def blocking_screen(position: str | None = None) -> html.Main:
+    """S4: responses cannot be saved anywhere, so the screen's content is replaced by this message,
+    announced, with the position label of the screen it replaces, if that screen had one."""
+    return page(
+        *([html.P(position, className="position")] if position else []),
+        html.Div(
+            html.Strong([*_warned(BLOCKED[0]), html.Br(), BLOCKED[1]]),
+            className="msg msg-block msg-block--system",
+            role="alert",
+        ),
+        error_slot(),
+    )
+
+
 def task_screen(
     task, interactive: bool, index: int, total: int, practice: bool = False
 ) -> html.Main:
@@ -1162,7 +1189,7 @@ def task_screen(
     The practice item uses this same screen, so what it teaches is the interface the scored tasks
     actually use.
     """
-    position = "Practice — not scored" if practice else f"Question {index} of {total}"
+    position = position_label(index, total, practice)
     column = [chart(task, interactive)]
     note = gap_note(list(task.entities), task.vaccine, task.years, task.chart)
     if note is not None:
