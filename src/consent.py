@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import html
 import json
 import math
 import os
@@ -194,8 +193,8 @@ MAX_NAME = 200
 # The researcher's countersignature on the screen: a `data:image/png;base64,` URI of Eduardo's
 # signature, printed beside the date and INVESTIGATOR. Deliberately not in this public repo: it is
 # read from the environment (Vercel's settings, or `.env.local` for a local run). Unset or
-# malformed, the countersignature line is the paper form's blank rule. Screen only: the signed copy
-# and `scripts/export_consents.py` are unchanged.
+# malformed, the countersignature line is the paper form's blank rule. The participant's PDF and
+# the copies `scripts/export_consents.py` writes carry it too (`layout.signed_sheet_html`).
 SIGNATURE_ENV = "RESEARCHER_SIGNATURE"
 _PNG_URI = "data:image/png;base64,"
 # Vercel caps a deployment's environment variables at 64 KB together; the cropped signature is ~6.
@@ -350,51 +349,6 @@ def signature_svg(signature: Any) -> str:
     )
 
 
-def copy_html(record: dict[str, Any]) -> str:
-    """A standalone, printable copy of the signed form.
-
-    The participant downloads one (the paper form asks them to keep a copy), and
-    `scripts/export_consents.py` writes one per record for the researcher to countersign and file.
-    The researcher's line is left blank for exactly that.
-    """
-    esc = html.escape
-    paragraphs = "\n".join(
-        f"<p><b>{esc(heading)}</b> {esc(body)}</p>"
-        if runs_in(heading)
-        else (f"<p><b>{esc(heading)}</b></p>" if heading else "") + f"<p>{esc(body)}</p>"
-        for heading, body in SECTIONS
-    )
-    title = "<br>".join(esc(line) for line in FORM_HEADING)
-    if record.get("signature_method") == "paper":
-        signature = "<p><em>Signed on a paper copy of this form with the researcher.</em></p>"
-    else:
-        signature = signature_svg(record.get("signature"))
-    return f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<title>Signed consent form</title>
-<style>
-body {{ font-family: Arial, Helvetica, sans-serif; color: #1A1A1A; max-width: 720px;
-       margin: 32px auto; padding: 0 16px; line-height: 1.5; }}
-h1 {{ font-size: 20px; text-align: center; }} h2 {{ font-size: 15px; margin: 18px 0 4px; }}
-.line {{ border-top: 1px solid #1A1A1A; margin-top: 8px; padding-top: 4px; font-size: 13px; }}
-.meta {{ color: #595959; font-size: 12px; }}
-</style></head><body>
-<h1>{title}</h1>
-{paragraphs}
-<h2>Participant signature and date / printed name</h2>
-{signature}
-<p class="line">Signed: {esc(record.get("signed_date") or "")} &nbsp;/&nbsp;
-{esc(record.get("printed_name") or "")}</p>
-<h2>Researcher or research assistant signature and date / printed name</h2>
-<p style="height:48px"></p>
-<p class="line">&nbsp;</p>
-<p class="meta">Agreed electronically at {esc(str(record.get("consented_at") or ""))} (UTC).
-Consent text version {esc(str(record.get("consent_version") or ""))}.
-Record {esc(str(record.get("record_uid") or ""))}.</p>
-</body></html>
-"""
-
-
 __all__ = [
     "APPROVED",
     "CONSENT_TEXT",
@@ -403,7 +357,6 @@ __all__ = [
     "FORM_HEADING",
     "SECTIONS",
     "build_record",
-    "copy_html",
     "problem",
     "save",
 ]

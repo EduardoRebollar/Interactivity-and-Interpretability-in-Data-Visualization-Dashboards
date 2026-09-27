@@ -110,20 +110,40 @@
 /* The pad at its own proportions, the canvas's 600 x 150 (aspect-ratio: auto reads them from the
    canvas), where study.css's .pad fixes 600 / 180. */
 .sheet .pad { aspect-ratio: auto; border: none; border-bottom: 1px solid #000000; border-radius: 0; background: #F4F7FB; color: #000000; }
+/* The pointer over the pad: a black crosshair with a thin white edge, hotspot at its centre. The
+   system crosshair study.css asks for is a hairline that Windows draws inverted, which all but
+   vanishes on the pad's pale fill. The system one stays as the fallback. */
+.sheet .pad { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M12 1v22M1 12h22' stroke='%23FFFFFF' stroke-width='4'/%3E%3Cpath d='M12 1v22M1 12h22' stroke='%23000000' stroke-width='2'/%3E%3C/svg%3E") 12 12, crosshair; }
 .pad-clear { position: absolute; top: 6px; right: 6px; min-height: 32px; padding: 0 10px; font: 13px Helvetica, Arial, sans-serif; }
 /* .btn's display would otherwise show it before there is a stroke to clear. */
 .pad-clear[hidden] { display: none; }
 /* dcc.Input's box carries the field's look; it outranks Dash's own edge, which returns on focus. */
 .sheet .sheet-line { border: none; border-bottom: 1px solid #000000; border-radius: 0; background: #F4F7FB; color: #000000; font: inherit; height: 40px; padding: 0 16px; box-sizing: border-box; width: 100%; }
 .sheet .sheet-line--name { width: 360px; }
-/* The focus ring on the box. :focus-within, not :focus-visible: Chrome never gives a date input
+/* The signing fields' hover edge and focus ring, drawn on a layer laid over each field. On the box
+   itself they were painted under the <input> inside it (Dash gives it z-index 1 and rounded
+   corners, so only the corners of the edge showed) and under the neighbouring field. The field
+   being hovered or focused is lifted above its neighbours, so its ring is never cut off. */
+.sheet .sheet-line,
+.sheet .sheet-pad { position: relative; }
+/* Dash clips its input box (overflow: hidden), which would clip the ring drawn outside it. */
+.sheet .sheet-line { overflow: visible; }
+.sheet .sheet-line:is(:hover, :focus-within),
+.sheet .sheet-pad:hover { z-index: 3; }
+.sheet .sheet-line::after,
+.sheet .sheet-pad::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+/* On hover a black edge: the pale fill alone barely shows against the white sheet. Inside the box,
+   so nothing shifts; black on the white sheet is 21:1. */
+.sheet .sheet-line:hover::after,
+.sheet .sheet-pad:hover::after { box-shadow: inset 0 0 0 1px #000000; }
+/* The focus ring. :focus-within, not :focus-visible: Chrome never gives a date input
    :focus-visible, so the date would have no ring at all, and a text field has one on any focus
    anyway. */
-.sheet .sheet-line:focus-within { box-shadow: var(--focus-ring); }
-/* On hover the signing fields are outlined in black: their pale fill alone barely shows against
-   the white sheet. An outline, not a border, so nothing shifts; black on the white sheet is 21:1. */
-.sheet .pad:hover,
-.sheet .sheet-line:hover { outline: 1px solid #000000; outline-offset: -1px; }
+.sheet .sheet-line:focus-within::after { box-shadow: var(--focus-ring); }
+.sheet .sheet-line:focus-within:hover::after { box-shadow: inset 0 0 0 1px #000000, var(--focus-ring); }
+/* While the pointer is on one signing field, the others show nothing, so only one field is ever
+   marked under the mouse. With the pointer anywhere else the focused field keeps its ring. */
+.sheet-signoff:has(.sheet-line:hover, .sheet-pad:hover) :is(.sheet-line, .sheet-pad):not(:hover)::after { box-shadow: none; }
 
 /* The researcher's countersignature (layout.countersignature): the participant's grid, with the
    signature, date and name printed on the rule rather than filled in, so no fill and no hover. */
@@ -132,6 +152,17 @@
 .sheet-counter-sig img { height: 60px; width: auto; max-width: 100%; object-fit: contain; }
 .sheet-counter-line { border-bottom: 1px solid #000000; height: 40px; display: flex; align-items: center; padding: 0 16px; box-sizing: border-box; }
 .sheet-counter-line--name { width: 360px; }
+
+/* The signed copy (layout.signed_sheet_html, made a PDF by consent_pdf.js): the same fields, filled
+   in. The pad is a box at the canvas's 600 x 150 holding the signature as SVG, which scales as the
+   canvas does; the date and name are text in the fields' boxes. */
+.sheet .sheet-copy-pad { aspect-ratio: 600 / 150; }
+.sheet-copy-pad svg { display: block; width: 100%; height: 100%; }
+.sheet-copy-pad .sheet-copy-paper { display: flex; align-items: center; height: 100%; padding: 0 16px; }
+.sheet .sheet-copy-field { display: flex; align-items: center; }
+/* The record's time, text version and id under the sign-off: study.css's .sheet-footer, whose
+   margin .sheet p would otherwise zero. */
+.sheet p.sheet-footer { margin-top: 64px; }
 
 /* The paper-copy box and the buttons, in the chrome's typeface under the sheet's. */
 .sheet-paper { font-family: var(--font); margin-top: 20px; }

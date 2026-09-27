@@ -19,6 +19,7 @@ import json
 import re
 import uuid
 from collections import Counter
+from pathlib import Path
 
 import pytest
 from dash import html, no_update
@@ -2021,6 +2022,13 @@ const window = {
   },
   setTimeout: (fn, ms) => timers.push([fn, ms]),
   confirm: (message) => { calls.push(["confirm", message]); return window.confirmAnswer; },
+  alert: (message) => calls.push(["alert", message]),
+  // The signed copy's PDF (assets/consent_pdf.js), recorded as ["pdf", markup]. It is saved at
+  // once, unless the markup is "fail".
+  studyConsentPdf: (markup) => {
+    calls.push(["pdf", markup]);
+    return { then: (saved, failed) => (markup === "fail" ? failed(new Error("no PDF")) : saved()) };
+  },
 };
 // Every id is on the page unless a case lists it as gone, as when the screen has moved on. An
 // attribute set or removed on an element is recorded as ["attr", id, name, value or null], and a
@@ -2437,19 +2445,42 @@ def test_the_age_field_leaves_the_range_to_the_study():
     assert not {"min", "max", "step"} & set(props)
 
 
-def test_the_signed_copy_downloads_from_the_browser():
-    clicked, empty = _run_js(
+def test_the_signed_copy_is_saved_as_a_pdf_in_the_browser():
+    saved, failed, empty = _run_js(
         [
-            [app.COPY_DOWNLOAD_JS, 1, False, ["<html>copy</html>"]],
+            [app.COPY_DOWNLOAD_JS, 1, False, ["<article>copy</article>"]],
+            [app.COPY_DOWNLOAD_JS, 1, False, ["fail"]],
             [app.COPY_DOWNLOAD_JS, 1, False, [None]],
         ]
     )
-    assert clicked["result"] == {
-        "content": "<html>copy</html>",
-        "filename": "signed-consent-form.html",
-        "type": "text/html",
-    }
+    # Busy while the PDF is made, and free again once it is saved.
+    assert saved["result"] is True
+    assert saved["calls"] == [
+        ["pdf", "<article>copy</article>"],
+        ["consent-copy-button", {"disabled": False}],
+    ]
+    # A PDF that cannot be made says so, and frees the button to try again.
+    assert failed["result"] is True
+    assert failed["calls"][2:] == [
+        ["pdf", "fail"],
+        ["alert", app.PDF_FAILED],
+        ["consent-copy-button", {"disabled": False}],
+    ]
     assert empty["result"] == "NO_UPDATE"
+    assert _wired("consent-copy-button.disabled", "consent-copy-button.n_clicks")
+
+
+def test_the_pdf_libraries_load_only_when_a_copy_is_saved():
+    """Served from the app's own assets, but not with the page: every participant would otherwise
+    load 600 KB they may never use."""
+    from scripts import vendor_pdf_libs
+
+    page = app.create_app().server.test_client().get("/").get_data(as_text=True)
+    assert "consent_pdf.js" in page
+    for name in vendor_pdf_libs.LIBRARIES:
+        assert name not in page
+        served = app.create_app().server.test_client().get(f"/assets/vendor/{name}")
+        assert served.status_code == 200
 
 
 def test_a_refusal_re_enables_submit():
@@ -2888,3 +2919,124 @@ def test_a_consent_that_could_not_be_stored_shows_under_the_buttons():
     ]
     assert slot.className == "msg msg-error"
     assert slot.to_plotly_json()["props"]["role"] == "alert"
+
+
+# --- Sideways scrolling on a zoomed line chart (assets/chart_pan.js) ------------------------------
+#
+# The asset is loaded under Node with a stub document, a stub plot and a stub Plotly, and its wheel
+# listener is fed events. Each case: the plot's range and whether scroll zoom is on, then the event.
+
+_PAN_HARNESS = r"""
+const fs = require("fs");
+const [source, cases] = [fs.readFileSync(process.argv[1], "utf8"), JSON.parse(process.argv[2])];
+const out = cases.map(({ range, scrollZoom, event, inPlot }) => {
+  const calls = [];
+  const timers = [];
+  const plot = {
+    _context: { _scrollZoom: scrollZoom ? { cartesian: true } : {} },
+    _fullLayout: { xaxis: { range, _rangeInitial0: 1999.5, _rangeInitial1: 2024.5, _length: 600 } },
+  };
+  const target = {
+    closest: (selector) => (selector === ".draglayer" ? (inPlot === false ? null : {}) : plot),
+  };
+  let listener;
+  const document = { addEventListener: (type, fn, options) => { listener = [type, fn, options]; } };
+  const window = {
+    Plotly: {
+      update: (gd, data, layout) => {
+        gd._fullLayout.xaxis.range = layout["xaxis.range"];
+        calls.push(["update", layout["xaxis.range"]]);
+      },
+      relayout: (gd, layout) => { calls.push(["relayout", layout["xaxis.range"]]); },
+    },
+  };
+  const setTimeout = (fn, ms) => { timers.push(fn); return timers.length; };
+  const clearTimeout = () => {};
+  class Element {}
+  Object.setPrototypeOf(target, Element.prototype);
+  new Function("document", "window", "setTimeout", "clearTimeout", "Element", "WeakMap", source)(
+    document, window, setTimeout, clearTimeout, Element, WeakMap
+  );
+  let prevented = false;
+  listener[1]({
+    deltaX: 0, deltaY: 0, deltaMode: 0, ctrlKey: false, shiftKey: false, ...event, target,
+    preventDefault: () => { prevented = true; },
+    stopPropagation: () => {},
+  });
+  timers.forEach((fn) => fn());
+  return { calls, prevented, options: listener[2] };
+});
+console.log(JSON.stringify(out));
+"""
+
+_PAN_ASSET = Path(app.__file__).parent / "assets" / "chart_pan.js"
+
+
+def _pan(cases):
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed")
+    completed = subprocess.run(
+        [node, "-e", _PAN_HARNESS, str(_PAN_ASSET), json.dumps(cases)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        timeout=30,
+    )
+    return json.loads(completed.stdout)
+
+
+ZOOMED = [2005.0, 2015.0]
+
+
+def test_a_sideways_swipe_moves_a_zoomed_axis_and_reports_it_once():
+    (case,) = _pan([{"range": ZOOMED, "scrollZoom": True, "event": {"deltaX": 60, "deltaY": 2}}])
+    # 60 px of a 600 px plot showing 10 years is one year, in the direction the browser scrolls.
+    assert case["calls"] == [["update", [2006.0, 2016.0]], ["relayout", [2006.0, 2016.0]]]
+    assert case["prevented"] is True
+    assert case["options"] == {"capture": True, "passive": False}
+
+
+def test_the_axis_stops_at_the_chart_s_own_view():
+    right, left = _pan(
+        [
+            {"range": [2010.0, 2024.0], "scrollZoom": True, "event": {"deltaX": 600}},
+            {"range": [2000.0, 2010.0], "scrollZoom": True, "event": {"deltaX": -600}},
+        ]
+    )
+    assert right["calls"][0] == ["update", [2010.5, 2024.5]]
+    assert left["calls"][0] == ["update", [1999.5, 2009.5]]
+
+
+def test_not_zoomed_a_swipe_moves_nothing_and_does_not_leave_the_page():
+    (case,) = _pan([{"range": [1999.5, 2024.5], "scrollZoom": True, "event": {"deltaX": 60}}])
+    assert case["calls"] == []
+    assert case["prevented"] is True, "no swipe-to-go-back out of the study"
+
+
+@pytest.mark.parametrize(
+    "event, scroll_zoom, in_plot",
+    [
+        ({"deltaX": 2, "deltaY": 60}, True, True),  # mostly vertical: Plotly's zoom
+        ({"deltaX": 60, "ctrlKey": True}, True, True),  # a pinch: Plotly's zoom
+        ({"deltaX": 60}, False, True),  # a chart without scroll zoom
+        ({"deltaX": 60}, True, False),  # outside the plotting area
+    ],
+    ids=["vertical", "pinch", "fixed chart", "outside"],
+)
+def test_other_wheel_events_are_left_alone(event, scroll_zoom, in_plot):
+    (case,) = _pan(
+        [{"range": ZOOMED, "scrollZoom": scroll_zoom, "event": event, "inPlot": in_plot}]
+    )
+    assert case["calls"] == [] and case["prevented"] is False
+
+
+def test_shift_with_a_plain_wheel_scrolls_sideways():
+    (case,) = _pan(
+        [{"range": ZOOMED, "scrollZoom": True, "event": {"deltaY": -60, "shiftKey": True}}]
+    )
+    assert case["calls"][0] == ["update", [2004.0, 2014.0]]

@@ -50,19 +50,30 @@ class FigureError(RuntimeError):
     """Raised when a figure is requested that the visual spec does not permit."""
 
 
-def graph_config(interactive: bool) -> dict:
+def graph_config(interactive: bool, chart_type: str = "line") -> dict:
     """Plotly config for `dcc.Graph`. **The single decision point between conditions.**
 
     `staticPlot=True` removes hover, zoom, pan, selection, and the modebar. Plotly is interactive by
     default, so without this the static condition would still be hoverable and the manipulation
     would be invalid.
+
+    `chart_type` is not a second switch: it says only where scroll zoom has an axis to move.
     """
     if interactive:
         return {
             "staticPlot": False,
             "displayModeBar": True,
             "displaylogo": False,
-            "scrollZoom": False,
+            # A mouse wheel or a touchpad (two-finger scroll or pinch, in whatever direction the
+            # participant's system scrolls) zooms the line chart's x axis, beside Zoom in and Zoom
+            # out (2026-09-27), logged as view_change. The line chart only: every other view is
+            # fixed, and with scroll zoom on Plotly still takes the wheel over a fixed chart, so
+            # the page would not scroll there -- and the scatter card must scroll to reach Submit
+            # on a window 790 px tall (measured in Chrome).
+            "scrollZoom": "cartesian" if chart_type == "line" else False,
+            # The line chart's one view button, Plotly's "Reset axes", is titled "Reset axis": it
+            # resets the one axis that moves. Titles come only from the config's dictionary.
+            "locales": {"en-US": {"dictionary": {"Reset axes": "Reset axis"}}},
         }
     return {"staticPlot": True, "displayModeBar": False}
 
@@ -74,15 +85,22 @@ def graph_config(interactive: bool) -> dict:
 # Box and lasso select are gone from every chart: they dim unselected marks, a change to what is on
 # screen that no event records, and on the map they would override the coverage filter, which is
 # drawn as a selection. The bar, scatter, heatmap and map views are fixed -- their axes, or the map,
-# cannot move -- so their zoom and pan buttons would do nothing but invite a click.
+# cannot move -- so their zoom and pan buttons would do nothing but invite a click. Download as PNG
+# and Share chart (which uploads the chart to Plotly Cloud) go from every chart (2026-09-27).
+#
+# The line chart keeps drag-to-zoom, Zoom in, Zoom out and Reset axes (titled "Reset axis" in
+# graph_config). Its Zoom and Pan mode buttons go, and so does Autoscale: after a zoom it fits the
+# axis to everything drawn, end labels included (1998.4-2027.0, measured in Chrome), where Reset
+# axes restores the chart's own 1999.5-2024.5.
 _SELECTION_BUTTONS = ["select", "lasso"]
+_SHARING_BUTTONS = ["toimage", "sendcharttocloud"]
 _VIEW_BUTTONS = ["zoom", "pan", "zoomin", "zoomout", "autoscale", "resetscale"]
 _MODEBAR_REMOVE = {
-    "line": _SELECTION_BUTTONS,
-    "bar": _SELECTION_BUTTONS + _VIEW_BUTTONS,
-    "scatter": _SELECTION_BUTTONS + _VIEW_BUTTONS,
-    "heatmap": _SELECTION_BUTTONS + _VIEW_BUTTONS,
-    "map": _SELECTION_BUTTONS + ["pan", "zoomInGeo", "zoomOutGeo", "resetGeo"],
+    "line": _SELECTION_BUTTONS + _SHARING_BUTTONS + ["zoom", "pan", "autoscale"],
+    "bar": _SELECTION_BUTTONS + _SHARING_BUTTONS + _VIEW_BUTTONS,
+    "scatter": _SELECTION_BUTTONS + _SHARING_BUTTONS + _VIEW_BUTTONS,
+    "heatmap": _SELECTION_BUTTONS + _SHARING_BUTTONS + _VIEW_BUTTONS,
+    "map": _SELECTION_BUTTONS + _SHARING_BUTTONS + ["pan", "zoomInGeo", "zoomOutGeo", "resetGeo"],
 }
 
 

@@ -63,6 +63,10 @@ def create_app() -> dash.Dash:
         # Screens are rendered dynamically, so most component ids are absent from the initial
         # layout. Without this, Dash refuses to register the callbacks that target them.
         suppress_callback_exceptions=True,
+        # The PDF libraries (scripts/vendor_pdf_libs.py) are served but not loaded with the page:
+        # assets/consent_pdf.js loads them when the signed copy is downloaded. A folder name:
+        # `assets_ignore` matches file names only.
+        assets_path_ignore=["^vendor$"],
     )
 
     app.layout = html.Div(
@@ -85,10 +89,9 @@ def create_app() -> dash.Dash:
             # The drawn signature, written by src/assets/signature.js. Memory, so a signature never
             # outlives the page it was drawn on, and never sits in sessionStorage.
             dcc.Store(id="signature-strokes"),
-            # The participant's own signed copy of the consent form, and the component that hands
-            # it to them. Memory: identifying, so it is not kept a moment longer than the page.
+            # The participant's own signed copy of the consent form, which assets/consent_pdf.js
+            # saves as a PDF. Memory: identifying, so it is not kept a moment longer than the page.
             dcc.Store(id="consent-copy"),
-            dcc.Download(id="consent-download"),
             # Continue on the demographics and survey screens. Like submit-clock: written only
             # once the browser has confirmed any skipped questions; memory, so a reload cannot
             # fire it.
@@ -521,8 +524,9 @@ def consent_step(
 ) -> tuple[Any, ...]:
     """ "I agree to participate": build the signed record, store it, advance.
 
-    Returns `step`'s five outputs plus the participant's signed copy (HTML), which is `no_update`
-    unless the record was actually stored and the session moved on.
+    Returns `step`'s five outputs plus the participant's signed copy (the sheet's HTML, which the
+    browser makes into a PDF), which is `no_update` unless the record was actually stored and the
+    session moved on.
     """
     record = consent.build_record(
         consented_at, name, signed_date, strokes, paper=bool(paper and "paper" in paper)
@@ -537,7 +541,7 @@ def consent_step(
         consent_dir=consent_dir,
     )
     advanced = outputs[0] is not no_update
-    return (*outputs, consent.copy_html(record) if advanced else no_update)
+    return (*outputs, layout.signed_sheet_html(record) if advanced else no_update)
 
 
 def _rating(value: Any, top: int) -> int | None:
@@ -1555,11 +1559,12 @@ def _register_callbacks(app: dash.Dash) -> None:
         Input("countersign-date", "id"),
     )
 
-    # The participant's own signed copy of the consent form. Clientside: the copy is already in the
-    # browser, so it never needs to go back to the server.
+    # The participant's own signed copy of the consent form, as a PDF made in the browser
+    # (assets/consent_pdf.js): the copy is already there, so it never needs to go back to the
+    # server. The button is busy until the PDF is saved.
     app.clientside_callback(
         COPY_DOWNLOAD_JS,
-        Output("consent-download", "data"),
+        Output("consent-copy-button", "disabled"),
         Input("consent-copy-button", "n_clicks"),
         State("consent-copy", "data"),
         prevent_initial_call=True,
@@ -1847,10 +1852,23 @@ OTHER_CHOSEN_JS = (
 }"""
 ).replace("OTHER", json.dumps(tasks.OTHER))
 
+# Shown if the PDF cannot be made; the researcher can export a copy (scripts/export_consents.py).
+PDF_FAILED = (
+    "Your signed consent form could not be saved as a PDF. Please ask the researcher for a copy."
+)
+
 COPY_DOWNLOAD_JS = """function(n, copy) {
     if (!n || !copy) { return window.dash_clientside.no_update; }
-    return {content: copy, filename: "signed-consent-form.html", type: "text/html"};
-}"""
+    var done = function () {
+        window.dash_clientside.set_props("consent-copy-button", {disabled: false});
+    };
+    window.studyConsentPdf(copy).then(done, function (error) {
+        console.error(error);
+        window.alert(PDF_FAILED);
+        done();
+    });
+    return true;
+}""".replace("PDF_FAILED", json.dumps(PDF_FAILED))
 
 SUBMIT_ENABLE_JS = """function(message) {
     return message ? false : window.dash_clientside.no_update;

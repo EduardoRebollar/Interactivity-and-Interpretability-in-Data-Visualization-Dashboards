@@ -3,20 +3,25 @@
 IRB form item 15: signed consent forms are kept in an encrypted, password-protected folder on the
 researcher's Oxy Google Drive, apart from the study data. The app stores each signed record in its
 own `consent_records` table (or, locally, `data/consent/`). This script writes each one out as a
-standalone copy of the form -- the consent text, the printed name, the date and the drawn signature
--- with a blank line for the researcher's countersignature.
+standalone copy of the form, laid out exactly as the participant's own PDF and the consent screen
+are (`layout.signed_sheet_html`, in the app's stylesheets): the consent text, the drawn signature,
+the date and the printed name, and the researcher's countersignature. The countersignature needs
+RESEARCHER_SIGNATURE, as the app does, so run it with `--env-file .env.local`; without it the
+researcher's line is left blank, as on the screen, and the script says so. Its date is the day the
+participant agreed, in this computer's time zone.
 
 Output goes to `data/consent/export/` (gitignored). Move it to the Drive folder, then delete the
-local copy. `--pdf` also prints each copy to PDF through a locally installed Chrome or Edge.
+local copy. `--pdf` also prints each copy to PDF through a locally installed Chrome or Edge, on
+Letter pages, breaking only between the sheet's paragraphs, with the text kept as text.
 
 `--purge` then deletes the exported records from the database (or the local file), so the
 identifying copy does not linger in Neon. It only ever deletes a record whose copy is already
 written -- and, with `--pdf`, whose PDF is.
 
 Usage:
-    uv run python scripts/export_consents.py                  # write HTML copies
-    uv run python scripts/export_consents.py --pdf            # and PDFs
-    uv run python scripts/export_consents.py --pdf --purge    # then remove them from the database
+    uv run --env-file .env.local python scripts/export_consents.py                # HTML copies
+    uv run --env-file .env.local python scripts/export_consents.py --pdf          # and PDFs
+    uv run --env-file .env.local python scripts/export_consents.py --pdf --purge  # then purge
 """
 
 from __future__ import annotations
@@ -27,14 +32,36 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
-from src import config, consent, db  # noqa: E402
+from src import config, consent, db, layout  # noqa: E402
 
 DEFAULT_OUT = config.CONSENT_DIR / "export"
+
+# The app's stylesheets, in the order Dash loads them, so the sheet prints as it looks.
+STYLESHEETS = tuple(
+    ROOT / "src" / "assets" / name for name in ("study.css", "zz-bridge.css", "zz-overrides.css")
+)
+# The sheet is laid out at its width on the page, 1240 px, and scaled to a Letter page's 8.5 in
+# (816 CSS px). Its 80 px top and bottom padding becomes each page's margin, as in the
+# participant's PDF (assets/consent_pdf.js).
+SHEET_WIDTH = 1240
+SCALE = 816 / SHEET_WIDTH
+PRINT_CSS = f"""
+@page {{ size: letter; margin: {80 * SCALE:.2f}px 0; }}
+html, body {{ margin: 0; background: #FFFFFF; }}
+* {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+.sheet.sheet--form {{ width: {SHEET_WIDTH}px; max-width: none; margin: 0 auto; box-shadow: none; }}
+@media print {{
+  .sheet.sheet--form {{ zoom: {SCALE:.6f}; padding-top: 0; padding-bottom: 0; }}
+  .sheet > * {{ break-inside: avoid; }}
+}}
+"""
 
 _BROWSERS = (
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -43,6 +70,29 @@ _BROWSERS = (
     r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 )
+
+
+def countersign_date(record: dict[str, Any]) -> str:
+    """The day the participant agreed, in this computer's time zone, as the screen shows a date:
+    the day their own PDF was dated in their browser. The date they typed if that is unreadable."""
+    try:
+        agreed = datetime.fromisoformat(str(record.get("consented_at")).replace("Z", "+00:00"))
+        return agreed.astimezone().strftime("%m/%d/%Y")
+    except ValueError:
+        return layout._shown_date(str(record.get("signed_date") or ""))
+
+
+def document(record: dict[str, Any]) -> str:
+    """A standalone copy of the signed sheet: its markup, the app's stylesheets, and the print
+    rules that put it on Letter pages."""
+    styles = "\n".join(sheet.read_text(encoding="utf-8") for sheet in STYLESHEETS)
+    sheet = layout.signed_sheet_html(record, countersign_date(record))
+    return (
+        '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">\n'
+        "<title>Signed consent form</title>\n"
+        f"<style>\n{styles}\n{PRINT_CSS}</style></head>\n"
+        f"<body>{sheet}</body></html>\n"
+    )
 
 
 def find_browser() -> str | None:
@@ -120,11 +170,17 @@ def main(argv: list[str] | None = None) -> int:
         print("No Chrome or Edge found for --pdf. Set CHROME to its path, or drop --pdf.")
         return 1
 
+    if consent.researcher_signature() is None:
+        print(
+            f"{consent.SIGNATURE_ENV} is not set, so the researcher's line is left blank. Run with "
+            "`uv run --env-file .env.local` to countersign the copies."
+        )
+
     args.out.mkdir(parents=True, exist_ok=True)
     exported: set[str] = set()
     for record in records:
         html_path = args.out / f"{filename(record)}.html"
-        html_path.write_text(consent.copy_html(record), encoding="utf-8")
+        html_path.write_text(document(record), encoding="utf-8")
         written = [html_path.name]
         if browser:
             try:
@@ -144,8 +200,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Purged {removed} exported records from their store.")
 
     print(
-        "\nNext: countersign each copy, move the folder into the encrypted Oxy Drive consent "
-        "folder (IRB form item 15), then delete the local copy."
+        "\nNext: move the folder into the encrypted Oxy Drive consent folder (IRB form item 15), "
+        "then delete the local copy."
     )
     return 0
 

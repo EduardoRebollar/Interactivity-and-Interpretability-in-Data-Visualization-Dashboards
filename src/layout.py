@@ -22,6 +22,10 @@ style except where the value comes from the data (the chips' spacing on a line c
 
 from __future__ import annotations
 
+import re
+from html import escape
+from typing import Any
+
 from dash import dcc, html
 
 from src import consent, figures, flow, tasks
@@ -110,7 +114,7 @@ def chart(task, interactive: bool, element_id: str = "chart") -> html.Div:
         dcc.Graph(
             id=element_id,
             figure=figures.task_figure(task),
-            config=figures.graph_config(interactive),
+            config=figures.graph_config(interactive, task.chart),
             responsive=False,
         ),
         className="ui-chart",
@@ -517,11 +521,11 @@ def consent_sheet_text() -> list:
     return lines
 
 
-def countersignature() -> list:
+def countersignature(date: str | None = None) -> list:
     """The researcher's line under the participant's: the paper form's blank rule, or, when
     `consent.researcher_signature()` finds the image, the signature, the date and the printed name
     on the rule. The date is the participant's browser's (`app.COUNTERSIGN_DATE_JS`), so it is the
-    day the form is signed wherever the server is."""
+    day the form is signed wherever the server is; a copy made later passes the day instead."""
     signature = consent.researcher_signature()
     if signature is None:
         return [
@@ -535,7 +539,7 @@ def countersignature() -> list:
                     html.Img(src=signature, alt=f"Signed: {consent.INVESTIGATOR}"),
                     className="sheet-counter-sig",
                 ),
-                html.Span(id="countersign-date", className="sheet-counter-line"),
+                html.Span(date, id="countersign-date", className="sheet-counter-line"),
                 html.Span(
                     consent.INVESTIGATOR, className="sheet-counter-line sheet-counter-line--name"
                 ),
@@ -544,6 +548,72 @@ def countersignature() -> list:
             className="sheet-signoff sheet-countersign",
         )
     ]
+
+
+PAPER_SIGNED = "Signed on a paper copy of this form with the researcher."
+# Elements that take no closing tag, for `_markup`.
+_VOID = {"br", "img"}
+
+
+def _markup(node: Any) -> str:
+    """Dash html components as HTML text: the tag, its id, class, src and alt, and its children.
+    Enough for the consent sheet, which uses nothing else, so the signed copy is built from the very
+    components the screen shows."""
+    if node is None:
+        return ""
+    if isinstance(node, str):
+        return escape(node, quote=False)
+    if isinstance(node, list | tuple):
+        return "".join(_markup(child) for child in node)
+    tag = type(node).__name__.lower()
+    attributes = "".join(
+        f' {name}="{escape(str(value))}"'
+        for prop, name in (("id", "id"), ("className", "class"), ("src", "src"), ("alt", "alt"))
+        if (value := getattr(node, prop, None)) is not None
+    )
+    if tag in _VOID:
+        return f"<{tag}{attributes}>"
+    return f"<{tag}{attributes}>{_markup(getattr(node, 'children', None))}</{tag}>"
+
+
+def _shown_date(value: str) -> str:
+    """A date field's value (YYYY-MM-DD) as the field shows it, MM/DD/YYYY."""
+    match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", value)
+    return f"{match[2]}/{match[3]}/{match[1]}" if match else value
+
+
+def signed_sheet_html(record: dict[str, Any], countersign_date: str | None = None) -> str:
+    """The signed consent sheet as HTML, laid out as the screen lays it out, for the participant's
+    PDF (`assets/consent_pdf.js` draws it with the page's own stylesheets). The form's text and the
+    researcher's line are the screen's components; the participant's fields are filled from the
+    stored record. The countersignature's date is left for the browser, as on the screen, unless
+    one is given (`scripts/export_consents.py`, which prints the same sheet for the Oxy Drive)."""
+    if record.get("signature_method") == "paper":
+        signed = html.P(html.I(PAPER_SIGNED), className="sheet-copy-paper")
+    else:
+        signed = consent.signature_svg(record.get("signature"))
+    signoff = (
+        '<div class="sheet-signoff">'
+        f'<div class="sheet-pad"><div class="pad sheet-copy-pad">'
+        f"{signed if isinstance(signed, str) else _markup(signed)}</div></div>"
+        '<div class="sheet-line sheet-copy-field">'
+        f"{escape(_shown_date(str(record.get('signed_date') or '')), quote=False)}</div>"
+        '<div class="sheet-line sheet-line--name sheet-copy-field">'
+        f"{escape(str(record.get('printed_name') or ''), quote=False)}</div>"
+        f"{_markup(html.P(SIGNOFF_LABEL, className='sheet-label sheet-label--row'))}"
+        "</div>"
+    )
+    footer = html.P(
+        f"Agreed electronically at {record.get('consented_at') or ''} (UTC). Consent text "
+        f"version {record.get('consent_version') or ''}. Record {record.get('record_uid') or ''}.",
+        className="sheet-footer",
+    )
+    body = (
+        _markup(consent_sheet_text())
+        + signoff
+        + _markup([html.P(), *countersignature(countersign_date), footer])
+    )
+    return f'<article class="sheet sheet--form">{body}</article>'
 
 
 def consent_screen() -> html.Main:

@@ -422,8 +422,24 @@ static condition shows no modebar at all.
   range, which is drawn as a selection. They had been available on the line charts since those were
   built; they went with this amendment.
 - **Zoom and pan are removed from the bar, scatter, heatmap and map**, whose views are fixed (§2);
-  on the map, so are the map zoom buttons. The line chart keeps zoom and pan on its x axis, logged
-  as `view_change`.
+  on the map, so are the map zoom buttons. The line chart's x axis still zooms, logged as
+  `view_change`.
+- **Download as PNG and Share chart are removed from every chart** (2026-09-27). Share chart uploads
+  the chart to Plotly Cloud. The bar, scatter, heatmap and map therefore show no buttons at all.
+- **The line chart shows Zoom in, Zoom out and Reset axis** (2026-09-27). Dragging across the plot
+  still zooms, and so does a mouse wheel or a touchpad's two-finger scroll or pinch, in whichever
+  direction the participant's system scrolls (`scrollZoom`, line charts only: over a fixed chart
+  Plotly would still take the wheel, and the page could not be scrolled there). Each gesture is
+  one `view_change`. Scroll zoom was off until this date, for fear of zooms made by accident while
+  reading; the pilot should look for them. The Zoom and Pan mode buttons are gone.
+- **Zoomed in, a sideways swipe moves the line chart's x axis** (2026-09-27): a touchpad's
+  two-finger swipe, a tilt wheel, or Shift with the wheel, in the direction the participant's
+  system scrolls (`assets/chart_pan.js`). It moves only within the chart's own view (1999.5–2024.5)
+  and does nothing when not zoomed in; over the plot it never scrolls the page or triggers the
+  browser's swipe back. Each swipe is one `view_change`, logged once it pauses, like a wheel zoom. Reset axis is Plotly's "Reset axes", retitled
+  in `graph_config` because only the x axis moves; it restores 1999.5–2024.5. Autoscale is removed:
+  after a zoom it fits the axis to everything drawn, end labels included, and lands on 1998.4–2027.0
+  (measured in Chrome), which is not the chart's own view.
 - **Legend clicks** are on for line charts (§7.3) and off for the scatter (§6). In the static
   condition, `staticPlot` turns every legend off as a control while leaving it drawn.
 

@@ -66,9 +66,20 @@ def test_static_config_disables_every_affordance():
     assert static["displayModeBar"] is False
 
 
-def test_interactive_config_does_not_enable_scroll_zoom():
-    """Scroll zoom fires accidentally while reading and would pollute the interaction log."""
-    assert figures.graph_config(interactive=True)["scrollZoom"] is False
+@pytest.mark.parametrize("chart_type", ["line", "bar", "scatter", "heatmap", "map"])
+def test_scroll_zoom_is_on_for_the_line_chart_only(chart_type):
+    """A mouse wheel or touchpad zooms the line chart's x axis (2026-09-27; it was off until then,
+    for fear of accidental zooms while reading). Every other view is fixed, and Plotly would still
+    take the wheel over one, so the page could not be scrolled with the pointer on the chart."""
+    config = figures.graph_config(interactive=True, chart_type=chart_type)
+    assert config["scrollZoom"] == ("cartesian" if chart_type == "line" else False)
+    assert "scrollZoom" not in figures.graph_config(interactive=False, chart_type=chart_type)
+
+
+@pytest.mark.parametrize("task", [tasks.PRACTICE, *tasks.FORM_A, *tasks.FORM_B], ids=str)
+def test_each_chart_is_rendered_with_its_own_config(task):
+    graph = layout.chart(task, interactive=True).children
+    assert graph.config == figures.graph_config(True, task.chart)
 
 
 ALL_TASKS = [tasks.PRACTICE, *tasks.FORM_A, *tasks.FORM_B]
@@ -647,17 +658,27 @@ def test_the_map_geometry_ships_with_the_app_and_covers_every_mapped_country(row
 
 @pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
 def test_no_chart_offers_selection_and_fixed_views_offer_no_zoom(rows, task):
-    """visual-spec.md section 7. Box and lasso select dim marks without any event recording it, and
-    on the map they would override the coverage filter. The map's view is fixed, like the bar,
-    scatter and heatmap axes, so their zoom and pan buttons go too."""
+    """visual-spec.md section 7.5. Box and lasso select dim marks without any event recording it,
+    and on the map they would override the coverage filter. Download as PNG and Share chart (an
+    upload to Plotly Cloud) go everywhere. The map's view is fixed, like the bar, scatter and
+    heatmap axes, so their zoom and pan buttons go too. The line chart keeps Zoom in, Zoom out and
+    Reset axes, and drops its Zoom and Pan modes and Autoscale, which does not restore its view."""
     removed = set(figures.task_figure(task, rows).layout.modebar.remove)
-    assert {"select", "lasso"} <= removed
+    assert {"select", "lasso", "toimage", "sendcharttocloud"} <= removed
     if task.chart == "map":
         assert {"pan", "zoomInGeo", "zoomOutGeo", "resetGeo"} <= removed
     elif task.chart != "line":
-        assert {"zoom", "pan"} <= removed
+        assert {"zoom", "pan", "zoomin", "zoomout", "autoscale", "resetscale"} <= removed
     else:
-        assert not {"zoom", "pan"} & removed, "the line chart's zoom and pan are logged affordances"
+        assert {"zoom", "pan", "autoscale"} <= removed
+        assert not {"zoomin", "zoomout", "resetscale"} & removed
+
+
+def test_reset_axes_is_titled_reset_axis():
+    """The line chart's one reset resets its one moving axis. Plotly takes button titles only from
+    the config's dictionary; the static condition has no modebar to title."""
+    dictionary = figures.graph_config(interactive=True)["locales"]["en-US"]["dictionary"]
+    assert dictionary == {"Reset axes": "Reset axis"}
 
 
 def test_the_modebar_is_the_figures_business_not_the_conditions():

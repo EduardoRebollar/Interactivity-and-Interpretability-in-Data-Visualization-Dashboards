@@ -146,24 +146,6 @@ def test_a_deployment_without_a_database_refuses_to_store_consent(monkeypatch):
         consent.save(_record())
 
 
-def test_the_signed_copy_carries_the_text_the_name_and_the_signature():
-    copy = consent.copy_html(_record())
-    assert "Ada Example" in copy
-    assert "<svg" in copy and "<polyline" in copy
-    assert "Researcher or research assistant signature" in copy
-    assert "I hereby agree to participate" in copy
-
-
-def test_the_signed_copy_escapes_what_the_participant_typed():
-    copy = consent.copy_html(_record(name="<script>alert(1)</script>"))
-    assert "<script>alert" not in copy
-    assert "&lt;script&gt;" in copy
-
-
-def test_a_paper_copy_says_it_was_signed_on_paper():
-    assert "paper copy" in consent.copy_html(_record(paper=True))
-
-
 # --- scripts/export_consents.py ------------------------------------------------------------------
 
 
@@ -182,6 +164,48 @@ def test_export_writes_a_copy_per_record_and_purges_only_what_it_wrote(tmp_path)
     text = "".join(path.read_text(encoding="utf-8") for path in copies)
     assert "First Person" in text and "Second Person" in text
     assert consent.read_local(store) == [], "exported records are purged"
+
+
+def test_the_exported_copy_is_the_participant_s_sheet_in_the_app_s_styles(monkeypatch):
+    """The Oxy Drive copy is the sheet the participant's PDF is made from, with the same
+    countersignature, dated the day they agreed, in this computer's time zone."""
+    from src import layout
+
+    image = "data:image/png;base64,iVBORw0KGgo="
+    monkeypatch.setenv(consent.SIGNATURE_ENV, image)
+    record = _record()
+    copy = export_consents.document(record)
+    date = export_consents.countersign_date(record)
+    assert layout.signed_sheet_html(record, date) in copy
+    assert f'<span id="countersign-date" class="sheet-counter-line">{date}</span>' in copy
+    assert f'<img src="{image}"' in copy
+    for sheet in export_consents.STYLESHEETS:
+        assert sheet.read_text(encoding="utf-8") in copy
+    assert "@page { size: letter;" in copy
+
+
+def test_the_exported_copy_escapes_what_the_participant_typed(monkeypatch):
+    monkeypatch.delenv(consent.SIGNATURE_ENV, raising=False)
+    copy = export_consents.document(_record(name="<script>alert(1)</script>"))
+    assert "<script>alert" not in copy and "&lt;script&gt;" in copy
+
+
+def test_the_countersignature_is_dated_the_day_the_participant_agreed():
+    from datetime import datetime
+
+    record = _record()
+    agreed = datetime.fromisoformat("2026-09-21T17:00:00+00:00").astimezone()
+    assert export_consents.countersign_date(record) == agreed.strftime("%m/%d/%Y")
+    record["consented_at"] = "not a time"
+    assert export_consents.countersign_date(record) == "09/21/2026"
+
+
+def test_export_says_when_the_researcher_s_line_will_be_blank(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv(consent.SIGNATURE_ENV, raising=False)
+    store = tmp_path / "consent"
+    consent.save(_record(), store)
+    export_consents.main(["--local-dir", str(store), "--out", str(tmp_path / "export")])
+    assert f"{consent.SIGNATURE_ENV} is not set" in capsys.readouterr().out
 
 
 def test_export_without_purge_keeps_the_records(tmp_path):
@@ -281,3 +305,82 @@ def test_the_countersignature_refuses_anything_but_a_png_uri(monkeypatch, value)
 def test_the_countersignature_is_read_from_the_environment(monkeypatch):
     monkeypatch.setenv(consent.SIGNATURE_ENV, " data:image/png;base64,iVBORw0KGgo= ")
     assert consent.researcher_signature() == "data:image/png;base64,iVBORw0KGgo="
+
+
+# --- The participant's PDF copy ----------------------------------------------------------------
+
+
+def _sheet(monkeypatch, signature=None, **overrides):
+    from src import layout
+
+    if signature is None:
+        monkeypatch.delenv(consent.SIGNATURE_ENV, raising=False)
+    else:
+        monkeypatch.setenv(consent.SIGNATURE_ENV, signature)
+    return layout.signed_sheet_html(_record(**overrides))
+
+
+def test_the_pdf_copy_is_the_screen_s_sheet_filled_in(monkeypatch):
+    """The form's text is the screen's own components, so the copy cannot word or order it
+    differently; then the participant's fields as stored, and the researcher's line."""
+    from src import layout
+
+    sheet = _sheet(monkeypatch)
+    assert sheet.startswith('<article class="sheet sheet--form">')
+    assert layout._markup(layout.consent_sheet_text()) in sheet
+    assert "<svg" in sheet and "09/21/2026" in sheet and "Ada Example" in sheet
+    order = [
+        consent.SECTIONS[-1][1],
+        "09/21/2026",
+        "Ada Example",
+        layout.SIGNOFF_LABEL,
+        layout.COUNTERSIGN_LABEL,
+        "Agreed electronically at 2026-09-21T17:00:00.000Z (UTC)",
+    ]
+    positions = [sheet.index(text) for text in order]
+    assert positions == sorted(positions)
+
+
+def test_the_pdf_copy_escapes_what_the_participant_typed(monkeypatch):
+    sheet = _sheet(monkeypatch, name="<script>alert(1)</script>", date="<b>")
+    assert "<script>" not in sheet and "&lt;script&gt;" in sheet
+    assert "<b></div>" not in sheet
+
+
+def test_the_pdf_copy_of_a_paper_signature_says_so(monkeypatch):
+    from src import layout
+
+    sheet = _sheet(monkeypatch, paper=True)
+    assert layout.PAPER_SIGNED in sheet and "<svg" not in sheet
+
+
+def test_the_pdf_copy_carries_the_countersignature_the_screen_shows(monkeypatch):
+    from src import layout
+
+    image = "data:image/png;base64,iVBORw0KGgo="
+    signed = _sheet(monkeypatch, signature=image)
+    assert f'<img src="{image}"' in signed and 'id="countersign-date"' in signed
+    assert f">{consent.INVESTIGATOR}</span>" in signed
+    blank = _sheet(monkeypatch)
+    assert layout.COUNTERSIGN_RULE in blank and "<img" not in blank
+
+
+def test_markup_writes_void_elements_and_escapes_attributes():
+    from dash import html
+
+    from src import layout
+
+    assert layout._markup(html.P([html.Br(), "a & b"], className='x"y')) == (
+        '<p class="x&quot;y"><br>a &amp; b</p>'
+    )
+    assert layout._markup(html.Img(src="s", alt="<a>")) == '<img src="s" alt="&lt;a&gt;">'
+
+
+def test_the_vendored_pdf_libraries_are_the_pinned_files():
+    import hashlib
+
+    from scripts import vendor_pdf_libs
+
+    for name, (_, digest) in vendor_pdf_libs.LIBRARIES.items():
+        payload = (vendor_pdf_libs.OUT / name).read_bytes()
+        assert hashlib.sha256(payload).hexdigest() == digest, name
