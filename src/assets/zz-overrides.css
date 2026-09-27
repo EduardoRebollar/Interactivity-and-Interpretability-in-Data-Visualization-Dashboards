@@ -120,6 +120,18 @@
    :focus-visible, so the date would have no ring at all, and a text field has one on any focus
    anyway. */
 .sheet .sheet-line:focus-within { box-shadow: var(--focus-ring); }
+/* On hover the signing fields are outlined in black: their pale fill alone barely shows against
+   the white sheet. An outline, not a border, so nothing shifts; black on the white sheet is 21:1. */
+.sheet .pad:hover,
+.sheet .sheet-line:hover { outline: 1px solid #000000; outline-offset: -1px; }
+
+/* The researcher's countersignature (layout.countersignature): the participant's grid, with the
+   signature, date and name printed on the rule rather than filled in, so no fill and no hover. */
+.sheet-countersign { margin-top: 1.2em; }
+.sheet-counter-sig { border-bottom: 1px solid #000000; height: 72px; display: flex; align-items: flex-end; padding: 0 16px 4px; }
+.sheet-counter-sig img { height: 60px; width: auto; max-width: 100%; object-fit: contain; }
+.sheet-counter-line { border-bottom: 1px solid #000000; height: 40px; display: flex; align-items: center; padding: 0 16px; box-sizing: border-box; }
+.sheet-counter-line--name { width: 360px; }
 
 /* The paper-copy box and the buttons, in the chrome's typeface under the sheet's. */
 .sheet-paper { font-family: var(--font); margin-top: 20px; }

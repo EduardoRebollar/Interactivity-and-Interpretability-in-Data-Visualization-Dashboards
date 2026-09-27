@@ -1546,6 +1546,15 @@ def _register_callbacks(app: dash.Dash) -> None:
             prevent_initial_call=True,
         )
 
+    # The countersignature's date, filled in when the consent sheet appears
+    # (layout.countersignature). Its own id is the trigger, so it fires only when the line is
+    # on the page.
+    app.clientside_callback(
+        COUNTERSIGN_DATE_JS,
+        Output("countersign-date", "children"),
+        Input("countersign-date", "id"),
+    )
+
     # The participant's own signed copy of the consent form. Clientside: the copy is already in the
     # browser, so it never needs to go back to the server.
     app.clientside_callback(
@@ -1882,6 +1891,12 @@ PARTICIPANT_ENABLE_JS = """function(message) {
 
 CONSENT_CLOCK_JS = """function(n) {
     return n ? new Date().toISOString() : window.dash_clientside.no_update;
+}"""
+
+# The countersignature's date: today in the participant's browser, as the date field shows one.
+COUNTERSIGN_DATE_JS = """function(_) {
+    var parts = {month: "2-digit", day: "2-digit", year: "numeric"};
+    return new Date().toLocaleDateString("en-US", parts);
 }"""
 
 

@@ -15,6 +15,7 @@ small, exact, and drawable as SVG in the signed copy without any image library.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import html
 import json
@@ -189,6 +190,29 @@ MIN_POINTS = 10
 MAX_POINTS = 5000
 MAX_STROKES = 200
 MAX_NAME = 200
+
+# The researcher's countersignature on the screen: a `data:image/png;base64,` URI of Eduardo's
+# signature, printed beside the date and INVESTIGATOR. Deliberately not in this public repo: it is
+# read from the environment (Vercel's settings, or `.env.local` for a local run). Unset or
+# malformed, the countersignature line is the paper form's blank rule. Screen only: the signed copy
+# and `scripts/export_consents.py` are unchanged.
+SIGNATURE_ENV = "RESEARCHER_SIGNATURE"
+_PNG_URI = "data:image/png;base64,"
+# Vercel caps a deployment's environment variables at 64 KB together; the cropped signature is ~6.
+MAX_SIGNATURE = 32_000
+
+
+def researcher_signature() -> str | None:
+    """The countersignature image from the environment, or None when it is absent or not a PNG."""
+    value = (os.environ.get(SIGNATURE_ENV) or "").strip()
+    if not value.startswith(_PNG_URI) or len(value) > MAX_SIGNATURE:
+        return None
+    body = value[len(_PNG_URI) :]
+    try:
+        base64.b64decode(body, validate=True)
+    except ValueError:
+        return None
+    return value if body else None
 
 
 class ConsentError(RuntimeError):

@@ -517,6 +517,35 @@ def consent_sheet_text() -> list:
     return lines
 
 
+def countersignature() -> list:
+    """The researcher's line under the participant's: the paper form's blank rule, or, when
+    `consent.researcher_signature()` finds the image, the signature, the date and the printed name
+    on the rule. The date is the participant's browser's (`app.COUNTERSIGN_DATE_JS`), so it is the
+    day the form is signed wherever the server is."""
+    signature = consent.researcher_signature()
+    if signature is None:
+        return [
+            html.P([html.Br(), COUNTERSIGN_RULE]),
+            html.P(COUNTERSIGN_LABEL, className="sheet-label"),
+        ]
+    return [
+        html.Div(
+            [
+                html.Div(
+                    html.Img(src=signature, alt=f"Signed: {consent.INVESTIGATOR}"),
+                    className="sheet-counter-sig",
+                ),
+                html.Span(id="countersign-date", className="sheet-counter-line"),
+                html.Span(
+                    consent.INVESTIGATOR, className="sheet-counter-line sheet-counter-line--name"
+                ),
+                html.P(COUNTERSIGN_LABEL, className="sheet-label sheet-label--row"),
+            ],
+            className="sheet-signoff sheet-countersign",
+        )
+    ]
+
+
 def consent_screen() -> html.Main:
     """The Occidental informed consent form as a Letter sheet, signed inside it: signature, date and
     printed name, then agree or decline (the handoff's screen 1).
@@ -585,8 +614,7 @@ def consent_screen() -> html.Main:
                     *consent_sheet_text(),
                     signoff,
                     html.P(),
-                    html.P([html.Br(), COUNTERSIGN_RULE]),
-                    html.P(COUNTERSIGN_LABEL, className="sheet-label"),
+                    *countersignature(),
                     dcc.Checklist(
                         id="consent-paper",
                         options=[{"label": PAPER_COPY, "value": "paper"}],

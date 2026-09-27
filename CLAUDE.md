@@ -753,6 +753,10 @@ context cheap and the reports as long as they need to be.
 
 - Does HSRRC accept a drawn electronic signature? 45 CFR 46.117 allows electronic documentation;
   confirm with hsrrc@oxy.edu. The paper-copy box is the fallback either way.
+- Does a countersignature printed in advance count? Since 2026-09-26 the consent screen shows
+  Eduardo's signature image, the day's date and his name on the researcher's line
+  (`RESEARCHER_SIGNATURE`, a Vercel env var, never in git; unset, the line is blank). The exported
+  copies are still countersigned by hand. Ask HSRRC alongside the drawn-signature question.
 
 ## Reports & external material
 

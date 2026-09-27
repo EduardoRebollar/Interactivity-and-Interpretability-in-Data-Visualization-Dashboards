@@ -16,6 +16,7 @@ pointed at a tmp_path so a test run never touches `data/study_logs/`.
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from collections import Counter
 
@@ -2816,6 +2817,35 @@ def test_the_consent_screen_warns_until_the_form_is_approved():
 
 def _texts(component) -> list[str]:
     return [node for node in _nodes(component) if isinstance(node, str)]
+
+
+_SIGNATURE = "data:image/png;base64,iVBORw0KGgo="
+
+
+def test_the_countersignature_is_the_blank_rule_without_the_image(monkeypatch):
+    monkeypatch.delenv(consent.SIGNATURE_ENV, raising=False)
+    screen = app._screen(_state(Stage.CONSENT))
+    texts = _texts(screen)
+    assert layout.COUNTERSIGN_RULE in texts and layout.COUNTERSIGN_LABEL in texts
+    assert "countersign-date" not in _ids(screen)
+    assert not [n for n in _nodes(screen) if type(n).__name__ == "Img"]
+
+
+def test_the_countersignature_prints_the_image_the_date_and_the_name(monkeypatch):
+    monkeypatch.setenv(consent.SIGNATURE_ENV, _SIGNATURE)
+    screen = app._screen(_state(Stage.CONSENT))
+    texts = _texts(screen)
+    assert layout.COUNTERSIGN_RULE not in texts and layout.COUNTERSIGN_LABEL in texts
+    (image,) = [n for n in _nodes(screen) if type(n).__name__ == "Img"]
+    assert image.src == _SIGNATURE
+    assert "countersign-date" in _ids(screen)
+    assert consent.INVESTIGATOR in texts
+    assert _wired("countersign-date.children", "countersign-date.id")
+
+
+def test_the_countersign_date_is_today_in_the_browser():
+    (case,) = _run_js([[app.COUNTERSIGN_DATE_JS, "countersign-date", False]])
+    assert re.fullmatch(r"\d{2}/\d{2}/\d{4}", case["result"])
 
 
 def test_the_sheet_shows_the_hashed_consent_text_in_order():

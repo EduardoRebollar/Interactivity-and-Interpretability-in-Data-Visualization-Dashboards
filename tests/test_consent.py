@@ -256,3 +256,28 @@ def test_a_file_mixing_participants_is_never_deleted(tmp_path):
     with pytest.raises(SystemExit, match="other participants"):
         _withdraw(tmp_path, "P07", "--apply")
     assert (logs / "odd.jsonl").exists()
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        "",
+        "iVBORw0KGgo=",
+        "data:image/png;base64,",
+        "data:image/png;base64,not base64!",
+        "data:image/svg+xml;base64,PHN2Zz4=",
+        "data:image/png;base64," + "A" * consent.MAX_SIGNATURE,
+    ],
+)
+def test_the_countersignature_refuses_anything_but_a_png_uri(monkeypatch, value):
+    if value is None:
+        monkeypatch.delenv(consent.SIGNATURE_ENV, raising=False)
+    else:
+        monkeypatch.setenv(consent.SIGNATURE_ENV, value)
+    assert consent.researcher_signature() is None
+
+
+def test_the_countersignature_is_read_from_the_environment(monkeypatch):
+    monkeypatch.setenv(consent.SIGNATURE_ENV, " data:image/png;base64,iVBORw0KGgo= ")
+    assert consent.researcher_signature() == "data:image/png;base64,iVBORw0KGgo="
