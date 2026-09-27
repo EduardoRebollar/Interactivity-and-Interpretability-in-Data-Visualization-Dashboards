@@ -48,7 +48,9 @@ FORM_HEADING = ("OCCIDENTAL COLLEGE", "INFORMED CONSENT FORM")
 # (docs/study-redesign.md section 3.6). Against the 2026-09-21 transcription it says about 40
 # minutes instead of 20 to 35 (twice), adds the sentence on vaccination as a sensitive topic to
 # Risks, says "Neon (a managed PostgreSQL service)", and gives access to "identifying data" rather
-# than "the data". The apostrophe in "study’s" is the form's curly one.
+# than "the data". 2026-09-26: Procedures names the background questions, and the text was checked
+# word for word against the form as revised that day (irb/, local only), whose apostrophes are all
+# straight, so "study's" no longer has the handoff's curly one.
 SECTIONS: tuple[tuple[str | None, str], ...] = (
     ("Title of Study:", TITLE),
     ("Student Investigator:", INVESTIGATOR),
@@ -85,7 +87,9 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "interpretation questions (such as identifying trends, comparing categories, or explaining "
         "what you notice in the data), followed by a brief survey with Likert-scale ratings of "
         "clarity, ease of use, confidence, and cognitive load, and short open-ended questions "
-        "about your reasoning. The web application that presents the dashboards will "
+        "about your reasoning. At the end of the session, you will be asked a few questions about "
+        "your background, such as your age, your field of study or work, and your experience with "
+        "charts. The web application that presents the dashboards will "
         "automatically log your task responses, response times, and interaction events (such as "
         "clicks and filter selections) within the dashboard interface. No audio or video "
         "recording will be made, and no sensitive information will be requested. You may skip "
@@ -124,7 +128,7 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "CONFIDENTIALITY:",
         "Your responses will be kept confidential. You will not be identified by name in any "
         "reported data, as each participant will be assigned a random participant id. The "
-        "study’s web application writes this data to an encrypted Neon (a managed PostgreSQL "
+        "study's web application writes this data to an encrypted Neon (a managed PostgreSQL "
         "service) database hosted in the U.S. The file linking ids to any identifying information "
         "(such as email addresses used for scheduling) will be stored in an encrypted file "
         "separate from the Neon study database. Only the researcher and the faculty supervisor "

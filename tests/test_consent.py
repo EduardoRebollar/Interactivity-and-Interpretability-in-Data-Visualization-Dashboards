@@ -43,8 +43,10 @@ def _record(**overrides):
 def test_the_consent_text_is_pinned():
     """Changing the wording changes CONSENT_VERSION. It must match the HSRRC-approved form.
 
-    Re-pinned 2026-09-25 for the design handoff's screen 1 (docs/study-design.md section 9)."""
-    assert consent.CONSENT_VERSION == "aaf479bb3c24c1de"
+    Re-pinned 2026-09-25 for the design handoff's screen 1 (docs/study-design.md section 9), and
+    2026-09-26 for the sentence naming the background questions (section 10) and the revised
+    form's straight apostrophe in "study's"."""
+    assert consent.CONSENT_VERSION == "c56a88875374666a"
 
 
 @pytest.mark.parametrize(
@@ -65,7 +67,10 @@ def test_the_consent_text_is_pinned():
         "a single session lasting approximately 40 minutes.",
         "a topic that may be personally sensitive or evoke strong opinions for some participants",
         "Only the researcher and the faculty supervisor will have access to identifying data.",
-        "The study’s web application",
+        "The study's web application",
+        # 2026-09-26: About you asks age, role and field, so the form says so (request item 17).
+        "At the end of the session, you will be asked a few questions about your background, such "
+        "as your age, your field of study or work, and your experience with charts.",
     ],
 )
 def test_the_form_says_what_the_irb_submission_says(phrase):

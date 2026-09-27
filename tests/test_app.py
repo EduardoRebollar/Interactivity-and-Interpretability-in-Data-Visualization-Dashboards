@@ -33,6 +33,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 CONSENTED_AT = "2026-09-16T10:00:00.000Z"
+# A 1366 x 768 laptop screen, less the browser's own toolbars.
+WINDOW = {"width": 1366, "height": 657}
 ANSWER_KWARGS = {"answer": "1", "justification": "because the line is higher"}
 # A drawn signature: two strokes, comfortably over consent.MIN_POINTS.
 SIGNATURE = [[[10 + 4 * i, 40 + (i % 3)] for i in range(12)], [[30, 60], [80, 64], [120, 58]]]
@@ -157,7 +159,7 @@ def _run_session(log_dir, participant_id: str = "P01") -> list[dict]:
     click("participant-button", participant_id=participant_id)
 
     for condition in range(2):
-        click("begin-button")
+        click("begin-button", window_size=WINDOW)
         if condition == 0:
             # The practice item, which uses the same screen as a scored task, then the screen that
             # says it is over.
@@ -1609,9 +1611,14 @@ def test_the_app_builds_and_registers_its_callbacks():
 
 def test_the_stores_the_callback_reads_are_in_the_base_layout():
     """`step` reads these every click; a missing store is a silent None, not an error."""
-    assert {"session-state", "log-state", "task-clock", "submit-clock", "page"} <= _ids(
-        app.create_app().layout
-    )
+    assert {
+        "session-state",
+        "log-state",
+        "task-clock",
+        "submit-clock",
+        "window-size",
+        "page",
+    } <= _ids(app.create_app().layout)
 
 
 def test_the_deployment_entrypoint_is_a_flask_instance():
@@ -1639,6 +1646,49 @@ def test_consent_precedes_the_first_condition(tmp_path):
     consent = next(e for e in events if e["event"] == "consent")
     names = [e["event"] for e in events if e["session_id"] == consent["session_id"]]
     assert names.index("consent") < names.index("condition_start")
+
+
+def test_the_window_size_is_logged_once_beside_consent(tmp_path):
+    """Once per participant (schema v10): the first Begin logs it, the second does not."""
+    events = _run_session(tmp_path)
+    sizes = [e for e in events if e["event"] == "window_size"]
+    assert len(sizes) == 1, "once per participant, not once per condition"
+    assert sizes[0]["payload"] == WINDOW
+    assert sizes[0]["condition_order"] == 1
+    names = [e["event"] for e in events if e["session_id"] == sizes[0]["session_id"]]
+    assert names.index("consent") < names.index("window_size") < names.index("condition_start")
+
+
+@pytest.mark.parametrize("window_size", [None, {}, {"width": "wide", "height": -1}])
+def test_a_window_size_the_browser_did_not_send_is_null_and_stops_nothing(tmp_path, window_size):
+    session, _log, _screen, error, _spool = app.step(
+        "begin-button",
+        _state(Stage.INSTRUCTIONS).to_dict(),
+        {},
+        window_size=window_size,
+        log_dir=tmp_path,
+    )
+    assert error == ""
+    assert SessionState.from_dict(session).stage is Stage.PRACTICE
+    (size,) = [e for e in _events(tmp_path) if e["event"] == "window_size"]
+    assert size["payload"] == {"width": None, "height": None}
+
+
+def test_the_window_size_is_read_whenever_a_screen_appears():
+    """Read on every screen and every resize, so the first Begin finds the window as it is."""
+    first, second = _run_js(
+        [
+            [app.WINDOW_SIZE_JS, None, False],
+            [app.WINDOW_SIZE_JS, None, False, [], True, [], ["resize", [1280, 600]]],
+        ]
+    )
+    assert first["result"] == WINDOW
+    assert first["calls"] == [["listen", "resize"]]
+    # The second screen installs no second listener; a resize then updates the store at once.
+    assert second["result"] == WINDOW
+    assert second["calls"][1:] == [["window-size", {"data": {"width": 1280, "height": 600}}]]
+    wiring = app.create_app().callback_map["window-size.data"]
+    assert [i["id"] for i in wiring["inputs"]] == ["page"]
 
 
 def test_consent_without_a_browser_timestamp_is_refused(tmp_path):
@@ -1957,6 +2007,12 @@ const calls = [];
 const timers = [];
 const window = {
   performance: { now: () => 1234.5, timeOrigin: 1758000000000.25 },
+  innerWidth: 1366,
+  innerHeight: 657,
+  // A listener is recorded as ["listen", type]; a case's `triggered` of ["resize", [w, h]] resizes
+  // the window and fires it after the function has run.
+  listeners: {},
+  addEventListener: (type, fn) => { calls.push(["listen", type]); window.listeners[type] = fn; },
   dash_clientside: {
     no_update: "NO_UPDATE",
     PreventUpdate: "PREVENT_UPDATE",
@@ -1988,6 +2044,10 @@ const out = cases.map(([source, arg, fireTimers, extra, confirmAnswer, gone, tri
   let result;
   try { result = fn(arg, ...(extra || [])); } catch (thrown) { result = thrown; }
   if (fireTimers) { timers.forEach(([f]) => f()); }
+  if (triggered && triggered[0] === "resize") {
+    [window.innerWidth, window.innerHeight] = triggered[1];
+    window.listeners.resize();
+  }
   return { result, timers: timers.map(([, ms]) => ms), calls: calls.slice() };
 });
 console.log(JSON.stringify(out));

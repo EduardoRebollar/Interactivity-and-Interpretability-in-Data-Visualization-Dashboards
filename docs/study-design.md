@@ -44,7 +44,8 @@ Target n ≥ 25.
 
 Each participant completes **6 scored tasks per condition, 12 in total**, plus one unscored practice
 task. All six make up the RQ1 accuracy score (§7). Expected duration about 40 minutes (the consent
-form), capped at one hour (IRB form item 10). Request form 5B still says 20–35 minutes (§10).
+form and request form 5B), capped at one hour (IRB form item 10). In person, on campus, on the
+participant's own computer (request form 5B).
 
 ### Conditions
 
@@ -551,9 +552,13 @@ so text typed there is never dropped for want of a ticked option.
 | `topic_familiarity` | D1 | Before today, how familiar were you with data on childhood vaccination rates around the world? | 1 — Not at all familiar; 2 — Slightly familiar; 3 — Somewhat familiar; 4 — Very familiar; 5 — Extremely familiar; Prefer not to say |
 | `health_background` | D2 | Have you studied or worked in public health, medicine, nursing, or epidemiology? | Yes; No; Prefer not to say |
 
-**These are not all broad categories.** Age in years and the two free-text boxes conflict with IRB
-form item 17, which promises broad categories only and lists age among the identifying information
-kept apart from the study data. Listed in §10 to be settled before submission.
+**These are not all broad categories.** Request form 17, as revised 2026-09-26, promises that the
+answers are kept under the participant ID only, never with a name, and that the text typed beside
+"Other" is never quoted; the file that links IDs to people holds email addresses and names, not age.
+This document goes further (decided 2026-09-26): age in years, role and field could together single
+someone out in a small campus sample, so any write-up gives them only in aggregate, age as a median
+and range and the other answers as counts, and a group of fewer than five participants is combined
+with a neighbouring group or not reported. The form does not carry this rule (§10).
 
 Logged as a `demographics` event, once per participant, in the **second** condition's log session,
 after that session's `session_end`. The session is closed at its survey as before, so a participant
@@ -640,8 +645,9 @@ for the interactive condition (the only one that asks them), and c1–c2 as a co
 coding, which covers task justifications only. a7 (mental effort) is reported beside Paas, never in
 its place.
 
-**About you (§6.2)** describes the sample, as counts of each answer and the median age; it is not an
-outcome and enters no test.
+**About you (§6.2)** describes the sample, as counts of each answer and the median and range of
+age; it is not an outcome and enters no test. `analysis/report` prints every count, however small,
+for the researcher; a group of fewer than five is combined or withheld when it is written up (§6.2).
 
 **Time on task.** From the browser clock (`performance.now()`), never the server, so cold starts and
 network latency do not enter a dependent variable.
@@ -841,6 +847,15 @@ browser spool is full, so the next answer or rating would be dropped rather than
 and the session's stores keep whatever was written, so reloading the tab shows that stage again.
 The researcher, who is present, decides whether to continue.
 
+**Window size (schema v10, 2026-09-26).** Participants use their own computers (request form 5B),
+and on a window 790 px tall or less the interactive scatter and map cards need scrolling where the
+static ones never do (§10). So the first Begin logs a `window_size` event, once per participant,
+right after `consent`: the browser window's inner width and height in CSS pixels, which is what the
+layout answers to, with browser zoom and toolbars already taken out. The size is read whenever a
+screen appears and again on every resize, so a window resized while the instructions are read is
+logged at the size Begin found. A value the browser did not send is logged null and stops nothing.
+Analysis carries it onto every task row as `window_width` and `window_height`.
+
 **Finished.** Heading "Finished! Thank you!": "Your responses have been successfully recorded. You
 can close this tab." and "If you change your mind, you can withdraw your responses within two weeks
 of today, without giving a reason. Email rebollar@oxy.edu and include your participant ID (your
@@ -861,6 +876,14 @@ the 2026-09-21 transcription in four places, all listed in §10 for the IRB pape
 minutes instead of 20 to 35 (twice), a new sentence in Risks on childhood vaccination as a sensitive
 topic, "Neon (a managed PostgreSQL service)" instead of "Neon (managed by PostgreSQL)", and access to
 "identifying data" instead of "the data". The hash in `tests/test_consent.py` was re-pinned.
+
+**Revised 2026-09-26** (Eduardo): Procedures names the background questions, since About you
+(§6.2) asks age in years, role, field and health background and the form never said so. After
+"…short open-ended questions about your reasoning." it now reads: "At the end of the session, you
+will be asked a few questions about your background, such as your age, your field of study or work,
+and your experience with charts." The same day the text was checked word for word against the
+revised form in `irb/`: all 961 words match once "study’s" takes the form's straight apostrophe.
+Hash re-pinned (`c56a88875374666a`); listed in §10.
 
 ### How consent is given
 
@@ -950,7 +973,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   or less, the interactive scatter (T3) and map (T5) cards run past the fold, so interactive
   participants scroll to Submit there and static ones never do (`visual-spec.md` §10). Eduardo
   accepted it over tightening the layout. In the pilot, look at the interactive time on T3 and T5
-  for it; lab laptops 900 px tall or more avoid it.
+  for it. Participants use their own computers (request form 5B), so the window height varies by
+  participant; `window_size` records it (§8), and `tasks.csv` carries it as `window_height`, so
+  the interactive T3 and T5 times can be split at 790 px.
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover, clicking a line and clicking the legend are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
@@ -963,63 +988,51 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   for one sitting in one tab instead. See §8.
 - ~~Whether the justification should be optional.~~ Resolved 2026-09-21: every question may be
   skipped (IRB form item 10), behind a confirmation popup. See §5.
-- **IRB paperwork wording to fix before submission.** The app follows this document; these lines in
-  the IRB documents (`irb/COMP 490 Request Form.pdf` and `irb/COMP 490 Consent Form.pdf`, revised
-  2026-09-21) still describe it inaccurately:
-  - *Request form 9:* "The static version presents a time-series chart of the study dataset". Since
-    2026-09-23 each version shows five kinds of chart of the one dataset: line charts, a bar chart,
-    a scatter plot, a heatmap and a map. Both versions still share every visual choice. The consent
-    form's "two versions of the same time-series data dashboard" remains true.
-  - *Request form 9 and the consent form:* the interactive version "allows filtering, sorting, and
-    line isolation". Still true. Since the 2026-09-25 redesign it also shows or hides countries with
-    a button per country on every chart, hides lines from a legend, sorts the bar chart and the
-    heatmap's rows, highlights the map's countries below a typed coverage, and has Reset view. The
-    form's "filtering, sorting" covers them.
-  - *Both forms:* "explicit directional (year-over-year) change indicators". Year-over-year change
-    appears only in the hover tooltip (`visual-spec.md` §7.1).
-  - *Request form 5B:* "value retrieval" tasks. No item may ask for an exact value (§2).
-  - *Request form 18* is blank, and it asks for the survey's URL and a PDF copy of it. The PDF is
-    `irb/questionnaire.pdf`, generated by `scripts/export_questionnaire.py` from the app's own screen
-    code, and re-exported on 2026-09-26 after every screen was rebuilt: it prints each screen in the
-    app's own styles, landscape, with every survey and About-you question shown at once. Attach it
-    with the deployed Vercel address.
-  - *Request form 15:* "no personal identifying information is present or ever written into the
-    database". **Not true of the signed consent.** The typed name and drawn signature are written to
-    Neon's `consent_records` table (§9), kept separate from the study data and deleted from Neon once
-    exported to the Oxy Drive. Either the form must say so, or the consent record must change.
-  - *Request form 15:* "All records and backups will be available for at least three years". Neon's
-    automatic backups are kept for days, not years, so the three-year copy has to be the export on
-    the Oxy Drive. Deleted rows also survive in Neon's backups until that window passes.
-  - *Request form 15:* "managed by PostSQL" is a typo for PostgreSQL. The consent form now says
-    "Neon (a managed PostgreSQL service)" (2026-09-25); the request form should say the same.
-- **IRB paperwork to change for the 2026-09-25 redesign.** The app shows the handoff's consent text
-  (§9), so the PDF submitted to HSRRC must carry the same words.
-  - *Consent form, Purpose and Procedures:* "approximately 20 to 35 minutes" is now "approximately
-    40 minutes".
-  - *Consent form, Risks:* a new sentence: "The dashboards display real data on childhood vaccination
-    coverage, a topic that may be personally sensitive or evoke strong opinions for some
-    participants; you are not asked to share your views on vaccination, and you may skip any task or
-    withdraw at any time without penalty." Request form 9 already promises this disclosure "in the
-    recruitment materials and consent form"; the 2026-09-21 consent form did not carry it. The
-    recruitment materials must say it too.
-  - *Consent form, Confidentiality:* "Neon (managed by PostgreSQL)" is now "Neon (a managed
-    PostgreSQL service)", and "will have access to the data" is now "will have access to identifying
-    data".
-  - *Consent form, open question:* the form never mentions background questions, and About you now
-    asks age in years, role, field and health background (§6.2). Adding "and a few questions about
-    your background" to Procedures would make it complete. Eduardo's call.
-  - *Request form 5B:* "around 20 - 35 minutes" should read about 40 minutes; item 10's one-hour cap
-    stands. Its "Likert-scale post-task survey on perceived clarity, ease of use, confidence, and
-    cognitive load" should describe the new survey: after each part, the Paas rating and nine 7-point
-    items; after the interactive part, three more about the controls; after the second part, two
-    comparison questions and one optional open-ended question; and at the end, About you (§6).
-  - ***Request form 17 conflicts with About you. Settle before submission.*** It promises that
-    "Demographic questions will be limited to broad categories (age range, …)" and lists age among
-    the identifying information kept in a separate file. About you asks exact age, role (for example
-    "Faculty or staff"), field, and has two free-text "Other" boxes. On a small campus sample those
-    can combine to identify someone. Either amend item 17 and the consent form, or turn the age
-    question back into ranges.
-  - *Measures:* Paas is kept, so RQ3's measure needs no amendment.
+- **IRB paperwork revised 2026-09-26** (`irb/COMP 490 Request Form.pdf` and `irb/COMP 490 Consent
+  Form.pdf`, local only). The consent form is the app's text word for word (§9). The revision fixed
+  every mismatch this list carried:
+  - *Consent form:* about 40 minutes, not 20 to 35 (twice); the Risks sentence on childhood
+    vaccination as a sensitive topic; "Neon (a managed PostgreSQL service)"; access to "identifying
+    data"; and the Procedures sentence naming the background questions (About you, §6.2).
+  - *Request form 5A:* the interactive features are "filtering, sorting, line isolation", with no
+    change indicator; the session's contents are stated.
+  - *Request form 5B:* about 40 minutes; six multiple-choice questions per version on five kinds of
+    chart; a one-sentence explanation; the survey after each version; ten background questions at
+    the end; hover not logged. "Value retrieval" is gone.
+  - *Request form 8C:* every recruitment message and posting says the study shows childhood
+    vaccination data, as item 9 promises.
+  - *Request form 9:* the same charts of one dataset in both versions, with controls under each
+    chart by type, not "a time-series chart" with "explicit directional change indicators".
+  - *Request form 12A:* the typed name and date, the drawn signature, the paper-copy box, and the
+    downloadable copy (§9).
+  - *Request form 15:* the signed consent is written to the database, in its own table with no
+    participant ID, until it is exported; Neon's backups last days, so the three-year record is the
+    Oxy Drive export; "a managed PostgreSQL service", not "PostSQL".
+  - *Request form 17:* background answers under the participant ID only; the linking file holds
+    email addresses and names, not age; "Other" text never quoted.
+  - *Request form 18:* the deployed URL and `irb/questionnaire.pdf`, generated by
+    `scripts/export_questionnaire.py` from the app's own screen code and re-exported 2026-09-26.
+- **Left as they are in the 2026-09-26 forms** (not errors, but narrower than the app):
+  - *Consent form:* the interactive version "displays directional (year-over-year) change
+    indicators". The change appears only in the hover tooltip (`visual-spec.md` §7.1).
+  - *Request form 5B and the consent form:* both describe the survey as Likert-scale ratings of
+    clarity, ease of use, confidence, and cognitive load (the consent form) or mental effort (5B).
+    Neither names the controls items (b1–b3) or the comparison questions (c1–c3, one open-ended) of
+    §6.1. The questionnaire (item 18) shows every one.
+  - *Request form 12A:* signing "with a mouse/trackpad". The pad also takes a finger on a
+    touchscreen.
+  - *Request form 17* promises less than §6.2: it does not carry the aggregate-only reporting of
+    About you or the rule for groups under five.
+- **To fix in the request form before sending** (as saved 2026-09-26):
+  - item 9: "WHO/UNICEG" for WHO/UNICEF;
+  - item 15: "the lasting records is the export";
+  - item 5B: "The participants answers six-multiple choice interpretation questions";
+  - item 1: the initial submission date is still the placeholder "(Date sent to hsrrc@oxy.edu)";
+  - the investigator signed 9/21/26 and the faculty supervisor 9/23/2026, both before this revision;
+  - item 5B lists what the application logs, and since schema v10 (§8) it also logs the browser
+    window's size once, which the list does not name. The consent form's Procedures lists what is
+    logged too ("your task responses, response times, and interaction events"); adding the window
+    size there would change the consent text and its pinned hash.
 - **Fixed in the 2026-09-21 revision:** "randomized" is now "counterbalanced" in both forms; "hovers"
   and "so findings aren't platform specific" are gone from the request form; both forms now name
   Neon; the consent form now states the two-week withdrawal window.

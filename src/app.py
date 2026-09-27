@@ -105,6 +105,9 @@ def create_app() -> dash.Dash:
             # shown, and the store must agree with what is on screen. `control_step` keys it to the
             # task, which is what resets the view between tasks.
             dcc.Store(id="control-state"),
+            # The browser window's inner size, re-read whenever a screen appears. The first Begin
+            # logs it once, beside consent (`window_size`). Memory: it describes the window now.
+            dcc.Store(id="window-size"),
             html.Div(id="page"),
         ]
     )
@@ -278,6 +281,7 @@ def step(
     duration_invalid: str | None = None,
     consented_at: str | None = None,
     consent_record: dict[str, Any] | None = None,
+    window_size: dict[str, Any] | None = None,
     spool: dict[str, Any] | None = None,
     log_dir: Path | None = None,
     consent_dir: Path | None = None,
@@ -370,6 +374,10 @@ def step(
                 # Once per participant, first in their record. It could not be written at the
                 # consent click itself, before any participant ID existed.
                 logger.record_consent(state.consent_at, CONSENT_VERSION, state.consent_method)
+            if state.condition_index == 0:
+                # Once per participant, beside consent. Participants use their own computers, and
+                # the window's height decides whether two interactive task cards need scrolling.
+                logger.record_window_size(window_size)
             logger.event(
                 "condition_start",
                 interactive=flow.is_interactive(state),
@@ -1281,13 +1289,14 @@ def _register_callbacks(app: dash.Dash) -> None:
     @app.callback(
         *_step_outputs(),
         Input("begin-button", "n_clicks"),
+        State("window-size", "data"),
         *_session_states(),
         prevent_initial_call=True,
     )
-    def begin(n, stored, log_state, spool):
+    def begin(n, window_size, stored, log_state, spool):
         if not n:
             raise PreventUpdate
-        return step("begin-button", stored, log_state, spool=spool)
+        return step("begin-button", stored, log_state, window_size=window_size, spool=spool)
 
     @app.callback(
         *_step_outputs(),
@@ -1433,6 +1442,14 @@ def _register_callbacks(app: dash.Dash) -> None:
         Input("page", "children"),
         State("session-state", "data"),
         State("task-clock", "data"),
+    )
+
+    # Reads the window's size whenever a screen appears, so the first Begin finds the size of the
+    # window the instructions were read in (`window_size`, docs/study-design.md section 8).
+    app.clientside_callback(
+        WINDOW_SIZE_JS,
+        Output("window-size", "data"),
+        Input("page", "children"),
     )
 
     # Stamps the browser clock when Submit is pressed, and *this* is what triggers the server
@@ -1588,6 +1605,23 @@ CLOCK_JS = """function(_, session, previous) {
         return window.dash_clientside.no_update;
     }
     return {t: window.performance.now(), origin: window.performance.timeOrigin, screen: screen};
+}"""
+
+# The window's inner size in CSS pixels, which is what the layout answers to: browser zoom and the
+# browser's own toolbars are already taken out. Read when a screen appears, and again on every
+# resize, so a window resized while the instructions are read is logged at the size Begin found.
+# The listener is installed once per page.
+WINDOW_SIZE_JS = """function(_) {
+    var read = function () {
+        return {width: window.innerWidth, height: window.innerHeight};
+    };
+    if (!window.studyWindowListener) {
+        window.studyWindowListener = true;
+        window.addEventListener("resize", function () {
+            window.dash_clientside.set_props("window-size", {data: read()});
+        });
+    }
+    return read();
 }"""
 
 # Returns [submit-clock, submit-button.disabled, submit-button.aria-busy].

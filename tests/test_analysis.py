@@ -61,7 +61,10 @@ SURVEY = {
 }
 
 
-def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5):
+WINDOW = {"width": 1280, "height": 720}
+
+
+def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5, window=WINDOW):
     """Drive a complete session through app.step. `answer_for(form, task_id)` picks each answer."""
     session = log = None
 
@@ -78,7 +81,7 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5)
     click("consent-clock", consented_at=record["consented_at"], consent_record=record)
     click("participant-button", participant_id=participant_id)
     for condition in range(2):
-        click("begin-button")
+        click("begin-button", window_size=window)
         if condition == 0:
             click("submit-clock", answer="It fell", justification="Practice.", duration_ms=4000.0)
             click("practice-done-button")
@@ -137,6 +140,22 @@ def test_a_real_session_scores_all_correct(tmp_path):
         )
     ), "each answer carries the chart type it was given on"
     assert conditions["ended"].all()
+
+
+def test_the_window_size_reaches_every_task_row_in_both_conditions(tmp_path):
+    """Logged once, at the start; the T3 and T5 scrolling check needs it on each answer."""
+    run_session(tmp_path, _participant_for("interactive", "B"), correct_answer)
+    _events, tasks_frame, _conditions = _score(tmp_path)
+    assert set(tasks_frame["condition"]) == {"static", "interactive"}
+    assert (tasks_frame["window_width"] == 1280).all()
+    assert (tasks_frame["window_height"] == 720).all()
+
+
+def test_a_window_size_the_browser_did_not_send_stays_missing(tmp_path):
+    run_session(tmp_path, _participant_for("static", "A"), correct_answer, window=None)
+    _events, tasks_frame, _conditions = _score(tmp_path)
+    assert tasks_frame["window_width"].isna().all()
+    assert tasks_frame["window_height"].isna().all()
 
 
 def test_a_real_session_scores_all_wrong(tmp_path):

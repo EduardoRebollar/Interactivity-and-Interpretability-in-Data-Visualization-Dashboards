@@ -51,7 +51,15 @@ BASE_COLUMNS = [
     "skipped_answer",
     "skipped_justification",
 ]
-TASK_COLUMNS = [*BASE_COLUMNS, *[f"n_{name}" for name in INTERACTION_EVENTS]]
+# The participant's browser window, from `window_size` (schema v10), on every row of theirs. The
+# interactive scatter (T3) and map (T5) cards need scrolling on a window 790 px tall or less, and
+# the static ones never do (study-design.md section 10): these columns tell who scrolled.
+WINDOW_COLUMNS = ["window_width", "window_height"]
+TASK_COLUMNS = [
+    *BASE_COLUMNS,
+    *[f"n_{name}" for name in INTERACTION_EVENTS],
+    *WINDOW_COLUMNS,
+]
 
 # The survey after each condition (study-design.md section 6.1): a1-a9 always, b1-b3 after the
 # interactive condition only, c1-c3 after the second only. A key not asked is missing there.
@@ -176,6 +184,12 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
             for session, task in zip(tasks_frame["session_id"], tasks_frame["task_id"], strict=True)
         ]
 
+    windows = _window_sizes(events)
+    for column, key in zip(WINDOW_COLUMNS, ("width", "height"), strict=True):
+        tasks_frame[column] = pd.array(
+            [windows.get(p, {}).get(key) for p in tasks_frame["participant_id"]], dtype="Int64"
+        )
+
     static_interactions = tasks_frame.loc[
         tasks_frame["condition"] == "static", [f"n_{name}" for name in INTERACTIVE_ONLY_EVENTS]
     ]
@@ -186,6 +200,15 @@ def tidy_tasks(events: pd.DataFrame, key_table: dict | None = None) -> pd.DataFr
             "Interactive-only events recorded in the static condition: manipulation check failed"
         )
     return tasks_frame[TASK_COLUMNS]
+
+
+def _window_sizes(events: pd.DataFrame) -> dict[str, dict[str, Any]]:
+    """Each participant's window, from their `window_size` event (logged once, at the start)."""
+    logged = events[events["event"] == "window_size"].sort_values("server_ts", kind="stable")
+    sizes: dict[str, dict[str, Any]] = {}
+    for participant, payload in zip(logged["participant_id"], logged["payload"], strict=True):
+        sizes.setdefault(participant, payload)
+    return sizes
 
 
 def _interaction_counts(events: pd.DataFrame) -> dict[tuple[str, str, str], int]:

@@ -151,7 +151,8 @@ the chips (12 KB in all), from flagcdn.com, so no flag is fetched mid-task. Gene
 - The app logs interaction events (filter changes, legend/isolation clicks, sort actions), task
   timings, participant answers (skips recorded as `null` plus `skipped`), the post-condition survey
   (Paas, a1–a9, b1–b3 after the interactive half, c1–c3 after the second), About you
-  (`demographics`, at the end), and a `consent` event. Hovers are **not** logged (decided
+  (`demographics`, at the end), a `consent` event, and the browser window's size once
+  (`window_size`). Hovers are **not** logged (decided
   2026-09-21).
 - **Names and signatures never enter the event log.** The signed consent record goes to its own
   `consent_records` table (or `data/consent/` locally), which has no participant ID so it cannot be
@@ -159,6 +160,14 @@ the chips (12 KB in all), from flagcdn.com, so no flag is fetched mid-task. Gene
   Oxy Drive and out of Neon.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v10 (2026-09-26).** New event `window_size` (`width`, `height`: the window's inner size
+in CSS pixels), once per participant, written at the first Begin right after `consent`.
+Participants use their own computers, and on a window 790 px tall or less the interactive scatter
+and map cards scroll where the static ones do not. Read on every screen and every resize
+(`app.WINDOW_SIZE_JS`); a value the browser did not send is null and stops nothing.
+`analysis/reshape.tidy_tasks` carries it as `window_width`/`window_height`. No table or column, so
+`init_db.py` needs no re-run. Nothing collected, so no migration.
 
 **Schema v9 (2026-09-25).** The redesign (`docs/study-redesign.md`, phase 2). Every item offers six
 options, so an answer means something different against a v8 option list. `survey_rating` carries
@@ -384,7 +393,8 @@ tests/
   **The IRB approval request form (`irb/`, local only) outranks it.** Where they disagree, change the
   doc to match, or list the mismatch in `study-design.md` §10 so the IRB paperwork is amended.
 - `docs/study-redesign.md` — the redesign brief; read before any UI or study-content work.
-- **The consent text in `src/consent.py` is the HSRRC-submitted form, word for word.** Its hash is
+- **The consent text in `src/consent.py` is the form for HSRRC, word for word** (since 2026-09-26,
+  `irb/COMP 490 Consent Form.pdf` as revised that day, not yet sent). Its hash is
   pinned in `tests/test_consent.py`. Change the wording only to match an approved form, and re-pin
   the hash when you do. `consent.APPROVED` stays False until HSRRC approves; while False, the screen
   shows a "pending approval" banner.
@@ -596,13 +606,15 @@ context cheap and the reports as long as they need to be.
     derived key, every control's event, none in a static half. A keyboard-only session (24
     checks) and S4 in a browser. Every screen compared with the handoff's screenshots.
 - **Still to do before the pilot:**
-  - Fix the IRB wording mismatches listed in `study-design.md` §10. Attach the questionnaire PDF
-    and the URL for item 18.
+  - The IRB forms were revised 2026-09-26 and match the app. Before sending, fix the request
+    form's typos, submission date and signature dates listed in `study-design.md` §10, then send
+    both forms with `irb/questionnaire.pdf` (item 18).
   - Set `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
     changed.
 - Next after IRB: pilot, and the checks in `study-design.md` §10: static accuracy on T2, T4 and T5
   (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6 strict against adjacent-band,
-  and whether the bar sort and the map's coverage range are found at all.
+  whether T4 sits at ceiling in the interactive condition, and whether the chips, the bar and
+  heatmap sorts and the map's highlight are found at all.
 
 ## Decisions made
 
@@ -724,6 +736,16 @@ context cheap and the reports as long as they need to be.
 - 2026-09-26 — **Phase 8, taken without asking** (reported for review): S4 keeps the stores as
   written and shows the position of the screen it replaced; the questionnaire PDF prints the
   screens in the app's own stylesheets, landscape, with every survey question shown.
+- 2026-09-26 — **About you stays as asked; request form item 17 is amended** (Eduardo, option A),
+  rather than turning age back into ranges. The revised form promises answers under the participant
+  ID only, age out of the linking file, and "Other" text never quoted. `study-design.md` §6.2 also
+  reports About you only in aggregate (age as median and range), groups under five combined or
+  withheld; the form does not carry that rule. The consent form's Procedures gains a sentence
+  naming the background questions (age, field, experience with charts); `src/consent.py` carries
+  it, with the revised form's straight apostrophe in "study's", and the hash is re-pinned (§9).
+- 2026-09-26 — **Window size logged once, at the start** (Eduardo; schema v10), so the pilot can
+  tell who had to scroll on the interactive T3 and T5 cards. Request form 5B's list of what is
+  logged does not name it yet (`study-design.md` §10).
 - 2026-09-23 — Box and lasso select removed from every chart's modebar, including the line charts,
   where they had been since the start: they dim marks with no event recorded. `visual-spec.md` §7.5.
 
@@ -737,7 +759,8 @@ context cheap and the reports as long as they need to be.
 <!-- e.g. - [Lit review draft](docs/lit-review.md) — 12 sources, interaction & cognitive load -->
 
 - `irb/COMP 490 Request Form.pdf` — the IRB approval request form (renamed and revised
-  2026-09-21). **Gitignored; local only, never commit.** It **outranks
+  2026-09-21; revised again 2026-09-26 for the redesign). **Gitignored; local only, never commit.**
+  It **outranks
   `docs/study-design.md`** (Eduardo, 2026-09-21): where they disagree, the form wins and the doc is
   changed to match — or, if following the form would break the method, flag it so the form is
   amended before submission rather than silently diverging. Read it before any decision on consent,
@@ -745,5 +768,6 @@ context cheap and the reports as long as they need to be.
   `docs/study-design.md`, not into the form's folder. Extract text with `pdftotext` (poppler for the
   Read tool is not installed).
 - `irb/COMP 490 Consent Form.pdf` — the informed consent form, pages 1–2, the text participants
-  sign (revised 2026-09-21: counterbalanced order, two-week withdrawal, Neon named). Also gitignored. `src/consent.py` transcribes it word for word, and the hash pinned in
-  `tests/test_consent.py` guards that transcription.
+  sign (revised 2026-09-21; revised 2026-09-26 for the redesign and the background questions). Also
+  gitignored. `src/consent.py` matches it word for word (checked 2026-09-26, all 961 words), and
+  the hash pinned in `tests/test_consent.py` guards that transcription.

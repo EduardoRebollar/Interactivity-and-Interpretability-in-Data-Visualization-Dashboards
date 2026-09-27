@@ -131,9 +131,27 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_nine():
-    """v9: the redesign. Six options per item, the new survey and About you, new control events."""
-    assert SCHEMA_VERSION == 9
+def test_schema_version_is_ten():
+    """v10: the `window_size` event, once per participant, beside consent."""
+    assert SCHEMA_VERSION == 10
+
+
+@pytest.mark.parametrize(
+    ("sent", "logged"),
+    [
+        ({"width": 1366, "height": 657}, {"width": 1366, "height": 657}),
+        # Browser zoom can leave a fractional size; whole pixels are enough to tell who scrolled.
+        ({"width": 1092.8, "height": 525.6}, {"width": 1093, "height": 526}),
+        ({"width": 1366}, {"width": 1366, "height": None}),
+        ({"width": True, "height": "657"}, {"width": None, "height": None}),
+        ({"width": 0, "height": -5}, {"width": None, "height": None}),
+        ({"width": float("nan"), "height": float("inf")}, {"width": None, "height": None}),
+        (None, {"width": None, "height": None}),
+        ("1366x657", {"width": None, "height": None}),
+    ],
+)
+def test_window_size_keeps_whole_pixels_and_nulls_anything_else(logger, sent, logged):
+    assert logger.record_window_size(sent)["payload"] == logged
 
 
 def test_form_is_recorded_on_every_event():

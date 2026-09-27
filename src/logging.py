@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import sys
 import time
@@ -58,6 +59,13 @@ from typing import Any, Protocol
 from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
+#
+# v10 (2026-09-26): new event `window_size` ({width, height}), once per participant, in the first
+# condition's session right after `consent`. Participants use their own computers (request form
+# 5B), and on a window 790 px tall or less the interactive scatter and map cards need scrolling
+# where the static ones do not (docs/study-design.md section 10), so the size is recorded to tell
+# who scrolled. No new table or column, so no init_db.py re-run. Nothing has been collected, so no
+# migration.
 #
 # v9 (2026-09-25): the redesign (docs/study-redesign.md). Every item offers six options, so an
 # answer means something different against a v8 option list. `survey_rating` carries the new items
@@ -100,7 +108,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -112,6 +120,10 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # `signature_method` is "drawn" or "paper". The signature and the printed name are NOT here:
     # they go to the consent record, which is kept apart from study data (IRB form items 15, 17).
     "consent": ("consented_at", "consent_version", "signature_method"),
+    # The browser window's inner size in CSS pixels (window.innerWidth, innerHeight), read when the
+    # first instructions screen appeared. Once per participant, in condition 1's session, straight
+    # after `consent`. Either value is null when the browser sent none.
+    "window_size": ("width", "height"),
     # About you: once per participant, in the second condition's session after its session_end.
     # The keys of `tasks.DEMOGRAPHIC_KEYS` (docs/study-design.md section 6.2). Any value may be null
     # (skipped); `tools` is an object from tool name to answer, `age` an integer or "Prefer not to
@@ -188,6 +200,15 @@ def _check_scale(label: str, value: Any, top: int) -> None:
         return
     if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= top:
         raise LogError(f"{label} must be an integer 1-{top} or None, got {value!r}")
+
+
+def _pixels(value: Any) -> int | None:
+    """A window dimension as whole CSS pixels, or None when it is not a plausible one."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    if not math.isfinite(value) or not 0 < value <= 100_000:
+        return None
+    return round(value)
 
 
 class Sink(Protocol):
@@ -733,6 +754,18 @@ class StudyLogger:
         if set(answers) != expected:
             raise LogError(f"Demographics must be {sorted(expected)}, got {sorted(answers)}")
         return self.event("demographics", **answers)
+
+    def record_window_size(self, size: Any) -> dict[str, Any]:
+        """Record the browser window's size. Call once, on condition 1's logger, after consent.
+
+        `size` is what the browser sent, `{"width": ..., "height": ...}`. It is auxiliary, so a
+        missing or unreadable value is logged as null rather than refused: no participant is ever
+        stopped for it.
+        """
+        size = size if isinstance(size, dict) else {}
+        return self.event(
+            "window_size", width=_pixels(size.get("width")), height=_pixels(size.get("height"))
+        )
 
     def record_consent(
         self, consented_at: str, consent_version: str, signature_method: str | None = None
