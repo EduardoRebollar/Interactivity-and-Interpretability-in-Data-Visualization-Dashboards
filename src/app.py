@@ -55,8 +55,12 @@ ID_MISSING = "Please enter your participant ID."
 UNSAVEABLE = " ".join(layout.BLOCKED)
 
 
-def create_app() -> dash.Dash:
-    """Build the Dash app. A factory so tests and the deployment share one construction path."""
+def create_app(preview: bool = False) -> dash.Dash:
+    """Build the Dash app. A factory so tests and the deployment share one construction path.
+
+    `preview` serves the researcher's preview at /preview. Only a local run turns it on (`main`):
+    the deployed app is built without it, so on the participants' URL /preview is the study.
+    """
     app = dash.Dash(
         __name__,
         title="Vaccination coverage study",
@@ -119,7 +123,7 @@ def create_app() -> dash.Dash:
         ]
     )
 
-    _register_callbacks(app)
+    _register_callbacks(app, preview)
     return app
 
 
@@ -212,7 +216,8 @@ def _screen(state: SessionState) -> html.Main:
 # /preview shows any item, of either form, in either condition, without going through the study:
 # the researcher's way to try the live charts. It renders the participant's own task screen, so
 # what it shows is what a participant sees, and it writes nothing: no participant, no session, no
-# event. Not linked from anywhere a participant goes.
+# event. Local runs only (`create_app(preview=True)`, which `main` builds): the deployed app has no
+# preview, so trying a change needs no commit and both forms are never readable from production.
 
 PREVIEW_PATH = "/preview"
 PREVIEW_START = {"form": "A", "item": "T1", "interactive": True}
@@ -1271,7 +1276,7 @@ def _session_states() -> list[State]:
     ]
 
 
-def _register_callbacks(app: dash.Dash) -> None:
+def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
     @app.callback(
         Output("page", "children"),
         Output("preview-state", "data"),
@@ -1280,22 +1285,24 @@ def _register_callbacks(app: dash.Dash) -> None:
     )
     def show_page(pathname, stored):
         # The preview never reads or writes the session, so a study session in the same tab is
-        # where it was left.
-        if is_preview(pathname):
+        # where it was left. Without `preview` (the deployed app), /preview is just the study.
+        if preview and is_preview(pathname):
             return render_preview(PREVIEW_START), PREVIEW_START
         return render(SessionState.from_dict(stored)), None
 
-    @app.callback(
-        Output("preview-task", "children"),
-        Output("preview-state", "data", allow_duplicate=True),
-        Input("preview-form", "value"),
-        Input("preview-item", "value"),
-        Input("preview-condition", "value"),
-        State("preview-state", "data"),
-        prevent_initial_call=True,
-    )
-    def choose_preview(form, item, condition, current):
-        return preview_step(form, item, condition, current)
+    if preview:
+
+        @app.callback(
+            Output("preview-task", "children"),
+            Output("preview-state", "data", allow_duplicate=True),
+            Input("preview-form", "value"),
+            Input("preview-item", "value"),
+            Input("preview-condition", "value"),
+            State("preview-state", "data"),
+            prevent_initial_call=True,
+        )
+        def choose_preview(form, item, condition, current):
+            return preview_step(form, item, condition, current)
 
     # --- Advancing the session: ONE CALLBACK PER SCREEN ---
     #
@@ -2114,8 +2121,8 @@ def _assign(participant_id: str) -> tuple[str, str]:
     return db.assignment_for(sum(participant_id.encode()) % 4)
 
 
-# Module-level so Vercel and the local dev server share one instance. Building it at import time
-# also means a warm serverless container skips the work entirely.
+# Module-level for Vercel, built without the preview. Building it at import time also means a warm
+# serverless container skips the work entirely. A local run (`main`) builds its own, with it.
 #
 # `server` is the deployment entrypoint, pinned by `tool.vercel.entrypoint = "src.app:server"`.
 # This matters: Vercel auto-detects `src/app.py` (its patterns include `app.py` inside `src/`) and
@@ -2132,7 +2139,8 @@ def main() -> int:
     sink = "Postgres" if db.configured() else f"JSONL under {config.STUDY_LOGS_DIR}"
     print(f"Logging to: {sink}")
     print(f"Open http://127.0.0.1:{args.port}/")
-    app.run(debug=bool(os.environ.get("DASH_DEBUG")), port=args.port)
+    print(f"Preview (logs nothing): http://127.0.0.1:{args.port}{PREVIEW_PATH}")
+    create_app(preview=True).run(debug=bool(os.environ.get("DASH_DEBUG")), port=args.port)
     return 0
 
 

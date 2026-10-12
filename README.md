@@ -22,6 +22,11 @@ uv run python scripts/export_deploy_data.py # write data/deploy/coverage.csv
 uv run python -m src.app                    # http://127.0.0.1:8050
 ```
 
+The local run also serves a preview at http://127.0.0.1:8050/preview: any item of either form, in
+either condition, on the participant's own task screen. It logs nothing and Submit saves nothing.
+Only a local run has it — the deployed app does not — so a change can be tried without committing.
+Set `DASH_DEBUG=1` to have the page reload as you edit.
+
 One URL serves both conditions. Which one a participant gets is assigned per session from the 2×2
 counterbalancing, not chosen from the URL — so to review a particular condition, start a session with
 a participant ID that draws it (assignment is deterministic without a database, so an ID always lands

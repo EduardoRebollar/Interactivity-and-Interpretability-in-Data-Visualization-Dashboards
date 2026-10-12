@@ -3188,9 +3188,10 @@ def _json(component) -> str:
     return json.dumps(component, cls=PlotlyJSONEncoder, sort_keys=True)
 
 
-def _callback(input_id: str):
-    """The function a callback triggered by `input_id` runs, unwrapped from Dash."""
-    for callback in app.create_app().callback_map.values():
+def _callback(input_id: str, preview: bool = True):
+    """The function a callback triggered by `input_id` runs, unwrapped from Dash, on the app a
+    local run builds (`preview`) or the deployed one."""
+    for callback in app.create_app(preview=preview).callback_map.values():
         if any(i["id"] == input_id for i in callback["inputs"]):
             return callback["callback"].__wrapped__
     raise AssertionError(f"no callback is triggered by {input_id}")
@@ -3207,6 +3208,17 @@ def test_the_preview_path_shows_the_preview_and_nothing_else_does(path):
     assert preview is None
     assert "preview-task" not in _ids(page)
     assert not app.is_preview("/previews") and not app.is_preview(None)
+
+
+@pytest.mark.parametrize("path", ["/preview", "/preview/"])
+def test_the_deployed_app_has_no_preview(path):
+    """Vercel serves the module-level app, built without it: /preview there is the study."""
+    assert app.app.callback_map.keys() == app.create_app().callback_map.keys()
+    page, preview = _callback("url", preview=False)(path, _state(Stage.TASK).to_dict())
+    assert preview is None
+    assert "preview-task" not in _ids(page) and "chart" in _ids(page)
+    wired = {i["id"] for c in app.app.callback_map.values() for i in c["inputs"]}
+    assert not {"preview-form", "preview-item", "preview-condition"} & wired
 
 
 def test_the_preview_shows_the_participants_own_task_screen():
@@ -3247,7 +3259,7 @@ def test_a_malformed_preview_names_no_task(preview):
 def test_no_callback_is_dead_on_the_preview():
     """The rule `test_no_callback_is_dead_on_the_screens_that_trigger_it` checks, on every page
     the preview can show."""
-    instance = app.create_app()
+    instance = app.create_app(preview=True)
     base = _ids(instance.layout)
     problems = []
     for preview in _previews():

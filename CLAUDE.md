@@ -803,6 +803,10 @@ context cheap and the reports as long as they need to be.
   condition, on the participant's own task screen, with a bar to switch. Nothing is logged; Submit
   says it saved nothing. Unguarded by Eduardo's choice, so anyone who guesses the path can read both
   forms. 1310 tests. Headless Chrome: chips, bar sort, zoom, static is inert, no new log files.
+- 2026-10-12 — **`/preview` is local only** (uncommitted at time of writing): `uv run python -m
+  src.app` serves it; the deployed app (`create_app()`, preview off) does not, so trying a change
+  needs no commit and production no longer exposes both forms. 1312 tests. Headless Chrome: the
+  local /preview draws its chart and logs nothing; the deployed app's /preview is the study.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
