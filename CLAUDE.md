@@ -794,6 +794,11 @@ context cheap and the reports as long as they need to be.
   `consent.APPROVED = True`. 1288 tests. Headless Chrome at 1440 × 790: no banner, the curly
   apostrophe on screen, a drawn signature recorded under the new version, no console errors.
   `irb/questionnaire.pdf` not re-exported; its colophon still names the old hash.
+- 2026-10-12 — **Two full test sessions on production checked, then deleted.** Every answer, timing,
+  interaction event, survey and About you landed in Neon (schema v17, no spool, no invalid
+  durations; scoring read them). Deleted IDs `98987` and `2310948109832`, their 138 events and the
+  two test consent records (not archived). Every table is empty; the sequence is at 12, so the
+  first real participant is seq 13 (static first, form A).
 - 2026-10-12 — **`/preview`** (uncommitted at time of writing): any item of either form, in either
   condition, on the participant's own task screen, with a bar to switch. Nothing is logged; Submit
   says it saved nothing. Unguarded by Eduardo's choice, so anyone who guesses the path can read both
