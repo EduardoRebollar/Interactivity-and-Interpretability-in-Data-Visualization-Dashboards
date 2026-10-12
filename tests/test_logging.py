@@ -133,7 +133,7 @@ def test_every_record_has_the_full_key_set(logger):
 
 def test_schema_version_is_sixteen():
     """v16: T2 and T4 read MCV1 (v15: each T6 chart draws eight lines, not two)."""
-    assert SCHEMA_VERSION == 16
+    assert SCHEMA_VERSION == 17
 
 
 @pytest.mark.parametrize(

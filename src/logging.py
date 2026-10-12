@@ -60,6 +60,13 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v17 (2026-10-12): reworded prompts and two new questions (docs/study-design.md section 4). T1, T3
+# and A-T4 keep their keys under new words. B-T2 asks for the sixth-highest bar, in 2017 (key
+# Mozambique), and B-T4 for the highest cell, with Laos and Cameroon in place of Myanmar and Uganda
+# (key Nepal); both option lists changed. A v16 answer to any of these was given to a different
+# prompt. The record shape is unchanged: no new event, key or table, so no init_db.py re-run.
+# Nothing has been collected, so no migration.
+#
 # v16 (2026-10-11): T2 and T4 read MCV1, not DTP3, in both forms (docs/study-design.md section 4).
 # A-T2 swaps Brazil's bar for Guinea's, B-T2 moves to 2021 and swaps Cambodia's for Algeria's, and
 # A-T4 swaps the Central African Republic's row for Benin's, so both T2 option lists and A-T4's
@@ -147,7 +154,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

@@ -106,15 +106,15 @@ def test_the_margins_are_the_ones_study_design_records():
     }
     assert margins == {
         ("A", "T3"): 6.0,
-        ("A", "T4"): 17.0,  # MCV1 since 2026-10-11; B-T4's 10 is unchanged
+        ("A", "T4"): 17.0,  # MCV1 since 2026-10-11
         ("A", "T5"): 11.0,
         ("B", "T3"): 8.0,
-        ("B", "T4"): 10.0,
+        ("B", "T4"): 11.0,  # the highest cell since 2026-10-12
         ("B", "T5"): 10.0,
     }
-    # T2 on MCV1 (2026-10-11): 7 / 6 in A, 6 / 7 in B.
+    # T2 on MCV1 (2026-10-11): 7 / 6 in A; B asks for the sixth-highest since 2026-10-12, 5 / 13.
     assert table[("A", "T2")].evidence["gaps_pp"] == {"above": 7.0, "below": 6.0}
-    assert table[("B", "T2")].evidence["gaps_pp"] == {"above": 6.0, "below": 7.0}
+    assert table[("B", "T2")].evidence["gaps_pp"] == {"above": 5.0, "below": 13.0}
     # T1's are the sizes of the shapes its rubric names, and how close another line runs.
     t1 = {form: table[(form, "T1")].evidence for form in ("A", "B")}
     assert (t1["A"]["drop_pp"], t1["A"]["rise_pp"], t1["A"]["recovery_pp"]) == (80.0, 36.0, 69.0)
@@ -152,16 +152,18 @@ def test_the_margins_are_the_ones_study_design_records():
 
 
 @needs_data
-def test_the_bar_forms_rank_their_options_alike():
-    """Section 4: ten bars per form since 2026-10-11, and the options sit at the same ranks in
-    both, so neither form's distractors are nearer the key than the other's."""
+def test_the_bar_options_sit_at_the_ranks_section_4_records():
+    """Section 4: ten bars per form since 2026-10-11. A asks for the third-highest and offers ranks
+    1, 2, 3, 4, 8 and 10; B asks for the sixth-highest since 2026-10-12 and offers both of the
+    key's neighbours."""
     table = keys.key_table()
+    expected = {"A": [1, 2, 3, 4, 8, 10], "B": [1, 4, 5, 6, 7, 8]}
     for form in ("A", "B"):
         task = next(t for t in tasks.for_form(form) if t.task_id == "T2")
         values = table[(form, "T2")].evidence["values"]
         ranked = sorted(values, key=values.get, reverse=True)
         assert len(ranked) == 10, form
-        assert sorted(ranked.index(option) + 1 for option in task.options) == [1, 2, 3, 4, 8, 10]
+        assert sorted(ranked.index(option) + 1 for option in task.options) == expected[form]
 
 
 @needs_data
@@ -198,7 +200,7 @@ def test_no_answer_position_holds_more_than_a_third_of_the_keys():
     most = max(positions.count(p) for p in set(positions))
     assert most <= len(positions) / 3, f"one position holds {most} of {len(positions)} keys"
     # The spread section 5 records, first to sixth.
-    assert [positions.count(p) for p in range(6)] == [1, 2, 3, 2, 2, 0]
+    assert [positions.count(p) for p in range(6)] == [0, 1, 3, 3, 2, 1]
 
 
 def test_scoring_is_strict_and_the_practice_is_unscored():
@@ -511,7 +513,7 @@ def test_improved_refuses_a_key_alone_in_its_change_colour(params):
         keys.derive(_task("improved", "ABC", "ABC", **SCATTER), rows)
 
 
-# --- T4: the lowest heatmap cell ----------------------------------------------------------------
+# --- T4: the lowest (or highest) heatmap cell -------------------------------------------------
 
 
 def _grid(rows_by_name: dict[str, list[float | None]]) -> tuple[Row, ...]:
@@ -533,6 +535,33 @@ def test_cell_finds_the_row_holding_the_lowest_cell(params):
     assert key.correct == "A"
     assert key.evidence["row_minima"]["A"] == (26, 2005)
     assert key.evidence["margin_pp"] == 11
+
+
+def test_cell_finds_the_row_holding_the_highest_cell(params):
+    """B-T4 since 2026-10-12: the mirror of the lowest cell."""
+    params[("Z", "T1")] = {"extreme": "highest"}
+    rows = _grid({"A": [60, 97, 70, 75, 80, 85], "B": [86, 50, 60, 70, 80, 70], "C": [40] * 6})
+    key = keys.derive(_task("cell", "ABC", "ABC", **HEATMAP), rows)
+    assert key.correct == "A"
+    assert key.evidence["row_maxima"]["A"] == (97, 2005)
+    assert key.evidence["margin_pp"] == 11
+
+
+def test_cell_refuses_b_t4_as_it_stood_when_it_asked_for_the_highest(params):
+    """B-T4's grid before 2026-10-12, asked for its highest cell: Nepal's 97 against Myanmar's
+    91, both in the lightest band."""
+    params[("Z", "T1")] = {"extreme": "highest"}
+    rows = _grid({"A": [71, 74, 86, 85, 87, 97], "B": [84, 84, 88, 84, 91, 71], "C": [40] * 6})
+    with pytest.raises(keys.KeyDerivationError, match="cannot be told apart"):
+        keys.derive(_task("cell", "ABC", "ABC", **HEATMAP), rows)
+
+
+def test_cell_refuses_two_highest_cells_in_one_band(params):
+    """The band clause holds for the highest cell too: 10 points apart inside the 0-20 band."""
+    params[("Z", "T1")] = {"extreme": "highest"}
+    rows = _grid({"A": [5, 19, 5, 5, 5, 5], "B": [9, 5, 5, 5, 5, 5], "C": [2] * 6})
+    with pytest.raises(keys.KeyDerivationError, match="same band"):
+        keys.derive(_task("cell", "ABC", "ABC", **HEATMAP), rows)
 
 
 def test_cell_refuses_two_colours_under_ten_points_apart(params):

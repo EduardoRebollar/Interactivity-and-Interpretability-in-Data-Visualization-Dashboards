@@ -267,7 +267,7 @@ def test_line_items_ask_about_a_country_on_the_chart():
                 assert named, task.task_id
                 assert set(named.groups()) <= set(task.entities), task.task_id
             elif task.chart == "line":
-                named = re.match(r"Look at the lines for (.+) and (.+)\. Describe", task.prompt)
+                named = re.match(r"Look at (.+) and (.+)'s coverage\. Describe", task.prompt)
                 assert named, task.task_id
                 assert set(named.groups()) <= set(task.entities), task.task_id
                 # Named alphabetically, like the chart's entities (section 5).

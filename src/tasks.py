@@ -55,10 +55,16 @@ PRACTICE = Task(
 )
 
 # T1 is written, not chosen (2026-09-27): the one item that asks for an interpretation of a time
-# series. Same wording in both forms, with the two countries alphabetical.
+# series. Same wording in both forms, with the two countries alphabetical. Reworded 2026-10-12.
 DESCRIBE_PROMPT = (
-    "Look at the lines for {first} and {second}. Describe how their coverage changed between 2000 "
-    "and 2024, and how the two countries' trends were similar or different."
+    "Look at {first} and {second}'s coverage. Describe how their coverage changed between 2000 and "
+    "2024, and how their trends were similar or different."
+)
+
+# T3's wording, the same in both forms since 2026-10-12, when it stopped naming the continent.
+IMPROVED_PROMPT = (
+    "Each country is placed by its coverage in 2000 (across) and in 2024 (up). The dashed diagonal "
+    "means no change. Which country improved the most?"
 )
 
 # Entities are listed alphabetically, World last, and country options follow the same order. The
@@ -119,11 +125,7 @@ FORM_A: tuple[Task, ...] = (
         kind="improved",
         chart="scatter",
         years=SCATTER_YEARS,
-        prompt=(
-            "Each dot is an African country, placed by its coverage in 2000 (across) and in 2024 "
-            "(up). The dashed diagonal means no change. Which country improved the most — the dot "
-            "furthest above the diagonal?"
-        ),
+        prompt=IMPROVED_PROMPT,
         vaccine="DTP3",
         # Not Angola or DR Congo: their dots sit within 2 points of Nigeria's and would hide it.
         # Sixteen dots (2026-10-11): the ten added each improved at least 20 points less than
@@ -155,8 +157,8 @@ FORM_A: tuple[Task, ...] = (
         chart="heatmap",
         years=HEATMAP_YEARS,
         prompt=(
-            "Rows are countries and columns are years. Darker cells mean lower coverage. Which "
-            "country's row contains the single lowest cell?"
+            "Rows are countries and columns are years. Which country contains the single lowest "
+            "coverage?"
         ),
         # MCV1 since 2026-10-11, with Benin's row in place of the Central African Republic's,
         # whose lowest cell (36) sits 9 points above Chad's 27. docs/study-design.md section 4.
@@ -263,11 +265,11 @@ FORM_B: tuple[Task, ...] = (
         form="B",
         kind="rank",
         chart="bar",
-        years=(2021,),
-        prompt="The bars show coverage in 2021. Which country had the third-highest coverage?",
-        # MCV1 since 2026-10-11, in 2021 and with Algeria's bar in place of Cambodia's: Colombia's
-        # 86 is 6 points below the United States and 7 above Algeria. docs/study-design.md
-        # section 4.
+        years=(2017,),
+        prompt="The bars show coverage in 2017. Which country had the sixth-highest coverage?",
+        # The sixth-highest, in 2017, since 2026-10-12: in 2021 the fifth and sixth bars tied.
+        # Mozambique's 83 is 5 points below Algeria and 13 above Mali, and the options offer both.
+        # docs/study-design.md section 4.
         vaccine="MCV1",
         entities=(
             "Algeria",
@@ -281,7 +283,7 @@ FORM_B: tuple[Task, ...] = (
             "Nigeria",
             "United States",
         ),
-        options=("Algeria", "Colombia", "Egypt", "Mozambique", "Nigeria", "United States"),
+        options=("Algeria", "Cameroon", "Egypt", "Indonesia", "Mali", "Mozambique"),
     ),
     Task(
         task_id="T3",
@@ -289,11 +291,7 @@ FORM_B: tuple[Task, ...] = (
         kind="improved",
         chart="scatter",
         years=SCATTER_YEARS,
-        prompt=(
-            "Each dot is an Asian country, placed by its coverage in 2000 (across) and in 2024 "
-            "(up). The dashed diagonal means no change. Which country improved the most — the dot "
-            "furthest above the diagonal?"
-        ),
+        prompt=IMPROVED_PROMPT,
         vaccine="DTP3",
         # Not Afghanistan: its +35 all but ties India's +36. Sixteen dots, as in A: the ten added
         # each improved at least 20 points less than India.
@@ -324,23 +322,24 @@ FORM_B: tuple[Task, ...] = (
         chart="heatmap",
         years=HEATMAP_YEARS,
         prompt=(
-            "Rows are countries and columns are years. Darker cells mean lower coverage. Which "
-            "country's row contains the single lowest cell?"
+            "Rows are countries and columns are years. Which country contains the single highest "
+            "coverage?"
         ),
-        # MCV1 since 2026-10-11; the grid passes unchanged, Afghanistan 27 against Niger's 37.
-        # docs/study-design.md section 4.
+        # The highest cell since 2026-10-12: Nepal's 97 against Pakistan's 86, the only cell in the
+        # lightest band. Laos and Cameroon replace Myanmar (91) and Uganda (90), which sat in that
+        # band too. The options are the six highest rows. docs/study-design.md section 4.
         vaccine="MCV1",
         entities=(
             "Afghanistan",
+            "Cameroon",
+            "Laos",
             "Madagascar",
             "Mali",
-            "Myanmar",
             "Nepal",
             "Niger",
             "Pakistan",
-            "Uganda",
         ),
-        options=("Afghanistan", "Madagascar", "Mali", "Niger", "Pakistan", "Uganda"),
+        options=("Cameroon", "Laos", "Mali", "Nepal", "Niger", "Pakistan"),
     ),
     Task(
         task_id="T5",

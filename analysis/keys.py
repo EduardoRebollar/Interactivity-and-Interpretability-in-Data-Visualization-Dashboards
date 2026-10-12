@@ -72,13 +72,13 @@ PARAMS: dict[tuple[str, str], dict[str, Any]] = {
     ("A", "T1"): {"riser": "India", "faller": "Ukraine"},
     ("A", "T2"): {"rank": 3},
     ("A", "T3"): {},
-    ("A", "T4"): {},
+    ("A", "T4"): {"extreme": "lowest"},
     ("A", "T5"): {"threshold": 50},
     ("A", "T6"): {"overtaker": "Ethiopia", "overtaken": "Central African Republic"},
     ("B", "T1"): {"riser": "Uganda", "faller": "Brazil"},
-    ("B", "T2"): {"rank": 3},
+    ("B", "T2"): {"rank": 6},
     ("B", "T3"): {},
-    ("B", "T4"): {},
+    ("B", "T4"): {"extreme": "highest"},
     ("B", "T5"): {"threshold": 50},
     ("B", "T6"): {"overtaker": "Pakistan", "overtaken": "Mozambique"},
 }
@@ -95,9 +95,9 @@ EXPECTED: dict[tuple[str, str], str] = {
     ("A", "T5"): "3",
     ("A", "T6"): "2004-2008",
     ("B", "T1"): RUBRIC,
-    ("B", "T2"): "Colombia",
+    ("B", "T2"): "Mozambique",
     ("B", "T3"): "India",
-    ("B", "T4"): "Afghanistan",
+    ("B", "T4"): "Nepal",
     ("B", "T5"): "2",
     ("B", "T6"): "2017-2020",
 }
@@ -421,40 +421,47 @@ def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
 
 
 def _cell(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedKey:
-    """T4: the row holding the heatmap's lowest cell.
+    """T4: the row holding the heatmap's lowest cell, or its highest (B, since 2026-10-12).
 
-    Acceptance: that cell is at least 10 points below the lowest cell of every other row. Colour is
-    the only channel here, and the rule for colour is twice the rule for position. Since 2026-10-11
-    the cells are banded, so the cell must also sit in a darker band than every other row's lowest:
-    10 points does not cross a boundary inside the 0-20 band (docs/study-design.md section 4).
+    Acceptance: that cell is at least 10 points beyond the most extreme cell of every other row, in
+    the same direction. Colour is the only channel here, and the rule for colour is twice the rule
+    for position. Since 2026-10-11 the cells are banded, so the cell must also sit in a band of its
+    own beyond every other row's: 10 points does not cross a boundary inside the 0-20 band
+    (docs/study-design.md section 4).
     """
-    minima = {}
+    extreme = params.get("extreme", "lowest")
+    if extreme not in ("lowest", "highest"):
+        raise KeyDerivationError(f"{task.form}-{task.task_id}: unknown extreme {extreme!r}")
+    pick = min if extreme == "lowest" else max
+    extremes = {}
     for entity in task.entities:
         cells = {year: _required(task, entity, year, rows) for year in task.years}
-        year = min(cells, key=cells.get)
-        minima[entity] = (cells[year], year)
-    ranked = sorted(minima, key=lambda entity: minima[entity][0])
+        year = pick(cells, key=cells.get)
+        extremes[entity] = (cells[year], year)
+    ranked = sorted(extremes, key=lambda entity: extremes[entity][0], reverse=extreme == "highest")
     key, runner_up = ranked[0], ranked[1]
-    margin = minima[runner_up][0] - minima[key][0]
+    margin = abs(extremes[runner_up][0] - extremes[key][0])
+    side = "below" if extreme == "lowest" else "above"
     if margin < MIN_COLOUR_SEPARATION_PP:
         raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {key}'s lowest cell ({minima[key][0]:g}) is only "
-            f"{margin:g} pts below {runner_up}'s; that close, the two colours cannot be told apart"
+            f"{task.form}-{task.task_id}: {key}'s {extreme} cell ({extremes[key][0]:g}) is only "
+            f"{margin:g} pts {side} {runner_up}'s; that close, the two colours cannot be told apart"
         )
-    key_band = figures.band_color(minima[key][0], config.HEATMAP_BANDS)
-    if figures.band_color(minima[runner_up][0], config.HEATMAP_BANDS) == key_band:
+    key_band = figures.band_color(extremes[key][0], config.HEATMAP_BANDS)
+    if figures.band_color(extremes[runner_up][0], config.HEATMAP_BANDS) == key_band:
         raise KeyDerivationError(
-            f"{task.form}-{task.task_id}: {key}'s lowest cell ({minima[key][0]:g}) and "
-            f"{runner_up}'s ({minima[runner_up][0]:g}) fall in the same band"
+            f"{task.form}-{task.task_id}: {key}'s {extreme} cell ({extremes[key][0]:g}) and "
+            f"{runner_up}'s ({extremes[runner_up][0]:g}) fall in the same band"
         )
     return DerivedKey(
         task.task_id,
         task.form,
         task.kind,
         key,
-        "country whose row holds the lowest cell",
+        f"country whose row holds the {extreme} cell",
         {
-            "row_minima": minima,
+            "extreme": extreme,
+            "row_minima" if extreme == "lowest" else "row_maxima": extremes,
             "runner_up": runner_up,
             "margin_pp": margin,
         },
@@ -629,7 +636,9 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
 
 
 def _ordinal(n: int) -> str:
-    return {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth"}.get(n, f"{n}th")
+    return {1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth"}.get(
+        n, f"{n}th"
+    )
 
 
 _RULES = {

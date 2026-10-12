@@ -142,14 +142,15 @@ read is costly and that affordance lowers the cost:
 | T1 | line, 8 countries | isolating lines: a click on a line, or the chips | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
 | T3 | scatter | hovering a dot; hiding dots with the chips | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
-| T4 | heatmap | hovering a cell; sorting rows by lowest value | telling dark bands apart against the key |
+| T4 | heatmap | hovering a cell; in A, sorting rows by lowest value | telling dark (A) or light (B) bands apart against the key |
 | T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
 | T6 | line, 8 countries | isolating the two named lines; hovering both where they meet | following two lines through six others that cross them, then placing, by eye, the year they cross |
 
 **Redesign, 2026-09-25.** Every chart now has country chips and Reset view. The heatmap gained a
 row sort, and the map's range slider gave way to a typed threshold. The heatmap's Lowest value sort
-answers T4 in one click, as the bar sort answers T2. Like the bar sort, it lowers the static cost
-rather than making the item answerable, because T4's key already clears the acceptance rule.
+answers A-T4 in one click, as the bar sort answers T2. Like the bar sort, it lowers the static cost
+rather than making the item answerable, because T4's key already clears the acceptance rule. Since
+2026-10-12 B-T4 asks for the highest cell, which no row sort brings to the top (T4 below).
 
 Chart type here is **variety** — evidence that an effect holds across formats — not a per-type
 claim. Each type carries one item per form, the line chart two, so per-chart-type differences
@@ -189,7 +190,7 @@ heatmap's 0–20 band.
 | T1 two trends | Each shape the rubric names is large: the riser gains at least **25 points** and never drops more than **12** below a previous peak; the other line drops at least **25 points** from a peak and recovers at least **15** from its trough. The two cross **once**, by the T6 rule's 5-point test. No other line runs within **5 points** of a named line for **5 or more consecutive years**; for the falling line, counted from its last peak before the trough. |
 | T2 rank | The key bar is at least **5 points** from the bars ranked just above and just below it. |
 | T3 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (closer, and one dot hides the other, or their names collide). **The key shares its change colour with at least one other dot** (2026-10-11), so the colour alone never names it. |
-| T4 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row, and **in a darker band** than any of them (2026-10-11). |
+| T4 extreme cell | The lowest cell is at least **10 points** below the lowest cell of every other row, and **in a darker band** than any of them (2026-10-11). For the highest cell (B, 2026-10-12), the mirror: at least **10 points** above every other row's highest, and **in a lighter band**. |
 | T5 count | Every coloured country is at least **10 points** from the threshold. The threshold, 50, is a band boundary, so the countries below it sit in the two darkest bands and those above in 60–70 or lighter: the 50–60 band stays empty. |
 | T6 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet, and none runs within **5 points** of either named line for **5 or more consecutive years** (T1's clause, added 2026-10-11 with T6's extra lines). |
 
@@ -202,8 +203,9 @@ it is still refused.
 
 ### T1 — Two trends (line, isolation)
 
-*Look at the lines for {country} and {country}. Describe how their coverage changed between 2000 and
-2024, and how the two countries' trends were similar or different.*
+*Look at {country} and {country}'s coverage. Describe how their coverage changed between 2000 and
+2024, and how their trends were similar or different.* (Until 2026-10-12, "Look at the lines for
+{country} and {country}. … how the two countries' trends were similar or different.")
 
 Answered in writing, in one text box, with no separate justification: the description is the
 reasoning (§5).
@@ -254,23 +256,33 @@ isolation control and the chips cut through it.
 >   but only 2004–2007 falls after Ukraine's last peak, and all eight precede anything the rubric
 >   turns on. So the rule counts four.
 
-### T2 — Third-highest bar (bar, sort)
+### T2 — Ranked bar (bar, sort)
 
-*The bars show coverage in {year}. Which country had the third-highest coverage?* MCV1 since
-2026-10-11 (below).
+*The bars show coverage in 2017. Which country had the {third / sixth}-highest coverage?* Form A
+asks for the third, form B since 2026-10-12 for the sixth (below). MCV1 since 2026-10-11 (below).
 
 | | Form A | Form B |
 |---|---|---|
-| Year | 2017 | 2021 |
-| Bars | China 99, Vietnam 97, **India 90**, Kenya 84, Pakistan 76, Mali 70, Afghanistan 64, Ethiopia 59, Nigeria 54, Guinea 48 | Egypt 96, United States 92, **Colombia 86**, Algeria 79, Indonesia 72, Mali 72, Cameroon 65, Mozambique 62, Ethiopia 60, Nigeria 56 |
-| Gap to the bar above / below | 7 / 6 | 6 / 7 |
-| Options | China, Ethiopia, Guinea, India, Kenya, Vietnam | Algeria, Colombia, Egypt, Mozambique, Nigeria, United States |
-| Key | **India** | **Colombia** |
+| Year | 2017 | 2017 |
+| Asks for | third-highest | sixth-highest |
+| Bars | China 99, Vietnam 97, **India 90**, Kenya 84, Pakistan 76, Mali 70, Afghanistan 64, Ethiopia 59, Nigeria 54, Guinea 48 | Egypt 94, Colombia 93, United States 91, Indonesia 90, Algeria 88, **Mozambique 83**, Mali 70, Cameroon 67, Ethiopia 59, Nigeria 54 |
+| Gap to the bar above / below | 7 / 6 | 5 / 13 |
+| Options | China, Ethiopia, Guinea, India, Kenya, Vietnam | Algeria, Cameroon, Egypt, Indonesia, Mali, Mozambique |
+| Options' ranks | 1, 2, 3, 4, 8, 10 | 1, 4, 5, 6, 7, 8 |
+| Key | **India** | **Mozambique** |
 
-The bars stand in alphabetical order, so the top three are not side by side. Sorting lines them up.
-The forms are matched: ten bars each, the key 6 to 7 points from the bars either side of it, and
-each form's options the ranks 1, 2, 3, 4, 8 and 10, every one at least 2 points from its
-neighbours. The key holds the same place among the options as it did on DTP3.
+The bars stand in alphabetical order, so the ranked bars are not side by side. Sorting lines them
+up. Ten bars per form. Form A's options are ranks 1, 2, 3, 4, 8 and 10, every one at least 2
+points from its neighbours. Form B's include both of the key's neighbours (ranks 5 and 7).
+
+> **B-T2 asks for the sixth-highest bar, 2026-10-12** (Eduardo), and reads 2017, as A does. Same
+> ten bars. In 2021, B's year until then, the fifth and sixth bars tie (Indonesia and Mali, 72),
+> so no sixth-highest can be named. In 2017 the key, Mozambique, sits **5 points** below the fifth
+> bar (Algeria 88), on the floor, and 13 above the seventh (Mali 70). The options were re-chosen to
+> offer both neighbours and to put the key sixth, which keeps every position at or under a third of
+> the keys (§5). **The forms no longer ask the same question:** counting to six through bars packed
+> within 6 points of each other (94 to 88) is a harder static read than A's third, and B's margin
+> above the key is A's less 2. A pilot check (§10).
 
 > **Moved to MCV1, 2026-10-11** (Eduardo), so the bank uses more than one vaccine. On DTP3 the
 > bars were A 2017: China 99, Vietnam 94, India 89, Brazil 83, Kenya 81, Mali 77, Pakistan 75,
@@ -282,7 +294,7 @@ neighbours. The key holds the same place among the options as it did on DTP3.
 > re-chosen at the same ranks and the key kept in its place: A keeps 2017 and swaps Brazil for
 > Guinea; B moves to 2021 and swaps Cambodia for Algeria. Guinea takes Brazil's colour and Algeria
 > Cambodia's, so each chart's set of colours is the one already measured (`docs/visual-spec.md`
-> §4). The keys stay India and Colombia.
+> §4). The keys stay India and Colombia. (B-T2 moved again on 2026-10-12, above.)
 
 > **Three bars added to each form, 2026-10-11** (Eduardo), so a reader without the sort has more
 > bars to rank. A gains Kenya (81), Mali (77) and Afghanistan (64); B gains Mali (82), Cameroon (77)
@@ -300,9 +312,10 @@ neighbours. The key holds the same place among the options as it did on DTP3.
 
 ### T3 — Most improved (scatter, hover)
 
-*Each dot is an {African / Asian} country, placed by its coverage in 2000 (across) and in 2024 (up).
-The dashed diagonal means no change. Which country improved the most — the dot furthest above the
-diagonal?*
+*Each country is placed by its coverage in 2000 (across) and in 2024 (up). The dashed diagonal means
+no change. Which country improved the most?* Same wording in both forms. (Until 2026-10-12, "Each
+dot is an {African / Asian} country, placed by … improved the most — the dot furthest above the
+diagonal?")
 
 | | Form A | Form B |
 |---|---|---|
@@ -349,31 +362,48 @@ exactly.
 > show six dots, and keeps Afghanistan out as the spec warned: its +35 all but ties India's +36.
 > Since 2026-09-25 both forms offer all six dots.
 
-### T4 — Lowest cell (heatmap, hover and row sort)
+### T4 — Extreme cell (heatmap, hover and row sort)
 
-*Rows are countries and columns are years. Darker cells mean lower coverage. Which country's row
-contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024. MCV1 since
-2026-10-11 (below).
+*Rows are countries and columns are years. Which country contains the single {lowest / highest}
+coverage?* Form A asks for the lowest, form B since 2026-10-12 for the highest (below). Columns:
+2000, 2005, 2010, 2015, 2020, 2024. MCV1 since 2026-10-11 (below). (Until 2026-10-12, both forms:
+"Rows are countries and columns are years. Darker cells mean lower coverage. Which country's row
+contains the single lowest cell?" The stepped key above the grid still shows which colour is
+which.)
 
 | | Form A | Form B |
 |---|---|---|
-| Rows | Benin, Burkina Faso, Cambodia, Chad, India, Indonesia, Mali, Pakistan | Afghanistan, Madagascar, Mali, Myanmar, Nepal, Niger, Pakistan, Uganda |
-| Lowest cell | **Chad, 2005: 27%** | **Afghanistan, 2000: 27%** |
-| Next row's lowest | Benin, 44% (2024) | Niger, 37% (2000) |
-| Margin | 17 | 10 |
-| Bands | Chad's 2000 (28) and 2005 (27) are the only cells in 20–30; nothing lower. Next: Benin 2024 (44), in 40–50, two bands lighter | the key is the only cell in 20–30; nothing lower. Next: Niger 2000 (37), in 30–40 |
-| Options | Benin, Burkina Faso, Chad, India, Mali, Pakistan | Afghanistan, Madagascar, Mali, Niger, Pakistan, Uganda |
-| Key | **Chad** | **Afghanistan** |
+| Asks for | the lowest cell | the highest cell |
+| Rows | Benin, Burkina Faso, Cambodia, Chad, India, Indonesia, Mali, Pakistan | Afghanistan, Cameroon, Laos, Madagascar, Mali, Nepal, Niger, Pakistan |
+| Key cell | **Chad, 2005: 27%** | **Nepal, 2024: 97%** |
+| Next row's | Benin, lowest 44% (2024) | Pakistan, highest 86% (2024) |
+| Margin | 17 | 11 |
+| Bands | Chad's 2000 (28) and 2005 (27) are the only cells in 20–30; nothing lower. Next: Benin 2024 (44), in 40–50, two bands lighter | the key is the only cell in 90 and over. Next: Pakistan 2024 (86) and Niger 2015 (85), in 80–90 |
+| Options | Benin, Burkina Faso, Chad, India, Mali, Pakistan | Cameroon, Laos, Mali, Nepal, Niger, Pakistan |
+| Key | **Chad** | **Nepal** |
 
 No number is written in a cell. Static participants match each cell's band against the stepped key;
-hover gives the exact value, and the Lowest value row sort brings the key's row to the top. Since
+hover gives the exact value. In A the Lowest value row sort brings the key's row to the top. Since
 2026-10-11 the cells are banded (`docs/visual-spec.md` §4): the key cell is the only one of its
-colour in either grid, at least one band darker than the next. Each form's options are its six
-lowest rows.
+colour in either grid, at least one band from the next. A's options are its six lowest rows, B's
+its six highest.
+
+> **B-T4 asks for the highest cell, 2026-10-12** (Eduardo). On B's grid as it stood, Nepal's 97 was
+> 6 points above Myanmar's 91 and 7 above Uganda's 90, all three in the 90-and-over band, so the
+> rule refused it. Laos (highest 78) and Cameroon (79), found by search, replace Myanmar and
+> Uganda; neither is on A's grid, which still shares only Mali and Pakistan with B's. Myanmar,
+> the practice's country, no longer appears on any scored chart. **The forms no longer ask the
+> same question, and the row sort no longer helps both alike.** The sort orders rows by their
+> lowest cell or by their average, lowest first, and has no order by highest cell. Nepal also has
+> the grid's highest average (83), so the Average sort happens to put its row last, but a reader
+> must know to look at the bottom; A's Lowest value sort puts the key on top. B's key is also one
+> band from the next row (A's two), and the light bands may be harder to tell apart than the dark
+> ones. Pilot checks (§10).
 
 > **Moved to MCV1, 2026-10-11** (Eduardo), with T2. On DTP3, A's grid had the Central African
 > Republic where Benin is (Chad 26 against the CAR's 37, margin 11), and B's key cell was 24 against
-> Niger's 34. B's grid passes on MCV1 unchanged. A's does not: the CAR's lowest cell (36) is 9
+> Niger's 34. B's grid passed on MCV1 unchanged (B's question and grid changed on 2026-10-12,
+> above). A's does not: the CAR's lowest cell (36) is 9
 > points above Chad's (27). Benin, found by search over one-row swaps, keeps Chad the key and in its
 > place among the options. **The forms are less evenly matched than on DTP3:** A's margin is 17
 > and B's 10, and A's next row sits two bands lighter than its key where B's sits one. Niger in A
@@ -494,14 +524,18 @@ on every line chart.
 | | T1 | T2 | T3 | T4 | T5 | T6 |
 |---|---|---|---|---|---|---|
 | Margin, form A | drop 80, rise 36 | 7 / 6 | 6 | 17 | 11 | 1.79 years |
-| Margin, form B | drop 31, rise 39 | 6 / 7 | 8 | 10 | 10 | 1.40 years |
+| Margin, form B | drop 31, rise 39 | 5 / 13 | 8 | 11 | 10 | 1.40 years |
 | Floor | drop 25, rise 25 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
-than quietly unbalancing the forms. Four known differences go to the pilot (§10):
+than quietly unbalancing the forms. Six known differences go to the pilot (§10):
+- **T2 and T4 ask different questions in each form (2026-10-12).** A-T2 the third-highest bar, B-T2
+  the sixth-highest, its key on the 5-point floor above; A-T4 the lowest cell, B-T4 the highest,
+  which no row sort brings to the top (T2, T4 above). The pairs are matched in chart and rule, not
+  in question, so a form difference on either item is expected rather than a surprise.
 - T1's falling line: Ukraine's collapse (80 points, 2008–2016) is far larger and faster than
   Brazil's decline (31 points over a decade). A-T1 is probably the easier form.
-- A-T4's key clears the next row by 17 points and two bands, B-T4's by 10 and one (T4 above). A-T4
+- A-T4's key clears the next row by 17 points and two bands, B-T4's by 11 and one (T4 above). A-T4
   is probably the easier form.
 - B-T3's closest dots sit on the 4-point floor, and since 2026-10-11 B's sixteen dots are more
   crowded than A's (T3 above).
@@ -524,8 +558,8 @@ described in the instructions and by the hint row under each chart in the intera
 
 > **Changed 2026-09-27.** B-T1 now names Brazil, and the practice asked whether Brazil fell between
 > 2015 and 2021: exactly B-T1's story. The practice moved to Myanmar, which no scored prompt names
-> and which is no longer on either T1 chart. It appears elsewhere only as an unasked heatmap row in
-> B-T4, whose columns skip 2021.
+> and which is no longer on either T1 chart. It appeared elsewhere only as an unasked heatmap row in
+> B-T4, whose columns skip 2021, until that row left B-T4 on 2026-10-12.
 
 ### Revision 2026-09-23, in brief
 
@@ -646,6 +680,23 @@ the controls, not the questions or the keys.
 - **Log schema v16:** a v15 T2 or T4 answer was given against a different chart, and a v15 B-T2
   prompt named a different year (`src/logging.py`). Nothing had been collected.
 
+### Revision 2026-10-12: new wording, and new questions on B-T2 and B-T4
+
+- **Reworded (Eduardo), same key, chart and options:** T1 in both forms ("Look at {country} and
+  {country}'s coverage. … how their trends were similar or different."); T3 in both forms (no
+  longer names the continent, or "the dot furthest above the diagonal"); A-T4 ("Which country
+  contains the single lowest coverage?", without "Darker cells mean lower coverage").
+- **New questions:** B-T2 asks for the sixth-highest bar, in 2017, key Mozambique; B-T4 for the
+  highest cell, key Nepal, with Laos and Cameroon in place of Myanmar and Uganda (T2, T4 above).
+  Both re-pass the acceptance rule, which gains the highest-cell mirror for T4.
+- **Options:** B-T2 Algeria, Cameroon, Egypt, Indonesia, Mali, Mozambique; B-T4 Cameroon, Laos,
+  Mali, Nepal, Niger, Pakistan. The keys now sit first: 0, second: 1, third: 3, fourth: 3,
+  fifth: 2, sixth: 1 (§5).
+- **Not matched:** the two forms now ask different questions on T2 and T4 (Matching the forms,
+  above).
+- **Log schema v17:** a v16 answer to any of these prompts was given to different words, and a v16
+  B-T2 or B-T4 answer to a different question (`src/logging.py`). Nothing had been collected.
+
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
 
@@ -679,8 +730,8 @@ source. Scoring happens offline against §7.
 - Years and year bands run in calendar order; counts in their natural order.
 - Which options an item offers is the one free choice. It is used to spread the key: no position
   holds more than a third of the keys. Every multiple-choice item offers six options (2026-09-25).
-  Since T1 became a written item (2026-09-27), ten keys are options, and they sit first: 1,
-  second: 2, third: 3, fourth: 2, fifth: 2, sixth: 0. T6 has no free choice, since it offers all
+  Since T1 became a written item (2026-09-27), ten keys are options, and since 2026-10-12 they
+  sit first: 0, second: 1, third: 3, fourth: 3, fifth: 2, sixth: 1. T6 has no free choice, since it offers all
   six bands; its keys sit second and fifth. `tests/test_scoring.py` fails if any position holds
   more than a third.
 
@@ -843,7 +894,7 @@ as per-chart-type effects.
 | T1 | isolating lines (also chips, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `show-all`), `sort_change`, `view_change`, `view_reset`. `filter_change` from `legend` stays in the vocabulary but cannot occur since the legend went (2026-10-11). |
 | T2 | sorting the bars | yes — `sort_change` |
 | T3 | hover; hiding dots with the chips | the chips only — `filter_change` (`chips`) |
-| T4 | hover; sorting rows by lowest value | the sort only — `sort_change` |
+| T4 | hover; sorting rows by lowest value (A; B asks for the highest, §4) | the sort only — `sort_change` |
 | T5 | the highlight | yes — `filter_change` with `control` `threshold` |
 | T6 | isolating the two lines (also chips); hover | the line controls only — `line_isolate`, `filter_change` (`chips`, `show-all`) |
 
@@ -1228,8 +1279,12 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the map's highlight and the bar sort, which the practice does not teach. The logs show
     all four (§7).
-  - **Whether T4 sits at ceiling in the interactive condition** because the Lowest value row sort
+  - **Whether A-T4 sits at ceiling in the interactive condition** because the Lowest value row sort
     answers it in one click (§4).
+  - **T2 and T4 asking different questions per form (2026-10-12).** B-T2 counts to the
+    sixth-highest bar with 5 points above it; B-T4 asks for the highest cell, among light bands,
+    with no sort for it (§4). Compare each item's static and interactive accuracy per form; if B
+    is clearly harder on either, the pair is not one item measured twice.
 - **Scrolling differs by condition on two items (accepted 2026-09-26).** On a window 790 px tall
   or less, the interactive scatter (T3) and map (T5) cards run past the fold, so interactive
   participants scroll to Submit there and static ones never do (`visual-spec.md` §10). Eduardo

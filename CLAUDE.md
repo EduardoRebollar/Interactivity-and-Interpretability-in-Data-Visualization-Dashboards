@@ -178,6 +178,12 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v17 (2026-10-12).** T1, T3 and A-T4 reworded, keys unchanged. B-T2 asks for the
+sixth-highest bar, in 2017 (key Mozambique); B-T4 for the highest cell, Laos and Cameroon replacing
+Myanmar and Uganda (key Nepal); both option lists changed (`study-design.md` §4). The T4 rule takes
+`extreme` (`analysis/keys.py`). No new event, key, table or column, so `init_db.py` needs no re-run.
+Nothing collected, so no migration.
+
 **Schema v16 (2026-10-11).** T2 and T4 read MCV1, not DTP3, in both forms (`study-design.md`
 §4). A-T2 swaps Brazil's bar for Guinea's, B-T2 moves to 2021 and swaps Cambodia's for Algeria's,
 A-T4 swaps the CAR's row for Benin's; both T2 option lists and A-T4's changed. Keys unchanged. No
@@ -760,6 +766,13 @@ context cheap and the reports as long as they need to be.
   no console errors. `irb/questionnaire.pdf` re-exported. Found, not fixed: long one-word options
   overflow their answer tile (B-T2 Mozambique, B-T4 Afghanistan and Madagascar at 1440 × 790; also
   B-T3 at 1366 × 768). The B-T3 and B-T4 cases predate the change.
+- 2026-10-12 — **New wording; B-T2 and B-T4 ask new questions** (uncommitted at time of writing).
+  T1, T3 (both forms) and A-T4 reworded as Eduardo gave them. B-T2: sixth-highest, 2017, same ten
+  bars, key Mozambique 5 / 13 from its neighbours (2021 tied 5th and 6th). B-T4: highest cell; Laos
+  and Cameroon replace Myanmar and Uganda (Nepal's 97 was 6 above Myanmar), key Nepal, margin 11.
+  The forms now differ in question on T2 and T4, a pilot check (§4, §10). Key positions 0/1/3/3/2/1.
+  Schema v17. 1279 tests. Headless Chrome, all four cells at 1440 × 790: every prompt, the new
+  options and grid, no console errors. `irb/questionnaire.pdf` re-exported.
 - **Still to do before the pilot:**
   - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
     written description (`study-design.md` §10).
@@ -943,7 +956,8 @@ context cheap and the reports as long as they need to be.
 ## Open questions
 
 - Answer tiles overflow on long one-word options (found 2026-10-11). Fixing it changes the tiles'
-  layout in both conditions; not done without asking.
+  layout in both conditions; not done without asking. Since 2026-10-12 one of them, Mozambique, is
+  B-T2's key.
 
 - Does HSRRC accept a drawn electronic signature? 45 CFR 46.117 allows electronic documentation;
   confirm with hsrrc@oxy.edu. The paper-copy box is the fallback either way.
