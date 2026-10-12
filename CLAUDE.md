@@ -794,6 +794,10 @@ context cheap and the reports as long as they need to be.
   `consent.APPROVED = True`. 1288 tests. Headless Chrome at 1440 × 790: no banner, the curly
   apostrophe on screen, a drawn signature recorded under the new version, no console errors.
   `irb/questionnaire.pdf` not re-exported; its colophon still names the old hash.
+- 2026-10-12 — **`/preview`** (uncommitted at time of writing): any item of either form, in either
+  condition, on the participant's own task screen, with a bar to switch. Nothing is logged; Submit
+  says it saved nothing. Unguarded by Eduardo's choice, so anyone who guesses the path can read both
+  forms. 1310 tests. Headless Chrome: chips, bar sort, zoom, static is inert, no new log files.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small

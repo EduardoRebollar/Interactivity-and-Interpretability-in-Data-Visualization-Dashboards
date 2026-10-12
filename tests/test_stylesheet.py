@@ -79,6 +79,11 @@ def _screens():
                             f"{stage.value}/{condition}/{index}/{form}{position}",
                             app.render(state),
                         )
+    # And the researcher's /preview, whose bar is drawn from the same classes.
+    for form in ("A", "B"):
+        for interactive in (False, True):
+            preview = {"form": form, "item": "T5", "interactive": interactive}
+            yield f"preview/{form}/{interactive}", app.render_preview(preview)
 
 
 def _walk(node):

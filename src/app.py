@@ -111,6 +111,10 @@ def create_app() -> dash.Dash:
             # The browser window's inner size, re-read whenever a screen appears. The first Begin
             # logs it once, beside consent (`window_size`). Memory: it describes the window now.
             dcc.Store(id="window-size"),
+            # The researcher's preview at /preview: which item, form and condition it shows, or
+            # None on every other path (`show_page` writes it). When set, the controls log nothing
+            # and Submit saves nothing. Memory, so it never outlives the page it was chosen on.
+            dcc.Store(id="preview-state"),
             html.Div(id="page"),
         ]
     )
@@ -201,6 +205,71 @@ def _screen(state: SessionState) -> html.Main:
             task, flow.is_interactive(state), state.task_index + 1, len(items)
         )
     raise flow.FlowError(f"No screen for stage {state.stage}")
+
+
+# --- The preview ----------------------------------------------------------------------------------
+#
+# /preview shows any item, of either form, in either condition, without going through the study:
+# the researcher's way to try the live charts. It renders the participant's own task screen, so
+# what it shows is what a participant sees, and it writes nothing: no participant, no session, no
+# event. Not linked from anywhere a participant goes.
+
+PREVIEW_PATH = "/preview"
+PREVIEW_START = {"form": "A", "item": "T1", "interactive": True}
+PREVIEW_SUBMIT = "Preview: this answer was not saved."
+
+
+def is_preview(pathname: str | None) -> bool:
+    return (pathname or "").rstrip("/") == PREVIEW_PATH
+
+
+def preview_task(preview: Any) -> tuple[flow.Task, bool] | None:
+    """The task and condition a `preview-state` names, or None when it names none (every page but
+    the preview's, and anything malformed)."""
+    if not isinstance(preview, dict):
+        return None
+    form, item, interactive = preview.get("form"), preview.get("item"), preview.get("interactive")
+    if form not in flow.FORMS or not isinstance(interactive, bool):
+        return None
+    if item == tasks.PRACTICE.task_id:
+        return tasks.PRACTICE, interactive
+    for task in tasks.for_form(form):
+        if task.task_id == item:
+            return task, interactive
+    return None
+
+
+def _preview_body(preview: dict[str, Any]) -> html.Main:
+    task, interactive = preview_task(preview)
+    if task is tasks.PRACTICE:
+        return layout.task_screen(task, interactive, index=0, total=0, practice=True)
+    items = tasks.for_form(preview["form"])
+    return layout.task_screen(task, interactive, items.index(task) + 1, len(items))
+
+
+def render_preview(preview: dict[str, Any]) -> html.Div:
+    """The preview page, on the plain ground a task screen has."""
+    screen = layout.preview_screen(
+        preview["form"],
+        preview["item"],
+        "interactive" if preview["interactive"] else "static",
+        _preview_body(preview),
+    )
+    return layout.shell(2, "plain", screen)
+
+
+def preview_step(
+    form: str | None, item: str | None, condition: str | None, current: Any
+) -> tuple[html.Main, dict[str, Any]]:
+    """A choice on the preview's bar: the item's task screen and the new `preview-state`.
+
+    Raises PreventUpdate for a choice that changes nothing -- Dash fires this when the bar is first
+    drawn -- or names no task.
+    """
+    chosen = {"form": form, "item": item, "interactive": condition == "interactive"}
+    if chosen == current or condition not in flow.CONDITIONS or preview_task(chosen) is None:
+        raise PreventUpdate
+    return _preview_body(chosen), chosen
 
 
 class _Spool:
@@ -924,6 +993,7 @@ def control_step(
     relayout: dict[str, Any] | None = None,
     restyle: Any = None,
     spool: dict[str, Any] | None = None,
+    preview: dict[str, Any] | None = None,
     log_dir: Path | None = None,
 ) -> ControlResult:
     """Apply one control interaction; see `ControlResult` for what comes back.
@@ -942,13 +1012,27 @@ def control_step(
     highlight that is not a number from 0 to 100. The browser has already moved the control by
     then, so a refusal puts it back rather than leaving it saying something the chart does not.
     Nothing is logged for one.
-    """
-    state = SessionState.from_dict(stored)
-    task = _active_task(state)
-    if task is None:
-        return UNCHANGED
 
-    screen = f"{state.condition_index}/{task.task_id}"
+    `preview` is the `preview-state` store. When it names a task, the chart is the preview's
+    (`preview_task`), not the session's, and nothing is logged at all.
+    """
+    previewed = preview_task(preview)
+    if previewed is not None:
+        state = None
+        task = previewed[0]
+        screen = f"preview/{preview['form']}/{task.task_id}/{previewed[1]}"
+    else:
+        state = SessionState.from_dict(stored)
+        task = _active_task(state)
+        if task is None:
+            return UNCHANGED
+        screen = f"{state.condition_index}/{task.task_id}"
+
+    def log(event: tuple[str, dict[str, Any]] | None) -> Any:
+        if previewed is not None:
+            return no_update
+        return _log_control(state, log_state, log_dir, spool, task, event)
+
     control = _stored_control(task, screen, control_state)
     options = layout.filterable(list(task.entities))
     default_sort = layout.default_sort(task.chart)
@@ -1073,7 +1157,7 @@ def control_step(
         # Plotly has already edited, which wipes Plotly's record of the range it replaced
         # (headless Chrome, 2026-09-26).
         zoom = ("view_change", {"control": "chart", "value": relayout, "previous": None})
-        spool_out = _log_control(state, log_state, log_dir, spool, task, zoom)
+        spool_out = log(zoom)
         says, xrange = _zoomed_range(relayout)
         if task.chart == "line" and says:
             control["xrange"] = xrange
@@ -1096,7 +1180,7 @@ def control_step(
         sort_value,
         threshold_value,
         control,
-        _log_control(state, log_state, log_dir, spool, task, event),
+        log(event),
     )
 
 
@@ -1190,11 +1274,28 @@ def _session_states() -> list[State]:
 def _register_callbacks(app: dash.Dash) -> None:
     @app.callback(
         Output("page", "children"),
+        Output("preview-state", "data"),
         Input("url", "pathname"),
         State("session-state", "data"),
     )
-    def show_page(_pathname, stored):
-        return render(SessionState.from_dict(stored))
+    def show_page(pathname, stored):
+        # The preview never reads or writes the session, so a study session in the same tab is
+        # where it was left.
+        if is_preview(pathname):
+            return render_preview(PREVIEW_START), PREVIEW_START
+        return render(SessionState.from_dict(stored)), None
+
+    @app.callback(
+        Output("preview-task", "children"),
+        Output("preview-state", "data", allow_duplicate=True),
+        Input("preview-form", "value"),
+        Input("preview-item", "value"),
+        Input("preview-condition", "value"),
+        State("preview-state", "data"),
+        prevent_initial_call=True,
+    )
+    def choose_preview(form, item, condition, current):
+        return preview_step(form, item, condition, current)
 
     # --- Advancing the session: ONE CALLBACK PER SCREEN ---
     #
@@ -1337,9 +1438,13 @@ def _register_callbacks(app: dash.Dash) -> None:
         State("justification-input", "value"),
         State("task-clock", "data"),
         *_session_states(),
+        State("preview-state", "data"),
         prevent_initial_call=True,
     )
-    def submit(submitted_at, answer, justification, started_at, stored, log_state, spool):
+    def submit(submitted_at, answer, justification, started_at, stored, log_state, spool, preview):
+        if preview_task(preview) is not None:
+            # The preview saves nothing. The message re-enables Submit, as a refusal does.
+            return no_update, no_update, no_update, PREVIEW_SUBMIT, no_update
         duration_ms, duration_invalid = _elapsed(started_at, submitted_at)
         return step(
             "submit-clock",
@@ -1391,6 +1496,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         State("log-state", "data"),
         State("control-state", "data"),
         State("spool-state", "data"),
+        State("preview-state", "data"),
         prevent_initial_call=True,
     )
     def view(
@@ -1406,6 +1512,7 @@ def _register_callbacks(app: dash.Dash) -> None:
         log,
         control_state,
         spool,
+        preview,
     ):
         """Thin wrapper over `control_step`, which says what each control does.
 
@@ -1425,6 +1532,7 @@ def _register_callbacks(app: dash.Dash) -> None:
             relayout=relayout,
             restyle=restyle,
             spool=spool,
+            preview=preview,
         )
         if result == UNCHANGED:
             # Most calls: a screen being built, or a render-time relayout. Nothing to send.

@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 from dash import html, no_update
 from dash.exceptions import PreventUpdate
+from plotly.utils import PlotlyJSONEncoder
 
 from src import app, config, consent, db, figures, flow, layout, runtime_data, tasks
 from src.flow import SessionState, Stage
@@ -3169,3 +3170,175 @@ def test_shift_with_a_plain_wheel_scrolls_sideways():
         [{"range": ZOOMED, "scrollZoom": True, "event": {"deltaY": -60, "shiftKey": True}}]
     )
     assert case["calls"][0] == ["update", [2004.0, 2014.0]]
+
+
+# --- The preview --------------------------------------------------------------------------------
+
+
+def _previews():
+    """Every page /preview can show: the practice and each item of both forms, in each condition."""
+    for form in flow.FORMS:
+        for item in [tasks.PRACTICE.task_id] + [t.task_id for t in tasks.for_form(form)]:
+            for interactive in (False, True):
+                yield {"form": form, "item": item, "interactive": interactive}
+
+
+def _json(component) -> str:
+    """A rendered tree as the browser receives it."""
+    return json.dumps(component, cls=PlotlyJSONEncoder, sort_keys=True)
+
+
+def _callback(input_id: str):
+    """The function a callback triggered by `input_id` runs, unwrapped from Dash."""
+    for callback in app.create_app().callback_map.values():
+        if any(i["id"] == input_id for i in callback["inputs"]):
+            return callback["callback"].__wrapped__
+    raise AssertionError(f"no callback is triggered by {input_id}")
+
+
+@pytest.mark.parametrize("path", ["/preview", "/preview/"])
+def test_the_preview_path_shows_the_preview_and_nothing_else_does(path):
+    show_page = _callback("url")
+    page, preview = show_page(path, None)
+    assert preview == app.PREVIEW_START
+    assert {"preview-form", "preview-item", "preview-condition", "chart"} <= _ids(page)
+
+    page, preview = show_page("/", _state(Stage.TASK).to_dict())
+    assert preview is None
+    assert "preview-task" not in _ids(page)
+    assert not app.is_preview("/previews") and not app.is_preview(None)
+
+
+def test_the_preview_shows_the_participants_own_task_screen():
+    """What the preview shows is what a participant sees: the same screen, the same chart."""
+    for preview in _previews():
+        task, interactive = app.preview_task(preview)
+        assert task.task_id == preview["item"]
+        body = app._preview_body(preview)
+        if task is tasks.PRACTICE:
+            state = _state(
+                Stage.PRACTICE, first_condition="interactive" if interactive else "static"
+            )
+        else:
+            index = [t.task_id for t in tasks.for_form(preview["form"])].index(task.task_id)
+            state = _state(
+                Stage.TASK,
+                first_condition="interactive" if interactive else "static",
+                first_form=preview["form"],
+                task_index=index,
+            )
+        assert _json(body) == _json(app._screen(state))
+
+
+@pytest.mark.parametrize(
+    "preview",
+    [
+        None,
+        "T2",
+        {"form": "C", "item": "T2", "interactive": True},
+        {"form": "A", "item": "T9", "interactive": True},
+        {"form": "A", "item": "T2", "interactive": "yes"},
+    ],
+)
+def test_a_malformed_preview_names_no_task(preview):
+    assert app.preview_task(preview) is None
+
+
+def test_no_callback_is_dead_on_the_preview():
+    """The rule `test_no_callback_is_dead_on_the_screens_that_trigger_it` checks, on every page
+    the preview can show."""
+    instance = app.create_app()
+    base = _ids(instance.layout)
+    problems = []
+    for preview in _previews():
+        present = base | _ids(app.render_preview(preview))
+        for key, callback in instance.callback_map.items():
+            inputs = {i["id"] for i in callback["inputs"] if not i["id"].startswith("{")}
+            states = {s["id"] for s in callback["state"] if not s["id"].startswith("{")}
+            if not (inputs - base) & present:
+                continue
+            missing = (inputs | states) - present
+            if missing:
+                problems.append(f"{preview}: {key} is missing {sorted(missing)}")
+    assert not problems, "\n".join(problems)
+
+
+def test_choosing_on_the_preview_bar_shows_that_item():
+    body, preview = app.preview_step("B", "T5", "static", app.PREVIEW_START)
+    assert preview == {"form": "B", "item": "T5", "interactive": False}
+    assert '"threshold"' not in _json(body)  # no controls on the static map
+    assert json.dumps(tasks.for_form("B")[4].prompt)[1:-1] in _json(body)
+
+
+@pytest.mark.parametrize(
+    "choice", [("A", "T1", "interactive"), ("A", "T9", "static"), ("A", "T1", None)]
+)
+def test_a_choice_that_changes_nothing_or_names_nothing_is_ignored(choice):
+    """Dash fires the bar's callback when the bar is first drawn, with what is already shown."""
+    with pytest.raises(PreventUpdate):
+        app.preview_step(*choice, app.PREVIEW_START)
+
+
+@pytest.mark.parametrize("item", [t.task_id for t in tasks.for_form("A")])
+def test_the_preview_controls_work_and_log_nothing(tmp_path, item):
+    task = next(t for t in tasks.for_form("A") if t.task_id == item)
+    preview = {"form": "A", "item": item, "interactive": True}
+    keep = _countries(task)[1:]
+    # A session parked on another task: the preview must act on its own chart, not the session's.
+    result = app.control_step(
+        "chips",
+        _task_state(),
+        {"session_id": str(uuid.uuid4())},
+        None,
+        chips=keep,
+        preview=preview,
+        log_dir=tmp_path,
+    )
+    assert result.figure is not no_update
+    assert result.control["selected"] == keep
+    assert result.control["screen"] == f"preview/A/{item}/True"
+    assert result.spool is no_update
+    assert _events(tmp_path) == []
+
+
+def test_a_zoom_on_the_preview_logs_nothing(tmp_path):
+    preview = {"form": "A", "item": "T1", "interactive": True}
+    result = app.control_step(
+        "chart.relayoutData",
+        None,
+        None,
+        None,
+        relayout={"xaxis.range[0]": 2005, "xaxis.range[1]": 2015},
+        preview=preview,
+        log_dir=tmp_path,
+    )
+    assert result.control["xrange"] == [2005.0, 2015.0]
+    assert _events(tmp_path) == []
+
+
+def test_submit_on_the_preview_saves_nothing(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "STUDY_LOGS_DIR", tmp_path)
+    submit = _callback("submit-clock")
+    stamp = {"t": 1000.0, "origin": 1.0}
+    result = submit(
+        stamp,
+        "Nigeria",
+        "why",
+        stamp,
+        _task_state(),
+        {"session_id": "s"},
+        None,
+        app.PREVIEW_START,
+    )
+    assert result == (no_update, no_update, no_update, app.PREVIEW_SUBMIT, no_update)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_the_preview_state_is_memory_only():
+    """It must never outlive the preview page: on the study's own page it is always None."""
+    stores = {
+        child.id: getattr(child, "storage_type", "memory")
+        for child in app.create_app().layout.children
+        if getattr(child, "id", None) == "preview-state"
+    }
+    assert stores == {"preview-state": "memory"}

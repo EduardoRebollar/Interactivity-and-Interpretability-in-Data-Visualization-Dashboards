@@ -1366,6 +1366,58 @@ def task_screen(
     )
 
 
+PREVIEW_NOTE = "Preview: nothing is recorded, and Submit saves nothing."
+
+
+def _preview_choice(element_id: str, legend: str, options: list[tuple[str, str]], value: str):
+    return html.Div(
+        [
+            html.Span(legend, className="ui-legend"),
+            dcc.RadioItems(
+                id=element_id,
+                options=[{"label": label, "value": key} for key, label in options],
+                value=value,
+                className="seg ui-seg",
+            ),
+        ],
+        className="ui-group ui-group--fit",
+        role="group",
+        **{"aria-label": legend},
+    )
+
+
+def preview_screen(form: str, item: str, condition: str, body) -> html.Div:
+    """The researcher's preview at /preview (app.render_preview): a bar to choose a form, an item
+    and a condition, then that item's task screen, `body`, exactly as a participant sees it.
+
+    Not a participant screen: no stage leads here, and nothing on it is logged. The bar is drawn
+    from the controls strip's own classes, so it needs no style of its own.
+    """
+    items = [(tasks.PRACTICE.task_id, "Practice")] + [
+        (task.task_id, f"{task.task_id} {task.chart}") for task in tasks.for_form("A")
+    ]
+    bar = html.Div(
+        [
+            html.Div(
+                [
+                    _preview_choice("preview-form", "Form", [("A", "A"), ("B", "B")], form),
+                    _preview_choice("preview-item", "Item", items, item),
+                    _preview_choice(
+                        "preview-condition",
+                        "Condition",
+                        [("static", "Static"), ("interactive", "Interactive")],
+                        condition,
+                    ),
+                ],
+                className="ui-controls",
+            ),
+            html.P(PREVIEW_NOTE, className="tb-hint"),
+        ],
+        className="page",
+    )
+    return html.Div([bar, html.Div(body, id="preview-task")])
+
+
 def _rated(key: str, text: str, points: int, anchors: dict[int, str], help_text: str = ""):
     return _question(key, text, _scale(survey_id(key), points, anchors), help_text)
 
