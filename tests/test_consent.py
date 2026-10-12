@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from scripts import export_consents, withdraw_participant
+from scripts import archive_consents, export_consents, withdraw_participant
 from src import consent
 from src import logging as study_logging
 
@@ -46,8 +46,9 @@ def test_the_consent_text_is_pinned():
 
     Re-pinned 2026-09-25 for the design handoff's screen 1 (docs/study-design.md section 9), and
     2026-09-26 for the sentence naming the background questions (section 10) and the revised
-    form's straight apostrophe in "study's"."""
-    assert consent.CONSENT_VERSION == "c56a88875374666a"
+    form's straight apostrophe in "study's", and 2026-10-12 for the approved form's curly one.
+    The approved form (irb/, .docx) is otherwise the 2026-09-26 text word for word."""
+    assert consent.CONSENT_VERSION == "3bcd2413c9656ae8"
 
 
 @pytest.mark.parametrize(
@@ -68,7 +69,7 @@ def test_the_consent_text_is_pinned():
         "a single session lasting approximately 40 minutes.",
         "a topic that may be personally sensitive or evoke strong opinions for some participants",
         "Only the researcher and the faculty supervisor will have access to identifying data.",
-        "The study's web application",
+        "The study’s web application",
         # 2026-09-26: About you asks age, role and field, so the form says so (request item 17).
         "At the end of the session, you will be asked a few questions about your background, such "
         "as your age, your field of study or work, and your experience with charts.",
@@ -238,6 +239,122 @@ def test_export_without_purge_keeps_the_records(tmp_path):
     consent.save(_record(), store)
     export_consents.main(["--local-dir", str(store), "--out", str(tmp_path / "export")])
     assert len(consent.read_local(store)) == 1
+
+
+# --- scripts/archive_consents.py -----------------------------------------------------------------
+
+PASSWORD = "correct horse battery"
+needs_7zip = pytest.mark.skipif(archive_consents.find_7zip() is None, reason="7-Zip not installed")
+
+
+@pytest.fixture
+def archiving(tmp_path, monkeypatch):
+    """Two signed records in a local store, an empty Drive folder, and PDFs faked so no browser
+    runs. Returns a function that runs the script with the passwords and the answer given."""
+    store, drive, staging = tmp_path / "consent", tmp_path / "drive", tmp_path / "staging"
+    drive.mkdir()
+    consent.save(_record(name="First Person"), store)
+    consent.save(_record(name="Second Person"), store)
+    monkeypatch.delenv(archive_consents.DRIVE_ENV, raising=False)
+    monkeypatch.setattr(export_consents, "find_browser", lambda: "browser")
+
+    def fake_pdf(browser, html_path):
+        pdf = html_path.with_suffix(".pdf")
+        pdf.write_bytes(b"%PDF-1.7 " + html_path.read_bytes())
+        return pdf
+
+    monkeypatch.setattr(export_consents, "print_pdf", fake_pdf)
+
+    def run(passwords=(PASSWORD, PASSWORD), answer="y", extra=()):
+        typed = iter(passwords)
+        monkeypatch.setattr(archive_consents.getpass, "getpass", lambda prompt: next(typed))
+        monkeypatch.setattr("builtins.input", lambda prompt: answer)
+        argv = ["--local-dir", str(store), "--staging", str(staging), "--drive", str(drive)]
+        return archive_consents.main([*argv, *extra])
+
+    return run, store, drive, staging
+
+
+def _seven_zip(*args):
+    return archive_consents.seven_zip(archive_consents.find_7zip(), *args)
+
+
+@needs_7zip
+def test_archive_puts_one_encrypted_archive_in_drive_and_purges_on_yes(archiving):
+    run, store, drive, staging = archiving
+    assert run() == 0
+
+    [archive] = drive.iterdir()
+    assert archive.suffix == ".7z" and "Person" not in archive.name
+    assert not staging.exists(), "no unencrypted copy is left on the laptop"
+    assert consent.read_local(store) == [], "archived records are purged after a yes"
+
+    data = archive.read_bytes()
+    assert b"First Person" not in data and b"2026-09-21_" not in data, "contents and names hidden"
+    assert _seven_zip("l", "-pnot the password", str(archive)).returncode != 0
+    listing = _seven_zip("l", "-ba", f"-p{PASSWORD}", str(archive)).stdout
+    assert listing.count(".html") == 2 and listing.count(".pdf") == 2
+    assert _seven_zip("t", f"-p{PASSWORD}", str(archive)).returncode == 0
+
+
+@needs_7zip
+@pytest.mark.parametrize("answer", ["", "n", "no"])
+def test_archive_keeps_the_records_unless_told_yes(archiving, answer):
+    run, store, drive, staging = archiving
+    assert run(answer=answer) == 0
+    assert len(list(drive.iterdir())) == 1
+    assert len(consent.read_local(store)) == 2
+    assert not staging.exists()
+
+
+@pytest.mark.parametrize(
+    "passwords",
+    [(PASSWORD, "something else entirely"), ("short", "short")],
+    ids=["differ", "short"],
+)
+def test_archive_refuses_a_bad_password_before_writing_anything(archiving, monkeypatch, passwords):
+    run, store, drive, staging = archiving
+    monkeypatch.setattr(archive_consents, "find_7zip", lambda: "7z")
+    assert run(passwords=passwords) == 1
+    assert list(drive.iterdir()) == [] and not staging.exists()
+    assert len(consent.read_local(store)) == 2
+
+
+def test_archive_needs_a_drive_folder_that_exists(archiving, tmp_path, capsys):
+    run, store, drive, staging = archiving
+    archive_consents.main(["--local-dir", str(store)])
+    assert archive_consents.DRIVE_ENV in capsys.readouterr().out
+    assert run(extra=["--drive", str(tmp_path / "not synced")]) == 1
+    assert "Google Drive for desktop" in capsys.readouterr().out
+    assert len(consent.read_local(store)) == 2
+
+
+def test_a_failed_archive_copies_nothing_and_deletes_every_unencrypted_copy(
+    archiving, monkeypatch, tmp_path
+):
+    run, store, drive, staging = archiving
+    monkeypatch.setattr(archive_consents, "find_7zip", lambda: str(tmp_path / "no-such-7z.exe"))
+    assert run() == 1
+    assert list(drive.iterdir()) == [] and not staging.exists()
+    assert len(consent.read_local(store)) == 2
+
+
+@needs_7zip
+def test_a_record_whose_pdf_fails_is_neither_archived_nor_purged(archiving, monkeypatch):
+    run, store, drive, staging = archiving
+    real = export_consents.print_pdf
+
+    def flaky(browser, html_path):
+        if "Second Person" in html_path.read_text(encoding="utf-8"):
+            raise RuntimeError("no PDF")
+        return real(browser, html_path)
+
+    monkeypatch.setattr(export_consents, "print_pdf", flaky)
+    assert run() == 0
+    [archive] = drive.iterdir()
+    listing = _seven_zip("l", "-ba", f"-p{PASSWORD}", str(archive)).stdout
+    assert listing.count(".pdf") == 1 and listing.count(".html") == 1
+    assert [r["printed_name"] for r in consent.read_local(store)] == ["Second Person"]
 
 
 # --- scripts/withdraw_participant.py -------------------------------------------------------------

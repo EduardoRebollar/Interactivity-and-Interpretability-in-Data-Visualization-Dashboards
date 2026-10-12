@@ -207,13 +207,11 @@ The twelve items were replaced on 2026-09-23 by a bank that pairs each chart typ
 interactive affordance, plus one crossing item (T6) that asks when one country's line overtakes
 another's (`docs/study-design.md` §4).
 
-**Not yet run with participants, and it must not be.** The consent form in `src/consent.py` is the
-one submitted to Occidental's HSRRC and is marked "pending approval" on screen until it is approved.
-`docs/study-design.md` §10 lists wording in the IRB paperwork still to fix before submission.
+**Approved by Occidental's HSRRC on 2026-10-12; not yet run with participants.** The consent form
+in `src/consent.py` is the approved form, word for word.
 
 Also open before piloting:
 
-- **IRB request form item 18:** attach `irb/questionnaire.pdf` and enter the deployed URL.
 - The pilot checks in `docs/study-design.md` §10. The bar, heatmap and map items sit at the
   acceptance floor on purpose, so check static accuracy there. Check form equivalence on T1,
   B-T3 and T6, and T6's strict score against its adjacent-band secondary. Check whether

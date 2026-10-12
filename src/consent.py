@@ -1,7 +1,7 @@
 """Informed consent: the form's text, the signed record, and where it is kept. No pandas: ships.
 
-The text is Occidental's informed consent form as submitted to HSRRC (`irb/Oxy CS Senior Comps
-Informed Consent Form.pdf`, local only), word for word. `docs/study-design.md` section 9 describes
+The text is Occidental's informed consent form as approved by HSRRC (`irb/Oxy CS Senior Comps
+Informed Consent Form.docx`, local only), word for word. `docs/study-design.md` section 9 describes
 the procedure.
 
 **The signed record is kept apart from the study data** (IRB form items 15 and 17). It carries the
@@ -28,10 +28,10 @@ from typing import Any
 
 from src import config, db
 
-# Flip to True only once HSRRC has approved this exact wording. While False, the consent screen
-# carries a banner saying no participant may be run. Deliberately not part of the hashed text, so
-# approving the form does not change CONSENT_VERSION.
-APPROVED = False
+# True once HSRRC has approved this exact wording (2026-10-12, the .docx forms in irb/). While
+# False, the consent screen carries a banner saying no participant may be run. Deliberately not part
+# of the hashed text, so approving the form does not change CONSENT_VERSION.
+APPROVED = True
 
 TITLE = "Interactivity and Interpretability in Data Visualization Dashboards"
 INVESTIGATOR = "Eduardo Rebollar"
@@ -51,7 +51,9 @@ FORM_HEADING = ("OCCIDENTAL COLLEGE", "INFORMED CONSENT FORM")
 # Risks, says "Neon (a managed PostgreSQL service)", and gives access to "identifying data" rather
 # than "the data". 2026-09-26: Procedures names the background questions, and the text was checked
 # word for word against the form as revised that day (irb/, local only), whose apostrophes are all
-# straight, so "study's" no longer has the handoff's curly one.
+# straight, so "study's" no longer has the handoff's curly one. 2026-10-12: checked word for word
+# against the approved form (irb/, .docx), all 961 words; its "study’s" has the curly
+# apostrophe again, so the app's does too.
 SECTIONS: tuple[tuple[str | None, str], ...] = (
     ("Title of Study:", TITLE),
     ("Student Investigator:", INVESTIGATOR),
@@ -129,7 +131,7 @@ SECTIONS: tuple[tuple[str | None, str], ...] = (
         "CONFIDENTIALITY:",
         "Your responses will be kept confidential. You will not be identified by name in any "
         "reported data, as each participant will be assigned a random participant id. The "
-        "study's web application writes this data to an encrypted Neon (a managed PostgreSQL "
+        "study’s web application writes this data to an encrypted Neon (a managed PostgreSQL "
         "service) database hosted in the U.S. The file linking ids to any identifying information "
         "(such as email addresses used for scheduling) will be stored in an encrypted file "
         "separate from the Neon study database. Only the researcher and the faculty supervisor "

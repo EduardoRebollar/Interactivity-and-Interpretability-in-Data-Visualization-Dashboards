@@ -1164,10 +1164,14 @@ participant ID is {ID})."
 
 ## 9. Consent
 
-The consent screen shows the Occidental informed consent form submitted to HSRRC
-(`irb/Oxy CS Senior Comps Informed Consent Form.pdf`, local only), word for word. The app's copy lives in
-`src/consent.py`; `tests/test_consent.py` pins it. **Until HSRRC approves it, the screen carries a
-"pending approval" banner** (`consent.APPROVED = False`), and no participant may be run.
+The consent screen shows the Occidental informed consent form approved by HSRRC on 2026-10-12
+(`irb/Oxy CS Senior Comps Informed Consent Form.docx`, local only), word for word. The app's copy
+lives in `src/consent.py`; `tests/test_consent.py` pins it. `consent.APPROVED` is True; while it was
+False, the screen carried a "pending approval" banner and no participant could be run.
+
+**Approved 2026-10-12.** The approved form is the 2026-09-26 text word for word, all 961 words; its
+"study’s" has a curly apostrophe where the 2026-09-27 PDF had a straight one, so the app's copy
+changed to match and the hash was re-pinned.
 
 **Revised 2026-09-25** to the design handoff's screen 1, which reproduces the finalized form as a
 Letter sheet in Times New Roman, with the signing fields inside the sheet: the signature pad
@@ -1349,11 +1353,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     touchscreen.
   - *Request form 17* promises less than §6.2: it does not carry the aggregate-only reporting of
     About you or the rule for groups under five.
-- **To fix in the request form before sending** (as saved 2026-09-28, `irb/Oxy CS Senior Comps
-  Approval Request Form.pdf`):
-  - item 1: the initial submission date is still the placeholder "(Date sent to hsrrc@oxy.edu)";
-  - item 18: attach the latest `irb/questionnaire.pdf`, re-exported 2026-10-12 after the T1
-    wording (§8) and the new B-T2 and B-T4 questions.
+- **HSRRC approved the study on 2026-10-12** (`irb/Oxy CS Senior Comps Approval Request Form.docx`
+  and `… Informed Consent Form.docx`). The request form gives 2026-09-30 as its submission date
+  (item 1). The points under "Left as they are" above were approved as written.
 - **Fixed in the 2026-09-28 revision:** item 9's "WHO/UNICEG"; item 15's "the lasting records is
   the export"; item 5B now says five multiple-choice questions and one written description per
   version, the explanation after the multiple-choice answers, and names the window size among what

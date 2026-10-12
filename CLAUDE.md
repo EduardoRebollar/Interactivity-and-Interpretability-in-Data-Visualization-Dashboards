@@ -425,6 +425,7 @@ scripts/
   export_logs.py        # pull study data out for analysis
   recover_spool.py      # replay spooled events into Postgres; dry run by default, idempotent
   export_consents.py    # signed consent records -> printable copies (+PDF) for the Oxy Drive; --purge
+  archive_consents.py   # after a session: copies -> AES-256 7-Zip -> Drive for desktop folder; asks to purge
   withdraw_participant.py # IRB item 13: delete one ID's events everywhere; dry run by default
   derive_keys.py        # print the derived answer key; exits 1 if it disagrees with §4
   export_questionnaire.py # every screen as irb/questionnaire.pdf, for IRB request form item 18
@@ -463,11 +464,11 @@ tests/
   **The IRB approval request form (`irb/`, local only) outranks it.** Where they disagree, change the
   doc to match, or list the mismatch in `study-design.md` §10 so the IRB paperwork is amended.
 - `docs/study-redesign.md` — the redesign brief; read before any UI or study-content work.
-- **The consent text in `src/consent.py` is the form for HSRRC, word for word** (since 2026-09-26,
-  `irb/Oxy CS Senior Comps Informed Consent Form.pdf` as revised that day, not yet sent). Its hash is
-  pinned in `tests/test_consent.py`. Change the wording only to match an approved form, and re-pin
-  the hash when you do. `consent.APPROVED` stays False until HSRRC approves; while False, the screen
-  shows a "pending approval" banner.
+- **The consent text in `src/consent.py` is the HSRRC-approved form, word for word**
+  (`irb/Oxy CS Senior Comps Informed Consent Form.docx`, approved 2026-10-12). Its hash is pinned in
+  `tests/test_consent.py`. Change the wording only to match an approved form, and re-pin the hash
+  when you do. `consent.APPROVED` is True; set False, the screen shows a "pending approval"
+  banner.
 - **Every question may be skipped** (IRB form item 10), behind a confirmation popup. Only consent and
   the participant ID are required. A skipped answer scores incorrect in the primary analysis and is
   excluded in the pre-registered secondary (`study-design.md` §7).
@@ -588,8 +589,8 @@ context cheap and the reports as long as they need to be.
 - 2026-09-15 — **The instrument is finished and verified end to end.** A full session runs from one
   URL; both conditions log a complete session; all four interactive controls work and record their
   events. 489 tests green.
-- **Blocked on IRB.** No participant runs until HSRRC approves. As of 2026-09-21 the app shows the
-  submitted consent form with a "pending approval" banner (`consent.APPROVED = False`).
+- ~~Blocked on IRB.~~ **HSRRC approved the study on 2026-10-12** (the .docx forms in `irb/`);
+  `consent.APPROVED = True`, so the "pending approval" banner is gone.
 - 2026-09-16 — **Pre-pilot hardening done** (uncommitted at time of writing). A database outage no
   longer breaks a session or loses answers silently; consent is recorded; double-submit and
   reload-corrupted durations are handled; schema is v4. The offline scoring pipeline exists, with
@@ -782,10 +783,18 @@ context cheap and the reports as long as they need to be.
   no console errors. `irb/questionnaire.pdf` re-exported. The 2026-09-28 IRB forms checked: the
   request form's §10 fixes are made, and the consent form still matches `src/consent.py` word for
   word.
+- 2026-10-12 — **Neon emptied of test data; consent archiving built.** Deleted test IDs `1` (v6)
+  and `123123` (v10) and their 175 events. Every table is empty; the sequence is at 10, so the first
+  real participant is seq 11 (static first, form B). The four test consent records went to Drive
+  by `scripts/archive_consents.py` (an encrypted 7-Zip in `G:\My Drive\Consent Forms`, Oxy account).
+- 2026-10-12 — **IRB approved.** Eduardo got HSRRC approval on the forms now in `irb/` as .docx
+  (request form submitted 2026-09-30). The request form is the 2026-09-28 PDF's text plus the
+  submission date. The consent form is `src/consent.py`'s text, all 961 words, except one curly
+  apostrophe ("study’s"), which the app now matches; hash re-pinned to `3bcd2413c9656ae8`.
+  `consent.APPROVED = True`. 1288 tests. Headless Chrome at 1440 × 790: no banner, the curly
+  apostrophe on screen, a drawn signature recorded under the new version, no console errors.
+  `irb/questionnaire.pdf` not re-exported; its colophon still names the old hash.
 - **Still to do before the pilot:**
-  - Send the IRB forms (2026-09-28 revision). Fill in item 1's submission date, attach the
-    2026-10-12 `irb/questionnaire.pdf` (item 18), and ask the two signature questions below in
-    the same email. No pilot before approval: pilot participants are human subjects too.
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
     can answer (each item × form × condition cell gets about a quarter of it), what result changes
@@ -793,9 +802,7 @@ context cheap and the reports as long as they need to be.
     sequence number the study starts at), and that pilot participants cannot join the study.
   - Before the first session: confirm production serves the committed head (Vercel dashboard; the
     CLI is not installed and the API refused this team) and re-run `scripts/verify_deployment.py`.
-  - Set `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
-    changed.
-- Next after IRB: pilot, and the checks in `study-design.md` §10: static accuracy on T2, T4 and T5
+- Next: pilot, and the checks in `study-design.md` §10: static accuracy on T2, T4 and T5
   (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6 strict against adjacent-band,
   whether T4 sits at ceiling in the interactive condition, and whether the chips, the bar and
   heatmap sorts and the map's highlight are found at all.
@@ -975,31 +982,35 @@ context cheap and the reports as long as they need to be.
   scaling, 108 of 132 options do. Participants use their own computers. Fix the layout in both
   conditions, or require a minimum window size; not done without asking (`study-design.md` §10).
 
-- Does HSRRC accept a drawn electronic signature? 45 CFR 46.117 allows electronic documentation;
-  confirm with hsrrc@oxy.edu. The paper-copy box is the fallback either way.
-- Does a countersignature printed in advance count? Since 2026-09-26 the consent screen shows
+- ~~Does HSRRC accept a drawn electronic signature?~~ Settled by the approval (2026-10-12): the
+  approved request form's item 12A describes it.
+- Does a countersignature printed in advance count? Neither approved form mentions it. Since 2026-09-26 the consent screen shows
   Eduardo's signature image, the day's date and his name on the researcher's line
   (`RESEARCHER_SIGNATURE`, a Vercel env var, never in git; unset, the line is blank). Since
   2026-09-27 the participant's PDF and the Oxy Drive copies (`export_consents.py`, run with
   `--env-file .env.local`) carry it too, so nothing is countersigned by hand. Ask HSRRC alongside
-  the drawn-signature question.
+  the drawn-signature question. Still unasked as of the approval (2026-10-12).
 
 ## Reports & external material
 
 <!-- e.g. - [Lit review draft](docs/lit-review.md) — 12 sources, interaction & cognitive load -->
 
-- `irb/Oxy CS Senior Comps Approval Request Form.pdf` — the IRB approval request form (revised
-  2026-09-21 and 2026-09-26; renamed and revised 2026-09-28, which made the §10 fixes and re-dated
-  the signatures). **Gitignored; local only, never commit.**
+- `irb/Oxy CS Senior Comps Approval Request Form.docx` — the IRB approval request form **as
+  approved** (2026-10-12; submitted 2026-09-30). The `.pdf` beside it is the 2026-09-28 revision,
+  the same text without the submission date. (Revised 2026-09-21 and 2026-09-26; renamed and
+  revised 2026-09-28, which made the §10 fixes and re-dated the signatures.) **Gitignored; local
+  only, never commit.**
   It **outranks
   `docs/study-design.md`** (Eduardo, 2026-09-21): where they disagree, the form wins and the doc is
   changed to match — or, if following the form would break the method, flag it so the form is
   amended before submission rather than silently diverging. Read it before any decision on consent,
   recruitment, data handling, tasks, or measures; what it requires is written into
-  `docs/study-design.md`, not into the form's folder. Extract text with `pdftotext` (poppler for the
-  Read tool is not installed).
-- `irb/Oxy CS Senior Comps Informed Consent Form.pdf` — the informed consent form, pages 1–2, the
-  text participants sign (revised 2026-09-21; revised 2026-09-26 for the redesign and the
-  background questions; renamed 2026-09-27). Also gitignored. `src/consent.py` matches it word for
-  word (checked 2026-09-26, all 961 words; re-checked 2026-10-12 against the renamed file), and
-  the hash pinned in `tests/test_consent.py` guards that transcription.
+  `docs/study-design.md`, not into the form's folder. Extract text from the `.pdf` with `pdftotext`
+  (poppler for the Read tool is not installed); from the `.docx`, unzip `word/document.xml` and
+  read its `w:t` runs with the stdlib.
+- `irb/Oxy CS Senior Comps Informed Consent Form.docx` — the informed consent form **as approved**
+  (2026-10-12), the text participants sign. The `.pdf` beside it is the 2026-09-27 copy, with a
+  straight apostrophe in "study's" (revised 2026-09-21; revised 2026-09-26 for the redesign and
+  the background questions; renamed 2026-09-27). Also gitignored. `src/consent.py` matches the
+  `.docx` character for character (checked 2026-10-12, all 961 words), and the hash pinned in
+  `tests/test_consent.py` guards that transcription.
