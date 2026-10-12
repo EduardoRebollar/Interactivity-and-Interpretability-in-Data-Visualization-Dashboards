@@ -35,6 +35,8 @@ These are methodological requirements, not preferences. Do not relax them withou
   interactivity, not aesthetics.
 - `docs/visual-spec.md` is the source of truth. Change the spec first, then the code.
 - `docs/study-redesign.md` — the redesign brief; read before any UI or study-content work.
+- `docs/chart-handoff/` — the charts' visual style (2026-10-11), drawn on Form A. It sets the look
+  only; which countries and years a chart shows is `docs/study-design.md` §4.
 
 
 ### Static vs. interactive is a single toggle
@@ -47,8 +49,8 @@ These are methodological requirements, not preferences. Do not relax them withou
   rendered, not of the figure. `tests/test_conditions.py` asserts the two conditions produce
   byte-identical figure JSON.
 - Interactive-only features (the design handoff, 2026-09-25): country chips and Reset view on
-  every chart; on the line charts a clickable legend, the View reorder, Show all, line isolation and
-  the year-over-year change in the tooltip; sorting the bar chart and the heatmap's rows; the map's
+  every chart; on the line charts the View reorder, Show all, line isolation and the year-over-year
+  change in the tooltip (the clickable legend went with the chart handoff, 2026-10-11); sorting the bar chart and the heatmap's rows; the map's
   "Below [n] %" highlight; hover on every chart. All are built and defined in `docs/visual-spec.md`
   §7, and all sit under the chart, so the chart stands in the same place in both conditions.
 - **Five chart types, one builder each** (2026-09-23): line, bar, scatter, heatmap, map. The rule
@@ -58,7 +60,8 @@ These are methodological requirements, not preferences. Do not relax them withou
   `build_figure` makes impossible by construction. The tooltip text is in both figures and
   `staticPlot: True` is what keeps it out of the static condition's reach.
 - **Filtering hides or fades; it never rebuilds the chart from a shorter list** (`figures.set_visible`).
-  Colour is assigned by position, so a rebuild would recolour the survivors mid-task. Lines and dots
+  A rebuild would move every name tag, and (until 2026-10-11, when colour went by position) recolour
+  the survivors mid-task. Lines and dots
   go `legendonly`; bars, heatmap rows and map countries fade to 0.15. The map fades by
   **selection** (`figures.set_visible`, `set_threshold`): plotly.js 4 silently ignores a per-country
   `marker.opacity` list on a choropleth, which only a browser showed.
@@ -85,14 +88,18 @@ boolean, one decision point — only the mechanism moved.
 ### Scope is locked
 
 - **Vaccines (4):** DTP3, MCV1, Polio3, HepB3.
-- **Countries (45):** US, UK, Brazil, India, Nigeria, Ethiopia, Indonesia, Ukraine, Pakistan, China;
+- **Countries (61):** US, UK, Brazil, India, Nigeria, Ethiopia, Indonesia, Ukraine, Pakistan, China;
   and, added 2026-09-23 for the redesigned task bank (each used by at least one item): Afghanistan,
   Bangladesh, Burkina Faso, Cambodia, Cameroon, Central African Republic, Chad, Colombia, Democratic
   Republic of Congo, Egypt, Kenya, Madagascar, Mali, Mozambique, Myanmar, Nepal, Niger, Somalia,
   Tanzania, Uganda, Vietnam, Zambia; and, added 2026-10-11 for T3's sixteen dots only: Benin, Libya,
-  Sudan, Iraq, Jordan, Kyrgyzstan, Laos, Lebanon, Oman, Philippines, Syria, Thailand, Yemen.
+  Sudan, Iraq, Jordan, Kyrgyzstan, Laos, Lebanon, Oman, Philippines, Syria, Thailand, Yemen; and,
+  added 2026-10-11 for B-T5's map only (61 in all): Algeria, Botswana, Congo, Côte d'Ivoire, Eritrea,
+  Gabon, Ghana, Guinea, Malawi, Mauritania, Morocco, Namibia, Senegal, South Africa, Tunisia,
+  Zimbabwe.
 - **Aggregates (7):** World, Africa, Asia, Europe, North America, South America, Oceania.
-- **Years:** 2000–2024. 52 entities × 25 years × 4 vaccines = **5200 rows**.
+- **Years:** 2000–2024. 68 entities × 25 years × 4 vaccines = **6800 rows** (5200 until B-T5's
+  sixteen countries are fetched, in the chart-handoff build).
 - Do not expand scope, add vaccines, or add countries without asking.
 - Note: the data scope is not the *display* scope. Far fewer entities can be shown on one chart at
   once and still be legible — see `docs/visual-spec.md`.
@@ -273,8 +280,9 @@ committed, `.env*` gitignored.
 
 - Color palette must meet WCAG 2.1 AA contrast ratios (4.5:1 for text, 3:1 for graphical elements).
   Series colours must also stay at least 12 ΔE2000 apart under simulated protanopia and deuteranopia
-  (`src/contrast.py`, 2026-09-23); two documented exemptions, the gridline and the heatmap/map
-  sequential scale, are bounded by tests (`visual-spec.md` §4).
+  (`src/contrast.py`, 2026-09-23); three documented exemptions, the gridline, the heatmap/map
+  blue bands and the scatter's change scale, are bounded by tests (`visual-spec.md` §4). Bar
+  colours hold the full floor on each bar chart (2026-10-11).
 - The page chrome's colours, the tokens in `src/assets/study.css`, are held to the same floors by
   `tests/test_palette.py`. One exemption: Submit's fill while saving (`#91796E`, white text 4.07:1),
   because the button is disabled then and WCAG 1.4.3 exempts inactive controls.
@@ -351,6 +359,7 @@ data/
     coverage.csv        # committed build artifact (named exemption)
 docs/
   visual-spec.md        # locked visual decisions (colors, chart types, layout)
+  chart-handoff/        # the charts' visual style (2026-10-11): README, screenshots, renderer; Form A only
   study-design.md       # RQs, conditions, the 12 items + acceptance rule, measures, rubric, consent
 src/
   config.py             # INTERACTIVE flag (local default only), palette, scope
@@ -671,6 +680,12 @@ context cheap and the reports as long as they need to be.
   chart, hover and chips work, chips logged only in interactive halves, no console errors. The
   interactive T3 card now ends 72 px lower (four chip rows, was two), so it scrolls on any window
   under 862 px tall, where before only under 790.
+- 2026-10-11 — **Chart handoff, phase 1: the docs** (uncommitted at time of writing).
+  `docs/chart-handoff/` restyles every chart; `visual-spec.md` and `study-design.md` §4 record it.
+  Nothing built yet. Phases: 2 shared card and line chart; 3 bar and heatmap; 4 scatter and map
+  (with B-T5's sixteen countries fetched, flags vendored, schema v14); 5 keys, tests, all four
+  cells in headless Chrome at 1440 × 790 and 1366 × 768, compared with the handoff's screenshots,
+  and `irb/questionnaire.pdf` re-exported.
 - **Still to do before the pilot:**
   - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
     written description (`study-design.md` §10).
@@ -824,6 +839,20 @@ context cheap and the reports as long as they need to be.
     pilot check. `study-design.md` §4.
 - 2026-09-23 — Box and lasso select removed from every chart's modebar, including the line charts,
   where they had been since the start: they dim marks with no event recorded. `visual-spec.md` §7.5.
+
+- 2026-10-11 — **The chart handoff** (`docs/chart-handoff/`). Eduardo's choices:
+  - Line charts lose the legend; the name tags and the chips do its work.
+  - The scatter is as handed off: names beside dots, colour by change, a stepped key, no legend
+    or shapes. T3's static cost changes (`study-design.md` §4), and the key must share its colour.
+  - A colour per bar. The handoff's extra colours fail the colour-blind floor, so the bar colours
+    are searched; every pair on a chart clears 12 ΔE, so no exemption was needed after all.
+  - T5 stays on Africa (the world map fails the rule in every year), with the handoff's countries
+    less Somalia and Ethiopia: 18, keys unchanged. Form B: 18 too, Chad, Somalia and sixteen new
+    countries. The prompt says "in Africa".
+  - The handoff sets the style only; the content stays §4's.
+  - Taken without asking: World stays black and dashed; the scatter key reads "pts"; the map key
+    has no "No data" block; the map keeps its chips (18 per form); the bar and heatmap order labels
+    follow their sorts; medium weight is drawn as the handoff's 0.45 px stroke.
 
 ## Open questions
 

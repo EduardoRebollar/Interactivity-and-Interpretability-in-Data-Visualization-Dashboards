@@ -9,7 +9,8 @@ Status: **draft, 2026-09-15; revised 2026-09-21 to match the IRB submission; tas
 crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4); redesigned
 2026-09-25 from the design handoff (`docs/design-handoff/`, `docs/study-redesign.md`): six options
 per item, controls on every chart, a new survey, and About you, which moves to the end; built and
-verified in headless Chrome 2026-09-26.** The consent text in §9 is the form submitted to
+verified in headless Chrome 2026-09-26; restyled 2026-10-11 from the chart handoff
+(`docs/chart-handoff/`), with T5's maps redrawn (§4).** The consent text in §9 is the form submitted to
 Occidental's HSRRC and must not be shown to a participant until approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
@@ -57,7 +58,7 @@ Identical in every visual respect. The only difference is the Plotly render conf
 |---|---|---|
 | Hover tooltips | none | every chart |
 | Country chips | none | every chart: show or hide each country drawn |
-| Line charts | image | View (as listed / by coverage), Show all, click a line to isolate it, legend click to hide or show, double-click to show only one, zoom and pan |
+| Line charts | image | View (as listed / by coverage), Show all, click a line to isolate it, zoom and pan |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
 | Heatmap | image | Sort rows: Default, Lowest value, Average |
 | Map | image | Highlight: fade every country not below a typed percentage |
@@ -105,7 +106,7 @@ chart types, in the same order, with matched margins — over different data.
 ## 3. The entity set
 
 Each task shows **the same fixed set of entities in both conditions.** No control reaches an entity
-the static condition cannot see: the chips and the legend hide entities within the set, the sorts
+the static condition cannot see: the chips hide entities within the set, the sorts
 reorder them, and the map's highlight fades countries within it.
 
 This is deliberate. If interactive participants could pull in entities that static participants could
@@ -113,8 +114,9 @@ not, interactivity would be changing *what data is available* as well as *how it
 no observed difference could be attributed to interactivity alone.
 
 At most 8 lines plus the dashed World reference, or 16 scatter dots (2026-10-11), per
-`docs/visual-spec.md` §6. The bar chart, the heatmap and the map are not limited by the palette: bars
-are named on their axis, and rows and countries take the sequential scale.
+`docs/visual-spec.md` §6. The bar chart, the scatter, the heatmap and the map are not limited by the
+line palette: bars have colours of their own, dots are coloured by their change, and rows and
+countries take the blue bands (`docs/visual-spec.md` §4).
 
 ## 4. Task set
 
@@ -136,10 +138,10 @@ read is costly and that affordance lowers the cost:
 
 | Item | Chart | Affordance | The static cost it lowers |
 |---|---|---|---|
-| T1 | line, 8 countries | isolating lines: a click, a legend double-click, or the chips | tracing two lines through a tangle of crossings |
+| T1 | line, 8 countries | isolating lines: a click on a line, or the chips | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
-| T3 | scatter | hovering a dot; hiding dots with the chips | matching a dot to its legend entry |
-| T4 | heatmap | hovering a cell; sorting rows by lowest value | telling dark shades apart |
+| T3 | scatter | hovering a dot; hiding dots with the chips | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
+| T4 | heatmap | hovering a cell; sorting rows by lowest value | telling dark bands apart against the key |
 | T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
 | T6 | line, 2 countries | hovering both lines where they meet | placing, by eye, the year two lines cross |
 
@@ -174,16 +176,20 @@ anyone took part.
 
 On the line and bar charts one point is 4 px, so 5 points is 20 px, the smallest gap that reads
 unaided. Colour is judged less precisely than position, between patches that are not side by side,
-so the floor for colour is doubled. On the sequential scale one point moves lightness by 0.73–0.86
-L*, so 10 points is at least 7.3 L*.
+so the floor for colour is doubled. On the continuous scale the rule was set on, one point moved
+lightness by 0.73–0.86 L*, so 10 points was at least 7.3 L*. **Since 2026-10-11 the heatmap and the
+map draw bands** (`docs/visual-spec.md` §4): a value takes one flat colour, and every band boundary
+moves lightness by at least 8.3 L*. The 10-point floor stands, and T4 and T5 now also require that
+the key be read across a band boundary, which 10 points alone does not guarantee inside the
+heatmap's 0–20 band.
 
 | Item | The key must survive... |
 |---|---|
 | T1 two trends | Each shape the rubric names is large: the riser gains at least **25 points** and never drops more than **12** below a previous peak; the other line drops at least **25 points** from a peak and recovers at least **15** from its trough. The two cross **once**, by the T6 rule's 5-point test. No other line runs within **5 points** of a named line for **5 or more consecutive years**; for the falling line, counted from its last peak before the trough. |
 | T2 rank | The key bar is at least **5 points** from the bars ranked just above and just below it. |
-| T3 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (12 px dots at 4 px a point: closer, and one hides the other). |
-| T4 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row. |
-| T5 count | Every coloured country is at least **10 points** from the threshold. |
+| T3 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (closer, and one dot hides the other, or their names collide). **The key shares its change colour with at least one other dot** (2026-10-11), so the colour alone never names it. |
+| T4 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row, and **in a darker band** than any of them (2026-10-11). |
+| T5 count | Every coloured country is at least **10 points** from the threshold. The threshold, 50, is a band boundary, so the countries below it sit in the two darkest bands and those above in 60–70 or lighter: the 50–60 band stays empty. |
 | T6 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet. |
 
 A bar, dot, cell or country with no reported value is refused outright: the chart would have nothing
@@ -231,7 +237,7 @@ cannot read them exactly (§2). "Ukraine dropped to about 20% around 2015 and ca
 by two coders, blind to condition (§7).
 
 The difficulty is finding and following two lines through the tangle, then describing them. The
-isolation control, the chips and the legend all cut through it.
+isolation control and the chips cut through it.
 
 > **Replaced 2026-09-27.** T1 asked for the year of one line's lowest point (Ukraine in A, Myanmar in
 > B). Every other item asked for a value or a relation, and none asked for an interpretation of a
@@ -293,16 +299,26 @@ diagonal?*
 | Dots below the diagonal | 4 | 6 |
 | Closest two dots | 6.1 points (Ethiopia, Nigeria) | 4.0 points (Cambodia, Pakistan) |
 | Options | Burkina Faso, Chad, Ethiopia, Mali, Niger, Nigeria | Bangladesh, Cambodia, India, Indonesia, Nepal, Pakistan |
+| Key's change colour, shared with | more than +40: Burkina Faso (+46), Ethiopia (+43) | +20 to +40: Pakistan (+28), Cambodia (+24), Nepal (+23) |
 | Key | **Niger** | **India** |
 
-The dot is easy to find; the static cost is naming it, by matching its colour and shape to the
-legend. Hover names it directly. Sixteen dots per form since 2026-10-11, so the legend has sixteen
-entries and every colour is shared by two dots, told apart by shape (`docs/visual-spec.md` §6).
+Every dot is named beside it and coloured by its change (`docs/visual-spec.md` §1, §4). The static
+cost is choosing among the dots that share the darkest change colour: judging, by eye, which sits
+furthest above the diagonal, 6 points ahead in A and 8 in B. Hover gives each dot's two values
+exactly.
 
-> **Ten dots added to each form, 2026-10-11** (Eduardo), so a reader without hover has more legend
-> entries to match. Every added dot improved at least 20 points less than the key, in both forms,
-> so the key, the runner-up, the margin, the closest pair and the options are all unchanged; the
-> new dots add entries to match, not rivals for the answer. Form B could not reach 20 points
+> **Restyled 2026-10-11** (the chart handoff, Eduardo). Until then the dots were named only by a
+> legend, matched by colour and shape, and that matching was the static cost hover lowered. The
+> names remove it, and the change colours narrow the answer to three dots in A and four in B, never
+> to one: the acceptance rule now requires the key to share its colour. T3 is likely easier without
+> hover than it was; the pilot checks whether it sits at ceiling in both conditions (§10). The
+> question, the dots, the key and the options are unchanged.
+
+> **Ten dots added to each form, 2026-10-11** (Eduardo), so a reader without hover had more legend
+> entries to match. The restyle the same day (above) removed the legend; the sixteen dots stay.
+> Every added dot improved at least 20 points less than the key, in both forms, so the key, the
+> runner-up, the margin, the closest pair and the options are all unchanged; the new dots add
+> entries to match, not rivals for the answer. Form B could not reach 20 points
 > otherwise: Asia's eligible countries improved by +16 at most. Within that rule the sets were
 > chosen by search for the fewest close pairs, then the fewest countries outside the old scope.
 > - **A** keeps every in-scope African country that fits (Kenya over Zambia, 3 points apart) and adds
@@ -330,11 +346,14 @@ contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024.
 | Lowest cell | **Chad, 2005: 26%** | **Afghanistan, 2000: 24%** |
 | Next row's lowest | Central African Republic, 37% | Niger, 34% |
 | Margin | 11 | 10 |
+| Bands (2026-10-11) | the key is the only cell in 20–30; nothing lower. Next: CAR 2000 and 2020 (37), Chad 2000 (38), in 30–40 | the key is the only cell in 20–30; nothing lower. Next: Niger 2000 (34), in 30–40 |
 | Options | Burkina Faso, Central African Republic, Chad, India, Mali, Pakistan | Afghanistan, Madagascar, Mali, Niger, Pakistan, Uganda |
 | Key | **Chad** | **Afghanistan** |
 
-No number is written in a cell. Static participants compare shades against the colour key; hover
-gives the exact value, and the Lowest value row sort brings the key's row to the top. The sixth
+No number is written in a cell. Static participants match each cell's band against the stepped key;
+hover gives the exact value, and the Lowest value row sort brings the key's row to the top. Since
+2026-10-11 the cells are banded (`docs/visual-spec.md` §4): the key cell is the only one of its
+colour in either grid, one band darker than the next. The sixth
 option, added 2026-09-25, is each grid's sixth-lowest row: India (58) in A, Madagascar (57) in B.
 
 > **Re-tuned from the spec.** The spec's A-T4 lowest cell (Chad, 26) was 3 points from Nigeria's
@@ -346,22 +365,32 @@ option, added 2026-09-25, is each grid's sixth-lowest row: India (58) in A, Mada
 
 ### T5 — Countries below 50% (map, highlight)
 
-*The map colours {n} countries in sub-Saharan Africa by their coverage in {year}. How many of those
-countries had coverage below 50%?*
+*The map colours {n} countries in Africa by their coverage in {year}. How many of those countries
+had coverage below 50%?* (Until 2026-10-11, "in sub-Saharan Africa".)
 
 | | Form A | Form B |
 |---|---|---|
 | Year | 2013 | 2007 |
-| Countries coloured | 13 | 11 |
+| Countries coloured | 18: Benin, Burkina Faso, Cameroon, Central African Republic, Chad, Democratic Republic of Congo, Egypt, Kenya, Libya, Madagascar, Mali, Mozambique, Niger, Nigeria, Sudan, Tanzania, Uganda, Zambia | 18: Algeria, Botswana, Chad, Congo, Côte d'Ivoire, Eritrea, Gabon, Ghana, Guinea, Malawi, Mauritania, Morocco, Namibia, Senegal, Somalia, South Africa, Tunisia, Zimbabwe |
 | Below 50% | Central African Republic 23, Chad 39, Nigeria 39 | Chad 29, Somalia 40 |
-| Closest to the line | Chad and Nigeria, 11 points below | Somalia, 10 points below |
-| Left uncoloured, within 10 points of 50% | Somalia 44, South Sudan 53, Angola 54, Ethiopia 59 | Nigeria 42, Angola 43, Central African Republic 48, Ethiopia 50, Niger 58; South Sudan has no 2007 value |
+| Closest to the line | Chad and Nigeria, 11 points below; Mali, 14 above | Somalia, 10 points below; Guinea, 13 above |
+| Left out | Somalia 44 and Ethiopia 59, within 10 points of 50% | every African country within 10 points of 50% in 2007 (Nigeria 42, Angola 43, CAR 48, Equatorial Guinea 48, Ethiopia 50, Niger 58); Togo, Sierra Leone and Liberia, the smallest of the countries that pass |
 | Options | 0, 1, 2, 3, 4, 5 or more | same |
 | Key | **3** | **2** |
 
-The coloured countries are the spec's pool of large, easily seen countries, less those within 10
-points of the line in that year. Every other country is plain grey land, and the prompt states how
-many are coloured.
+Every other country is plain land, and the prompt states how many are coloured. Each coloured
+country is named on the map (`docs/visual-spec.md` §1). The forms share one country, Chad.
+
+> **Redrawn 2026-10-11 from the chart handoff** (Eduardo). The handoff's Form A map colours all 20
+> African countries then in scope. Somalia (44) and Ethiopia (59) sit within 10 points of 50%, and
+> with them the 20 fail the rule in every year from 2000 to 2024, so Eduardo kept the rule and
+> dropped those two: 18 countries, the key still 3. Form B has the same number, as far as possible
+> different ones. Only Chad and Somalia in scope fall clear below 50% in 2007, B's year, so B is those
+> two and 16 countries added to the scope for it, each at least 13 points above the line. A form B
+> drawn entirely from new countries works only for 2000–2002, and then counts tiny countries such as
+> Equatorial Guinea. Egypt, Libya and Sudan in A, and Algeria, Mauritania, Morocco and Tunisia in B,
+> are not sub-Saharan, so the prompt says "in Africa". The handoff's world map was not taken: with
+> every country coloured it fails the rule in every year and at every band boundary.
 
 > **Re-tuned from the spec.** The spec's A-T5 (2013, all 17 countries) had South Sudan at 53 and
 > Somalia at 44, and its B-T5 (2018) had Chad at 47 and Somalia at 53, all 3 points from the line.
@@ -528,6 +557,22 @@ the controls, not the questions or the keys.
 - **Log schema v13:** a v12 T3 answer was given against six dots, a v13 one against sixteen
   (`src/logging.py`). Nothing had been collected.
 
+### Revision 2026-10-11: the chart handoff
+
+- **Restyled:** every chart, both conditions alike, from `docs/chart-handoff/` (`docs/visual-spec.md`).
+  The handoff draws Form A's five chart types; Form B, T6 and the practice take the same style.
+- **T3:** dots named beside them and coloured by change, with no legend. The question, dots, key and
+  options are unchanged, but the static cost changed (T3 above), and the acceptance rule gained a
+  clause: the key shares its change colour.
+- **T4:** cells drawn in nine bands. Both grids already passed the new clause (T4 above).
+- **T5:** 18 countries per form, Africa-wide, named on the map (T5 above). Keys unchanged.
+- **Line charts:** no legend; the name tags and the chips do its work.
+- **Scope:** sixteen countries added for B-T5 only (Algeria, Botswana, Congo, Côte d'Ivoire, Eritrea,
+  Gabon, Ghana, Guinea, Malawi, Mauritania, Morocco, Namibia, Senegal, South Africa, Tunisia,
+  Zimbabwe): 68 entities, 6800 rows.
+- **Log schema v14** (`src/logging.py`): a v13 T3 or T5 answer was given against a different chart,
+  and T5's prompt changed. Nothing had been collected.
+
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
 
@@ -556,7 +601,8 @@ source. Scoring happens offline against §7.
 
 **Option order (2026-09-22).** The position of an option must carry no information about the answer.
 - Where the options are countries, they are listed **alphabetically**. So are the chart's entities,
-  which also sets each line's and dot's colour and the order of bars and rows, with World always last.
+  which sets the order of bars, rows and chips, with World always last. Colour goes by country
+  (`docs/visual-spec.md` §4), and by position only until 2026-10-11.
 - Years and year bands run in calendar order; counts in their natural order.
 - Which options an item offers is the one free choice. It is used to spread the key: no position
   holds more than a third of the keys. Every multiple-choice item offers six options (2026-09-25).
@@ -721,7 +767,7 @@ as per-chart-type effects.
 
 | Item | Affordance | Logged? |
 |---|---|---|
-| T1 | isolating lines (also chips, legend, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `legend`, `show-all`), `sort_change`, `view_change`, `view_reset` |
+| T1 | isolating lines (also chips, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `show-all`), `sort_change`, `view_change`, `view_reset`. `filter_change` from `legend` stays in the vocabulary but cannot occur since the legend went (2026-10-11). |
 | T2 | sorting the bars | yes — `sort_change` |
 | T3 | hover; hiding dots with the chips | the chips only — `filter_change` (`chips`) |
 | T4 | hover; sorting rows by lowest value | the sort only — `sort_change` |
@@ -837,7 +883,9 @@ rewritten to describe the controls the charts actually have, and the first half'
 version (4b) now carries the same control bullets as the second half's (9b). Without that, whoever
 draws the interactive condition first would meet the bar, heatmap and map controls with only the
 hint row to go on, which is the procedural difference this section exists to prevent. In the
-interactive condition, a hint row under each chart restates what that chart can do.
+interactive condition, a hint row under each chart restates what that chart can do. Since
+2026-10-11 the line charts have no legend, so the third bullet no longer mentions double-clicking a
+name in it.
 
 First half, both versions. Heading "Instructions", then "Practice Question":
 
@@ -863,8 +911,8 @@ Or **interactive (4b):**
 >   its value; on a line chart you also see its change from the year before.
 > - Under each chart, the country buttons show or hide countries, and Reset view undoes your
 >   changes.
-> - On line charts you can also click a line, or double-click a name in the legend, to see one
->   country on its own; reorder the countries by coverage; and bring every line back with Show all.
+> - On line charts you can also click a line to see one country on its own; reorder the countries
+>   by coverage; and bring every line back with Show all.
 > - The bar chart and the coloured grid can sort their bars or rows. The map can highlight only the
 >   countries below a coverage you type.
 > - A break in a line means no value was reported for those years.
@@ -1086,9 +1134,11 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **Form equivalence.** T1's falling line is Ukraine's 80-point collapse in form A and Brazil's
     31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor, and
     its sixteen dots are more crowded than A's (§4). The T6 crossings are drawn differently (§4).
-  - **Static accuracy and time on T3 (2026-10-11).** Sixteen legend entries, with every colour on
-    two dots, is the largest matching load in the bank. Near-chance static accuracy would mean the
-    shapes do not separate the pairs at 12 px.
+  - **Whether T3 sits at ceiling in both conditions (2026-10-11).** Its dots are named and coloured
+    by change, which removes the legend lookup that was its static cost (§4). If static accuracy
+    matches interactive accuracy near ceiling, T3 measures little about hover.
+  - **Static accuracy on T5's new maps (2026-10-11).** Eighteen countries per form, Africa-wide, and
+    form B's from the countries added to the scope for it.
   - **T1, the written item (2026-09-27).**
     - Its time, since it is the only item written in full.
     - Whether the rubric can be applied: κ per part, and how many descriptions the coders had to
@@ -1110,9 +1160,10 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   participant; `window_size` records it (§8), and `tasks.csv` carries it as `window_height`, so
   the interactive T3 and T5 times can be split at 790 px. **Since 2026-10-11 the split for T3 is
   862 px:** its sixteen chips take two more rows, and the interactive card scrolls on any window
-  under 862 px tall (`visual-spec.md` §10).
+  under 862 px tall (`visual-spec.md` §10). **The map's split moves too (2026-10-11):** eighteen chips
+  in each form, where there were 13 and 11; it is measured when the map is rebuilt.
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
-- **Keyboard-only participants.** Hover, clicking a line and clicking the legend are mouse-only, so a
+- **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
   with only the row sort. The chips, the sorts, the highlight, Show all and Reset view all work from
   the keyboard (`docs/visual-spec.md` §8); a whole session was run from the keyboard alone on
@@ -1165,8 +1216,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     2026-09-27 it should say five multiple-choice questions and one written description of two
     trends per version, and the one-sentence explanation follows the five multiple-choice questions
     only;
-  - item 18: `irb/questionnaire.pdf` was re-exported after the T1 change (2026-09-27, 36 pages);
-    attach that copy;
+  - item 18: `irb/questionnaire.pdf` was re-exported after the T1 change (2026-09-27, 36 pages)
+    and after the T2 and T3 changes (2026-10-11). The chart restyle (2026-10-11) changes every
+    chart and T5's prompt, so re-export once it is built, and attach that copy;
   - item 1: the initial submission date is still the placeholder "(Date sent to hsrrc@oxy.edu)";
   - the investigator signed 9/21/26 and the faculty supervisor 9/23/2026, both before this revision;
   - item 5B lists what the application logs, and since schema v10 (§8) it also logs the browser

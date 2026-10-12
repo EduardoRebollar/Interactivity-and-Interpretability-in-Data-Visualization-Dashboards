@@ -16,8 +16,19 @@ labelling by chart type (§6), and the bar sort, the map's coverage range and th
 1050 × 520 chart (§5), a legend on line charts beside the end labels (§6), controls under every chart
 with a heatmap row sort and a typed map highlight in place of the range (§7), and the page chrome
 around the chart (§10). **Amended 2026-10-11:** the scatter draws sixteen dots, so its eight colours
-are used twice each and every dot has its own marker shape (§4, §6). A change to any of §1–8 or
-§10 needs this document edited first, then the code.
+are used twice each and every dot has its own marker shape (§4, §6). **Amended again 2026-10-11 for
+the chart handoff** (`docs/chart-handoff/`): every chart restyled; the line chart's legend gives way
+to name tags; the scatter names its dots and colours them by change, in place of the legend and the
+shapes; a colour per bar; nine and seven blue bands in place of Cividis; the map shows the whole
+continent and names its countries (§1–7, §10). A change to any of §1–8 or §10 needs this document
+edited first, then the code.
+
+**The chart handoff sets the look, not the content (2026-10-11).** `docs/chart-handoff/` (its README,
+`screenshots/`, `africa map.png` and `scatterplot.png`) draws Form A's five chart types to fix the
+visual style. Which countries, years and forms each chart shows is `docs/study-design.md` §4. Form
+B, T6 and the practice follow the same style, applied here. Where the handoff and this document
+differ, this document says so and why. The handoff's world map (`05-map-world.png`) was not taken:
+T5 stays on Africa (§1).
 
 ---
 
@@ -28,49 +39,76 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 | Type | Items | Encoding |
 |---|---|---|
-| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, World dashed where shown (only the practice draws it; T1 draws eight countries and T6 two) |
-| Bar | T2 | One year's coverage, one bar per country, in the listed order |
-| Scatter | T3 | Each country a dot: coverage in 2000 across, in 2024 up, with a dashed no-change diagonal |
-| Heatmap | T4 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as colour |
-| Map | T5 | One year's coverage as colour on the countries of sub-Saharan Africa the item names |
+| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, a name tag at each line's end; World dashed where shown (only the practice draws it; T1 draws eight countries and T6 two) |
+| Bar | T2 | One year's coverage, one bar per country in the listed order, each in its country's colour |
+| Scatter | T3 | Each country a named dot: coverage in 2000 across, in 2024 up, coloured by its change, with a dashed no-change diagonal |
+| Heatmap | T4 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as one of nine colour bands |
+| Map | T5 | One year's coverage as one of seven colour bands on the African countries the item names, each named on the map |
 
-**Line.** Multi-series, x year 2000–2024 (linear, integer ticks), y coverage. Markers on every
-observed point, radius 5. Markers are not decoration: after a gap, a lone observation with no
-neighbours draws no line segment at all, and without a marker it would silently vanish.
+Every chart is one 1050 × 520 figure holding its own title and source line (§5).
 
-**Bar.** Vertical bars, one colour (§4), named on the x axis. The y axis is the line chart's.
+**Line.** Multi-series, x year 2000–2024 (linear, integer ticks), y coverage. Lines 2.5 px with round
+joins and caps, and a dot of radius 2.6 px in the line's colour at every observed year. Markers are
+not decoration: after a gap, a lone observation with no neighbours draws no line segment at all, and
+without a marker it would silently vanish. A line's last point is a 4.6 px dot with a 2 px white
+ring, joined to its name tag (§6). Vertical guides at 2005, 2010, 2015 and 2020. No legend (§6).
 
-**Scatter.** One trace per country, so each has its own pairing of colour and marker shape (§6)
-and a legend entry. Both axes run 0–100 on **one scale** (`scaleanchor`), so the diagonal is a true 45° line of no
-change and the distance above it is the improvement. The diagonal is a shape, dashed in the axis
-colour, labelled "no change" in the empty lower-left corner. It has no legend entry and no hover.
-**Dots are never clipped at the plot's edge (2026-10-11).** Plotly clips a marker to the axes by
-default, and B-T3's Oman sits at 99, 99: half its shape was cut away, on a chart whose item is
-read by shape. A 12 px dot reaches at most 6 px past the edge, which the margins hold.
+**Bar.** Vertical bars, one per country, each in its country's colour (§4) and named under it. Tops
+rounded 6 px (`marker.cornerradius`), the base square; a bar is 62% of its slot, at most 64 px wide.
+No value on a bar. The y axis is the line chart's. "Countries in alphabetical order" stands at the
+top right and names the order the bars stand in (§7.2).
+
+**Scatter.** A square 400 × 400 plot. Both axes run 0–100 on **one scale** (`scaleanchor`), so the
+diagonal is a true 45° line of no change and the distance above it is the improvement. Gridlines
+every 25 points. The diagonal is a shape, 1.5 px in the muted text colour, dashed 6 5, with "No
+change" on it at (16, 16), turned −45°, on a white knockout so the line breaks around it. "Coverage
+rose ↑" stands at (12.5, 95) and "Coverage fell ↓" at (87.5, 4), each in its end colour of the change
+scale (§4). No hover on the diagonal.
+
+Dots are 9 px, unoutlined, **coloured by their change** from 2000 to 2024 in seven steps (§4), and
+**named beside them** (§6). Each name sits 8 px from its dot's centre, to the right unless that would
+collide, on a white knockout 20 px tall that runs from just behind the dot to 5 px past the name, so
+gridlines and the diagonal stop short of it. The side is set per form, as the handoff sets Form A's
+(left for Niger, Ethiopia, Nigeria, the Central African Republic, Madagascar, Kenya and Tanzania;
+in Form B left for Nepal, Iraq, India and the Philippines, and above for Bangladesh). Draw order:
+grid, axes, diagonal, knockouts, names, dots. No legend: a stepped key stands in the right margin
+(§4). **Dots are never clipped at the plot's edge (2026-10-11).** Plotly clips a marker to the axes
+by default, and B-T3's Oman sits at 99, 99.
 
 **Heatmap.** Rows in the task's order, the first at the top. Columns are categories, so 2020–2024
-takes the same width as the other five-year steps. Cells are separated by 2 px white gaps, so two
-adjacent cells of one colour stay two cells. **No number is written in a cell**: that would give
-the static condition the exact value (§7).
+takes the same width as the other five-year steps. Cells 130 px wide and 46.75 px tall, with 4 px
+white gaps and 4 px rounded corners, so two adjacent cells of one band stay two cells. Plotly cannot
+round a heatmap's cells, so the cells are drawn as shapes, and the heatmap trace beneath them,
+drawn without fill, carries the hover. **No number is written in a cell**: that would give the
+static condition the exact value (§7). A cell with no value is `#EEE8E2` and reads "No data" (§3).
+Row names right-aligned 12 px left of the grid, years 9 px above it, and "A–Z" over the row names
+naming the row order (§7.2). The key is centred above the grid (§4).
 
-**Map.** A choropleth on Plotly's Africa scope at 110m resolution, framed at 36°S–26°N and 20°W–53°E.
-26°N rather than the Sahel's edge because Mali reaches 25°N, and a frame that cuts a coloured country
-hides part of it. The countries an item names are coloured on the sequential scale (§4); every other
-country is plain grey land. Borders are white (§4). The geometry is Plotly's own file, served from
-`src/assets/geo_africa.js` (written by `scripts/vendor_map_geometry.py`) rather than fetched from
-Plotly's CDN in each participant's browser mid-task.
+**Map.** A choropleth on Plotly's Africa scope (Mercator) at 110m resolution, framed on the whole
+continent, Madagascar included (2026-10-11, the handoff's `africa map.png`; it was cropped at
+26°N). The countries an item names are coloured in seven bands (§4) and **named on the map**, 10 px
+bold: inside the country where the name fits, in white on the three darkest bands and in ink on the
+rest, and otherwise beside it, on a 1 px ink leader from a 2 px dot. "Central African Republic" is
+written "CAR" and "Democratic Republic of Congo" "DR Congo". Each form sets its own placements.
+Every other country is plain land (§4). The handoff's key carries a "No data" block for that land;
+this one does not, because those countries do report coverage and are only outside the question,
+and no item's country lacks a value (`docs/study-design.md` §4). The geometry is Plotly's own file,
+served from `src/assets/geo_africa.js` (written by `scripts/vendor_map_geometry.py`) rather than
+fetched from Plotly's CDN in each participant's browser mid-task.
 
 ## 2. Axes
 
 | Property | Value | Reason |
 |---|---|---|
 | Coverage axis (line and bar y; both scatter axes) | **fixed 0–100, never auto-scaled** | An axis that rescales between tasks or conditions changes how steep a trend or how tall a bar looks. That would confound interpretation accuracy with axis framing. |
-| Colour scale (heatmap, map) | **fixed 0–100** (`zmin`/`zmax`) | For the same reason: a scale fitted to the data would give the same colour to different values on different tasks. |
+| Colour bands (heatmap, map, scatter) | **fixed** (§4) | For the same reason: a scale fitted to the data would give the same colour to different values on different tasks. A value's band depends on the value alone. |
 | Line x range | 2000–2024 | Locked scope. |
-| Coverage ticks | every 10 | Fine enough to estimate against without hover, coarse enough to stay readable. |
-| Colour-key ticks | every 10 | So 50% is marked, the threshold T5 asks about. |
-| Axis line & tick labels | `#404040`, 10.37:1 | Well above the 4.5:1 text floor. |
-| Gridlines (line, bar, scatter) | `#B3B3B3`, 2.10:1 | See §4 — a documented exemption. |
+| Coverage ticks | every 10 on the line and bar charts; every 25 on both scatter axes | Every 10 is fine enough to estimate against without hover, coarse enough to stay readable. The scatter's dots are named and coloured by change, so its grid only places them. |
+| Tick labels | "0%" … "100%", right-aligned 8 px left of the y axis; years and percentages 18 px below the x axis | As the handoff draws them. |
+| Axis titles | no unit, horizontal, left-aligned 24 px above the 100% label: "Coverage" (line, bar), "Coverage in 2024" (scatter y). "Year" and "Coverage in 2000" stand at the x axis's end, on the tick labels' baseline. | Read before the axis, not along it. |
+| Colour-key labels | on the band boundaries | So 50% is marked, the threshold T5 asks about. |
+| Axis lines and tick labels | `#4A3F38`, 10.20:1, lines 1 px, left and bottom only | Well above the 4.5:1 text floor. No frame on the top or right. |
+| Gridlines (line, bar, scatter) | `#BBAEA4`, 2.16:1, 1 px | See §4 — a documented exemption. |
 | Names and years on category axes | no gridlines | The categories are labelled; a grid would add nothing. |
 
 Only the line chart's x axis can be zoomed (§7.5). Every other axis, and the map, are fixed.
@@ -109,24 +147,28 @@ Background: `#FFFFFF`.
 
 ### Series colors (floor 3:1)
 
-Colour tells lines apart on the line charts and dots apart on the scatter. Assigned by position in
-the task's entity list, so a chart with *k* series uses the first *k*. The scatter, which draws up
-to sixteen dots (2026-10-11), runs through the eight twice: dot *k* takes colour *k* mod 8, and
-shape tells the two dots of one colour apart (§6).
+Colour tells lines apart on the line charts, and bars apart on the bar chart (below). **Assigned by
+country, not by position (2026-10-11, the chart handoff).** Each of Form A's T1 countries owns one
+colour, in the table's order, and keeps it on every line chart and bar chart it appears on. Any other
+country on a line chart takes the first colour that chart does not already use: on B-T1, Nepal takes
+4 and Uganda 8; on the practice, Myanmar takes 1; on A-T6 the Central African Republic and on B-T6
+Mozambique take 1. A hidden line keeps its colour, so filtering never recolours (§7.3). The scatter
+no longer uses these colours: its dots are coloured by change (below).
 
-| Order | Hex | Ratio | Luminance | Note |
-|---|---|---|---|---|
-| 1 | `#0072B2` | 5.19:1 | 0.152 | Okabe-Ito blue, unmodified |
-| 2 | `#D55E00` | 3.87:1 | 0.222 | Okabe-Ito vermillion, unmodified |
-| 3 | `#009E73` | 3.42:1 | 0.257 | Okabe-Ito bluish green, unmodified |
-| 4 | `#CC79A7` | 3.06:1 | 0.293 | Okabe-Ito reddish purple, unmodified |
-| 5 | `#960600` | 9.04:1 | 0.066 | dark red, added 2026-09-23 |
-| 6 | `#062AA8` | 11.03:1 | 0.045 | royal blue, added 2026-09-23 |
-| 7 | `#246648` | 6.84:1 | 0.103 | forest green, added 2026-09-23 |
-| 8 | `#845472` | 6.01:1 | 0.125 | mauve, added 2026-09-23 |
+| Order | Country | Hex | Ratio | Luminance | Note |
+|---|---|---|---|---|---|
+| 1 | Brazil | `#0072B2` | 5.19:1 | 0.152 | Okabe-Ito blue, unmodified |
+| 2 | China | `#D55E00` | 3.87:1 | 0.222 | Okabe-Ito vermillion, unmodified |
+| 3 | Ethiopia | `#009E73` | 3.42:1 | 0.257 | Okabe-Ito bluish green, unmodified |
+| 4 | India | `#CC79A7` | 3.06:1 | 0.293 | Okabe-Ito reddish purple, unmodified |
+| 5 | Indonesia | `#960600` | 9.04:1 | 0.066 | dark red, added 2026-09-23 |
+| 6 | Nigeria | `#062AA8` | 11.03:1 | 0.045 | royal blue, added 2026-09-23 |
+| 7 | Pakistan | `#246648` | 6.84:1 | 0.103 | forest green, added 2026-09-23 |
+| 8 | Ukraine | `#845472` | 6.01:1 | 0.125 | mauve, added 2026-09-23 |
 
 Reference series (World): `#000000`, 21.00:1, dashed. Black and dashed so it reads as a baseline
-rather than as one more competing country.
+rather than as one more competing country. The chart handoff draws World as one more series colour;
+that was not taken (2026-10-11), for this reason.
 
 ### Why eight, and how they were chosen (2026-09-23)
 
@@ -161,50 +203,134 @@ men, and the palette is held apart under its most severe forms. Tritanopia affec
 separated in luminance** (minimum gap 0.021, floor 0.02). An earlier palette darkened three swatches
 to one contrast target, and they came out luminance-identical.
 
-**The palette is in `config.SERIES_COLORS` in this order.** Each colour after the four Okabe-Ito
-ones is the one furthest from those before it, so a chart with fewer series uses the most separable
-subset. `tests/test_palette.py` holds the contrast floor, the luminance gap, the ΔE floor
-(`config.MIN_CVD_DISTANCE`) and the distance from World.
+**The palette is in `config.SERIES_COLORS` in this order.** Every pair of the eight clears the
+floor, so any set of them does, whichever countries a chart draws. `tests/test_palette.py` holds the
+contrast floor, the luminance gap, the ΔE floor (`config.MIN_CVD_DISTANCE`) and the distance from
+World.
 
 Colour is never the only channel for a series, whatever the palette (§6).
 
-### Sequential scale (heatmap and map)
+### Bar colours (2026-10-11, the chart handoff)
 
-Cividis, written out as ten stops in `config.SEQUENTIAL_SCALE`: dark blue `#00224E` at 0, yellow
-`#FEE838` at 100. **Dark is low coverage**, as the prompts say. Cividis was chosen because its
-lightness rises steadily and reads the same under deuteranopia and protanopia. The tests check that
-lightness rises at every stop in normal vision and under both simulations. One coverage point moves
-lightness by 0.73–0.86 L*, which is what `docs/study-design.md` §4 uses to set the colour floor.
+One colour per bar, by country. A country with a series colour keeps it. Every other bar country
+has its own colour, held to the same floors as the series colours on each chart it appears on: at
+least 3:1 on white, and **every pair of bars on one chart at least 12 ΔE2000 apart** under normal
+vision, deuteranopia and protanopia. A chart is ten bars: A-T2's four countries without a series
+colour are Afghanistan, Kenya, Mali and Vietnam, and B-T2's seven are Cambodia, Cameroon,
+Colombia, Egypt, Mali, Mozambique and the United States.
 
-**DELIBERATE EXEMPTION from the 3:1 floor**, like the gridline. The light end is 1.25:1 on white.
+- **The handoff's four extra colours are not kept.** Its Afghanistan, `#B07A00`, is 1.1 ΔE from
+  China's vermillion under protanopia, the defect that removed the old orange from the palette
+  (above). Its Vietnam is 3.5 from Brazil's blue on the same chart, and its Mali is 6.0 from
+  Indonesia's dark red on B-T2.
+- **No exemption is needed.** A search over sRGB found ten-colour sets for both charts with every
+  pair at least 12.2 ΔE apart. The luminance gap is not held: with ten colours, A-T2 has no room for
+  it between 3:1 and the darkest series colour. Colours must be saturated (C* at least 30), so no bar
+  reads as grey, the colour of land with no question attached.
+- **The colours themselves are chosen when the bar chart is built**, by that search and from a
+  rendered chart Eduardo reviews, and are recorded here then.
+
+The name under each bar identifies it (§6), so colour is never the only channel there either.
+
+### Change scale (scatter, 2026-10-11)
+
+Each dot is coloured by its change from 2000 to 2024, in seven steps: three blues for a rise, grey
+within 5 points, three reds for a fall. A dot exactly on a boundary takes the step nearer zero.
+
+| Step | Change | Hex | Ratio |
+|---|---|---|---|
+| 1 | more than +40 | `#0F3F78` | 10.49:1 |
+| 2 | +20 to +40 | `#1C5FAF` | 6.35:1 |
+| 3 | +5 to +20 | `#3A80CF` | 4.06:1 |
+| 4 | −5 to +5 | `#8E8781` | 3.54:1 |
+| 5 | −5 to −20 | `#D9473F` | 4.27:1 |
+| 6 | −20 to −40 | `#A3262C` | 7.31:1 |
+| 7 | less than −40 | `#6E1D20` | 11.29:1 |
+
+Every step clears 3:1 on white. Adjacent steps are 10.9–27.2 ΔE apart in normal vision, and 7.9 at
+the least under protanopia (steps 6 and 7). **Exempt from the 12 ΔE floor**, like the sequential
+scale below: the change is also the dot's height above the diagonal, and the name beside the dot,
+not its colour, says which country it is. The key labels the boundaries in percentage points,
+"+40 pts" to "−40 pts", with "+100 pts" and "−100 pts" at the ends: the handoff writes "%", and the
+difference between two percentages is points (§7.1).
+
+**A consequence for T3.** The darkest steps mark the largest rises, the very quantity T3 asks about.
+The key never stands alone in its step: in Form A Niger (+52) shares the darkest blue with Burkina
+Faso (+46) and Ethiopia (+43); in Form B India (+36) shares step 2 with Pakistan (+28), Cambodia
+(+24) and Nepal (+23). `docs/study-design.md` §4 makes that a rule.
+
+### Sequential scale (heatmap and map, 2026-10-11)
+
+A blue scale, ten stops built in OKLCH with lightness rising at every stop and no yellow (the
+handoff's `RAMPS.blue`, replacing Cividis): `#0A2347`, `#0A3569`, `#08498A`, `#095EA9`, `#1A75C3`,
+`#348DD8`, `#54A5E8`, `#78BDF4`, `#9ED4FD`, `#CCE9FF`. **Dark is low coverage**, as the prompts say.
+Neither chart blends it: each draws **bands**, so a cell or country takes one flat colour and is
+matched to a stepped key.
+
+| Heatmap band | Hex | | Map band | Hex |
+|---|---|---|---|---|
+| 0–20 | `#0A2347` | | under 40 | `#0A3569` |
+| 20–30 | `#0A386D` | | 40–50 | `#08498A` |
+| 30–40 | `#084E92` | | 50–60 | `#095EA9` |
+| 40–50 | `#0F67B3` | | 60–70 | `#1A75C3` |
+| 50–60 | `#2781CE` | | 70–80 | `#54A5E8` |
+| 60–70 | `#489CE2` | | 80–90 | `#9ED4FD` |
+| 70–80 | `#6FB7F1` | | 90 and over | `#CCE9FF` |
+| 80–90 | `#99D1FC` | | | |
+| 90–100 | `#CCE9FF` | | | |
+
+A value falls in the band whose lower bound it reaches. The heatmap's nine are sampled evenly along
+the scale; the map's seven are stops 1, 2, 3, 4, 6, 8 and 9. Lightness rises at every band in normal
+vision and under deuteranopia, protanopia and tritanopia. Each band boundary moves lightness by 9.4–
+9.8 L* on the heatmap and by 8.3–17.4 on the map; adjacent bands are at least 7.2 ΔE apart on the
+heatmap and 6.6 on the map, under any of normal vision, deuteranopia and protanopia. `docs/study-design.md` §4 rests T4's and
+T5's colour floors on these numbers. Two values in one band look identical (82% and 87% on the
+heatmap), which no item turns on: T4's and T5's keys sit at least a band clear (§4 there).
+
+**DELIBERATE EXEMPTION from the 3:1 floor**, like the gridline. The light end is 1.26:1 on white.
 No sequential scale can put every step at 3:1 on white and still span enough lightness to read a
 difference in. No cell or country is *found* by its colour:
 
 - heatmap cells sit on a grid labelled by country and year;
-- map countries are separated by white borders and named on hover.
+- map countries are separated by white borders and named on the map.
 
-What must hold instead is enforced: **white borders reach 3:1 against every fill up to 50%**, the
-dark countries T5 asks participants to count. That is 15.69:1 at 0% and 4.89:1 at 44%.
-(`AXIS_COLOR` borders were rejected: 1.51:1 against the darkest fill, so two adjacent dark
-countries, such as CAR and Chad, would merge.)
+What must hold instead is enforced: **white borders and gaps reach 3:1 against every band below
+50%**, the dark countries T5 asks participants to count and the dark cells T4 asks about. The least
+is 5.82:1, the heatmap's 40–50 band; on the map it is 9.01:1. (`AXIS_COLOR` borders were rejected
+on 2026-09-23: against the darkest fill two adjacent dark countries, such as CAR and Chad, would
+merge.)
+
+**The keys.** The heatmap's sits centred above the grid: "Coverage", then a 560 × 16 bar of nine
+62.2 px blocks with 2 px gaps, rounded 5 px at its ends, outlined 1 px in the gridline colour, with
+"0%", "20%", "30%" … "100%" on the boundaries below it, 15 px. The map's stands at the right: seven
+blocks 22 × 26 px, rounded 4 px, 5 px apart, the highest band at the top, "100%" at the top edge,
+"90%" … "40%" in the gaps and "0%" at the bottom edge, 13 px. The scatter's is the map's shape,
+seven 20 × 36 px blocks 2 px apart with the outer ends rounded 6 px, titled "Change since 2000",
+with "↑ Coverage rose", "Little or no change" and "↓ Coverage fell" beside blocks 1, 4 and 7. All
+three keys are drawn into the figure, so both conditions have them.
 
 | Map element | Colour |
 |---|---|
-| Coloured countries | sequential scale, fixed 0–100 |
-| Every other country | `#EFEFEF`, plain land |
-| Borders between countries | `#FFFFFF` |
-| Coastlines | `#B3B3B3`, the gridline grey |
+| Coloured countries | the seven map bands |
+| Every other country | `#EEE8E2`, plain land, 1 px white borders |
+| Borders between coloured countries | `#FFFFFF`, 1.25 px |
+| Coastline | `#BBAEA4`, the gridline colour, 2 px, under all land |
 | Countries hidden by a chip, or not below the highlight (interactive, §7.3–7.4) | same colour, opacity 0.15 |
 
 ### Text and structure
 
 | Role | Hex | Ratio | Floor |
 |---|---|---|---|
-| Primary text | `#1A1A1A` | 17.40:1 | 4.5:1 |
-| Muted text | `#595959` | 7.00:1 | 4.5:1 |
-| Axis | `#404040` | 10.37:1 | 4.5:1 |
+| Primary text (names, titles) | `#241C18` | 16.74:1 | 4.5:1 |
+| Muted text (source, "No change", order labels) | `#5F544D` | 7.34:1 | 4.5:1 |
+| Axis lines and tick labels | `#4A3F38` | 10.20:1 | 4.5:1 |
 | Validation error | `#C35600` | 4.51:1 | 4.5:1 |
-| Gridline | `#B3B3B3` | 2.10:1 | **exempt** |
+| Gridline | `#BBAEA4` | 2.16:1 | **exempt** |
+| Name-tag edge | `#E4D8CC` | 1.40:1 | **exempt**: decorative; the tag's name carries it |
+| Plain land, empty heatmap cell | `#EEE8E2` | 1.22:1 | **exempt**: a surface, never a mark |
+
+The chart's text colours are the page chrome's ink and muted tokens since the chart handoff
+(2026-10-11), with a warm axis and gridline to match (§10).
 
 **The error colour is UI chrome, not a series colour.** It never appears on a chart, so it does not
 count against `MAX_SERIES` and needs no separation from the palette. It is derived from the
@@ -213,31 +339,57 @@ so preserves the hue. The vermillion itself is 3.87:1 — above the 3:1 graphic 
 a 2.5px line, below the 4.5:1 floor that applies to text.
 
 **The gridline exemption is deliberate and recorded.** No grey reaches 3:1 against white while still
-reading as a gridline rather than as data. `#B3B3B3` is darker than a typical default because the
+reading as a gridline rather than as data. `#BBAEA4` is darker than a typical default because the
 static condition has no hover, so participants estimate values against the grid. The values are
-carried by tick labels at 10.37:1. `config.GRIDLINE_EXEMPT` makes the exemption explicit, and a test
+carried by tick labels at 10.20:1. `config.GRIDLINE_EXEMPT` makes the exemption explicit, and a test
 fails if the gridline ever drifts too faint to use (< 1.8:1).
 
 ## 5. Typography and dimensions
 
 | Property | Value |
 |---|---|
-| Family | Helvetica, Arial, sans-serif |
+| Family | Helvetica, Arial, sans-serif; tabular numerals |
 | Base | 14 px |
-| Title | 18 px |
-| Axis labels, legend, colour key | 13 px |
+| Title | 18 px bold, line height 22 px |
+| Axis labels, names, name tags, scatter and map keys | 13 px, medium (below) |
+| Heatmap text, all of it | 15 px |
+| Scatter dot names | 11.5 px, medium |
+| Map country names | 10 px bold |
+| Source line | 12 px, line height 16 px, muted |
 | Line width | 2.5 px |
-| Line marker radius | 5 px |
-| Scatter marker size | 12 px |
-| Heatmap cell gap | 2 px |
+| Line marker radius | 2.6 px; the end dot 4.6 px with a 2 px white ring |
+| Scatter marker size | 9 px |
+| Heatmap cell gap | 4 px |
 | Chart size, every type | 1050 × 520 px, fixed (2026-09-25) |
 
 **Fixed at 1050 × 520 (2026-09-25).** The figure's own layout sets the width, and `dcc.Graph` is not
 responsive, so the chart is the same size on every screen and in both conditions. Margins are in
-pixels. The line chart keeps 60 px above and below its plot, so the plot is 400 px tall: one
-coverage point is 4 px, which the acceptance rule's floors rest on (`docs/study-design.md` §4). Its
-right margin holds the end labels and, beyond them, the legend (§6), so the plot is about 640 px
-wide, about 26 px a year.
+pixels.
+
+**The card (2026-10-11, the chart handoff).** The figure holds three bands, all drawn in it so both
+conditions have them by construction:
+
+- **Title**, 0–30 px: padded 4 px at the top and 16 px at the left. "DTP3 coverage, 2000–2024" on line
+  charts, "DTP3 coverage, {year}" on the bar chart and the map, "DTP3 coverage, 2000 and 2024" on the
+  scatter, "DTP3 coverage, selected years" on the heatmap. No subtitle.
+- **Chart**, 30–492 px.
+- **Source line**, at 502 px, 16 px from the left, on one line: "Source: WHO/UNICEF coverage
+  estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured
+  varies by country."
+
+The line, bar and scatter plots run from 68 px (100%) to 468 px (0%), 400 px tall, so one coverage
+point is 4 px, which the acceptance rule's floors rest on (`docs/study-design.md` §4). Margins:
+
+| Chart | Left | Right | Top | Bottom | Plot width |
+|---|---|---|---|---|---|
+| Line | 52 | 204 (the name tags) | 68 | 52 | 794 px, 33 px a year |
+| Bar | 52 | 24 | 68 | 52 | 974 px, ten 97.4 px slots |
+| Scatter | 290 | 360 (the key) | 68 | 52 | 400 px, square |
+
+**Medium weight.** Axis numbers and names are drawn at weight 500. Helvetica and Arial have no 500
+on most participants' computers, so the browser would draw them regular. The handoff draws the
+weight as a 0.45 px stroke in the text's own colour, and the app does the same, with a rule in
+`src/assets/` on the chart's text. It applies in both conditions.
 
 **The chart's size is reserved from the moment a task screen appears (2026-09-16), in both
 conditions.** Plotly is loaded on demand, the first time a chart is drawn in a session. Until it
@@ -248,61 +400,40 @@ to land on the wrong option. A fixed-height container around the chart holds the
 ## 6. Series limits and labelling
 
 - **At most 8 lines on one chart**, World not counted, and **at most 16 dots on a scatter**
-  (2026-10-11). Bars share one colour; heatmap rows and map countries use the sequential scale;
-  neither is capped by the palette.
+  (2026-10-11). Bars take their countries' colours (§4); heatmap rows and map countries use the
+  blue bands; scatter dots the change scale. Only lines are capped by the palette.
 - **Colour is never the only channel identifying a series.** Each chart type carries a second one:
 
 | Type | Identity carried by |
 |---|---|
-| Line | the series name at the right end of the line, in its colour; and a legend (2026-09-25) |
-| Bar | the country name on the x axis |
-| Scatter | a legend pairing each dot's colour with a marker shape no other dot has |
+| Line | a name tag at the line's end, joined to it by a leader in its colour |
+| Bar | the country name under the bar |
+| Scatter | the country name beside its dot |
 | Heatmap | the country name on each row |
-| Map | the country's place on the map, and its name on hover |
+| Map | the country name on the map, and its place |
 
-- **End labels never overlap (added 2026-09-22).** Each sits at its series' last reported point, in
-  the series colour. Where two would be closer than **18 px** (4.5 points), they are spread apart
-  vertically, by the smallest spread that separates them and keeps their order. The spread is
-  computed in `build_figure`, which takes no `interactive` argument, so both conditions get
-  identical labels.
-- **Labels may rise into the top margin by one label's height (amended 2026-09-23).** A-T1 has eight
-  countries ending between 67 and 97. Holding every label under 100 moved World's label 7.5 points
-  off its line; with the headroom, no label moves more than 5.44. Labels are placed in paper
+- **Name tags (2026-10-11, the chart handoff; they replace the 2026-09-22 end labels).** Each tag is
+  a white pill 20 px tall, fully rounded, with a 1 px `#E4D8CC` edge, at x 860; inside it, a 4 px dot
+  in the line's colour and the name, 13 px medium ink, 7 px from the right end. No value. A 1.4 px
+  leader in the line's colour, a cubic Bézier from 6 px right of the end dot to the tag's left end,
+  joins them ("Central African Republic" is written "Central African Rep."). World's tag is drawn the
+  same way.
+- **Tags never overlap.** They keep the order of their lines' last reported values and are spread
+  so their centres are at least **23 px** apart, by the handoff's `spread()`, between 10 px above
+  the plot's top and 4 px above its bottom. The spread is computed in `build_figure`, which takes no
+  `interactive` argument, so both conditions get identical tags. Tags are placed in paper
   coordinates vertically, because Plotly does not draw an annotation whose data coordinate lies
-  outside its axis range. The first build did exactly that, and China's label on A-T1 never
-  appeared (found in headless Chrome).
-- **A legend on every line chart (2026-09-25).** The design handoff makes the legend a control:
-  clicking a name hides or shows its line, and double-clicking shows only that one (§7.3). It is part
-  of the figure, so both conditions draw it; `staticPlot` makes it inert in the static condition.
-  It stands vertically to the right of the end labels, which stay: they are the static reader's way
-  to find a line in a tangle without matching colours, and the reason colour is never the only
-  channel. Entries follow the task's entity order until the View control reorders them (§7.2).
-  World has no legend entry, as it has no chip: it cannot be hidden (below), and its end label and
-  dash identify it.
-- **The scatter's legend is part of the task.** Its item asks which country improved most; without
-  hover, the dot is named by matching its colour and shape to the legend. Legend clicks are
-  disabled, because a click there would hide a dot outside the logged controls. The chips do that
-  instead, and are logged (§7.3).
-- **Sixteen dots, eight colours, sixteen shapes (2026-10-11).** T3 draws sixteen dots so a reader
-  without hover has more legend entries to match (`docs/study-design.md` §4). No ninth colour
-  passes §4's floors, so dot *k* takes colour *k* mod 8 and shape *k*: no two dots share a shape,
-  and two dots that share a colour are told apart by shape alone. Each shape added for dots 9–16 is
-  paired with the shape of the dot that shares its colour and chosen to differ from it most:
-
-| Colour | Dots 1–8 | Dots 9–16 |
-|---|---|---|
-| 1 blue | circle | hourglass |
-| 2 vermillion | square | star-diamond |
-| 3 bluish green | diamond | bowtie |
-| 4 reddish purple | triangle-up | star-square |
-| 5 dark red | x | triangle-left |
-| 6 royal blue | triangle-down | hexagram |
-| 7 forest green | cross | triangle-right |
-| 8 mauve | star | diamond-tall |
-
-  Rejected after rendering every Plotly symbol at 12 px in each colour: pentagon, hexagon and the
-  `-x` and `-cross` variants, which read as circles, squares or diamonds at that size, and the
-  arrows, which Plotly draws off-centre. Line charts keep the eight-line cap: a line has no shape.
+  outside its axis range (on 2026-09-23 China's label on A-T1 never appeared, found in headless
+  Chrome).
+- **No legend on line charts (2026-10-11, the chart handoff).** The legend of 2026-09-25 stood to the
+  right of the end labels; the handoff gives that margin to the name tags. Both its jobs are done
+  elsewhere: the tags identify lines for every reader, and in the interactive condition the chips
+  hide and show lines and a click on a line isolates it (§7.3).
+- **The scatter names its dots (2026-10-11, the chart handoff).** Its legend and the sixteen marker
+  shapes chosen earlier that day are gone: every dot is a circle, named beside it (§1) and coloured
+  by its change (§4). The static reader no longer matches a dot to a legend entry, which changes
+  what T3 costs without hover (`docs/study-design.md` §4). The colour-and-shape table is in the git
+  history.
 
 **RESOLVED (2026-09-15) — the same fixed set per task, in both conditions.** If interactive
 participants could reach entities that static participants could not, interactivity would be
@@ -310,9 +441,9 @@ changing *how much data is reachable* as well as *how it is worked with*. Each t
 fixed entity set, both conditions see it, and no control reaches an entity the static condition
 cannot see (`docs/study-design.md` §3).
 
-The World reference is excluded from the line filter (`layout.filterable`), and has no chip and no
-legend entry: it is the baseline the lines are read against, and switching it off would remove part
-of what the question is about.
+The World reference is excluded from the line filter (`layout.filterable`), and has no chip: it is
+the baseline the lines are read against, and switching it off would remove part of what the
+question is about.
 
 Enforced by `tests/test_conditions.py::test_the_task_screen_opens_on_the_same_chart_in_both_conditions`,
 for every task.
@@ -326,7 +457,7 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | `staticPlot` | `True` | `False` |
 | Hover tooltips | none | every chart: the value; on lines, also the change from the year before |
 | Country chips | none | every chart: show or hide each country drawn |
-| Line charts | image | View (reorder the chips and the legend), Show all, isolate a line, legend click and double-click, zoom and pan the x axis |
+| Line charts | image | View (reorder the chips), Show all, isolate a line, zoom and pan the x axis |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
 | Heatmap | image | Sort rows: Default, Lowest value, Average |
 | Map | image | Highlight: fade every country not below a typed percentage |
@@ -341,7 +472,9 @@ rendered *under* the chart. Nothing in this table adds, removes or restyles a ma
 `build_figure` takes no `interactive` argument, and `tests/test_conditions.py` proves both conditions
 open on byte-identical figure JSON for every task. Once a control is used, it changes the chart only
 through a view function that hides, reorders or fades what is already there (`figures.set_visible`,
-`sort_bars` and their 2026-09-25 companions for rows, fades, the legend's order and the highlight).
+`sort_bars` and their 2026-09-25 companions for rows, fades and the highlight). Two labels name an
+order and follow it when a sort changes it: the bar chart's "Countries in alphabetical order" and the
+heatmap's "A–Z" (§7.2). At rest each reads as in both conditions.
 
 **The controls sit under the chart (2026-09-25).** The controls strip and the hint row come after
 the chart and the gap caption, and exist only in the interactive condition, so the chart is at the
@@ -376,12 +509,12 @@ the country's name. Like the change line, they are in both conditions' figures.
 
 ### 7.2 Sorting (defined 2026-09-15; bars added 2026-09-23)
 
-**On a line chart, sorting reorders the chips and the legend. It never reorders the chart.** A
+**On a line chart, sorting reorders the chips. It never reorders the chart.** A
 time-series line chart has no meaningful row order: the x axis is time and the lines are where the
 data puts them.
 
 - Control: **View**, `as listed` / `by coverage`, default `as listed` (the task's own order).
-- `by coverage` orders the chips and the legend by each entity's most recently **reported** value,
+- `by coverage` orders the chips by each entity's most recently **reported** value,
   highest first. An entity with nothing reported sorts last.
 - **Chip labels carry no value (2026-09-25).** The earlier control read `Brazil — 91%`; the design
   handoff keeps the name alone so that reordering moves nothing else on the page (its state S5).
@@ -389,28 +522,30 @@ data puts them.
 **On the bar chart, sorting moves the bars** (2026-09-23). A bar chart's x axis has no order of its
 own, so reordering it changes no meaning: each bar keeps its colour, its label and its height.
 Control: **Sort**, `A–Z` (the listed order, which is alphabetical), `High → low`, `Low → high`
-(three options since 2026-09-25). A bar with no value sorts last either way.
+(three options since 2026-09-25). A bar with no value sorts last either way. The label at the
+chart's top right says the order (2026-10-11): "Countries in alphabetical order", "Countries by
+coverage, highest first" or "Countries by coverage, lowest first".
 
 **On the heatmap, sorting moves the rows** (2026-09-25), for the same reason: its rows are names,
 not a scale. Control: **Sort rows**, `Default` (the listed order), `Lowest value` (each row's lowest
 cell, lowest first) and `Average` (each row's mean over its columns, lowest first). Ties keep the
-listed order. Each row keeps its cells and its label; no cell changes colour.
+listed order. Each row keeps its cells and its label; no cell changes colour. The label over the
+row names says the order (2026-10-11): "A–Z", "Lowest value first" or "Lowest average first".
 
-### 7.3 Filtering, the legend and line isolation
+### 7.3 Filtering and line isolation
 
 - **Chips on every chart (2026-09-25).** One chip per country the chart draws, with its flag, in
   the task's entity order (the View control reorders them on line charts). World has none.
-- **Filtering hides; it does not rebuild the chart from a shorter list.** Colour is assigned by
-  position (§4), so a rebuild would recolour the survivors.
-  - A hidden **line or scatter dot** disappears (`visible="legendonly"`, so a line's legend entry
-    stays, greyed, and can bring it back). An end label is hidden with its line.
+- **Filtering hides; it does not rebuild the chart from a shorter list.** A rebuild would move
+  every name tag, and before 2026-10-11, when colour went by position, it would also have recoloured
+  the survivors.
+  - A hidden **line or scatter dot** disappears (`visible="legendonly"`), and with it the line's end
+    dot, leader and name tag, or the dot's name and knockout. The other tags stay where they are.
   - A hidden **bar, heatmap row or map country** fades to opacity 0.15, keeping its place, its
-    colour and its label. A hidden row must not look like an empty cell, which means "not reported"
+    colour and its name. A hidden row must not look like an empty cell, which means "not reported"
     (§3).
 - The filter cannot empty the chart: the last country cannot be unchecked. On the practice chart
-  that leaves one chip, Brazil, which cannot be unchecked.
-- **The legend (line charts).** Clicking a name hides or shows its line; double-clicking shows only
-  that line. The chips follow the legend and the legend follows the chips.
+  that leaves one chip, Myanmar, which cannot be unchecked.
 - **Line isolation** is a click on the line itself. Clicking an isolated line again releases it, as
   does *Show all*, which also shows every hidden line. The World reference stays visible throughout
   and cannot itself be isolated. A click on any other chart type does nothing.
@@ -426,7 +561,7 @@ listed order. Each row keeps its cells and its label; no cell changes colour.
   it would name the question's own threshold; the box names none, and does what dragging the old
   range's upper handle did (Eduardo, 2026-09-25).
 - **Countries at n or above fade to 0.15 opacity.** Countries below n stay at full strength. They
-  keep their colour and their place.
+  keep their colour, their place and their name.
 - **100 or an empty box means no highlight**, so the map at rest is exactly the figure
   `build_figure` made, and no country can be faded by the starting value.
 - Drawn as a **selection**. The countries shown at full strength are selected and the rest take the
@@ -466,8 +601,9 @@ static condition shows no modebar at all.
   in `graph_config` because only the x axis moves; it restores 1999.5–2024.5. Autoscale is removed:
   after a zoom it fits the axis to everything drawn, end labels included, and lands on 1998.4–2027.0
   (measured in Chrome), which is not the chart's own view.
-- **Legend clicks** are on for line charts (§7.3) and off for the scatter (§6). In the static
-  condition, `staticPlot` turns every legend off as a control while leaving it drawn.
+- **Zoomed in, the name tags and leaders stay where they are** (2026-10-11): they are drawn in paper
+  coordinates and name where each line ends, in 2024, which a zoom may move out of view.
+- **No chart has a legend** (2026-10-11, §6), so none has legend clicks.
 
 **Consequence for task design:** static participants cannot read exact values; they estimate against
 gridlines or a colour key. A task asking "what was Nigeria's DTP3 coverage in 2012?" therefore
@@ -478,17 +614,18 @@ study-design decision, recorded here because it follows directly from the visual
 ## 8. Accessibility
 
 - Contrast floors above are enforced by `tests/test_palette.py`, so an inaccessible palette fails the
-  build rather than reaching a participant. So is the palette's separation under simulated
-  colour-vision deficiency (§4), and the sequential scale's steady lightness under it.
+  build rather than reaching a participant. So is the separation of the series and bar colours under
+  simulated colour-vision deficiency (§4), and the blue bands' steady lightness under it.
 - All controls are keyboard-operable (CLAUDE.md baseline):
   - the chips are native checkboxes, and View, Sort and Sort rows are native radios;
   - Show all and Reset view are native buttons, and the map's highlight is a native number box.
 - Focus rings appear only for keyboard focus (`:focus-visible`), as a 2 px white gap and a 2 px
   accent ring (§10).
-- Hover, line isolation, legend clicks and zoom are mouse-only. A keyboard-only participant in the
+- Hover, line isolation and zoom are mouse-only. A keyboard-only participant in the
   interactive condition therefore meets the scatter item with only the chips and the heatmap item
   with only the row sort. This is recorded in `docs/study-design.md` §10.
-- Direct labelling and marker shapes mean colour is never the sole channel for a series (§6).
+- Every mark is named: tags on lines, names under bars, beside dots, on rows and on the map. Colour
+  is never the sole channel for a series (§6).
 - Full screen-reader support is explicitly out of scope; nothing here should make it worse.
 
 ## 9. Open items
@@ -506,7 +643,8 @@ the write-up.
 4. ~~More than five series.~~ **Resolved 2026-09-23:** eight colours, measured under simulated
    colour-vision deficiency, with the scatter's second channel in marker shape. See §4 and §6.
 5. ~~More than eight scatter dots.~~ **Resolved 2026-10-11:** the colours repeat in pairs and every
-   dot has its own shape. See §6.
+   dot has its own shape. **Superseded the same day** by the chart handoff: every dot is named and
+   coloured by its change. See §6.
 
 Nothing in §1–8 is open. A change to any of it needs this document edited first, then the code.
 
@@ -565,10 +703,12 @@ strip and the hint row under the chart (§7).
   Dash cannot read a field nested in an option; the rail's buttons get a focus ring, which the
   handoff's `all: unset` removes; and when Next or Back disappears or goes dead under the
   keyboard, focus moves to the button that replaces it.
-- **Two palettes that never mix.** The chrome's colours (the stylesheet's `:root` tokens: oat page
-  `#F8F3EE`, band `#EFE4DA`, ink `#241C18`, muted `#5F544D`, cocoa accent `#5A4034`, error `#C35600`
-  and the rest) are never used inside the chart, and the series colours and Cividis (§4) are never
-  used in the chrome. The chart's own text colours stay those of §4.
+- **Two palettes, one ink (amended 2026-10-11).** The chart's text uses the chrome's ink `#241C18`
+  and muted `#5F544D`, as the chart handoff draws it, with a warm axis `#4A3F38` and gridline
+  `#BBAEA4` (§4). The rest of the chrome's colours (the stylesheet's `:root` tokens: oat page
+  `#F8F3EE`, band `#EFE4DA`, cocoa accent `#5A4034`, error `#C35600` and the rest) are never used
+  inside the chart, and the series, bar, change and blue colours (§4) are never used in the
+  chrome.
 - **Contrast.** Every chrome pair the stylesheet uses is measured with `src/contrast.py` and held to
   the §4 floors by `tests/test_palette.py`. One deliberate exemption: Submit's fill while saving,
   `#91796E`, gives white text about 3.9:1. The button is disabled at that moment, and WCAG 1.4.3
@@ -584,7 +724,9 @@ strip and the hint row under the chart (§7).
   everywhere. **Since 2026-10-11 the scatter's sixteen chips take four rows, not two**, and its
   interactive card ends 72 px lower: Submit's bottom edge sits at 862 px, so the card scrolls on
   any window under 862 px tall, 1440 × 790 included, where with six chips it ended at exactly
-  790 (measured in headless Chrome, both forms, against the committed six-dot version).
+  790 (measured in headless Chrome, both forms, against the committed six-dot version). **The map
+  chips go from 13 (A) and 11 (B) to 18 in each form (2026-10-11, `study-design.md` §4)**, so the
+  interactive map card grows too; its height is measured when the map is rebuilt, and recorded here.
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

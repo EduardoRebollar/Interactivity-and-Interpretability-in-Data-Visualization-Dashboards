@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>body{margin:0;background:#F8F3EE;color:#241C18;font-family:Helvetica, Arial, sans-serif;-webkit-font-smoothing:antialiased;} a{color:#5A4034;} a:hover{color:#4A342A;}</style>
+</helmet>
+<section style="padding:72px 80px 96px;display:flex;flex-direction:column;gap:48px;border-bottom:1px solid #DDC8B8;">
+<header style="display:flex;flex-direction:column;gap:14px;max-width:1500px;">
+<p style="margin:0;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Chart style · five Form A charts at 1050 × 520 · colour scale in Tweaks</p>
+<h1 style="margin:0;font-size:44px;line-height:1.1;">Study chart style</h1>
+<p style="margin:0;font-size:18px;line-height:1.55;max-width:960px;text-wrap:pretty;">One visual style for the five chart types in the study, used the same way in both conditions. Each chart sits on a white ground with thin left and bottom axis lines, light gridlines and 13 px Helvetica, with names in ink and secondary text in muted brown. Line, bar and scatter keep fixed 0–100 axes at 4 px a point. The notes under each chart say what it shows, why, and what to check against the task it serves.</p>
+</header>
+<div id="4a" style="display:flex;flex-direction:column;gap:32px;">
+<div style="display:flex;gap:12px;align-items:baseline;"><span style="font:700 15px Helvetica, Arial, sans-serif;background:#1A1A1A;color:#FFFFFF;padding:3px 9px;border-radius:4px;">4a</span><span style="font-size:28px;font-weight:700;">Restrained</span><span style="font-size:17px;color:#5F544D;">Light grid, direct labels, stepped colour keys</span></div>
+<div style="display:grid;grid-template-columns:repeat(2,1050px);column-gap:120px;row-gap:56px;align-items:start;">
+<div style="display:flex;flex-direction:column;gap:14px;">
+<p style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Line · T1, T6 and practice</p>
+<div style="width:1050px;height:520px;background:#FFFFFF;box-shadow:0 1px 2px rgba(36,28,24,.06), 0 8px 28px rgba(36,28,24,.06);display:flex;flex-direction:column;overflow:hidden;">
+<div style="height:30px;box-sizing:border-box;padding:4px 16px 0;display:flex;flex-direction:column;justify-content:center;"><p style="margin:0;font-size:18px;line-height:22px;font-weight:700;">DTP3 coverage, 2000–2024</p></div>
+{{ c.f_line }}
+<p style="height:18px;margin:10px 0 0;padding:0 16px;font-size:12px;line-height:16px;color:#5F544D;white-space:nowrap;">Source: WHO/UNICEF coverage estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured varies by country.</p>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:6px;max-width:980px;">
+<li>One 2.5 px line per country with a dot at every year, so a single reported year after a gap still shows. <i>§1</i></li>
+<li>Each line ends in a white-ringed dot and a rounded name tag on a curved leader, so there is no legend to look up. Tags carry no values. <i>§6, static fairness</i></li>
+<li>2000 sits on the y axis and the x axis is titled "Year" at its end, with ticks and vertical guides every 5 years. <i>§2</i></li>
+</ul></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;">
+<p style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Bar · T2</p>
+<div style="width:1050px;height:520px;background:#FFFFFF;box-shadow:0 1px 2px rgba(36,28,24,.06), 0 8px 28px rgba(36,28,24,.06);display:flex;flex-direction:column;overflow:hidden;">
+<div style="height:30px;box-sizing:border-box;padding:4px 16px 0;display:flex;flex-direction:column;justify-content:center;"><p style="margin:0;font-size:18px;line-height:22px;font-weight:700;">DTP3 coverage, 2017</p></div>
+{{ c.f_bar }}
+<p style="height:18px;margin:10px 0 0;padding:0 16px;font-size:12px;line-height:16px;color:#5F544D;white-space:nowrap;">Source: WHO/UNICEF coverage estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured varies by country.</p>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:6px;max-width:980px;">
+<li>Ten countries in alphabetical order (Form A's seven plus Afghanistan, Kenya and Mali), stated top right so the order isn't read as a ranking. No values on bars. <i>Neutral framing, static fairness</i></li>
+<li>Bars fill 62% of their slot, with 6 px rounded tops (Plotly <code>marker.cornerradius</code>). Each country keeps its line-chart colour; the four not in the line chart get new ones, all at least 3.7:1 on white. <i>§4</i></li>
+<li>Check: three pairs sit 1–2 points apart (Afghanistan 64 / Ethiopia 65, Pakistan 75 / Mali 77, Kenya 81 / Brazil 83), under the 5-point gap the T2 acceptance rule assumes. <i>study-design §4</i></li>
+</ul></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;">
+<p style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Scatter · T3</p>
+<div style="width:1050px;height:520px;background:#FFFFFF;box-shadow:0 1px 2px rgba(36,28,24,.06), 0 8px 28px rgba(36,28,24,.06);display:flex;flex-direction:column;overflow:hidden;">
+<div style="height:30px;box-sizing:border-box;padding:4px 16px 0;display:flex;flex-direction:column;justify-content:center;"><p style="margin:0;font-size:18px;line-height:22px;font-weight:700;">DTP3 coverage, 2000 and 2024</p></div>
+{{ c.f_scatter }}
+<p style="height:18px;margin:10px 0 0;padding:0 16px;font-size:12px;line-height:16px;color:#5F544D;white-space:nowrap;">Source: WHO/UNICEF coverage estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured varies by country.</p>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:6px;max-width:980px;">
+<li>16 countries per form, each a 9 px dot named beside it, with no legend. Names sit on white knockouts, so gridlines and the diagonal break around them. Gridlines every 25 points. <i>Cognitive access</i></li>
+<li>Colour shows change since 2000 in seven steps: three blues for rises, grey within 5 points, three reds for falls. The stepped key names both ends and the grey band; every step is at least 3:1 on white. <i>Low vision · §4</i></li>
+<li>Check: naming dots removes T3's legend lookup, and the darkest blues mark the largest rises, which bears on "which country improved the most". The key's % values are percentage-point changes. <i>Static fairness · study-design §4</i></li>
+</ul></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;">
+<p style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Heatmap · T4</p>
+<div style="width:1050px;height:520px;background:#FFFFFF;box-shadow:0 1px 2px rgba(36,28,24,.06), 0 8px 28px rgba(36,28,24,.06);display:flex;flex-direction:column;overflow:hidden;">
+<div style="height:30px;box-sizing:border-box;padding:4px 16px 0;display:flex;flex-direction:column;justify-content:center;"><p style="margin:0;font-size:18px;line-height:22px;font-weight:700;">DTP3 coverage, selected years</p></div>
+{{ c.f_heatmap }}
+<p style="height:18px;margin:10px 0 0;padding:0 16px;font-size:12px;line-height:16px;color:#5F544D;white-space:nowrap;">Source: WHO/UNICEF coverage estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured varies by country.</p>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:6px;max-width:980px;">
+<li>Rows A–Z, years as column headings and large rounded cells, with all text at 15 px. Names and cells are centred, with the key centred above. <i>Low vision</i></li>
+<li>Nine colour steps: 0–20%, then every 10 points to 90–100%, evenly spaced along the scale. No values in cells, so T4 is read from colour. <i>Cognitive access, static fairness</i></li>
+<li>Check: two cells in the same step look identical (say 82% and 87%), which is coarser than the colour scale T4 was designed around. <i>study-design §4</i></li>
+</ul></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;">
+<p style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5F544D;font-weight:700;">Map · T5</p>
+<div style="width:1050px;height:520px;background:#FFFFFF;box-shadow:0 1px 2px rgba(36,28,24,.06), 0 8px 28px rgba(36,28,24,.06);display:flex;flex-direction:column;overflow:hidden;">
+<div style="height:30px;box-sizing:border-box;padding:4px 16px 0;display:flex;flex-direction:column;justify-content:center;"><p style="margin:0;font-size:18px;line-height:22px;font-weight:700;">DTP3 coverage, 2013</p></div>
+{{ c.f_mapworld }}
+<p style="height:18px;margin:10px 0 0;padding:0 16px;font-size:12px;line-height:16px;color:#5F544D;white-space:nowrap;">Source: WHO/UNICEF coverage estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured varies by country.</p>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><ul style="margin:0;padding-left:20px;font-size:16px;line-height:1.45;display:flex;flex-direction:column;gap:6px;max-width:980px;">
+<li>The world on an Equal Earth projection, without Antarctica. 165 countries are coloured in seven steps (under 40% to 90% and over); 11 with no 2013 value stay pale. No names, since most countries are too small to hold one. <i>Cognitive access</i></li>
+<li>Stepped key from 100% to 0%, with a "No data" block. 50% is a step boundary, so T5's count is a count of the two darkest steps. <i>§7.4</i></li>
+<li>Check: values come from the raw OWID file, as <code>coverage.csv</code> holds only the study's countries. The four countries below 50% (Central African Rep., Chad, Nigeria, Somalia) are small at world scale. The Q5 task screen still shows the Africa map. <i>Data coverage · study-design §4</i></li>
+</ul></sc-if>
+</div>
+</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;turn4Scale&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;blue&quot;, &quot;teal&quot;, &quot;warm&quot;, &quot;cividis&quot;], &quot;default&quot;: &quot;blue&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Review&quot;}, &quot;cvd&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;none&quot;, &quot;protanopia&quot;, &quot;deuteranopia&quot;, &quot;tritanopia&quot;, &quot;greyscale&quot;], &quot;default&quot;: &quot;none&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Review&quot;}, &quot;showNotes&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Review&quot;}}">
+class Component extends DCLogic {
+  state = { mod3: null };
+  componentDidMount() {
+    import(new URL('./assets/chart-render-v3.js', document.baseURI).href)
+      .then(mod3 => this.setState({ mod3 }))
+      .catch(e => console.error('chart-render-v3 failed to load', e));
+  }
+  renderVals() {
+    const cvd = this.props.cvd ?? 'none', showNotes = this.props.showNotes ?? true, scale4 = this.props.turn4Scale ?? 'blue', { mod3 } = this.state;
+    const key = cvd + scale4 + !!mod3;
+    if (!this._c || this._key !== key) {
+      const el = x => x
+        ? React.createElement('div', { style: { width: 1050, height: 462, flex: 'none' }, dangerouslySetInnerHTML: { __html: x } })
+        : React.createElement('div', { style: { width: 1050, height: 462, flex: 'none', background: '#FBF8F5' } });
+      const c = {};
+      for (const t of ['line', 'bar', 'scatter', 'heatmap', 'mapworld']) c['f_' + t] = el(mod3 && mod3.render(t, cvd, { ramp: scale4 }));
+      this._c = c; this._key = key;
+    }
+    return { c: this._c, showNotes };
+  }
+}
+</script>
+</body>
+</html>
