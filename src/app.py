@@ -752,8 +752,9 @@ def _open_task(
 
 # --- The interactive controls ---------------------------------------------------------------------
 #
-# The country chips on every chart; the line chart's View, Show all, legend and line clicks; the bar
-# and heatmap sorts; the map's highlight; Reset view; zoom and pan (visual-spec.md section 7). They
+# The country chips on every chart; the line chart's Years slider, Show all and line clicks (and
+# its legend clicks, which no chart can raise since the legends went); the bar and heatmap sorts;
+# the map's highlight; Reset view; zoom and pan (visual-spec.md section 7). They
 # exist ONLY in the interactive condition -- the static condition renders none of the controls, and
 # `staticPlot: True` means its chart can be neither clicked nor zoomed -- so every event below is,
 # by construction, an interactive-condition event. The static chart does still send Plotly's
@@ -768,12 +769,11 @@ _VIEW_KEYS = ("xaxis.range", "yaxis.range", "xaxis.autorange", "yaxis.autorange"
 # The controls under the chart, by the `control` of their pattern id (`layout.control_id`). The
 # chart's own events are named by their prop id: "chart.clickData", "chart.relayoutData" and
 # "chart.restyleData" (a legend click).
-CONTROLS = ("chips", "sort", "show-all", "threshold", "reset")
+CONTROLS = ("chips", "sort", "show-all", "threshold", "years", "reset")
 
-# `sort_change.direction` for each sort key: which way the new order runs.
+# `sort_change.direction` for each sort key: which way the new order runs. The line chart's View
+# (`listed`, `coverage`) went on 2026-10-12.
 _SORT_DIRECTION = {
-    "listed": "none",
-    "coverage": "desc",
     "alpha": "none",
     "desc": "desc",
     "asc": "asc",
@@ -786,18 +786,17 @@ _SORT_DIRECTION = {
 class ControlResult(NamedTuple):
     """What one control interaction changes. Any field may be `no_update`.
 
-    `chips` is a list of rows, each {"options", "value"}, as `layout.chip_rows` makes them.
-    `group` is the Countries group rebuilt, when the chips' order changed (`layout.chip_group`
-    says why a reorder cannot be sent as new options). `sort` and `threshold` are the values the
-    sort control and the highlight box must be set to, which only Reset view, and a refused box,
-    ever change.
+    `chips` is a list of rows, each {"options", "value"}, as `layout.chip_rows` makes them. `sort`
+    and `threshold` are the values the sort control and the highlight box must be set to, which
+    only Reset view, and a refused box, ever change. `years` is the Years slider's [first, last],
+    set when a zoom it did not make moves the axis, and by Reset view.
     """
 
     figure: Any
     chips: Any
-    group: Any
     sort: Any
     threshold: Any
+    years: Any
     control: Any
     spool: Any
 
@@ -885,8 +884,9 @@ def _threshold(raw: Any) -> tuple[bool, int | None]:
 
 
 def _shown(control: dict[str, Any]) -> list[str]:
-    """The countries on the chart: the isolated line alone, or every ticked chip."""
-    return [control["isolated"]] if control["isolated"] else list(control["selected"])
+    """The countries on the chart: every ticked chip. A focused line (`isolated`) fades the others
+    rather than hiding them, since 2026-10-12, so it leaves the chips as they are."""
+    return list(control["selected"])
 
 
 def _view_figure(task, control: dict[str, Any]):
@@ -908,17 +908,26 @@ def _view_figure(task, control: dict[str, Any]):
     elif task.chart == "heatmap":
         figures.sort_rows(figure, control["sort"])
     figures.set_visible(figure, shown)
+    if task.chart == "line":
+        figures.focus_line(figure, control["isolated"])
     if task.chart == "map":
         figures.set_threshold(figure, control["threshold"])
     return figure
 
 
-def _chip_order(task, control: dict[str, Any]) -> list[str]:
-    """The chips' order: the task's own, or, on a line chart viewed by coverage, highest first."""
-    options = layout.filterable(list(task.entities))
-    if task.chart != "line":
-        return options
-    return layout.sorted_entities(options, task.vaccine, control["sort"])
+def _years(raw: Any) -> list[int] | None:
+    """The Years slider's value as [first, last]: whole years within 2000-2024, first before last.
+    None for anything else."""
+    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+        return None
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in raw):
+        return None
+    if any(not math.isfinite(value) or value != int(value) for value in raw):
+        return None
+    first, last = (int(value) for value in raw)
+    if not config.YEAR_MIN <= first < last <= config.YEAR_MAX:
+        return None
+    return [first, last]
 
 
 def _fresh_control(task, screen: str) -> dict[str, Any]:
@@ -950,7 +959,8 @@ def _stored_control(task, screen: str, control_state: dict[str, Any] | None) -> 
     # A list, never a string: `"China" in "China"` would pass a string off as a choice.
     ticked = stored_selected if isinstance(stored_selected, list) else []
     control["selected"] = [e for e in options if e in ticked] or list(options)
-    if stored.get("isolated") in options and task.chart == "line":
+    # A focused line is always one the chips show: hiding it by its chip ends the focus.
+    if stored.get("isolated") in control["selected"] and task.chart == "line":
         control["isolated"] = stored["isolated"]
     sorts = [value for value, _label in layout.SORTS.get(task.chart, ("", ()))[1]]
     if stored.get("sort") in sorts:
@@ -994,6 +1004,7 @@ def control_step(
     chips: list[str] | None = None,
     sort_key: str | None = None,
     threshold: Any = None,
+    years: Any = None,
     click_data: dict[str, Any] | None = None,
     relayout: dict[str, Any] | None = None,
     restyle: Any = None,
@@ -1014,9 +1025,9 @@ def control_step(
     record with events no participant caused.
 
     Some changes are refused: unticking the last chip, a legend click that would leave no line, a
-    highlight that is not a number from 0 to 100. The browser has already moved the control by
-    then, so a refusal puts it back rather than leaving it saying something the chart does not.
-    Nothing is logged for one.
+    highlight that is not a number from 0 to 100, a Years value that is not two whole years in
+    order. The browser has already moved the control by then, so a refusal puts it back rather
+    than leaving it saying something the chart does not. Nothing is logged for one.
 
     `preview` is the `preview-state` store. When it names a task, the chart is the preview's
     (`preview_task`), not the session's, and nothing is logged at all.
@@ -1042,10 +1053,10 @@ def control_step(
     options = layout.filterable(list(task.entities))
     default_sort = layout.default_sort(task.chart)
     before = _shown(control)
-    order_before = _chip_order(task, control)
     event: tuple[str, dict[str, Any]] | None = None
     sort_value: Any = no_update
     threshold_value: Any = no_update
+    years_value: Any = no_update
 
     if triggered == "chips":
         chosen = [e for e in options if e in (chips or [])]
@@ -1062,7 +1073,7 @@ def control_step(
                 },
             )
             control["selected"] = chosen
-            # A chip supersedes an isolation; otherwise the chart would ignore the click.
+            # A chip ends a focused line, so a chip that hides it never leaves the rest faded.
             control["isolated"] = None
         # Unticking the last chip is refused: the chips are set back to what the chart shows.
 
@@ -1074,7 +1085,9 @@ def control_step(
         control["sort"] = sort_key
 
     elif triggered == "show-all":
-        if task.chart != "line" or before == options:
+        # Shows every hidden line and releases a focused one. With every chip already ticked, the
+        # press only releases the focus, so its `value` equals its `previous`.
+        if task.chart != "line" or (before == options and control["isolated"] is None):
             return UNCHANGED
         event = (
             "filter_change",
@@ -1105,8 +1118,30 @@ def control_step(
             )
             control["threshold"] = chosen
 
+    elif triggered == "years":
+        # The line chart's Years slider (visual-spec.md section 7.6): it zooms the x axis.
+        if task.chart != "line":
+            return UNCHANGED
+        chosen = _years(years)
+        current = figures.years_shown(control["xrange"])
+        if chosen is None:
+            # Put the slider back to what the chart shows.
+            years_value = current
+        elif chosen == current:
+            return UNCHANGED
+        else:
+            event = ("view_change", {"control": "years", "value": chosen, "previous": current})
+            control["xrange"] = figures.year_window(*chosen)
+
     elif triggered == "reset":
-        if before == options and control["sort"] == default_sort and control["threshold"] is None:
+        unchanged = (
+            before == options
+            and control["sort"] == default_sort
+            and control["threshold"] is None
+            and control["isolated"] is None
+            and control["xrange"] is None
+        )
+        if unchanged:
             return UNCHANGED
         event = (
             "view_reset",
@@ -1116,18 +1151,22 @@ def control_step(
                     "sort": control["sort"],
                     "isolated": control["isolated"],
                     "threshold": control["threshold"],
+                    "xrange": control["xrange"],
                 }
             },
         )
-        control.update(selected=list(options), isolated=None, sort=default_sort, threshold=None)
+        control.update(
+            selected=list(options), isolated=None, sort=default_sort, threshold=None, xrange=None
+        )
         sort_value = default_sort if default_sort is not None else no_update
         threshold_value = layout.THRESHOLD_START if task.chart == "map" else no_update
+        years_value = list(layout.YEARS_START) if task.chart == "line" else no_update
 
     elif triggered == "chart.clickData":
-        # Only a line can be isolated. A click on a bar, dot, cell or country does nothing.
+        # Only a line can be focused. A click on a bar, dot, cell or country does nothing, and a
+        # faded line takes no click (`figures.focus_line`).
         entity = _clicked_entity(click_data, task) if task.chart == "line" else None
-        # World is the reference every line is read against; isolating to it alone would hide the
-        # very series the question is about.
+        # World is the reference every line is read against, and stays at full strength.
         if entity is None or entity == "World":
             return UNCHANGED
         isolate = control["isolated"] != entity
@@ -1156,34 +1195,35 @@ def control_step(
             return UNCHANGED
         # Logged, and no figure sent back: Plotly has already drawn it, and a figure in reply
         # put the axis back where it was, undoing every zoom the moment it reached the server.
-        # The range is kept in the view instead, so the next redraw -- a chip, the View, Reset
-        # view -- draws the chart zoomed as the participant left it (visual-spec.md section 7.3).
-        # Plotly's own `uirevision` cannot: dcc.Graph redraws after every zoom with a figure
+        # The range is kept in the view instead, so the next redraw -- a chip, the Years slider,
+        # Reset view -- draws the chart zoomed as the participant left it (visual-spec.md section
+        # 7.3). Plotly's own `uirevision` cannot: dcc.Graph redraws after every zoom with a figure
         # Plotly has already edited, which wipes Plotly's record of the range it replaced
-        # (headless Chrome, 2026-09-26).
+        # (headless Chrome, 2026-09-26). The Years slider is moved to the years now shown; it is
+        # an output of this same callback, so setting it does not call it again.
         zoom = ("view_change", {"control": "chart", "value": relayout, "previous": None})
         spool_out = log(zoom)
         says, xrange = _zoomed_range(relayout)
         if task.chart == "line" and says:
             control["xrange"] = xrange
-            return UNCHANGED._replace(control=control, spool=spool_out)
+            return UNCHANGED._replace(
+                years=figures.years_shown(xrange), control=control, spool=spool_out
+            )
         return UNCHANGED._replace(spool=spool_out)
 
     else:
         return UNCHANGED
 
     figure = _view_figure(task, control)
-    order = _chip_order(task, control)
-    chip_rows = layout.chip_rows(order, _shown(control), task.chart)
-    group = layout.chip_group(task, order, _shown(control)) if order != order_before else no_update
+    chip_rows = layout.chip_rows(options, _shown(control), task.chart)
     # Logged AFTER the figure is built. Logged first, a database failure left the participant's
     # click with no visible effect -- the chart simply did not change.
     return ControlResult(
         figure,
         chip_rows,
-        group,
         sort_value,
         threshold_value,
+        years_value,
         control,
         log(event),
     )
@@ -1226,26 +1266,23 @@ def _control_trigger(prop_id: str) -> str:
 
 def view_outputs(result: ControlResult, counts: list[int]) -> tuple[Any, ...]:
     """The `view` callback's outputs for a result, given how many components each of its four
-    `ALL` outputs matched on this screen (the chips' group, the chips, sort, threshold).
+    `ALL` outputs matched on this screen (the chips, sort, threshold, years).
 
     An `ALL` output must be a list with one entry per component, `no_update` entries included:
     Dash 4 refuses a bare `no_update` there with a server error, which the tests calling
-    `control_step` could never see (found in headless Chrome). When the group is rebuilt, the
-    checklists it replaces are left alone.
+    `control_step` could never see (found in headless Chrome).
     """
-    groups, chips, sorts, thresholds = counts
-    if result.group is not no_update:
-        group, values = [result.group] * groups, [no_update] * chips
-    elif result.chips is not no_update:
-        group, values = [no_update] * groups, [row["value"] for row in result.chips][:chips]
+    chips, sorts, thresholds, years = counts
+    if result.chips is not no_update:
+        values = [row["value"] for row in result.chips][:chips]
     else:
-        group, values = [no_update] * groups, [no_update] * chips
+        values = [no_update] * chips
     return (
         result.figure,
-        group,
         values,
         [result.sort] * sorts,
         [result.threshold] * thresholds,
+        [result.years] * years,
         result.control,
         result.spool,
     )
@@ -1485,10 +1522,10 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
     # the chart, on every task screen in both conditions, supplies the rest.
     @app.callback(
         Output("chart", "figure", allow_duplicate=True),
-        Output(layout.control_id("chip-group", ALL), "children"),
         Output(layout.control_id("chips", ALL), "value"),
         Output(layout.control_id("sort", ALL), "value"),
         Output(layout.control_id("threshold", ALL), "value"),
+        Output(layout.control_id("years", ALL), "value"),
         Output("control-state", "data", allow_duplicate=True),
         Output("spool-state", "data", allow_duplicate=True),
         Input("chart", "clickData"),
@@ -1498,6 +1535,7 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         Input(layout.control_id("sort", ALL), "value"),
         Input(layout.control_id("show-all", ALL), "n_clicks"),
         Input(layout.control_id("threshold", ALL), "value"),
+        Input(layout.control_id("years", ALL), "value"),
         Input(layout.control_id("reset", ALL), "n_clicks"),
         State("session-state", "data"),
         State("log-state", "data"),
@@ -1514,6 +1552,7 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         sorts,
         _show_all,
         thresholds,
+        year_ranges,
         _reset,
         stored,
         log,
@@ -1535,6 +1574,7 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
             chips=[name for row in chips or [] for name in row or []],
             sort_key=sorts[0] if sorts else None,
             threshold=thresholds[0] if thresholds else None,
+            years=year_ranges[0] if year_ranges else None,
             click_data=click_data,
             relayout=relayout,
             restyle=restyle,

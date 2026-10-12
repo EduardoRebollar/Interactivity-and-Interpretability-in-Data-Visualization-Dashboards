@@ -115,11 +115,11 @@ def test_the_task_screen_opens_on_the_same_chart_in_both_conditions(rows, task):
 
 
 # Each chart type's controls (visual-spec.md section 7), by the `control` of their pattern ids:
-# chips (in their group) and Reset view on every chart, a sort on three, Show all on the line, the
-# map a highlight.
+# chips (in their group) and Reset view on every chart, a sort on the bar and heatmap, the Years
+# slider and Show all on the line (its View went on 2026-10-12), the map a highlight.
 _EVERY_CHART = {"chip-group", "chips", "reset"}
 CONTROL_IDS = {
-    "line": _EVERY_CHART | {"sort", "show-all"},
+    "line": _EVERY_CHART | {"years", "show-all"},
     "bar": _EVERY_CHART | {"sort"},
     "scatter": _EVERY_CHART,
     "heatmap": _EVERY_CHART | {"sort"},
@@ -544,6 +544,81 @@ def test_duplicate_entities_refused(rows):
 def test_empty_entity_list_refused(rows):
     with pytest.raises(FigureError, match="No entities"):
         figures.build_figure([], VACCINE, rows)
+
+
+# --- Focusing a line and the Years slider (visual-spec.md sections 7.3 and 7.6) -----------------
+
+
+def test_focusing_a_line_fades_every_other_line_with_its_tag(rows):
+    task = tasks.FORM_A[0]
+    figure = figures.task_figure(task, rows)
+    figures.focus_line(figure, "India")
+    others = {name for name in task.entities if name != "India"}
+    for trace in figure.data:
+        if trace.name == "India":
+            assert trace.opacity is None and trace.hoverinfo is None
+            assert trace.hovertemplate
+        else:
+            assert trace.opacity == config.FADED_OPACITY and trace.hoverinfo == "skip"
+            # plotly.js ignores `hoverinfo` on a trace with a `hovertemplate`.
+            assert trace.hovertemplate is None
+            assert trace.visible is None, "faded, not hidden"
+    tagged = [*figure.layout.shapes, *figure.layout.annotations]
+    faded = {item.name for item in tagged if item.opacity == config.FADED_OPACITY}
+    assert faded == {f"{figures.TAG}{name}" for name in others}
+    assert all(item.opacity in (None, 1) for item in tagged if item.name == f"{figures.TAG}India")
+
+
+def test_focusing_moves_nothing_and_none_is_the_chart_as_drawn(rows):
+    task = tasks.FORM_A[0]
+    drawn = figures.task_figure(task, rows)
+    focused = figures.focus_line(figures.task_figure(task, rows), "India")
+    assert [t.y for t in focused.data] == [t.y for t in drawn.data]
+    assert [a.y for a in focused.layout.annotations] == [a.y for a in drawn.layout.annotations]
+    untouched = figures.focus_line(figures.task_figure(task, rows), None)
+    assert untouched.to_plotly_json() == drawn.to_plotly_json()
+
+
+def test_world_is_never_faded_and_cannot_be_focused(rows):
+    figure = figures.task_figure(tasks.PRACTICE, rows)
+    figures.focus_line(figure, "Myanmar")
+    assert all(trace.opacity is None for trace in figure.data)
+    with pytest.raises(FigureError):
+        figures.focus_line(figure, "World")
+    with pytest.raises(FigureError):
+        figures.focus_line(_chart("bar", rows), "India")
+
+
+@pytest.mark.parametrize(
+    ("first", "last"), [(2000, 2024), (2000, 2001), (2023, 2024), (2005, 2015), (2012, 2013)]
+)
+def test_the_years_slider_and_the_axis_agree_both_ways(first, last):
+    """A slider value becomes an x range with the chart's own margin, and that range reads back as
+    the same years."""
+    window = figures.year_window(first, last)
+    assert figures.years_shown(window) == [first, last]
+    if (first, last) == (2000, 2024):
+        assert window is None
+    else:
+        assert window == [first - config.LINE_X_PAD, last + config.LINE_X_PAD]
+
+
+@pytest.mark.parametrize(
+    ("xrange", "years"),
+    [
+        ([2005.2, 2015.8], [2006, 2015]),
+        ([2005.0, 2015.0], [2005, 2015]),
+        ([1998.4, 2027.0], [2000, 2024]),
+        ([2005.3, 2005.8], [2006, 2007]),
+        ([2023.6, 2024.4], [2023, 2024]),
+        ([1990.0, 1995.0], [2000, 2001]),
+        (None, [2000, 2024]),
+    ],
+)
+def test_a_zoom_reads_as_the_whole_years_it_shows(xrange, years):
+    """Always two whole years, at least a year apart, within 2000-2024, as the slider's handles
+    are."""
+    assert figures.years_shown(xrange) == years
 
 
 # --- The bar, scatter, heatmap and map (visual-spec.md sections 1 and 7) --------------------------

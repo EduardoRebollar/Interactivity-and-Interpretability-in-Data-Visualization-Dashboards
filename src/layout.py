@@ -28,7 +28,7 @@ from typing import Any
 
 from dash import dcc, html
 
-from src import consent, figures, flow, tasks
+from src import config, consent, figures, flow, tasks
 from src.tasks import (
     ABOUT_INTRO,
     ABOUT_SECTIONS,
@@ -130,41 +130,11 @@ def filterable(entities: list[str]) -> list[str]:
     return [entity for entity in entities if entity != "World"]
 
 
-def latest_values(entities: list[str], vaccine: str) -> dict[str, float | None]:
-    """Each entity's most recently REPORTED value, which is not always the last year.
-
-    Every continent aggregate is missing 2024, so keying off the final year alone would sort those
-    series as if they had no data.
-    """
-    from src import runtime_data
-
-    rows = runtime_data.load_rows()
-    values: dict[str, float | None] = {}
-    for entity in entities:
-        observed = [
-            row.coverage_pct
-            for row in runtime_data.series(entity, vaccine, rows)
-            if row.coverage_pct is not None
-        ]
-        values[entity] = observed[-1] if observed else None
-    return values
-
-
-def sorted_entities(entities: list[str], vaccine: str, sort_key: str) -> list[str]:
-    """The line chart's chip order. `listed` is the task's own order; `coverage` is
-    highest-latest first, an entity with nothing reported last."""
-    if sort_key not in ("listed", "coverage"):
-        raise ValueError(f"Unknown line sort {sort_key!r}; expected listed or coverage")
-    if sort_key == "listed":
-        return list(entities)
-    values = latest_values(entities, vaccine)
-    return sorted(entities, key=lambda e: (values[e] is None, -(values[e] or 0), e))
-
-
 # The sort control each chart type has (visual-spec.md section 7.2, the handoff's SORT): its
-# legend, then (value, label) for each option. The first option is the chart as first drawn.
+# legend, then (value, label) for each option. The first option is the chart as first drawn. The
+# line chart has none since 2026-10-12: its View reordered only the chips, and the Years slider took
+# its place (`_years_group`).
 SORTS = {
-    "line": ("View", (("listed", "as listed"), ("coverage", "by coverage"))),
     "bar": ("Sort", (("alpha", "A–Z"), ("desc", "High → low"), ("asc", "Low → high"))),
     # Named as the order label over the rows names each order (figures.ROW_ORDER_LABELS).
     "heatmap": (
@@ -179,8 +149,8 @@ SORTS = {
 # asked whether the line chart gave exact values.
 HINTS = {
     "line": (
-        "Hover a line to read its values. Click a line to show only that country; click it again "
-        "to bring the others back."
+        "Hover a line to read its values. Click a line to focus on it; click it again to bring "
+        "the others back."
     ),
     "bar": "Hover a bar to read its value.",
     # The dots are named on the chart since the chart handoff (2026-10-11).
@@ -189,7 +159,7 @@ HINTS = {
     "map": "Countries not below the threshold turn grey. Hover a country to read its value.",
 }
 
-RESET_TITLE = "Undo any filtering, sorting or isolating on this chart"
+RESET_TITLE = "Undo any filtering, sorting, focusing or zooming on this chart"
 # The handoff's undo arrow, in the button's ink. An image because Dash has no SVG components.
 UNDO_ICON = (
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' "
@@ -270,12 +240,13 @@ def chip_rows(order: list[str], shown: list[str], chart: str = "line") -> list[d
 
 
 def chip_group(task, order: list[str], shown: list[str]) -> list:
-    """The Countries group's contents: its legend, then a checklist for each row of chips.
+    """The Countries group's contents: its legend, then a checklist for each row of chips. An empty
+    row is left out.
 
-    Built afresh whenever the chips' order changes (the View control, or Reset view undoing it),
-    rather than by sending the checklists new options. A chip's label is a flag and a name, as
-    components, and Dash 4 loses track of them when one moves to another row's checklist: the
-    renderer throws and the chips vanish (headless Chrome, 2026-09-26). An empty row is left out.
+    The chips never change order, since the line chart's View went (2026-10-12), so the group is
+    built once per screen. While View could reorder them it was rebuilt instead: Dash 4 loses track
+    of a flag-and-name label that moves to another row's checklist, and the renderer throws
+    (headless Chrome, 2026-09-26).
     """
     justify = "space-between" if task.chart == "line" else "flex-start"
     return [
@@ -316,17 +287,61 @@ def _sort_group(task) -> html.Div:
             className="seg ui-seg ui-seg--stack",
         )
     ]
-    if task.chart == "line":
-        stack.append(
-            html.Button(
-                "Show all", id=control_id("show-all"), n_clicks=0, className="btn btn-quiet btn-xs"
-            )
-        )
     return html.Div(
         [html.Span(legend, className="ui-legend"), html.Div(stack, className="ui-stack")],
         className="ui-group ui-group--fit",
         role="group",
         **{"aria-label": legend},
+    )
+
+
+YEARS_START = [config.YEAR_MIN, config.YEAR_MAX]
+
+
+def _years_group() -> html.Div:
+    """The line chart's Years slider, with Show all under it (visual-spec.md section 7.6).
+
+    It zooms the x axis, as a drag across the plot does, and follows every other zoom. It commits
+    when a handle is let go (`updatemode` "mouseup"), so a drag is one change. No number boxes
+    (`allow_direct_input`): Dash 4's commit only on blur, not on Enter, so a typed year would sit
+    there doing nothing. The handles take the arrow keys.
+    """
+    # Every six years, so both ends are marked and the labels are evenly spaced.
+    marks = {year: str(year) for year in range(config.YEAR_MIN, config.YEAR_MAX + 1, 6)}
+    return html.Div(
+        [
+            html.Span("Years", className="ui-legend"),
+            html.Div(
+                [
+                    html.Div(
+                        dcc.RangeSlider(
+                            id=control_id("years"),
+                            min=config.YEAR_MIN,
+                            max=config.YEAR_MAX,
+                            step=1,
+                            value=list(YEARS_START),
+                            marks=marks,
+                            allowCross=False,
+                            pushable=1,
+                            updatemode="mouseup",
+                            allow_direct_input=False,
+                            tooltip={"placement": "top", "always_visible": False},
+                        ),
+                        className="ui-years",
+                    ),
+                    html.Button(
+                        "Show all",
+                        id=control_id("show-all"),
+                        n_clicks=0,
+                        className="btn btn-quiet btn-xs",
+                    ),
+                ],
+                className="ui-stack",
+            ),
+        ],
+        className="ui-group ui-group--fit",
+        role="group",
+        **{"aria-label": "Years"},
     )
 
 
@@ -365,18 +380,22 @@ def task_controls(task) -> html.Div:
 
     These are the study's independent variable. The chart they act on is the same chart the static
     condition sees; what differs is that it can be worked with rather than only looked at. Every
-    chart has the country chips (visual-spec.md section 7.3); the line, bar and heatmap add a sort,
-    the line chart Show all, and the map the highlight. Each opens on the chart as first drawn:
-    every country shown, in the listed order, nothing faded. The view they change lives in the
-    app's `control-state` store, keyed to the task, so no task inherits another's.
+    chart has the country chips (visual-spec.md section 7.3); the bar and heatmap add a sort, the
+    line chart the Years slider and Show all, and the map the highlight. Each opens on the chart as
+    first drawn: every country shown, in the listed order, nothing faded, 2000-2024. The view they
+    change lives in the app's `control-state` store, keyed to the task, so no task inherits
+    another's.
 
-    Every control is a native form element, so keyboard navigation comes for free (the
-    accessibility baseline in CLAUDE.md). Do not reimplement any of them as styled divs.
+    Every control is a native form element or, for Years, Dash's slider, whose handles take the
+    arrow keys, so keyboard navigation comes for free (the accessibility baseline in CLAUDE.md). Do
+    not reimplement any of them as styled divs.
     """
     order = filterable(list(task.entities))
     groups = [_chips(task, order, order)]
     if task.chart in SORTS:
         groups.append(_sort_group(task))
+    if task.chart == "line":
+        groups.append(_years_group())
     if task.chart == "map":
         groups.append(_highlight_group())
     return html.Div(groups, className="ui-controls")
@@ -1160,8 +1179,8 @@ INTERACTIVE_BULLETS = (
     "its value; on a line chart you also see its change from the year before.",
     "Under each chart, the country buttons show or hide countries, and Reset view undoes your "
     "changes.",
-    "On line charts you can also click a line to see one country on its own; reorder the "
-    "countries by coverage; and bring every line back with Show all.",
+    "On line charts you can also click a line to focus on it, choose which years to show (or drag "
+    "across the chart to zoom), and bring every line back with Show all.",
     "The bar chart and the coloured grid can sort their bars or rows. The map can highlight only "
     "the countries below a coverage you type.",
 )

@@ -272,3 +272,13 @@
    7.1). Plotly has no setting for a tooltip's shadow. The static condition draws no tooltip, so
    this matches nothing there. */
 .js-plotly-plot .hoverlayer .hovertext { filter: drop-shadow(0 2px 6px rgba(36, 28, 24, 0.18)); }
+
+/* The line chart's Years slider (docs/visual-spec.md section 7.6), in the controls strip where View
+   stood, with Show all under it. Dash's slider fills its container, so the container sets its
+   width; the handoff has no slider to follow. Its track and year labels take the page's tokens in
+   place of Dash's blue-grey (the track is an edge, 3.81:1 on the card), and its handles take the
+   page's keyboard focus ring. */
+.ui-years { width: 240px; }
+.ui-years .dash-slider-track { background: var(--c-line); }
+.ui-years .dash-slider-mark { color: var(--c-muted); font-size: var(--fs-12); }
+.ui-years .dash-slider-thumb:focus-visible { outline: none; box-shadow: var(--focus-ring); }

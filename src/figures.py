@@ -20,6 +20,7 @@ rebuilds the chart from a shorter list, which would move every name tag on a lin
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 import plotly.graph_objects as go
@@ -338,6 +339,59 @@ def set_threshold(figure: go.Figure, threshold: float | None) -> go.Figure:
         if keep and value is not None and value < threshold
     ]
     return figure
+
+
+def focus_line(figure: go.Figure, entity: str | None) -> go.Figure:
+    """Fade every line but `entity` and World (visual-spec.md section 7.3, 2026-10-12).
+
+    A click on a line focuses it. The others keep their place and colour at FADED_OPACITY, with
+    their end dots, leaders and name tags, and take no hover or click (`hoverinfo` "skip"), so the
+    closest-point tooltip cannot jump to a line set aside. Until 2026-10-12 they were hidden, which
+    took their context with them. None leaves the chart as it is.
+    """
+    if entity is None:
+        return figure
+    if chart_type_of(figure) != "line":
+        raise FigureError("Only a line chart has a line to focus")
+    names = entity_names(figure)
+    if entity not in names or entity == REFERENCE:
+        raise FigureError(f"Cannot focus {entity!r} on this chart")
+    faded = {name for name in names if name not in (entity, REFERENCE)}
+    for trace in figure.data:
+        if trace.name in faded:
+            trace.opacity = config.FADED_OPACITY
+            # plotly.js reads `hoverinfo` only when a trace has no `hovertemplate`: with the
+            # template kept, a faded line still showed its tooltip (headless Chrome, 2026-10-12).
+            trace.hovertemplate = None
+            trace.hoverinfo = "skip"
+    tags = {f"{TAG}{name}" for name in faded}
+    for item in (*figure.layout.shapes, *figure.layout.annotations):
+        if (item.name or "") in tags:
+            item.opacity = config.FADED_OPACITY
+    return figure
+
+
+def year_window(first: int, last: int) -> list[float] | None:
+    """The line chart's x range showing `first` to `last`, with the chart's own margin either side
+    (the Years slider, visual-spec.md section 7.6). None for 2000-2024: the chart as first drawn."""
+    if (first, last) == (config.YEAR_MIN, config.YEAR_MAX):
+        return None
+    return [first - config.LINE_X_PAD, last + config.LINE_X_PAD]
+
+
+def years_shown(xrange: Sequence[float] | None) -> list[int]:
+    """The whole years an x range shows, as the Years slider reads them: 2005.2-2015.8 is
+    2006-2015. Always at least a year apart, within 2000-2024, since the slider's handles are."""
+    if xrange is None:
+        return [config.YEAR_MIN, config.YEAR_MAX]
+    low, high = xrange
+    first = max(config.YEAR_MIN, math.ceil(low))
+    last = min(config.YEAR_MAX, math.floor(high))
+    if last - first < 1:
+        # A zoom narrower than a year: the nearest pair of years, kept on the chart.
+        first = min(max(round((low + high) / 2), config.YEAR_MIN), config.YEAR_MAX - 1)
+        last = first + 1
+    return [first, last]
 
 
 def full_strength(figure: go.Figure) -> list[bool]:

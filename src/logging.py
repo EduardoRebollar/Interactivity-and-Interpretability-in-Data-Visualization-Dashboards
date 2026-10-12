@@ -61,11 +61,19 @@ from src import config, db
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
 # v18 (2026-10-12): the changes after the first pilot session (docs/study-design.md section 10).
-# The practice asks about 2019-2021, not 2015-2021, so a v17 P0 answer was given to a different
-# question. The heatmap's row sort is `default`, `min` or `max` (each row's highest cell, highest
-# first); `mean` can no longer occur. The record shape is unchanged: no new event, key or table, so
-# no init_db.py re-run. Nothing has been collected under v18; the pilot's v17 session is kept out
-# of the study.
+# - The practice asks about 2019-2021, not 2015-2021, so a v17 P0 answer was given to a different
+#   question.
+# - The heatmap's row sort is `default`, `min` or `max` (each row's highest cell, highest first);
+#   `mean` can no longer occur.
+# - The line chart's View went, so `sort_change` keys `listed` and `coverage` can no longer occur.
+#   Its Years slider logs `view_change` with `control` `years`, `value` and `previous` the
+#   [first, last] years shown.
+# - `line_isolate` now focuses a line: the others fade, and the chips no longer follow it.
+# - Show all also releases a focused line, so a `show-all` whose `value` equals its `previous`
+#   released only that.
+# - `view_reset.previous` gains `xrange`, since Reset view now undoes a zoom.
+# The record shape is unchanged: no new event, key or table, so no init_db.py re-run. Nothing has
+# been collected under v18; the pilot's v17 session is kept out of the study.
 #
 # v17 (2026-10-12): reworded prompts and two new questions (docs/study-design.md section 4). T1, T3
 # and A-T4 keep their keys under new words. B-T2 asks for the sixth-highest bar, in 2017 (key
@@ -223,17 +231,23 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # `threshold` (see v9 above). `action` is `hide` or `show`; a legend double-click that leaves
     # one line is `only`; the highlight is `highlight` or `clear`. `value` and `previous` are the
     # countries on the chart after and before, except for `threshold`, where they are the typed
-    # number or null.
+    # number or null. Show all also releases a focused line (v18): pressed with every chip already
+    # ticked, its `value` equals its `previous`.
     "filter_change": ("control", "action", "value", "previous"),
+    # A click on a line: `isolated` true focuses it (the others fade, since v18; until then they
+    # were hidden), false releases it.
     "line_isolate": ("entity", "isolated"),
-    # `key`: the line chart's View `listed` or `coverage`; the bar chart's `alpha`, `desc` or `asc`;
-    # the heatmap's `default`, `min` or `max` (`mean` until v18). `direction`: `none`, `desc` or
-    # `asc`.
+    # `key`: the bar chart's `alpha`, `desc` or `asc`; the heatmap's `default`, `min` or `max`
+    # (`mean` until v18; the line chart's View `listed` or `coverage` until v18). `direction`:
+    # `none`, `desc` or `asc`.
     "sort_change": ("key", "direction"),
-    # Reset view: undoes filtering, sorting, isolating and the highlight in one press. `previous` is
-    # the view it undid.
+    # Reset view: undoes filtering, sorting, focusing, the highlight and (since v18) a zoom in one
+    # press. `previous` is the view it undid: `selected`, `sort`, `isolated`, `threshold`, `xrange`.
     "view_reset": ("previous",),
-    # Present in both conditions
+    # A zoom or pan of the line chart's x axis. `control` `chart` is the chart's own relayout
+    # (`value` its payload, `previous` null); `years` is the Years slider (v18), `value` and
+    # `previous` the [first, last] years shown. Documented as possible in both conditions, though
+    # the static chart's render-time relayout carries no range and is never logged.
     "view_change": ("control", "value", "previous"),
     # Written by ResilientSink, not by a caller: `spooled` events that could not reach the database
     # were flushed once it came back, and `dropped` overflowed the bounded browser spool.

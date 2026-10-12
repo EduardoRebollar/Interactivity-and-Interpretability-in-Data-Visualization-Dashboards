@@ -470,7 +470,7 @@ to land on the wrong option. A fixed-height container around the chart holds the
 - **No legend on line charts (2026-10-11, the chart handoff).** The legend of 2026-09-25 stood to the
   right of the end labels; the handoff gives that margin to the name tags. Both its jobs are done
   elsewhere: the tags identify lines for every reader, and in the interactive condition the chips
-  hide and show lines and a click on a line isolates it (§7.3).
+  hide and show lines and a click on a line focuses it (§7.3).
 - **The scatter names its dots (2026-10-11, the chart handoff).** Its legend and the sixteen marker
   shapes chosen earlier that day are gone: every dot is a circle, named beside it (§1) and coloured
   by its change (§4). The static reader no longer matches a dot to a legend entry, which changes
@@ -499,16 +499,17 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | `staticPlot` | `True` | `False` |
 | Hover tooltips | none | every chart: the value; on lines, also the change from the year before |
 | Country chips | none | every chart: show or hide each country drawn |
-| Line charts | image | View (reorder the chips), Show all, isolate a line, zoom and pan the x axis |
+| Line charts | image | Years (a range slider), Show all, focus a line, zoom and pan the x axis |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
 | Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first |
 | Map | image | Highlight: fade every country not below a typed percentage |
 | Every chart | none | a hint row saying what the chart can do, and Reset view |
 
 The line chart's hint named its legend. From 2026-10-11 it read "Click a line to show only that
-country; click it again to bring the others back." Since 2026-10-12 it starts "Hover a line to read
-its values." The pilot's participant asked whether the line chart gave exact values: every other
-chart's hint named hover, and the line chart's did not.
+country; click it again to bring the others back." Since 2026-10-12 it reads "Hover a line to read
+its values. Click a line to focus on it; click it again to bring the others back." The pilot's
+participant asked whether the line chart gave exact values: every other chart's hint named hover,
+and the line chart's did not. A click now fades the other lines rather than hiding them (§7.3).
 
 Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition hoverable
 and zoomable and the manipulation would be invalid. `staticPlot: True` is what makes "static"
@@ -567,15 +568,11 @@ draws no tooltip.
 
 ### 7.2 Sorting (defined 2026-09-15; bars added 2026-09-23)
 
-**On a line chart, sorting reorders the chips. It never reorders the chart.** A
-time-series line chart has no meaningful row order: the x axis is time and the lines are where the
-data puts them.
-
-- Control: **View**, `as listed` / `by coverage`, default `as listed` (the task's own order).
-- `by coverage` orders the chips by each entity's most recently **reported** value,
-  highest first. An entity with nothing reported sorts last.
-- **Chip labels carry no value (2026-09-25).** The earlier control read `Brazil — 91%`; the design
-  handoff keeps the name alone so that reordering moves nothing else on the page (its state S5).
+**A line chart has no sort (since 2026-10-12).** A time-series line chart has no meaningful row
+order: the x axis is time and the lines are where the data puts them. Until 2026-10-12 a **View**
+control (`as listed` / `by coverage`) reordered the chips, by each entity's most recently reported
+value, and never the chart. It moved nothing on the chart, and the first pilot session found it had
+no purpose. The Years slider took its place (§7.6). Chip labels carry no value (2026-09-25).
 
 **On the bar chart, sorting moves the bars** (2026-09-23). A bar chart's x axis has no order of its
 own, so reordering it changes no meaning: each bar keeps its colour, its label and its height.
@@ -602,7 +599,7 @@ Average answered neither form's question.
 ### 7.3 Filtering and line isolation
 
 - **Chips on every chart (2026-09-25).** One chip per country the chart draws, with its flag, in
-  the task's entity order (the View control reorders them on line charts). World has none.
+  the task's entity order. World has none.
 - **At most six chips to a row (2026-10-12), five on the map.** The rows are as even as the count
   allows, the first taking any extra:
   - 16 run 6/5/5 (T3);
@@ -629,12 +626,23 @@ Average answered neither form's question.
     (§3).
 - The filter cannot empty the chart: the last country cannot be unchecked. On the practice chart
   that leaves one chip, Myanmar, which cannot be unchecked.
-- **Line isolation** is a click on the line itself. Clicking an isolated line again releases it, as
-  does *Show all*, which also shows every hidden line. The World reference stays visible throughout
-  and cannot itself be isolated. A click on any other chart type does nothing.
-- **Reset view**, on every chart, undoes filtering, sorting, isolating and the map's highlight. It
-  does not undo a zoom; the modebar's own reset does. The zoom is kept by the app, not by Plotly:
-  every control redraws the chart, and each redraw keeps the range the participant zoomed to.
+- **Focusing a line** (2026-10-12; until then, *isolating* it) is a click on the line itself.
+  - Every other line fades to 0.15 opacity: its end dot, leader and name tag too. Each keeps its
+    place and colour.
+  - A faded line takes no hover and no click (`hoverinfo: "skip"`), so the closest-point tooltip
+    cannot jump to it.
+  - The chips stay as they are: nothing is hidden.
+  - Clicking the focused line again releases it. So do *Show all*, which also shows every hidden
+    line, a chip, and Reset view.
+  - The World reference stays at full strength throughout and cannot itself be focused. A click on
+    any other chart type does nothing.
+  - **Why fade (pilot session 1):** a hidden line took its context with it, where the question is
+    how one line relates to the others. Every other chart already faded rather than hid what a
+    control set aside. An isolated line hid the others, and its chip alone stayed ticked.
+- **Reset view**, on every chart, undoes filtering, sorting, focusing, the map's highlight and,
+  since 2026-10-12, a zoom: the line chart returns to 2000–2024. Until then a zoom was left to the
+  modebar's own reset. The zoom is kept by the app, not by Plotly: every control redraws the chart,
+  and each redraw keeps the range the participant zoomed to.
 - All of it resets between tasks: no task inherits the previous task's view.
 
 ### 7.4 The map's highlight (defined 2026-09-25, replacing the coverage range)
@@ -694,19 +702,40 @@ measures whether hover exists, not interpretation ability. Every item must survi
 errors of a participant without hover — the acceptance rule in `docs/study-design.md` §4. This is a
 study-design decision, recorded here because it follows directly from the visual spec.
 
+### 7.6 The Years slider (defined 2026-10-12)
+
+On every line chart, in the controls strip, where View stood. *Show all* sits under it.
+- **Control:** **Years**, a range slider from 2000 to 2024, in whole years, its two handles at
+  least a year apart. It starts at 2000–2024. It commits when a handle is let go, not while one is
+  dragged.
+- **What it does:** sets the x axis to the first year − 0.25 through the last + 0.25, the same
+  margin as the chart's own view (1999.75–2024.25). 2000–2024 is the chart as first drawn.
+- **It follows every other zoom:** a drag across the plot, the wheel or touchpad, a sideways swipe
+  (§7.5), and the modebar's Zoom in, Zoom out and Reset axis. It then shows the whole years inside
+  the range (an axis zoomed to 2005.2–2015.8 reads 2006–2015).
+- **Logged:** each change is one `view_change` with `control` `years`, `value` and `previous` as
+  `[first, last]`. A zoom it follows is the chart's own `view_change`, as before.
+- **Reset view** puts it back to 2000–2024 (§7.3).
+- **Why (the first pilot session, 2026-10-12):** View had no purpose (§7.2). Zoom was named nowhere
+  a participant reads, sat in the modebar, and could not be reached from the keyboard. The slider
+  makes the zoom a visible control under the chart, as every other control is, and its handles take
+  the arrow keys. Eduardo's decision; zoom is named once in the instructions and nowhere else.
+
 ## 8. Accessibility
 
 - Contrast floors above are enforced by `tests/test_palette.py`, so an inaccessible palette fails the
   build rather than reaching a participant. So is the separation of the series and bar colours under
   simulated colour-vision deficiency (§4), and the blue bands' steady lightness under it.
 - All controls are keyboard-operable (CLAUDE.md baseline):
-  - the chips are native checkboxes, and View, Sort and Sort rows are native radios;
-  - Show all and Reset view are native buttons, and the map's highlight is a native number box.
+  - the chips are native checkboxes, and Sort and Sort rows are native radios;
+  - Show all and Reset view are native buttons, and the map's highlight is a native number box;
+  - Years' handles take the arrow keys (2026-10-12).
 - Focus rings appear only for keyboard focus (`:focus-visible`), as a 2 px white gap and a 2 px
   accent ring (§10).
-- Hover, line isolation and zoom are mouse-only. A keyboard-only participant in the
-  interactive condition therefore meets the scatter item with only the chips and the heatmap item
-  with only the row sort. This is recorded in `docs/study-design.md` §10.
+- Hover and focusing a line are mouse-only. So were zoom and pan until 2026-10-12; Years now reaches
+  them from the keyboard. A keyboard-only participant in the interactive condition therefore meets
+  the scatter item with only the chips and the heatmap item with only the row sort. This is
+  recorded in `docs/study-design.md` §10.
 - Every mark is named: tags on lines, names under bars, beside dots, on rows and on the map. Colour
   is never the sole channel for a series (§6).
 - Full screen-reader support is explicitly out of scope; nothing here should make it worse.
@@ -832,9 +861,17 @@ strip and the hint row under the chart (§7).
   | 1366 × 768 (compact) | 826 | 836 | 802 |
   | 1440 × 900 | 862 | 843 | 838 |
 
-  The same run found that the interactive T1 card also runs past a 790 px window, by 12 px, in both
+  The same run found that the interactive T1 card also ran past a 790 px window, by 12 px, in both
   forms. That was already so before these changes: T1's two-line question sits above its card. Its
   static card ends at 658.
+
+  **The Years slider (§7.6), later the same day,** is shorter than the View control it replaced, so
+  every interactive line-chart card ends 12 px higher, in both forms:
+  - T1 at 790 px in compact mode, exactly a 790 px window's height; at 1366 × 768 it still runs
+    22 px past. Outside compact mode it ends at 826.
+  - T6 at 735 (A at 1366 × 768: 764).
+  
+  Nothing else moved (headless Chrome, against the commit before it).
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

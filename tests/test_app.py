@@ -863,6 +863,7 @@ def test_the_world_reference_stays_on_the_chart_when_a_line_is_isolated(tmp_path
         click_data={"points": [{"curveNumber": 0}]},
     )
     assert _drawn(result.figure) == {"Myanmar", "World"}
+    assert _faded(result.figure) == set(), "World stays at full strength"
 
 
 def test_the_practice_offers_no_chip_for_world_and_keeps_its_one_country(tmp_path):
@@ -873,34 +874,73 @@ def test_the_practice_offers_no_chip_for_world_and_keeps_its_one_country(tmp_pat
     assert events == []
 
 
-def test_view_by_coverage_reorders_the_chips_and_logs_it(tmp_path):
+def _faded(figure) -> set[str]:
+    """The lines a focus has faded."""
+    return {trace.name for trace in figure.data if trace.opacity == config.FADED_OPACITY}
+
+
+def test_the_line_chart_has_no_sort_any_more(tmp_path):
+    """Its View went on 2026-10-12 (visual-spec.md section 7.2); the Years slider took its place."""
+    assert "line" not in layout.SORTS
     result, events = _interact("sort", tmp_path, sort_key="coverage")
-
-    assert [e["event"] for e in events] == ["sort_change"]
-    assert events[0]["payload"] == {"key": "coverage", "direction": "desc"}
-    assert result.control["sort"] == "coverage"
-
-    ordered = _chip_order(result)
-    values = layout.latest_values(ordered, _first_task().vaccine)
-    assert ordered == sorted(ordered, key=lambda e: -(values[e] or 0))
-    # No legend since 2026-10-11: the View reorders the chips and nothing on the chart.
-    assert all(trace.legendrank is None for trace in result.figure.data)
-    before = figures.task_figure(_first_task())
-    assert result.figure.layout.annotations == before.layout.annotations
-    # The chips carry names alone, so a reorder moves nothing else (the handoff's state S5).
-    labels = [option["label"] for row in result.chips for option in row["options"]]
-    assert all("%" not in str(label) for label in labels)
+    assert result == app.UNCHANGED and events == []
 
 
-def test_the_view_does_not_change_which_lines_are_drawn_or_move_one(tmp_path):
-    """The lines are where the data puts them; only the chips reorder."""
-    result, _events = _interact("sort", tmp_path, sort_key="coverage")
+def test_the_years_slider_zooms_the_line_chart_and_logs_it(tmp_path):
+    result, events = _interact("years", tmp_path, years=[2005, 2015])
+
+    assert [e["event"] for e in events] == ["view_change"]
+    assert events[0]["payload"] == {
+        "control": "years",
+        "value": [2005, 2015],
+        "previous": [2000, 2024],
+    }
+    assert result.control["xrange"] == [2004.75, 2015.25]
+    assert list(result.figure.layout.xaxis.range) == [2004.75, 2015.25]
+    assert result.years is no_update, "the participant has already moved the slider"
     assert _drawn(result.figure) == set(_countries())
-    before = figures.task_figure(_first_task())
-    assert [t.y for t in result.figure.data] == [t.y for t in before.data]
 
 
-def test_clicking_a_line_isolates_it_and_the_chips_follow(tmp_path):
+def test_the_years_slider_back_at_2000_2024_is_the_chart_as_first_drawn(tmp_path):
+    zoomed = _view(xrange=[2004.75, 2015.25])
+    result, events = _interact("years", tmp_path, control_state=zoomed, years=[2000, 2024])
+    assert events[0]["payload"]["previous"] == [2005, 2015]
+    assert result.control["xrange"] is None
+    assert list(result.figure.layout.xaxis.range) == list(
+        figures.task_figure(_first_task()).layout.xaxis.range
+    )
+
+
+def test_the_years_slider_as_it_stands_logs_nothing(tmp_path):
+    """Dash fires the slider's callback when the screen is built, with the value it was built
+    with, and after a zoom it followed. Neither is a participant action."""
+    result, events = _interact("years", tmp_path, years=[2000, 2024])
+    assert result == app.UNCHANGED and events == []
+    zoomed = _view(xrange=[2005.2, 2015.8])
+    result, events = _interact("years", tmp_path, control_state=zoomed, years=[2006, 2015])
+    assert result == app.UNCHANGED and events == []
+
+
+@pytest.mark.parametrize(
+    "years",
+    [[2015, 2005], [2005, 2005], [1999, 2010], [2005, 2025], [2005.5, 2010], [True, 2010], "2005"],
+)
+def test_a_malformed_years_value_is_put_back_and_not_logged(tmp_path, years):
+    result, events = _interact("years", tmp_path, years=years)
+    assert events == []
+    assert result.years == [2000, 2024]
+    assert result.control["xrange"] is None
+
+
+@pytest.mark.parametrize("chart", ["bar", "scatter", "heatmap", "map"])
+def test_years_on_a_chart_without_the_slider_changes_nothing(tmp_path, chart):
+    result, events = _interact_on(chart, "years", tmp_path, years=[2005, 2010])
+    assert result == app.UNCHANGED and events == []
+
+
+def test_clicking_a_line_focuses_it_and_fades_the_others(tmp_path):
+    """visual-spec.md section 7.3 (2026-10-12): the others fade, nothing is hidden, and the chips
+    stay as they are. A faded line takes no hover or click."""
     task = _first_task()
     result, events = _interact(
         "chart.clickData", tmp_path, click_data={"points": [{"curveNumber": 0}]}
@@ -910,33 +950,47 @@ def test_clicking_a_line_isolates_it_and_the_chips_follow(tmp_path):
     assert set(events[0]["payload"]) == {"entity", "isolated"}
     assert events[0]["payload"] == {"entity": task.entities[0], "isolated": True}
     assert result.control["isolated"] == task.entities[0]
-    assert _drawn(result.figure) == {task.entities[0]}
-    assert _ticked(result) == [task.entities[0]]
+    assert _drawn(result.figure) == set(_countries())
+    assert _faded(result.figure) == set(_countries()) - {task.entities[0]}
+    assert all(
+        trace.hoverinfo == "skip" for trace in result.figure.data if trace.name != task.entities[0]
+    )
+    assert _ticked(result) == _countries()
 
 
-def test_clicking_an_isolated_line_again_releases_it(tmp_path):
+def test_clicking_a_focused_line_again_releases_it(tmp_path):
     task = _first_task()
-    isolated = _view(selected=_countries(), isolated=task.entities[0])
+    focused = _view(selected=_countries(), isolated=task.entities[0])
     result, events = _interact(
         "chart.clickData",
         tmp_path,
-        control_state=isolated,
+        control_state=focused,
         click_data={"points": [{"curveNumber": 0}]},
     )
     assert events[0]["payload"] == {"entity": task.entities[0], "isolated": False}
     assert result.control["isolated"] is None
     assert _drawn(result.figure) == set(_countries())
+    assert _faded(result.figure) == set()
 
 
-def test_a_chip_ticked_during_an_isolation_ends_it(tmp_path):
+def test_a_chip_changed_during_a_focus_ends_it(tmp_path):
     task = _first_task()
-    isolated = _view(selected=_countries(), isolated=task.entities[0])
+    focused = _view(selected=_countries(), isolated=task.entities[0])
     result, events = _interact(
-        "chips", tmp_path, control_state=isolated, chips=[task.entities[0], task.entities[1]]
+        "chips", tmp_path, control_state=focused, chips=[task.entities[0], task.entities[1]]
     )
-    assert events[0]["payload"]["action"] == "show"
+    assert events[0]["payload"]["action"] == "hide"
     assert result.control["isolated"] is None
     assert _drawn(result.figure) == {task.entities[0], task.entities[1]}
+    assert _faded(result.figure) == set()
+
+
+def test_a_stored_focus_on_a_hidden_line_is_dropped(tmp_path):
+    """A focused line is always one the chips show; otherwise every line left would be faded."""
+    hidden = _view(selected=["China", "India"], isolated="Nigeria")
+    result, _events = _interact("chips", tmp_path, control_state=hidden, chips=["China"])
+    assert result.control["isolated"] is None
+    assert _faded(result.figure) == set()
 
 
 def test_clicking_the_world_reference_does_nothing(tmp_path):
@@ -952,7 +1006,7 @@ def test_clicking_the_world_reference_does_nothing(tmp_path):
 
 
 def test_show_all_brings_every_line_back_and_logs_it(tmp_path):
-    narrowed = _view(selected=["China"], isolated="Nigeria")
+    narrowed = _view(selected=["China", "Nigeria"], isolated="Nigeria")
     result, events = _interact("show-all", tmp_path, control_state=narrowed)
 
     assert [e["event"] for e in events] == ["filter_change"]
@@ -960,11 +1014,22 @@ def test_show_all_brings_every_line_back_and_logs_it(tmp_path):
         "control": "show-all",
         "action": "show",
         "value": _countries(),
-        "previous": ["Nigeria"],
+        "previous": ["China", "Nigeria"],
     }
     assert result.control["isolated"] is None
     assert result.control["selected"] == _countries()
     assert _drawn(result.figure) == set(_countries())
+    assert _faded(result.figure) == set()
+
+
+def test_show_all_with_every_line_showing_releases_a_focus(tmp_path):
+    """Nothing to show, but a focus to release: logged with `value` equal to `previous`."""
+    focused = _view(selected=_countries(), isolated="Nigeria")
+    result, events = _interact("show-all", tmp_path, control_state=focused)
+    payload = events[0]["payload"]
+    assert payload["control"] == "show-all" and payload["value"] == payload["previous"]
+    assert result.control["isolated"] is None
+    assert _faded(result.figure) == set()
 
 
 def test_show_all_with_every_line_showing_logs_nothing(tmp_path):
@@ -973,24 +1038,38 @@ def test_show_all_with_every_line_showing_logs_nothing(tmp_path):
     assert events == []
 
 
-def test_reset_view_undoes_filtering_sorting_and_isolating_and_logs_what_it_undid(tmp_path):
-    changed = _view(selected=["China", "India"], isolated="India", sort="coverage")
+def test_reset_view_undoes_filtering_focusing_and_zooming_and_logs_what_it_undid(tmp_path):
+    changed = _view(selected=["China", "India"], isolated="India", xrange=[2004.75, 2015.25])
     result, events = _interact("reset", tmp_path, control_state=changed)
 
     assert [e["event"] for e in events] == ["view_reset"]
     assert events[0]["payload"] == {
         "previous": {
-            "selected": ["India"],
-            "sort": "coverage",
+            "selected": ["China", "India"],
+            "sort": None,
             "isolated": "India",
             "threshold": None,
+            "xrange": [2004.75, 2015.25],
         }
     }
     assert result.control["selected"] == _countries()
-    assert result.control["isolated"] is None and result.control["sort"] == "listed"
-    assert result.sort == "listed", "the View control is set back too"
-    assert _chip_order(result) == _countries() and _ticked(result) == _countries()
-    assert _drawn(result.figure) == set(_countries())
+    assert result.control["isolated"] is None and result.control["xrange"] is None
+    assert result.sort is no_update, "the line chart has no sort to set back"
+    assert result.years == [2000, 2024], "the Years slider is set back too"
+    assert _ticked(result) == _countries()
+    assert _drawn(result.figure) == set(_countries()) and _faded(result.figure) == set()
+    assert list(result.figure.layout.xaxis.range) == list(
+        figures.task_figure(_first_task()).layout.xaxis.range
+    )
+
+
+@pytest.mark.parametrize(
+    "changed", [{"isolated": "India"}, {"xrange": [2004.75, 2015.25]}], ids=["focus", "zoom"]
+)
+def test_reset_view_undoes_a_focus_or_a_zoom_alone(tmp_path, changed):
+    result, events = _interact("reset", tmp_path, control_state=_view(**changed))
+    assert [e["event"] for e in events] == ["view_reset"]
+    assert result.control["isolated"] is None and result.control["xrange"] is None
 
 
 def test_reset_view_on_an_untouched_chart_logs_nothing(tmp_path):
@@ -1000,26 +1079,28 @@ def test_reset_view_on_an_untouched_chart_logs_nothing(tmp_path):
 
 
 def test_a_zoom_is_kept_in_the_view_and_every_redraw_keeps_it(tmp_path):
-    """visual-spec.md section 7.3: Reset view does not undo a zoom; the modebar's own reset does.
-    The range is kept in the view, because a redraw would otherwise put the axis back."""
+    """The range is kept in the view, because a redraw would otherwise put the axis back. Reset
+    view undoes it (since 2026-10-12), and so does the modebar's own reset."""
     zoom = {"xaxis.range[0]": 2005.0, "xaxis.range[1]": 2015.0}
     zoomed, _events = _interact("chart.relayoutData", tmp_path, relayout=zoom)
     assert zoomed.figure is no_update, "Plotly has drawn the zoom already"
     assert zoomed.control["xrange"] == [2005.0, 2015.0]
+    assert zoomed.years == [2005, 2015], "the Years slider follows the zoom"
 
     chip, _events = _interact("chips", tmp_path, control_state=zoomed.control, chips=["China"])
     assert list(chip.figure.layout.xaxis.range) == [2005.0, 2015.0]
     reset, _events = _interact("reset", tmp_path, control_state=chip.control)
-    assert list(reset.figure.layout.xaxis.range) == [2005.0, 2015.0]
-    assert reset.control["xrange"] == [2005.0, 2015.0]
+    assert reset.control["xrange"] is None
+    assert reset.years == [2000, 2024]
 
     undone, _events = _interact(
         "chart.relayoutData",
         tmp_path,
-        control_state=reset.control,
+        control_state=zoomed.control,
         relayout={"xaxis.autorange": True},
     )
     assert undone.control["xrange"] is None, "the modebar's reset undoes the zoom"
+    assert undone.years == [2000, 2024]
     chip, _events = _interact("chips", tmp_path, control_state=undone.control, chips=["India"])
     assert list(chip.figure.layout.xaxis.range) == list(
         figures.task_figure(_first_task()).layout.xaxis.range
@@ -1046,7 +1127,9 @@ def test_zoom_and_pan_are_logged_as_a_view_change_and_nothing_is_sent_back(tmp_p
     )
     assert [e["event"] for e in events] == ["view_change"]
     assert set(events[0]["payload"]) == {"control", "value", "previous"}
-    assert result._replace(control=no_update) == app.UNCHANGED
+    assert events[0]["payload"]["control"] == "chart"
+    assert result._replace(control=no_update, years=no_update) == app.UNCHANGED
+    assert result.years == [2006, 2015], "the slider shows the whole years in view"
 
 
 def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
@@ -1068,7 +1151,7 @@ def test_zooming_after_a_click_is_not_read_as_a_second_click(tmp_path):
     )
 
     assert [e["event"] for e in events] == ["view_change"]
-    assert result.control["isolated"] == task.entities[0], "a zoom must not release the isolation"
+    assert result.control["isolated"] == task.entities[0], "a zoom must not release the focus"
     assert result.figure is no_update
 
 
@@ -1085,6 +1168,7 @@ def test_re_rendering_a_task_does_not_log_a_phantom_change(tmp_path):
     for triggered, kwargs in (
         ("chips", {"chips": _countries()}),
         ("sort", {"sort_key": "listed"}),
+        ("years", {"years": [2000, 2024]}),
         ("show-all", {}),
         ("reset", {}),
         ("chart.restyleData", {"restyle": None}),
@@ -1159,7 +1243,7 @@ def test_a_malformed_stored_view_falls_back_to_the_fresh_one(tmp_path, stored):
     """The store is written by this app, but it lives in the browser. Whatever it says is checked
     against the task: a line chart has no bar sort and no highlight."""
     result, _events = _interact("chips", tmp_path, control_state=_view(**stored), chips=["China"])
-    assert result.control["sort"] == "listed"
+    assert result.control["sort"] is None, "a line chart has no sort"
     assert result.control["threshold"] is None
     assert result.control["isolated"] is None
 
@@ -1502,10 +1586,11 @@ def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
         "sort": {"sort_key": "coverage" if chart != "line" else "desc"},
         "threshold": {"threshold": 40},
         "show-all": {},
+        "years": {"years": [2005, 2010]},
         "chart.restyleData": {"restyle": [{"visible": ["legendonly"]}, [0]]},
     }
     own = {
-        "line": {"sort", "show-all", "chart.restyleData"},
+        "line": {"show-all", "years", "chart.restyleData"},
         "bar": {"sort"},
         "heatmap": {"sort"},
         "scatter": set(),
@@ -1522,17 +1607,17 @@ def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
         assert events == [], triggered
 
 
-def test_the_chips_group_is_rebuilt_only_when_the_order_changes(tmp_path):
-    """Dash 4 loses a chip's flag-and-name label when options move between the two checklists, so
-    a reorder rebuilds the group and anything else only ticks or unticks (layout.chip_group)."""
-    ticked, _events = _interact("chips", tmp_path, chips=_countries()[:2])
-    assert ticked.group is no_update
-    reordered, _events = _interact("sort", tmp_path, sort_key="coverage")
-    rebuilt = [node for node in reordered.group if getattr(node, "id", None)]
-    assert [node.id for node in rebuilt] == [layout.control_id("chips", i) for i in (0, 1)]
-    assert [o["value"] for node in rebuilt for o in node.options] == _chip_order(reordered)
-    outputs = app.view_outputs(reordered, [1, 2, 1, 0])
-    assert outputs[1] == [reordered.group] and outputs[2] == [no_update, no_update]
+def test_the_chips_never_change_order(tmp_path):
+    """Only the line chart's View reordered them, and it went on 2026-10-12, so the Countries
+    group is built once per screen and never rebuilt (layout.chip_group)."""
+    for triggered, kwargs in (
+        ("chips", {"chips": _countries()[:2]}),
+        ("years", {"years": [2005, 2015]}),
+        ("chart.clickData", {"click_data": {"points": [{"curveNumber": 0}]}}),
+    ):
+        result, _events = _interact(triggered, tmp_path, **kwargs)
+        assert _chip_order(result) == _countries(), triggered
+    assert "group" not in app.ControlResult._fields
 
 
 def test_the_practice_has_one_row_of_chips():
@@ -1545,13 +1630,14 @@ def test_every_pattern_output_is_a_list_one_entry_per_component(tmp_path):
     """Dash 4 refuses a bare `no_update` for an `ALL` output with a server error. Every such
     output is a list as long as the components it matched, whatever the result."""
     changed, _events = _interact("chips", tmp_path, chips=_countries()[:2])
-    reordered, _events = _interact("sort", tmp_path, sort_key="coverage")
-    for result in (changed, changed._replace(chips=no_update), reordered):
-        for counts in ([2, 2, 1, 0], [1, 1, 0, 1], [0, 0, 0, 0]):
+    reset, _events = _interact("reset", tmp_path, control_state=_view(xrange=[2004.75, 2015.25]))
+    for result in (changed, changed._replace(chips=no_update), reset):
+        for counts in ([2, 0, 0, 1], [1, 1, 0, 0], [2, 0, 1, 0], [0, 0, 0, 0]):
             outputs = app.view_outputs(result, counts)
             assert len(outputs) == 7
             for output, count in zip(outputs[1:5], counts, strict=True):
                 assert isinstance(output, list) and len(output) == count
+    assert app.view_outputs(reset, [2, 0, 0, 1])[4] == [[2000, 2024]]
 
 
 def test_every_sort_key_has_a_direction():

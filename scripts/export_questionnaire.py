@@ -235,9 +235,9 @@ def _hover_example() -> str:
 INTERACTIVE_NOTES = {
     "line": (
         "The interactive version adds the controls under it: a button for each country, which "
-        "hides or shows its line; a View control, which lists the countries by coverage; Show "
-        "all; and Reset view. Clicking a line shows it alone. Hovering a point shows its value "
-        "and the change from the year before."
+        "hides or shows its line; a Years slider, which narrows the years shown (as zooming the "
+        "chart does); Show all; and Reset view. Clicking a line fades the others. Hovering a "
+        "point shows its value and the change from the year before."
     ),
     "bar": (
         "The interactive version adds the controls under it: a button for each country, which "

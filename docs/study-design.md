@@ -58,11 +58,11 @@ Identical in every visual respect. The only difference is the Plotly render conf
 |---|---|---|
 | Hover tooltips | none | every chart |
 | Country chips | none | every chart: show or hide each country drawn |
-| Line charts | image | View (as listed / by coverage), Show all, click a line to isolate it, zoom and pan |
+| Line charts | image | Years (a range slider), Show all, click a line to focus on it, zoom and pan |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
 | Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first |
 | Map | image | Highlight: fade every country not below a typed percentage |
-| Every chart | — | Reset view: undo filtering, sorting, isolating and the highlight |
+| Every chart | — | Reset view: undo filtering, sorting, focusing, zooming and the highlight |
 
 The controls and a one-line hint sit under the chart, so the chart is in the same place in both
 conditions.
@@ -139,12 +139,12 @@ read is costly and that affordance lowers the cost:
 
 | Item | Chart | Affordance | The static cost it lowers |
 |---|---|---|---|
-| T1 | line, 8 countries | isolating lines: a click on a line, or the chips | tracing two lines through a tangle of crossings |
+| T1 | line, 8 countries | setting lines aside: a click on a line fades the rest, the chips hide them | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
 | T3 | scatter | hovering a dot; hiding dots with the chips | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
 | T4 | heatmap | hovering a cell; sorting rows by lowest (A) or highest (B) cell | telling dark (A) or light (B) bands apart against the key |
 | T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
-| T6 | line, 8 countries | isolating the two named lines; hovering both where they meet | following two lines through six others that cross them, then placing, by eye, the year they cross |
+| T6 | line, 8 countries | hiding the six other lines with the chips; hovering both where they meet | following two lines through six others that cross them, then placing, by eye, the year they cross |
 
 **Redesign, 2026-09-25.** Every chart now has country chips and Reset view. The heatmap gained a
 row sort, and the map's range slider gave way to a typed threshold. The heatmap's row sort answers
@@ -239,8 +239,8 @@ cannot read them exactly (§2). "Ukraine dropped to about 20% around 2015 and ca
 "Ukraine's coverage declined" alone does not, and "Ukraine stayed high" contradicts it. Scoring is
 by two coders, blind to condition (§7).
 
-The difficulty is finding and following two lines through the tangle, then describing them. The
-isolation control and the chips cut through it.
+The difficulty is finding and following two lines through the tangle, then describing them. A
+click on a line fades the rest, and the chips hide them; either cuts through it.
 
 > **Replaced 2026-09-27.** T1 asked for the year of one line's lowest point (Ukraine in A, Myanmar in
 > B). Every other item asked for a value or a relation, and none asked for an interpretation of a
@@ -513,11 +513,12 @@ points from where the pair meet; Pakistan also rises above it in 2021, a second 
 band. The rule's meeting-point clause refuses that chart. A-T6 could draw World, which runs about 29
 points above its crossing, but it is left off there too, so both forms draw eight countries.
 
-**The affordances are isolation and hover.** A click on a line, or the chips, leaves the two
-named lines alone on the chart, which removes the six others the static reader must look past.
-Line charts use the closest-point tooltip, so hovering either line near the crossing gives its exact
-value, and the tooltip's change from the year before shows which line is rising. Zoom works here as
-on every line chart.
+**The affordances are the chips and hover.** The chips leave the two named lines alone on the
+chart, which removes the six others the static reader must look past. A click on either line fades
+everything but it, since 2026-10-12 (until then it hid them). Line charts use the closest-point
+tooltip, so hovering either line near the crossing gives its exact value, and the tooltip's change
+from the year before shows which line is rising. Zoom, and since 2026-10-12 the Years slider,
+works here as on every line chart.
 
 > **Adjacent-band credit, pre-registered as a secondary for T6** (§7). A reader who puts the
 > crossing a year late or early lands in the key band in both forms, since the lines meet more than
@@ -1022,7 +1023,10 @@ draws the interactive condition first would meet the bar, heatmap and map contro
 hint row to go on, which is the procedural difference this section exists to prevent. In the
 interactive condition, a hint row under each chart restates what that chart can do. Since
 2026-10-11 the line charts have no legend, so the third bullet no longer mentions double-clicking a
-name in it.
+name in it. Since 2026-10-12 the third bullet names the Years slider and zoom in place of View's
+reorder, and says "focus on it" for a click on a line, which now fades the others rather than
+hiding them (`docs/visual-spec.md` §7.3, §7.6). It is the one place zoom is named (Eduardo,
+after the first pilot session).
 
 First half, both versions. Heading "Instructions", then "Practice Question":
 
@@ -1054,8 +1058,8 @@ Or **interactive (4b):**
 >   its value; on a line chart you also see its change from the year before.
 > - Under each chart, the country buttons show or hide countries, and Reset view undoes your
 >   changes.
-> - On line charts you can also click a line to see one country on its own; reorder the countries
->   by coverage; and bring every line back with Show all.
+> - On line charts you can also click a line to focus on it, choose which years to show (or drag
+>   across the chart to zoom), and bring every line back with Show all.
 > - The bar chart and the coloured grid can sort their bars or rows. The map can highlight only the
 >   countries below a coverage you type.
 > - A break in a line means no value was reported for those years.
@@ -1305,13 +1309,19 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 
 - IRB approval, and the final consent wording.
 - **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
-  on form A, the interactive half on form B, 36 minutes in all. It is pilot data. Before the study
-  starts, it is exported and removed from Neon, and the sequence number the study starts at is
-  recorded here. The participant knows the study's hypotheses, and the instrument changed after the
-  session. Changed because of it:
+  on form A, the interactive half on form B, 36 minutes in all. It is pilot data, kept out of the
+  study: the participant knows the study's hypotheses, and the instrument changed after the
+  session. On 2026-10-12 its 85 events (schema v17) and its registration were exported to
+  `data/study_logs/pilot/` (local, gitignored), then removed from Neon by
+  `scripts/withdraw_participant.py`. ID `1` is marked withdrawn at seq 13 and cannot be used again.
+  **The study starts at seq 14 (interactive first, form A).** The signed consent record stays in
+  Neon until `scripts/archive_consents.py` moves it to the Drive. Changed because of it:
   - the practice asks about 2019–2021, not 2015–2021 (§4);
   - the heatmap's row sort is A–Z, Lowest cell first, Highest cell first; Average went (§4, T4);
   - the chips run at most six to a row (`docs/visual-spec.md` §7.3);
+  - a Years slider replaces View on the line charts, and zoom is named once in the instructions
+    (`docs/visual-spec.md` §7.6);
+  - a click on a line fades the others instead of hiding them (`docs/visual-spec.md` §7.3);
   - the line chart's hint names hover;
   - the first instructions screen asks for a full-screen window;
   - the second half asks for each answer to be explained on its own;
@@ -1345,8 +1355,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **T4's forms on MCV1 (2026-10-11).** A's margin is 17 points against B's 10 (§4). If A-T4's
     static accuracy is clearly higher, one of the two grids needs changing.
   - **T6 with eight lines (2026-10-11).** Static accuracy, and form equivalence, since A's extra
-    lines sit nearer the crossing than B's (§4); and how often interactive participants isolate
-    the two lines before answering, which the logs show.
+    lines sit nearer the crossing than B's (§4); and how often interactive participants hide the
+    other lines, or focus one of the two, before answering, which the logs show.
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the map's highlight and the bar sort, which the practice does not teach. The logs show
     all four (§7).
@@ -1368,14 +1378,16 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   chips take two more rows, and T5's map has eighteen chips in each form where it had 13 and 11
   (`visual-spec.md` §10, measured in headless Chrome after the chart handoff). **Since 2026-10-12
   T3's split is 862 px (826 in compact mode)**, its chips in three rows. The same measurement found
-  the interactive T1 card past the fold too: 838 px, 802 in compact mode. Split T1's interactive
-  times the same way.
+  the interactive T1 card past the fold too. With the Years slider in place of View, its split is
+  826 px (790 in compact mode, so it scrolls at 1366 × 768 but not at 1440 × 790). Split T1's
+  interactive times the same way.
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
   with only the row sort. The chips, the sorts, the highlight, Show all and Reset view all work from
   the keyboard (`docs/visual-spec.md` §8); a whole session was run from the keyboard alone on
-  2026-09-26, consent (by the paper-copy box) to About you.
+  2026-09-26, consent (by the paper-copy box) to About you. Since 2026-10-12 the Years slider also
+  zooms the line charts from the keyboard.
 - ~~Whether the items can be answered without hover.~~ Resolved 2026-09-22 by the item acceptance
   rule, and kept for the 2026-09-23 bank, which was re-tuned to pass it (§4).
 - **Session resume is not implemented.** The participant-ID screen no longer promises it; it asks

@@ -49,10 +49,12 @@ These are methodological requirements, not preferences. Do not relax them withou
   rendered, not of the figure. `tests/test_conditions.py` asserts the two conditions produce
   byte-identical figure JSON.
 - Interactive-only features (the design handoff, 2026-09-25): country chips and Reset view on
-  every chart; on the line charts the View reorder, Show all, line isolation and the year-over-year
-  change in the tooltip (the clickable legend went with the chart handoff, 2026-10-11); sorting the bar chart and the heatmap's rows; the map's
-  "Below [n] %" highlight; hover on every chart. All are built and defined in `docs/visual-spec.md`
-  §7, and all sit under the chart, so the chart stands in the same place in both conditions.
+  every chart; on the line charts the Years slider (which replaced the View reorder, 2026-10-12),
+  Show all, focusing a line (the others fade; until 2026-10-12 they were hidden) and the
+  year-over-year change in the tooltip (the clickable legend went with the chart handoff,
+  2026-10-11); sorting the bar chart and the heatmap's rows; the map's "Below [n] %" highlight;
+  hover on every chart. All are built and defined in `docs/visual-spec.md` §7, and all sit under
+  the chart, so the chart stands in the same place in both conditions.
 - **Five chart types, one builder each** (2026-09-23): line, bar, scatter, heatmap, map. The rule
   above holds for every one — `tests/test_conditions.py` checks byte-identical JSON for every task.
 - **Year-over-year change lives in the hover tooltip, not on the chart** (`visual-spec.md` §7.1). A
@@ -179,10 +181,17 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
 **Schema v18 (2026-10-12).** The changes after the first pilot session (`study-design.md` §10).
-The practice asks about 2019–2021, not 2015–2021. The heatmap's row sort is `default`, `min` or
-`max` (highest cell first); `mean` can no longer occur. More of v18 is planned (the Years slider,
-key highlighting, T7), and this entry grows with it before anything is collected. No new event,
-key, table or column so far, so `init_db.py` needs no re-run.
+- The practice asks about 2019–2021, not 2015–2021.
+- The heatmap's row sort is `default`, `min` or `max` (highest cell first); `mean` can no longer
+  occur.
+- The line chart's View went, so `sort_change` `listed`/`coverage` can no longer occur.
+- The Years slider logs `view_change` with `control` `years` and `[first, last]` values.
+- `line_isolate` now focuses (the others fade; the chips no longer follow).
+- Show all also releases a focus.
+- `view_reset.previous` gains `xrange`: Reset view undoes a zoom.
+
+More of v18 is planned (key highlighting, T7), and this entry grows with it before anything is
+collected. No new event, key, table or column so far, so `init_db.py` needs no re-run.
 
 **Schema v17 (2026-10-12).** T1, T3 and A-T4 reworded, keys unchanged. B-T2 asks for the
 sixth-highest bar, in 2017 (key Mozambique); B-T4 for the highest cell, Laos and Cameroon replacing
@@ -821,7 +830,14 @@ context cheap and the reports as long as they need to be.
   - Phase 2: line chart.
   - Phase 3: clickable keys.
   - Phase 4: T7.
-- 2026-10-12 — **Pilot changes, phase 1** (uncommitted at time of writing). Practice window
+- 2026-10-12 — **Pilot data out of Neon (phase 0).**
+  - Participant `1`'s 85 v17 events and registration were exported to `data/study_logs/pilot/`,
+    then withdrawn with `withdraw_participant.py --apply`: 0 events left, ID `1` marked withdrawn.
+  - The sequence is at 13, so the first study participant is **seq 14 (interactive first, form
+    A)**.
+  - The pilot's consent record is still in Neon (one row). Eduardo archives it with
+    `archive_consents.py`, which asks for the password.
+- 2026-10-12 — **Pilot changes, phase 1** (committed as 2a5e7f9). Practice window
   2019–2021. Heatmap sort A–Z / Lowest cell first / Highest cell first (B-T4's key row now comes
   to the top too). Chips at most six to a row, five on the map beside the Highlight box, named as
   the chart names them ("DR Congo"). The line hint names hover. A full-screen request on the first
@@ -831,6 +847,18 @@ context cheap and the reports as long as they need to be.
   wording is on screen, no console errors. Against the committed version, only the interactive
   T3 card moved (36 px up). Found, not caused: the interactive T1 card ends at 802 px on a
   790-tall window.
+- 2026-10-12 — **Pilot changes, phase 2: the line chart** (uncommitted at time of writing).
+  - A Years range slider replaces View, with Show all under it. It zooms the x axis, follows
+    every other zoom, and its handles take the arrow keys, with no number boxes (Dash 4's commit
+    only on blur). Reset view now undoes a zoom.
+  - A click on a line focuses it: the others and their tags fade to 0.15 and take no hover or
+    click, and the chips stay ticked. plotly.js ignores `hoverinfo` on a trace with a
+    `hovertemplate`, so the faded lines' templates are dropped; only a browser showed it.
+  - The chip group is never rebuilt now (`ControlResult.group` gone).
+  - 1365 tests. Headless Chrome: 23 checks (keyboard, drag, plot-drag, wheel and Reset axis all
+    move the slider; focus, Show all, Reset view; static has no slider), with the log showing one
+    event per action and none spurious, and no console errors.
+  - Line-chart cards are 12 px shorter: T1 now fits a 790 px window, not a 768 one.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
