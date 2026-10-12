@@ -178,6 +178,12 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v16 (2026-10-11).** T2 and T4 read MCV1, not DTP3, in both forms (`study-design.md`
+§4). A-T2 swaps Brazil's bar for Guinea's, B-T2 moves to 2021 and swaps Cambodia's for Algeria's,
+A-T4 swaps the CAR's row for Benin's; both T2 option lists and A-T4's changed. Keys unchanged. No
+new event, key, table or column, so `init_db.py` needs no re-run. Nothing collected, so no
+migration.
+
 **Schema v15 (2026-10-11).** Each T6 chart draws eight lines, not two: A adds Afghanistan, Chad,
 Côte d'Ivoire, DR Congo, Nigeria and Somalia; B adds Benin, Cameroon, Gabon, Kenya, Madagascar and
 Sudan (`study-design.md` §4). Question, pair, key and options
@@ -746,6 +752,14 @@ context cheap and the reports as long as they need to be.
   eight lines and tags, hover, isolation and Show all logged in interactive halves only, keys
   logged, no console errors. At 1366 × 768 the interactive T6 Submit ends at 776 px (two chip
   rows, as on T1). `irb/questionnaire.pdf` re-exported.
+- 2026-10-11 — **T2 and T4 move to MCV1** (uncommitted at time of writing), so the bank uses two
+  of the four vaccines. Keys and their option positions unchanged. T2 gaps 7/6 (A), 6/7 (B), options
+  at ranks 1, 2, 3, 4, 8, 10 in both; T4 margins 17 (A) and 10 (B), a pilot check. Guinea and
+  Algeria take the colours of the bars they replace. Schema v16. 1276 tests. Headless Chrome, all
+  four cells at 1440 × 790: "MCV1 coverage, …" titles, the new bars and options, the heatmap sort,
+  no console errors. `irb/questionnaire.pdf` re-exported. Found, not fixed: long one-word options
+  overflow their answer tile (B-T2 Mozambique, B-T4 Afghanistan and Madagascar at 1440 × 790; also
+  B-T3 at 1366 × 768). The B-T3 and B-T4 cases predate the change.
 - **Still to do before the pilot:**
   - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
     written description (`study-design.md` §10).
@@ -920,7 +934,16 @@ context cheap and the reports as long as they need to be.
   forms; not Congo beside DR Congo), adding T1's close-run clause to T6's rule, and "DR Congo" on
   the line tag.
 
+- 2026-10-11 — **T2 and T4 move to MCV1** (Eduardo, over keeping DTP3 throughout). Taken without
+  asking: which items (T4's B grid passed unchanged; T5 failed in every year; T2 was the next
+  cheapest), the swaps (Guinea, Algeria, Benin, each found by search with the key and its option
+  position kept), and Benin over Niger in A-T4, which would have matched B's margin but shared a
+  third identical row across forms.
+
 ## Open questions
+
+- Answer tiles overflow on long one-word options (found 2026-10-11). Fixing it changes the tiles'
+  layout in both conditions; not done without asking.
 
 - Does HSRRC accept a drawn electronic signature? 45 CFR 46.117 allows electronic documentation;
   confirm with hsrrc@oxy.edu. The paper-copy box is the fallback either way.

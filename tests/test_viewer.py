@@ -329,7 +329,7 @@ def test_justifications_are_hidden_unless_asked_for(complete_records):
     assert set(hidden.loc[~is_t1, "justification"]) == {vd.HIDDEN}
     assert hidden.loc[is_t1, "justification"].isna().all(), "T1 asks for none"
     assert set(hidden.loc[is_t1, "answer"]) == {vd.HIDDEN}
-    assert "Brazil" in set(hidden["answer"]), "a multiple-choice answer is not masked"
+    assert "2004-2008" in set(hidden["answer"]), "a multiple-choice answer is not masked"
     shown = vd.answers(records, scoring, show_justifications=True)
     assert "Because of the T2 lines." in set(shown["justification"])
     assert written & set(shown["answer"])

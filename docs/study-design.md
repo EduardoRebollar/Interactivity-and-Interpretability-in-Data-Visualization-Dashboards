@@ -10,8 +10,8 @@ crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4)
 2026-09-25 from the design handoff (`docs/design-handoff/`, `docs/study-redesign.md`): six options
 per item, controls on every chart, a new survey, and About you, which moves to the end; built and
 verified in headless Chrome 2026-09-26; restyled 2026-10-11 from the chart handoff
-(`docs/chart-handoff/`), with T5's maps redrawn and T6 given six more lines (§4).** The consent
-text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
+(`docs/chart-handoff/`), with T5's maps redrawn, T6 given six more lines, and T2 and T4 moved to
+MCV1 (§4).** The consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -123,7 +123,8 @@ countries take the blue bands (`docs/visual-spec.md` §4).
 **Replaced 2026-09-23.** The task bank of 2026-09-22 (a reference count, two trends, two crossings
 and a gap item, all on line charts) was replaced by a bank Eduardo specified on 2026-09-23
 (`task-bank-spec.md`, supplied with the request and not kept in this repository; every item it
-specified is recorded below, as kept or as changed). All items use DTP3. Every value was verified against
+specified is recorded below, as kept or as changed). Every item used DTP3 until 2026-10-11, when T2
+and T4 moved to MCV1 (below); the others still do. Every value was verified against
 `data/deploy/coverage.csv`. The spec's own values were right: they also match the Our World in Data
 export it cites, which agrees with this project's source for DTP3, 2000–2024, value for value.
 
@@ -255,20 +256,33 @@ isolation control and the chips cut through it.
 
 ### T2 — Third-highest bar (bar, sort)
 
-*The bars show coverage in {year}. Which country had the third-highest coverage?*
+*The bars show coverage in {year}. Which country had the third-highest coverage?* MCV1 since
+2026-10-11 (below).
 
 | | Form A | Form B |
 |---|---|---|
-| Year | 2017 | 2024 |
-| Bars | China 99, Vietnam 94, **India 89**, Brazil 83, Kenya 81, Mali 77, Pakistan 75, Ethiopia 65, Afghanistan 64, Nigeria 55 | Egypt 97, United States 94, **Colombia 89**, Cambodia 83, Mali 82, Indonesia 78, Cameroon 77, Ethiopia 73, Mozambique 70, Nigeria 67 |
-| Gap to the bar above / below | 5 / 6 | 5 / 6 |
-| Options | Brazil, China, Ethiopia, India, Nigeria, Vietnam | Cambodia, Colombia, Egypt, Ethiopia, Nigeria, United States |
+| Year | 2017 | 2021 |
+| Bars | China 99, Vietnam 97, **India 90**, Kenya 84, Pakistan 76, Mali 70, Afghanistan 64, Ethiopia 59, Nigeria 54, Guinea 48 | Egypt 96, United States 92, **Colombia 86**, Algeria 79, Indonesia 72, Mali 72, Cameroon 65, Mozambique 62, Ethiopia 60, Nigeria 56 |
+| Gap to the bar above / below | 7 / 6 | 6 / 7 |
+| Options | China, Ethiopia, Guinea, India, Kenya, Vietnam | Algeria, Colombia, Egypt, Mozambique, Nigeria, United States |
 | Key | **India** | **Colombia** |
 
 The bars stand in alphabetical order, so the top three are not side by side. Sorting lines them up.
-The forms are matched exactly: ten bars each, the key 89 in both, 5 points below the bar above and
-6 above the bar below. Each form's options are the ranks 1, 2, 3, 4, 8 and 10 (Nigeria, the
-lowest, added 2026-09-25).
+The forms are matched: ten bars each, the key 6 to 7 points from the bars either side of it, and
+each form's options the ranks 1, 2, 3, 4, 8 and 10, every one at least 2 points from its
+neighbours. The key holds the same place among the options as it did on DTP3.
+
+> **Moved to MCV1, 2026-10-11** (Eduardo), so the bank uses more than one vaccine. On DTP3 the
+> bars were A 2017: China 99, Vietnam 94, India 89, Brazil 83, Kenya 81, Mali 77, Pakistan 75,
+> Ethiopia 65, Afghanistan 64, Nigeria 55; B 2024: Egypt 97, United States 94, Colombia 89,
+> Cambodia 83, Mali 82, Indonesia 78, Cameroon 77, Ethiopia 73, Mozambique 70, Nigeria 67, each key
+> 5 / 6 points from its neighbours. Neither chart passes on MCV1 as it stood (A's India is 3 points
+> above Brazil; B's Colombia 1 point below the United States in 2024), and B passes in no year
+> without a change of bars. Found by search over every year and every one-bar swap, with the options
+> re-chosen at the same ranks and the key kept in its place: A keeps 2017 and swaps Brazil for
+> Guinea; B moves to 2021 and swaps Cambodia for Algeria. Guinea takes Brazil's colour and Algeria
+> Cambodia's, so each chart's set of colours is the one already measured (`docs/visual-spec.md`
+> §4). The keys stay India and Colombia.
 
 > **Three bars added to each form, 2026-10-11** (Eduardo), so a reader without the sort has more
 > bars to rank. A gains Kenya (81), Mali (77) and Afghanistan (64); B gains Mali (82), Cameroon (77)
@@ -338,23 +352,33 @@ exactly.
 ### T4 — Lowest cell (heatmap, hover and row sort)
 
 *Rows are countries and columns are years. Darker cells mean lower coverage. Which country's row
-contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024.
+contains the single lowest cell?* Columns: 2000, 2005, 2010, 2015, 2020, 2024. MCV1 since
+2026-10-11 (below).
 
 | | Form A | Form B |
 |---|---|---|
-| Rows | Burkina Faso, Cambodia, Central African Republic, Chad, India, Indonesia, Mali, Pakistan | Afghanistan, Madagascar, Mali, Myanmar, Nepal, Niger, Pakistan, Uganda |
-| Lowest cell | **Chad, 2005: 26%** | **Afghanistan, 2000: 24%** |
-| Next row's lowest | Central African Republic, 37% | Niger, 34% |
-| Margin | 11 | 10 |
-| Bands (2026-10-11) | the key is the only cell in 20–30; nothing lower. Next: CAR 2000 and 2020 (37), Chad 2000 (38), in 30–40 | the key is the only cell in 20–30; nothing lower. Next: Niger 2000 (34), in 30–40 |
-| Options | Burkina Faso, Central African Republic, Chad, India, Mali, Pakistan | Afghanistan, Madagascar, Mali, Niger, Pakistan, Uganda |
+| Rows | Benin, Burkina Faso, Cambodia, Chad, India, Indonesia, Mali, Pakistan | Afghanistan, Madagascar, Mali, Myanmar, Nepal, Niger, Pakistan, Uganda |
+| Lowest cell | **Chad, 2005: 27%** | **Afghanistan, 2000: 27%** |
+| Next row's lowest | Benin, 44% (2024) | Niger, 37% (2000) |
+| Margin | 17 | 10 |
+| Bands | Chad's 2000 (28) and 2005 (27) are the only cells in 20–30; nothing lower. Next: Benin 2024 (44), in 40–50, two bands lighter | the key is the only cell in 20–30; nothing lower. Next: Niger 2000 (37), in 30–40 |
+| Options | Benin, Burkina Faso, Chad, India, Mali, Pakistan | Afghanistan, Madagascar, Mali, Niger, Pakistan, Uganda |
 | Key | **Chad** | **Afghanistan** |
 
 No number is written in a cell. Static participants match each cell's band against the stepped key;
 hover gives the exact value, and the Lowest value row sort brings the key's row to the top. Since
 2026-10-11 the cells are banded (`docs/visual-spec.md` §4): the key cell is the only one of its
-colour in either grid, one band darker than the next. The sixth
-option, added 2026-09-25, is each grid's sixth-lowest row: India (58) in A, Madagascar (57) in B.
+colour in either grid, at least one band darker than the next. Each form's options are its six
+lowest rows.
+
+> **Moved to MCV1, 2026-10-11** (Eduardo), with T2. On DTP3, A's grid had the Central African
+> Republic where Benin is (Chad 26 against the CAR's 37, margin 11), and B's key cell was 24 against
+> Niger's 34. B's grid passes on MCV1 unchanged. A's does not: the CAR's lowest cell (36) is 9
+> points above Chad's (27). Benin, found by search over one-row swaps, keeps Chad the key and in its
+> place among the options. **The forms are less evenly matched than on DTP3:** A's margin is 17
+> and B's 10, and A's next row sits two bands lighter than its key where B's sits one. Niger in A
+> would match B exactly (margin 10, one band), but it would move the key's place among the options
+> and add a third row identical in both forms' grids, beside Mali and Pakistan. A pilot check (§10).
 
 > **Re-tuned from the spec.** The spec's A-T4 lowest cell (Chad, 26) was 3 points from Nigeria's
 > (29), and its B-T4 (Afghanistan, 24) 5 points from Nigeria's — enough on a position axis, not in
@@ -469,14 +493,16 @@ on every line chart.
 
 | | T1 | T2 | T3 | T4 | T5 | T6 |
 |---|---|---|---|---|---|---|
-| Margin, form A | drop 80, rise 36 | 5 / 6 | 6 | 11 | 11 | 1.79 years |
-| Margin, form B | drop 31, rise 39 | 5 / 6 | 8 | 10 | 10 | 1.40 years |
+| Margin, form A | drop 80, rise 36 | 7 / 6 | 6 | 17 | 11 | 1.79 years |
+| Margin, form B | drop 31, rise 39 | 6 / 7 | 8 | 10 | 10 | 1.40 years |
 | Floor | drop 25, rise 25 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
 than quietly unbalancing the forms. Four known differences go to the pilot (§10):
 - T1's falling line: Ukraine's collapse (80 points, 2008–2016) is far larger and faster than
   Brazil's decline (31 points over a decade). A-T1 is probably the easier form.
+- A-T4's key clears the next row by 17 points and two bands, B-T4's by 10 and one (T4 above). A-T4
+  is probably the easier form.
 - B-T3's closest dots sit on the 4-point floor, and since 2026-10-11 B's sixteen dots are more
   crowded than A's (T3 above).
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
@@ -605,6 +631,20 @@ the controls, not the questions or the keys.
   position among them.
 - **Log schema v15:** a v14 T6 answer was given against two lines, a v15 one against eight
   (`src/logging.py`). Nothing had been collected.
+
+### Revision 2026-10-11: T2 and T4 move to MCV1
+
+- **Changed:** T2 and T4 read MCV1 in both forms, so the bank uses two of the dataset's four
+  vaccines. The other items stay on DTP3. A-T2 swaps Brazil's bar for Guinea's; B-T2 moves to 2021
+  and swaps Cambodia's bar for Algeria's; A-T4 swaps the Central African Republic's row for
+  Benin's (T2, T4 above). B-T4's grid is unchanged.
+- **Options:** A-T2 now offers China, Ethiopia, Guinea, India, Kenya and Vietnam; B-T2 Algeria,
+  Colombia, Egypt, Mozambique, Nigeria and the United States; A-T4 Benin in place of the CAR.
+- **Unchanged:** every key, and its place among the options, so the spread in §5 holds. The chart
+  titles read "MCV1 coverage, …" on these items, from the item's vaccine; nothing else on the
+  screen names the vaccine, as before.
+- **Log schema v16:** a v15 T2 or T4 answer was given against a different chart, and a v15 B-T2
+  prompt named a different year (`src/logging.py`). Nothing had been collected.
 
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
@@ -1180,6 +1220,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
       rather than the reading.
   - **T6 against its adjacent-band secondary.** If the two scores differ much, static readers are
     placing the crossing a band off, and the band edges are doing the work.
+  - **T4's forms on MCV1 (2026-10-11).** A's margin is 17 points against B's 10 (§4). If A-T4's
+    static accuracy is clearly higher, one of the two grids needs changing.
   - **T6 with eight lines (2026-10-11).** Static accuracy, and form equivalence, since A's extra
     lines sit nearer the crossing than B's (§4); and how often interactive participants isolate
     the two lines before answering, which the logs show.

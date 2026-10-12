@@ -95,14 +95,15 @@ FORM_A: tuple[Task, ...] = (
         chart="bar",
         years=(2017,),
         prompt="The bars show coverage in 2017. Which country had the third-highest coverage?",
-        vaccine="DTP3",
-        # Ten bars (2026-10-11): Kenya, Mali and Afghanistan added, every one at least 5 points
-        # below India's 89. docs/study-design.md section 4.
+        # MCV1 since 2026-10-11, with Guinea's bar in place of Brazil's: India's 90 is 7 points
+        # below Vietnam and 6 above Kenya. The options are ranks 1, 2, 3, 4, 8 and 10, as in B.
+        # docs/study-design.md section 4.
+        vaccine="MCV1",
         entities=(
             "Afghanistan",
-            "Brazil",
             "China",
             "Ethiopia",
+            "Guinea",
             "India",
             "Kenya",
             "Mali",
@@ -110,7 +111,7 @@ FORM_A: tuple[Task, ...] = (
             "Pakistan",
             "Vietnam",
         ),
-        options=("Brazil", "China", "Ethiopia", "India", "Nigeria", "Vietnam"),
+        options=("China", "Ethiopia", "Guinea", "India", "Kenya", "Vietnam"),
     ),
     Task(
         task_id="T3",
@@ -157,25 +158,20 @@ FORM_A: tuple[Task, ...] = (
             "Rows are countries and columns are years. Darker cells mean lower coverage. Which "
             "country's row contains the single lowest cell?"
         ),
-        vaccine="DTP3",
+        # MCV1 since 2026-10-11, with Benin's row in place of the Central African Republic's,
+        # whose lowest cell (36) sits 9 points above Chad's 27. docs/study-design.md section 4.
+        vaccine="MCV1",
         entities=(
+            "Benin",
             "Burkina Faso",
             "Cambodia",
-            "Central African Republic",
             "Chad",
             "India",
             "Indonesia",
             "Mali",
             "Pakistan",
         ),
-        options=(
-            "Burkina Faso",
-            "Central African Republic",
-            "Chad",
-            "India",
-            "Mali",
-            "Pakistan",
-        ),
+        options=("Benin", "Burkina Faso", "Chad", "India", "Mali", "Pakistan"),
     ),
     Task(
         task_id="T5",
@@ -267,13 +263,14 @@ FORM_B: tuple[Task, ...] = (
         form="B",
         kind="rank",
         chart="bar",
-        years=(2024,),
-        prompt="The bars show coverage in 2024. Which country had the third-highest coverage?",
-        vaccine="DTP3",
-        # Ten bars, as in A: Mali, Cameroon and Mozambique added, every one at least 5 points below
-        # Colombia's 89.
+        years=(2021,),
+        prompt="The bars show coverage in 2021. Which country had the third-highest coverage?",
+        # MCV1 since 2026-10-11, in 2021 and with Algeria's bar in place of Cambodia's: Colombia's
+        # 86 is 6 points below the United States and 7 above Algeria. docs/study-design.md
+        # section 4.
+        vaccine="MCV1",
         entities=(
-            "Cambodia",
+            "Algeria",
             "Cameroon",
             "Colombia",
             "Egypt",
@@ -284,7 +281,7 @@ FORM_B: tuple[Task, ...] = (
             "Nigeria",
             "United States",
         ),
-        options=("Cambodia", "Colombia", "Egypt", "Ethiopia", "Nigeria", "United States"),
+        options=("Algeria", "Colombia", "Egypt", "Mozambique", "Nigeria", "United States"),
     ),
     Task(
         task_id="T3",
@@ -330,7 +327,9 @@ FORM_B: tuple[Task, ...] = (
             "Rows are countries and columns are years. Darker cells mean lower coverage. Which "
             "country's row contains the single lowest cell?"
         ),
-        vaccine="DTP3",
+        # MCV1 since 2026-10-11; the grid passes unchanged, Afghanistan 27 against Niger's 37.
+        # docs/study-design.md section 4.
+        vaccine="MCV1",
         entities=(
             "Afghanistan",
             "Madagascar",

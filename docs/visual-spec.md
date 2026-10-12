@@ -227,9 +227,14 @@ Colour is never the only channel for a series, whatever the palette (§6).
 One colour per bar, by country. A country with a series colour keeps it. Every other bar country
 has its own colour, held to the same floors as the series colours on each chart it appears on: at
 least 3:1 on white, and **every pair of bars on one chart at least 12 ΔE2000 apart** under normal
-vision, deuteranopia and protanopia. A chart is ten bars: A-T2's four countries without a series
-colour are Afghanistan, Kenya, Mali and Vietnam, and B-T2's seven are Cambodia, Cameroon,
+vision, deuteranopia and protanopia. A chart is ten bars: A-T2's five countries without a series
+colour are Afghanistan, Guinea, Kenya, Mali and Vietnam, and B-T2's seven are Algeria, Cameroon,
 Colombia, Egypt, Mali, Mozambique and the United States.
+
+When T2 moved to MCV1 (2026-10-11, `docs/study-design.md` §4), A-T2 swapped Brazil's bar for
+Guinea's and B-T2 Cambodia's for Algeria's. Each newcomer takes the colour of the bar it replaced,
+Guinea Brazil's series blue and Algeria Cambodia's violet, so each chart carries exactly the set of
+colours measured below. Guinea draws no line, so it never meets Brazil on a chart.
 
 - **The handoff's four extra colours are not kept.** Its Afghanistan, `#B07A00`, is 1.1 ΔE from
   China's vermillion under protanopia, the defect that removed the old orange from the palette
@@ -245,10 +250,11 @@ Colombia, Egypt, Mali, Mozambique and the United States.
 | Country | Hex | Ratio | Chart | Handoff's |
 |---|---|---|---|---|
 | Afghanistan | `#705000` | 7.40:1 | A | `#B07A00` |
+| Guinea | `#0072B2` | 5.19:1 | A | (Brazil's series colour) |
 | Kenya | `#0098E8` | 3.15:1 | A | `#2C8DBF` |
 | Mali | `#108078` | 4.79:1 | A, B | `#7A5C00` |
 | Vietnam | `#683860` | 9.04:1 | A | `#5E5E9E` |
-| Cambodia | `#A080F8` | 3.03:1 | B | |
+| Algeria | `#A080F8` | 3.03:1 | B | (Cambodia's, until 2026-10-11) |
 | Cameroon | `#C06000` | 4.27:1 | B | |
 | Colombia | `#703040` | 9.61:1 | B | |
 | Egypt | `#1070A8` | 5.38:1 | B | |
@@ -396,9 +402,10 @@ pixels.
 **The card (2026-10-11, the chart handoff).** The figure holds three bands, all drawn in it so both
 conditions have them by construction:
 
-- **Title**, 0–30 px: padded 4 px at the top and 16 px at the left. "DTP3 coverage, 2000–2024" on line
-  charts, "DTP3 coverage, {year}" on the bar chart and the map, "DTP3 coverage, 2000 and 2024" on the
-  scatter, "DTP3 coverage, selected years" on the heatmap. No subtitle.
+- **Title**, 0–30 px: padded 4 px at the top and 16 px at the left. "{vaccine} coverage, 2000–2024"
+  on line charts, "{vaccine} coverage, {year}" on the bar chart and the map, "{vaccine} coverage,
+  2000 and 2024" on the scatter, "{vaccine} coverage, selected years" on the heatmap, where
+  {vaccine} is the item's: MCV1 on T2 and T4 since 2026-10-11, DTP3 elsewhere. No subtitle.
 - **Chart**, 30–492 px.
 - **Source line**, at 502 px, 16 px from the left, on one line: "Source: WHO/UNICEF coverage
   estimates (WUENIC), via Our World in Data. These are estimates; how reliably coverage is measured

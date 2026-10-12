@@ -314,12 +314,17 @@ SCATTER_LABEL_SIDES: dict[str, str] = {
 # on B-T2 is at least MIN_CVD_DISTANCE apart under normal vision, deuteranopia and protanopia, the
 # floor the series colours meet. The handoff's own Afghanistan, #B07A00, was 1.1 dE from China's
 # vermillion under protanopia. The name under each bar, not its colour, says which country it is.
+#
+# When T2 moved to MCV1 (2026-10-11), Guinea's bar replaced Brazil's on A-T2 and Algeria's
+# Cambodia's on B-T2. Each takes the colour of the bar it replaced, so both charts keep the colour
+# sets measured above. Guinea draws no line, so it never meets Brazil on a chart.
 BAR_COLORS: dict[str, str] = {
     "Afghanistan": "#705000",  # 7.40:1   handoff #B07A00
+    "Guinea": "#0072B2",  # 5.19:1   Brazil's series colour
     "Kenya": "#0098E8",  # 3.15:1   handoff #2C8DBF
     "Mali": "#108078",  # 4.79:1   handoff #7A5C00
     "Vietnam": "#683860",  # 9.04:1   handoff #5E5E9E
-    "Cambodia": "#A080F8",  # 3.03:1
+    "Algeria": "#A080F8",  # 3.03:1   Cambodia's until 2026-10-11
     "Cameroon": "#C06000",  # 4.27:1
     "Colombia": "#703040",  # 9.61:1
     "Egypt": "#1070A8",  # 5.38:1

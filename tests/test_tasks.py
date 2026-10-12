@@ -43,6 +43,16 @@ def test_both_forms_cover_the_same_types_on_the_same_charts_in_the_same_order():
         assert tuple(t.chart for t in tasks.for_form(form)) == EXPECTED_CHARTS, form
 
 
+# T2 and T4 read MCV1 since 2026-10-11, every other item DTP3 (study-design.md section 4).
+EXPECTED_VACCINES = ("DTP3", "MCV1", "DTP3", "MCV1", "DTP3", "DTP3")
+
+
+def test_matched_items_read_the_same_vaccine_in_both_forms():
+    for form in FORMS:
+        assert tuple(t.vaccine for t in tasks.for_form(form)) == EXPECTED_VACCINES, form
+    assert tasks.PRACTICE.vaccine == "DTP3"
+
+
 def test_matched_items_share_task_ids_across_forms():
     """T2 in form A must be the counterpart of T2 in form B, so analysis can pair them."""
     a_ids = [t.task_id for t in tasks.for_form("A")]

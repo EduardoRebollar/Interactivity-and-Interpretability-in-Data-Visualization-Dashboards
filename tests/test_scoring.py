@@ -106,14 +106,15 @@ def test_the_margins_are_the_ones_study_design_records():
     }
     assert margins == {
         ("A", "T3"): 6.0,
-        ("A", "T4"): 11.0,
+        ("A", "T4"): 17.0,  # MCV1 since 2026-10-11; B-T4's 10 is unchanged
         ("A", "T5"): 11.0,
         ("B", "T3"): 8.0,
         ("B", "T4"): 10.0,
         ("B", "T5"): 10.0,
     }
-    for form in ("A", "B"):
-        assert table[(form, "T2")].evidence["gaps_pp"] == {"above": 5.0, "below": 6.0}, form
+    # T2 on MCV1 (2026-10-11): 7 / 6 in A, 6 / 7 in B.
+    assert table[("A", "T2")].evidence["gaps_pp"] == {"above": 7.0, "below": 6.0}
+    assert table[("B", "T2")].evidence["gaps_pp"] == {"above": 6.0, "below": 7.0}
     # T1's are the sizes of the shapes its rubric names, and how close another line runs.
     t1 = {form: table[(form, "T1")].evidence for form in ("A", "B")}
     assert (t1["A"]["drop_pp"], t1["A"]["rise_pp"], t1["A"]["recovery_pp"]) == (80.0, 36.0, 69.0)

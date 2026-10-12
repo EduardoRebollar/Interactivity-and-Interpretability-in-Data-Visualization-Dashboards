@@ -60,6 +60,13 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v16 (2026-10-11): T2 and T4 read MCV1, not DTP3, in both forms (docs/study-design.md section 4).
+# A-T2 swaps Brazil's bar for Guinea's, B-T2 moves to 2021 and swaps Cambodia's for Algeria's, and
+# A-T4 swaps the Central African Republic's row for Benin's, so both T2 option lists and A-T4's
+# changed. Every key is unchanged, but a v15 T2 or T4 answer was given against a different chart.
+# The record shape is unchanged: no new event, key or table, so no init_db.py re-run. Nothing has
+# been collected, so no migration.
+#
 # v15 (2026-10-11): each T6 chart draws eight lines, not two: six countries that cross the named
 # pair away from where they meet (docs/study-design.md section 4). The question, pair, key and
 # options are unchanged, but a v14 T6 answer was given against a different chart. The record shape
@@ -140,7 +147,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 16
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
