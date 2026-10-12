@@ -112,7 +112,7 @@ This is deliberate. If interactive participants could pull in entities that stat
 not, interactivity would be changing *what data is available* as well as *how it is worked with*, and
 no observed difference could be attributed to interactivity alone.
 
-At most 8 colour-coded series — lines plus the dashed World reference, or scatter dots — per
+At most 8 lines plus the dashed World reference, or 16 scatter dots (2026-10-11), per
 `docs/visual-spec.md` §6. The bar chart, the heatmap and the map are not limited by the palette: bars
 are named on their axis, and rows and countries take the sequential scale.
 
@@ -254,15 +254,24 @@ isolation control, the chips and the legend all cut through it.
 | | Form A | Form B |
 |---|---|---|
 | Year | 2017 | 2024 |
-| Bars | China 99, Vietnam 94, **India 89**, Brazil 83, Pakistan 75, Ethiopia 65, Nigeria 55 | Egypt 97, United States 94, **Colombia 89**, Cambodia 83, Indonesia 78, Ethiopia 73, Nigeria 67 |
+| Bars | China 99, Vietnam 94, **India 89**, Brazil 83, Kenya 81, Mali 77, Pakistan 75, Ethiopia 65, Afghanistan 64, Nigeria 55 | Egypt 97, United States 94, **Colombia 89**, Cambodia 83, Mali 82, Indonesia 78, Cameroon 77, Ethiopia 73, Mozambique 70, Nigeria 67 |
 | Gap to the bar above / below | 5 / 6 | 5 / 6 |
 | Options | Brazil, China, Ethiopia, India, Nigeria, Vietnam | Cambodia, Colombia, Egypt, Ethiopia, Nigeria, United States |
 | Key | **India** | **Colombia** |
 
 The bars stand in alphabetical order, so the top three are not side by side. Sorting lines them up.
-The forms are matched exactly: the key is 89 in both, 5 points below the bar above and 6 above the
-bar below. Each form's options are the ranks 1, 2, 3, 4, 6 and 7 (Nigeria, the seventh, added
-2026-09-25).
+The forms are matched exactly: ten bars each, the key 89 in both, 5 points below the bar above and
+6 above the bar below. Each form's options are the ranks 1, 2, 3, 4, 8 and 10 (Nigeria, the
+lowest, added 2026-09-25).
+
+> **Three bars added to each form, 2026-10-11** (Eduardo), so a reader without the sort has more
+> bars to rank. A gains Kenya (81), Mali (77) and Afghanistan (64); B gains Mali (82), Cameroon (77)
+> and Mozambique (70). Every new bar sits at least 5 points below the key, so the key, its margins,
+> the options and the key's place among them are unchanged; the options moved from ranks 1, 2, 3,
+> 4, 6 and 7 to 1, 2, 3, 4, 8 and 10, alike in both forms. In each form the fifth bar is a new one,
+> 1–2 points under the fourth. The Democratic Republic of Congo (A 71, B 65) and the Central
+> African Republic were left out: ten bars give each name about 94 px of axis, and theirs would
+> collide.
 
 > **Re-tuned from the spec.** The spec's A-T2 (2015) had China 99, Bangladesh 98, Vietnam 97 and
 > Brazil 96, and its B-T2 (2019) Egypt 95 against Colombia 94. Both keys were 1 point from a
@@ -278,13 +287,32 @@ diagonal?*
 | | Form A | Form B |
 |---|---|---|
 | Dots, 2000 → 2024 | Burkina Faso 45 → 91, Chad 38 → 68, Ethiopia 30 → 73, Mali 43 → 82, **Niger 34 → 86**, Nigeria 29 → 67 | Bangladesh 82 → 97, Cambodia 59 → 83, **India 58 → 94**, Indonesia 75 → 78, Nepal 74 → 97, Pakistan 59 → 87 |
+| Added 2026-10-11 | Benin 78 → 63, Cameroon 62 → 77, Central African Republic 37 → 42, Egypt 98 → 97, Kenya 82 → 91, Libya 94 → 86, Madagascar 57 → 60, Mozambique 70 → 70, Sudan 62 → 39, Tanzania 79 → 83 | Iraq 80 → 90, Jordan 91 → 96, Kyrgyzstan 99 → 85, Laos 51 → 67, Lebanon 83 → 49, Oman 99 → 99, Philippines 78 → 71, Syria 86 → 73, Thailand 97 → 92, Yemen 74 → 42 |
 | Improvement, key vs runner-up | +52 vs +46 (Burkina Faso): 6 | +36 vs +28 (Pakistan): 8 |
+| Best added dot | +15 (Cameroon), 37 below the key | +16 (Laos), 20 below the key |
+| Dots below the diagonal | 4 | 6 |
 | Closest two dots | 6.1 points (Ethiopia, Nigeria) | 4.0 points (Cambodia, Pakistan) |
 | Options | Burkina Faso, Chad, Ethiopia, Mali, Niger, Nigeria | Bangladesh, Cambodia, India, Indonesia, Nepal, Pakistan |
 | Key | **Niger** | **India** |
 
 The dot is easy to find; the static cost is naming it, by matching its colour and shape to the
-legend. Hover names it directly.
+legend. Hover names it directly. Sixteen dots per form since 2026-10-11, so the legend has sixteen
+entries and every colour is shared by two dots, told apart by shape (`docs/visual-spec.md` §6).
+
+> **Ten dots added to each form, 2026-10-11** (Eduardo), so a reader without hover has more legend
+> entries to match. Every added dot improved at least 20 points less than the key, in both forms,
+> so the key, the runner-up, the margin, the closest pair and the options are all unchanged; the
+> new dots add entries to match, not rivals for the answer. Form B could not reach 20 points
+> otherwise: Asia's eligible countries improved by +16 at most. Within that rule the sets were
+> chosen by search for the fewest close pairs, then the fewest countries outside the old scope.
+> - **A** keeps every in-scope African country that fits (Kenya over Zambia, 3 points apart) and adds
+>   Benin, Libya and Sudan. Uganda (+39) and Somalia (+37) fit the 4-point rule but not the 20.
+> - **B** adds ten Asian countries, none from the old scope: Myanmar, the practice's country, is left
+>   out, and Vietnam and China crowd the top-right corner. Armenia, Azerbaijan and Georgia were left
+>   out because participants may not read them as Asian, and Georgia as the US state.
+> - **Not matched:** B's chart is denser. It has 7 pairs of dots within 8 points of each other
+>   against A's 1, and 6 dots below the diagonal against A's 4, because Asia's high-coverage
+>   countries share the top-right corner. Both forms still clear the 4-point floor.
 
 > **Changed from the spec.** A-T3 drops Angola (31 → 64) and DR Congo (30 → 65): their dots sat
 > 1.4 points apart, and within 3 of Nigeria's, so one dot hid another. B-T3 drops Laos, so both forms
@@ -401,7 +429,8 @@ line is rising. The line controls and zoom work here as on every line chart.
 than quietly unbalancing the forms. Four known differences go to the pilot (§10):
 - T1's falling line: Ukraine's collapse (80 points, 2008–2016) is far larger and faster than
   Brazil's decline (31 points over a decade). A-T1 is probably the easier form.
-- B-T3's closest dots sit on the 4-point floor.
+- B-T3's closest dots sit on the 4-point floor, and since 2026-10-11 B's sixteen dots are more
+  crowded than A's (T3 above).
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
   cross.
@@ -476,6 +505,27 @@ the controls, not the questions or the keys.
 - **Keys:** ten keys are now options, T2–T6 in both forms, spread first: 1, second: 2, third: 3,
   fourth: 2, fifth: 2 (§5).
 - **Log schema v11:** T1's `answer` is free text, and a T1 record carries no justification
+  (`src/logging.py`). Nothing had been collected.
+
+### Revision 2026-10-11: three more bars on T2
+
+- **Added:** three bars to each T2 chart, all below the key (T2 above). Ten bars per form.
+- **Unchanged:** the question, the key, its margins, the options and the key's position among them.
+- **Log schema v12:** a v11 T2 answer was given against seven bars, a v12 one against ten
+  (`src/logging.py`). Nothing had been collected.
+
+### Revision 2026-10-11: ten more dots on T3
+
+- **Added:** ten dots to each T3 scatter, every one improving at least 20 points less than the key
+  (T3 above). Sixteen dots per form.
+- **Scope:** thirteen countries added, three African (Benin, Libya, Sudan) and ten Asian (Iraq,
+  Jordan, Kyrgyzstan, Laos, Lebanon, Oman, Philippines, Syria, Thailand, Yemen), each used only by
+  T3. 52 entities, 5200 rows.
+- **Visual:** past eight dots the colours repeat, so every dot has its own marker shape
+  (`docs/visual-spec.md` §6). Applies to both conditions.
+- **Unchanged:** the question, the key, the margin, the closest pair, the options and the key's
+  position among them.
+- **Log schema v13:** a v12 T3 answer was given against six dots, a v13 one against sixteen
   (`src/logging.py`). Nothing had been collected.
 
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
@@ -1034,8 +1084,11 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
     mean the floor is too tight for that chart type.
   - **Form equivalence.** T1's falling line is Ukraine's 80-point collapse in form A and Brazil's
-    31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor. The
-    T6 crossings are drawn differently (§4).
+    31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor, and
+    its sixteen dots are more crowded than A's (§4). The T6 crossings are drawn differently (§4).
+  - **Static accuracy and time on T3 (2026-10-11).** Sixteen legend entries, with every colour on
+    two dots, is the largest matching load in the bank. Near-chance static accuracy would mean the
+    shapes do not separate the pairs at 12 px.
   - **T1, the written item (2026-09-27).**
     - Its time, since it is the only item written in full.
     - Whether the rubric can be applied: κ per part, and how many descriptions the coders had to
@@ -1055,7 +1108,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   accepted it over tightening the layout. In the pilot, look at the interactive time on T3 and T5
   for it. Participants use their own computers (request form 5B), so the window height varies by
   participant; `window_size` records it (§8), and `tasks.csv` carries it as `window_height`, so
-  the interactive T3 and T5 times can be split at 790 px.
+  the interactive T3 and T5 times can be split at 790 px. **Since 2026-10-11 the split for T3 is
+  862 px:** its sixteen chips take two more rows, and the interactive card scrolls on any window
+  under 862 px tall (`visual-spec.md` §10).
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover, clicking a line and clicking the legend are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4

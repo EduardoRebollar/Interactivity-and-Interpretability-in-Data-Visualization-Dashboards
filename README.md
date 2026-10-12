@@ -17,7 +17,7 @@ Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 ```bash
 uv sync
 uv run python scripts/download_data.py      # fetch from Our World in Data
-uv run python -m src.data                   # clean and cache -> 3900 rows
+uv run python -m src.data                   # clean and cache -> 5200 rows
 uv run python scripts/export_deploy_data.py # write data/deploy/coverage.csv
 uv run python -m src.app                    # http://127.0.0.1:8050
 ```

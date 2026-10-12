@@ -60,6 +60,17 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v13 (2026-10-11): each T3 scatter gains ten dots, sixteen in place of six, with colours repeating
+# and a shape per dot (docs/study-design.md section 4, visual-spec.md section 6). The question, key
+# and options are unchanged, but a v12 T3 answer was given against a different chart. The record
+# shape is unchanged: no new event, key or table, so no init_db.py re-run. Nothing has been
+# collected, so no migration.
+#
+# v12 (2026-10-11): each T2 bar chart gains three bars, ten in place of seven (docs/study-design.md
+# section 4). The question, key and options are unchanged, but a v11 T2 answer was given against a
+# different chart. The record shape is unchanged: no new event, key or table, so no init_db.py
+# re-run. Nothing has been collected, so no migration.
+#
 # v11 (2026-09-27): T1 is a written description of two trends, scored by rubric
 # (docs/study-design.md section 4). Its `answer_submit.answer` is free text, capped at 2000
 # characters, where a v10 T1 answer was a year: the same task id names a different kind of answer.
@@ -115,7 +126,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 13
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

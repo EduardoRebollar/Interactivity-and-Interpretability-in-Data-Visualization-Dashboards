@@ -504,13 +504,45 @@ def test_a_hidden_bar_fades_in_place(rows):
 
 def test_scatter_dots_differ_in_colour_and_in_shape(rows):
     """Colour is never the only channel (visual-spec.md section 6), and the scatter has no line
-    ends to label, so every dot has its own shape as well as its own colour."""
+    ends to label, so every dot has its own shape. Past eight dots the colours repeat in order."""
     figure = _chart("scatter", rows)
     colours = [trace.marker.color for trace in figure.data]
     shapes = [trace.marker.symbol for trace in figure.data]
-    assert colours == config.SERIES_COLORS[: len(colours)]
+    palette = config.SERIES_COLORS
+    assert colours == [palette[index % len(palette)] for index in range(len(colours))]
     assert shapes == config.MARKER_SYMBOLS[: len(shapes)]
     assert len(set(shapes)) == len(shapes)
+
+
+@pytest.mark.parametrize(
+    "task", [t for t in (*tasks.FORM_A, *tasks.FORM_B) if t.chart == "scatter"], ids=_task_id
+)
+def test_every_scatter_dot_has_a_colour_and_shape_no_other_dot_has(rows, task):
+    """T3 draws sixteen dots on eight colours (2026-10-11): no pair may be the same mark, and the
+    two dots of one colour must have different shapes, since shape alone tells them apart."""
+    figure = figures.build_figure(
+        list(task.entities), task.vaccine, rows, chart_type="scatter", years=task.years
+    )
+    marks = [(trace.marker.color, trace.marker.symbol) for trace in figure.data]
+    assert len(marks) == 16
+    assert len(set(marks)) == len(marks)
+    assert len({symbol for _, symbol in marks}) == len(marks)
+    assert {colour for colour, _ in marks} == set(config.SERIES_COLORS)
+
+
+def test_no_scatter_dot_is_clipped_at_the_plot_edge(rows):
+    """B-T3's Oman sits at 99, 99; clipped to the axes, half its shape was cut away (visual-spec.md
+    section 1)."""
+    figure = _chart("scatter", rows)
+    assert all(trace.cliponaxis is False for trace in figure.data)
+
+
+def test_a_full_scatter_runs_through_the_palette_twice(rows):
+    """The cap is the shapes, not the colours: sixteen dots, each colour on exactly two."""
+    entities = config.COUNTRIES[: config.MAX_SCATTER_DOTS]
+    figure = figures.build_figure(entities, VACCINE, rows, chart_type="scatter", years=(2000, 2024))
+    colours = [trace.marker.color for trace in figure.data]
+    assert all(colours.count(colour) == 2 for colour in config.SERIES_COLORS)
 
 
 def test_the_scatter_axes_share_one_scale_so_the_diagonal_means_no_change(rows):
@@ -720,9 +752,10 @@ def test_an_unknown_chart_type_is_refused(rows):
         figures.build_figure(["Nigeria"], VACCINE, rows, chart_type="pie")
 
 
-def test_the_scatter_is_capped_by_the_palette_like_the_line(rows):
-    too_many = config.COUNTRIES[: config.MAX_SERIES + 1]
-    with pytest.raises(FigureError, match="distinguishable"):
+def test_the_scatter_is_capped_by_its_shapes(rows):
+    """Not by the palette, as the line is: each dot has a shape of its own (visual-spec.md s. 6)."""
+    too_many = config.COUNTRIES[: config.MAX_SCATTER_DOTS + 1]
+    with pytest.raises(FigureError, match="marker shapes"):
         figures.build_figure(too_many, VACCINE, rows, chart_type="scatter", years=(2000, 2024))
 
 

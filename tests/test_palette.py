@@ -182,6 +182,29 @@ def test_marker_symbols_give_every_scatter_series_its_own_shape():
     assert len(set(config.MARKER_SYMBOLS)) == len(config.MARKER_SYMBOLS)
 
 
+def test_the_scatter_uses_each_colour_at_most_twice():
+    """Two dots of one colour are told apart by shape alone; a third would make that harder, and
+    nothing in visual-spec.md section 6 has measured it."""
+    assert config.MAX_SCATTER_DOTS == len(config.MARKER_SYMBOLS) <= 2 * len(config.SERIES_COLORS)
+
+
+def test_the_shapes_are_the_ones_visual_spec_pairs_by_colour():
+    """visual-spec.md section 6's table: the eight shapes added 2026-10-11, each paired with the
+    shape that shares its colour. Pentagon, hexagon and the -x variants read as circles at 12 px."""
+    assert config.MARKER_SYMBOLS[8:] == [
+        "hourglass",
+        "star-diamond",
+        "bowtie",
+        "star-square",
+        "triangle-left",
+        "hexagram",
+        "triangle-right",
+        "diamond-tall",
+    ]
+    rejected = {"pentagon", "hexagon", "square-x", "circle-x", "diamond-cross", "arrow-up"}
+    assert not rejected & set(config.MARKER_SYMBOLS)
+
+
 # --- The sequential scale (heatmap and map) ------------------------------------------------------
 
 

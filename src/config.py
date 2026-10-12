@@ -101,6 +101,21 @@ COUNTRIES: list[str] = [
     "Uganda",
     "Vietnam",
     "Zambia",
+    # Added 2026-10-11 for T3's sixteen dots, and used by nothing else (docs/study-design.md section
+    # 4): each scatter gained ten dots, and Asia in the scope above had only two that fit the rule.
+    "Benin",
+    "Libya",
+    "Sudan",
+    "Iraq",
+    "Jordan",
+    "Kyrgyzstan",
+    "Laos",
+    "Lebanon",
+    "Oman",
+    "Philippines",
+    "Syria",
+    "Thailand",
+    "Yemen",
 ]
 
 # Aggregate reference series.
@@ -148,9 +163,9 @@ SERIES_COLORS: list[str] = [
 REFERENCE_COLOR = "#000000"  # 21.00:1
 REFERENCE_DASH = "dash"
 
-# Hard ceiling on colour-coded series (line and scatter charts), excluding the World reference.
-# It is the size of the palette: the largest set found that is >=3:1 on white, separated in
-# luminance, and at least MIN_CVD_DISTANCE apart under simulated colour-vision deficiency.
+# Hard ceiling on lines, excluding the World reference. It is the size of the palette: the largest
+# set found that is >=3:1 on white, separated in luminance, and at least MIN_CVD_DISTANCE apart
+# under simulated colour-vision deficiency. The scatter has its own ceiling, MAX_SCATTER_DOTS.
 MAX_SERIES = len(SERIES_COLORS)
 MIN_LUMINANCE_GAP = 0.02
 # The weakest pair in SERIES_COLORS, in CIEDE2000, under normal vision, deuteranopia and
@@ -202,6 +217,9 @@ LABEL_HEADROOM = LABEL_MIN_GAP
 
 # The scatter plot's second channel. Colour is never the only way to tell series apart
 # (visual-spec.md section 6); the scatter has no end labels, so each series also has its own shape.
+# Dot k takes colour k mod 8 and shape k (2026-10-11), so past eight dots the colours repeat and
+# shape alone tells two dots of one colour apart. Each of the last eight is the shape eight places
+# above it, the one that shares its colour, made as different as Plotly's symbols allow.
 MARKER_SYMBOLS: list[str] = [
     "circle",
     "square",
@@ -211,7 +229,16 @@ MARKER_SYMBOLS: list[str] = [
     "triangle-down",
     "cross",
     "star",
+    "hourglass",  # with circle
+    "star-diamond",  # with square
+    "bowtie",  # with diamond
+    "star-square",  # with triangle-up
+    "triangle-left",  # with x
+    "hexagram",  # with triangle-down
+    "triangle-right",  # with cross
+    "diamond-tall",  # with star
 ]
+MAX_SCATTER_DOTS = len(MARKER_SYMBOLS)
 SCATTER_MARKER_SIZE = 12
 
 # Bars carry no series identity -- each is labelled on the x axis -- so they share one colour.

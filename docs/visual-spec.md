@@ -15,8 +15,9 @@ labelling by chart type (§6), and the bar sort, the map's coverage range and th
 **Amended 2026-09-25 for the redesign** (`docs/design-handoff/`, `docs/study-redesign.md`): a fixed
 1050 × 520 chart (§5), a legend on line charts beside the end labels (§6), controls under every chart
 with a heatmap row sort and a typed map highlight in place of the range (§7), and the page chrome
-around the chart (§10). A change to any of §1–8 or §10 needs this document edited first, then the
-code.
+around the chart (§10). **Amended 2026-10-11:** the scatter draws sixteen dots, so its eight colours
+are used twice each and every dot has its own marker shape (§4, §6). A change to any of §1–8 or
+§10 needs this document edited first, then the code.
 
 ---
 
@@ -39,10 +40,13 @@ neighbours draws no line segment at all, and without a marker it would silently 
 
 **Bar.** Vertical bars, one colour (§4), named on the x axis. The y axis is the line chart's.
 
-**Scatter.** One trace per country, so each has its own colour and marker shape (§6) and a legend
-entry. Both axes run 0–100 on **one scale** (`scaleanchor`), so the diagonal is a true 45° line of no
+**Scatter.** One trace per country, so each has its own pairing of colour and marker shape (§6)
+and a legend entry. Both axes run 0–100 on **one scale** (`scaleanchor`), so the diagonal is a true 45° line of no
 change and the distance above it is the improvement. The diagonal is a shape, dashed in the axis
 colour, labelled "no change" in the empty lower-left corner. It has no legend entry and no hover.
+**Dots are never clipped at the plot's edge (2026-10-11).** Plotly clips a marker to the axes by
+default, and B-T3's Oman sits at 99, 99: half its shape was cut away, on a chart whose item is
+read by shape. A 12 px dot reaches at most 6 px past the edge, which the margins hold.
 
 **Heatmap.** Rows in the task's order, the first at the top. Columns are categories, so 2020–2024
 takes the same width as the other five-year steps. Cells are separated by 2 px white gaps, so two
@@ -106,7 +110,9 @@ Background: `#FFFFFF`.
 ### Series colors (floor 3:1)
 
 Colour tells lines apart on the line charts and dots apart on the scatter. Assigned by position in
-the task's entity list, so a chart with *k* series uses the first *k*.
+the task's entity list, so a chart with *k* series uses the first *k*. The scatter, which draws up
+to sixteen dots (2026-10-11), runs through the eight twice: dot *k* takes colour *k* mod 8, and
+shape tells the two dots of one colour apart (§6).
 
 | Order | Hex | Ratio | Luminance | Note |
 |---|---|---|---|---|
@@ -241,16 +247,16 @@ to land on the wrong option. A fixed-height container around the chart holds the
 
 ## 6. Series limits and labelling
 
-- **At most 8 colour-coded series on one chart** (line and scatter), World not counted. Bars share
-  one colour; heatmap rows and map countries use the sequential scale; neither is capped by the
-  palette.
+- **At most 8 lines on one chart**, World not counted, and **at most 16 dots on a scatter**
+  (2026-10-11). Bars share one colour; heatmap rows and map countries use the sequential scale;
+  neither is capped by the palette.
 - **Colour is never the only channel identifying a series.** Each chart type carries a second one:
 
 | Type | Identity carried by |
 |---|---|
 | Line | the series name at the right end of the line, in its colour; and a legend (2026-09-25) |
 | Bar | the country name on the x axis |
-| Scatter | a legend pairing each colour with its own marker shape |
+| Scatter | a legend pairing each dot's colour with a marker shape no other dot has |
 | Heatmap | the country name on each row |
 | Map | the country's place on the map, and its name on hover |
 
@@ -277,6 +283,26 @@ to land on the wrong option. A fixed-height container around the chart holds the
   hover, the dot is named by matching its colour and shape to the legend. Legend clicks are
   disabled, because a click there would hide a dot outside the logged controls. The chips do that
   instead, and are logged (§7.3).
+- **Sixteen dots, eight colours, sixteen shapes (2026-10-11).** T3 draws sixteen dots so a reader
+  without hover has more legend entries to match (`docs/study-design.md` §4). No ninth colour
+  passes §4's floors, so dot *k* takes colour *k* mod 8 and shape *k*: no two dots share a shape,
+  and two dots that share a colour are told apart by shape alone. Each shape added for dots 9–16 is
+  paired with the shape of the dot that shares its colour and chosen to differ from it most:
+
+| Colour | Dots 1–8 | Dots 9–16 |
+|---|---|---|
+| 1 blue | circle | hourglass |
+| 2 vermillion | square | star-diamond |
+| 3 bluish green | diamond | bowtie |
+| 4 reddish purple | triangle-up | star-square |
+| 5 dark red | x | triangle-left |
+| 6 royal blue | triangle-down | hexagram |
+| 7 forest green | cross | triangle-right |
+| 8 mauve | star | diamond-tall |
+
+  Rejected after rendering every Plotly symbol at 12 px in each colour: pentagon, hexagon and the
+  `-x` and `-cross` variants, which read as circles, squares or diamonds at that size, and the
+  arrows, which Plotly draws off-centre. Line charts keep the eight-line cap: a line has no shape.
 
 **RESOLVED (2026-09-15) — the same fixed set per task, in both conditions.** If interactive
 participants could reach entities that static participants could not, interactivity would be
@@ -479,6 +505,8 @@ the write-up.
    does.
 4. ~~More than five series.~~ **Resolved 2026-09-23:** eight colours, measured under simulated
    colour-vision deficiency, with the scatter's second channel in marker shape. See §4 and §6.
+5. ~~More than eight scatter dots.~~ **Resolved 2026-10-11:** the colours repeat in pairs and every
+   dot has its own shape. See §6.
 
 Nothing in §1–8 is open. A change to any of it needs this document edited first, then the code.
 
@@ -553,7 +581,10 @@ strip and the hint row under the chart (§7).
   tall or less, the interactive scatter and map cards run past the fold (at 1366 × 768 the
   scatter's by 42 px, the map's by 30–66), so a participant scrolls to Submit there. The question
   wraps under the position label, and the map's chips take three rows. The static condition fits
-  everywhere.
+  everywhere. **Since 2026-10-11 the scatter's sixteen chips take four rows, not two**, and its
+  interactive card ends 72 px lower: Submit's bottom edge sits at 862 px, so the card scrolls on
+  any window under 862 px tall, 1440 × 790 included, where with six chips it ended at exactly
+  790 (measured in headless Chrome, both forms, against the committed six-dot version).
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

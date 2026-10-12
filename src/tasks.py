@@ -96,7 +96,20 @@ FORM_A: tuple[Task, ...] = (
         years=(2017,),
         prompt="The bars show coverage in 2017. Which country had the third-highest coverage?",
         vaccine="DTP3",
-        entities=("Brazil", "China", "Ethiopia", "India", "Nigeria", "Pakistan", "Vietnam"),
+        # Ten bars (2026-10-11): Kenya, Mali and Afghanistan added, every one at least 5 points
+        # below India's 89. docs/study-design.md section 4.
+        entities=(
+            "Afghanistan",
+            "Brazil",
+            "China",
+            "Ethiopia",
+            "India",
+            "Kenya",
+            "Mali",
+            "Nigeria",
+            "Pakistan",
+            "Vietnam",
+        ),
         options=("Brazil", "China", "Ethiopia", "India", "Nigeria", "Vietnam"),
     ),
     Task(
@@ -112,7 +125,26 @@ FORM_A: tuple[Task, ...] = (
         ),
         vaccine="DTP3",
         # Not Angola or DR Congo: their dots sit within 2 points of Nigeria's and would hide it.
-        entities=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger", "Nigeria"),
+        # Sixteen dots (2026-10-11): the ten added each improved at least 20 points less than
+        # Niger, so none rivals the key. docs/study-design.md section 4.
+        entities=(
+            "Benin",
+            "Burkina Faso",
+            "Cameroon",
+            "Central African Republic",
+            "Chad",
+            "Egypt",
+            "Ethiopia",
+            "Kenya",
+            "Libya",
+            "Madagascar",
+            "Mali",
+            "Mozambique",
+            "Niger",
+            "Nigeria",
+            "Sudan",
+            "Tanzania",
+        ),
         options=("Burkina Faso", "Chad", "Ethiopia", "Mali", "Niger", "Nigeria"),
     ),
     Task(
@@ -221,12 +253,17 @@ FORM_B: tuple[Task, ...] = (
         years=(2024,),
         prompt="The bars show coverage in 2024. Which country had the third-highest coverage?",
         vaccine="DTP3",
+        # Ten bars, as in A: Mali, Cameroon and Mozambique added, every one at least 5 points below
+        # Colombia's 89.
         entities=(
             "Cambodia",
+            "Cameroon",
             "Colombia",
             "Egypt",
             "Ethiopia",
             "Indonesia",
+            "Mali",
+            "Mozambique",
             "Nigeria",
             "United States",
         ),
@@ -244,8 +281,26 @@ FORM_B: tuple[Task, ...] = (
             "furthest above the diagonal?"
         ),
         vaccine="DTP3",
-        # Not Afghanistan: its +35 all but ties India's +36.
-        entities=("Bangladesh", "Cambodia", "India", "Indonesia", "Nepal", "Pakistan"),
+        # Not Afghanistan: its +35 all but ties India's +36. Sixteen dots, as in A: the ten added
+        # each improved at least 20 points less than India.
+        entities=(
+            "Bangladesh",
+            "Cambodia",
+            "India",
+            "Indonesia",
+            "Iraq",
+            "Jordan",
+            "Kyrgyzstan",
+            "Laos",
+            "Lebanon",
+            "Nepal",
+            "Oman",
+            "Pakistan",
+            "Philippines",
+            "Syria",
+            "Thailand",
+            "Yemen",
+        ),
         options=("Bangladesh", "Cambodia", "India", "Indonesia", "Nepal", "Pakistan"),
     ),
     Task(

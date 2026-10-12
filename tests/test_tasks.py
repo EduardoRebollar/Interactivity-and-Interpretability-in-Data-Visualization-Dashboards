@@ -143,8 +143,11 @@ def test_task_names_only_known_entities_and_vaccines(task):
 @pytest.mark.parametrize("task", _all_tasks(), ids=lambda t: f"{t.form}-{t.task_id}")
 def test_task_respects_the_series_cap(task):
     """More coloured series than the palette supports would be unreadable. Only lines and dots are
-    told apart by colour: bars share one colour; cells and countries use the sequential scale."""
-    if task.chart not in ("line", "scatter"):
+    told apart by colour: bars share one colour; cells and countries use the sequential scale. A dot
+    also has a shape of its own, so the scatter's cap is the shapes (visual-spec.md section 6)."""
+    if task.chart == "scatter":
+        assert len(task.entities) <= config.MAX_SCATTER_DOTS, task.task_id
+    if task.chart != "line":
         return
     coloured = [e for e in task.entities if e != "World"]
     assert len(coloured) <= config.MAX_SERIES, (

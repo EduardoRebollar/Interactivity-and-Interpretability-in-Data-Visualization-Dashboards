@@ -69,7 +69,7 @@ def graph_config(interactive: bool, chart_type: str = "line") -> dict:
             # out (2026-09-27), logged as view_change. The line chart only: every other view is
             # fixed, and with scroll zoom on Plotly still takes the wheel over a fixed chart, so
             # the page would not scroll there -- and the scatter card must scroll to reach Submit
-            # on a window 790 px tall (measured in Chrome).
+            # on a window under 862 px tall (measured in Chrome, 2026-10-11).
             "scrollZoom": "cartesian" if chart_type == "line" else False,
             # The line chart's one view button, Plotly's "Reset axes", is titled "Reset axis": it
             # resets the one axis that moves. Titles come only from the config's dictionary.
@@ -411,13 +411,19 @@ def _validate(entities: list[str], vaccine: str, chart_type: str, years: tuple[i
     # The cap is not cosmetic: it is the number of colors that are simultaneously
     # contrast-compliant, color-blind separable, and separated in luminance.
     # See docs/visual-spec.md section 4. Only lines and dots are told apart by colour.
-    if chart_type in ("line", "scatter"):
+    if chart_type == "line":
         colored = [e for e in entities if e != REFERENCE]
         if len(colored) > config.MAX_SERIES:
             raise FigureError(
                 f"{len(colored)} series requested but only {config.MAX_SERIES} distinguishable "
                 "colors exist; World is exempt as the dashed reference"
             )
+    # A dot also has a shape, so the scatter runs through the colours twice, with a shape of its own
+    # for every dot (visual-spec.md section 6).
+    if chart_type == "scatter" and len(entities) > config.MAX_SCATTER_DOTS:
+        raise FigureError(
+            f"{len(entities)} dots requested but only {config.MAX_SCATTER_DOTS} marker shapes exist"
+        )
 
 
 # --- Shared styling ------------------------------------------------------------------------------
@@ -781,7 +787,8 @@ def _scatter(
     The axes share one scale, so the dashed diagonal is a true 45-degree line of no change and the
     distance above it is the improvement. Dots are told apart by colour AND shape, named in a
     legend: the scatter has no line ends to label, and reading the legend is the static cost this
-    chart's item measures (docs/study-design.md section 4).
+    chart's item measures (docs/study-design.md section 4). Past eight dots the colours repeat;
+    no two dots share a shape (visual-spec.md section 6).
     """
     first, last = years
     figure = go.Figure()
@@ -792,8 +799,10 @@ def _scatter(
                 y=[_value(entity, vaccine, last, source)],
                 name=entity,
                 mode="markers",
+                # A dot at 99 would be cut in half at the plot's edge; the item is read by shape.
+                cliponaxis=False,
                 marker={
-                    "color": config.SERIES_COLORS[index],
+                    "color": config.SERIES_COLORS[index % len(config.SERIES_COLORS)],
                     "symbol": config.MARKER_SYMBOLS[index],
                     "size": config.SCATTER_MARKER_SIZE,
                 },

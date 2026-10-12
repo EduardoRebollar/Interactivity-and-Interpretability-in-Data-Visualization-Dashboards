@@ -131,6 +131,39 @@ def test_the_margins_are_the_ones_study_design_records():
 
 
 @needs_data
+def test_the_bar_forms_rank_their_options_alike():
+    """Section 4: ten bars per form since 2026-10-11, and the options sit at the same ranks in
+    both, so neither form's distractors are nearer the key than the other's."""
+    table = keys.key_table()
+    for form in ("A", "B"):
+        task = next(t for t in tasks.for_form(form) if t.task_id == "T2")
+        values = table[(form, "T2")].evidence["values"]
+        ranked = sorted(values, key=values.get, reverse=True)
+        assert len(ranked) == 10, form
+        assert sorted(ranked.index(option) + 1 for option in task.options) == [1, 2, 3, 4, 8, 10]
+
+
+@needs_data
+def test_the_dots_added_to_each_scatter_are_no_rivals_for_the_key():
+    """Section 4: sixteen dots per form since 2026-10-11. The ten that are not options each
+    improved at least 20 points less than the key, so they add legend entries to match, not
+    answers to weigh; the six options are the six dots the item had before, and B's closest pair
+    is still Cambodia and Pakistan on the 4-point floor."""
+    table = keys.key_table()
+    for form in ("A", "B"):
+        task = next(t for t in tasks.for_form(form) if t.task_id == "T3")
+        evidence = table[(form, "T3")].evidence
+        improvement = evidence["improvement"]
+        key = table[(form, "T3")].correct
+        assert len(improvement) == 16, form
+        added = set(task.entities) - set(task.options)
+        assert len(added) == 10, form
+        assert all(improvement[key] - improvement[dot] >= 20 for dot in added), form
+    assert table[("A", "T3")].evidence["closest_dots_pp"] == 6.08
+    assert table[("B", "T3")].evidence["closest_dots_pp"] == 4.0
+
+
+@needs_data
 def test_no_answer_position_holds_more_than_a_third_of_the_keys():
     """Section 5. Options were once sorted by effect size, which put the key first in 7 of the 12
     items; a participant who noticed could score without reading a chart. T1 is written, so ten

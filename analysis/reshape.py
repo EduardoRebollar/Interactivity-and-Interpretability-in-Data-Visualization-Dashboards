@@ -56,8 +56,9 @@ BASE_COLUMNS = [
     "skipped_justification",
 ]
 # The participant's browser window, from `window_size` (schema v10), on every row of theirs. The
-# interactive scatter (T3) and map (T5) cards need scrolling on a window 790 px tall or less, and
-# the static ones never do (study-design.md section 10): these columns tell who scrolled.
+# interactive scatter (T3) and map (T5) cards need scrolling on a window 790 px tall or less (T3:
+# under 862 px since its sixteen dots, 2026-10-11), and the static ones never do (study-design.md
+# section 10): these columns tell who scrolled.
 WINDOW_COLUMNS = ["window_width", "window_height"]
 TASK_COLUMNS = [
     *BASE_COLUMNS,
