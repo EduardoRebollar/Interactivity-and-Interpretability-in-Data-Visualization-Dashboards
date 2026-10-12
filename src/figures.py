@@ -428,6 +428,35 @@ def _name_font(size: float = config.FONT_SIZE_AXIS) -> dict:
     }
 
 
+def hover_label(edge) -> dict:
+    """Every chart's tooltip (visual-spec.md section 7.1): a white card with ink text, edged in its
+    mark's colour, no pointer arrow. `edge` is one colour, or one per point. The shadow is in
+    zz-overrides.css: Plotly has no setting for it."""
+    return {
+        "bgcolor": config.BACKGROUND,
+        "bordercolor": edge,
+        "font": {
+            "family": config.FONT_FAMILY,
+            "size": config.FONT_SIZE_BASE,
+            "color": config.TEXT_PRIMARY,
+        },
+        "align": "left",
+        "showarrow": False,
+    }
+
+
+def _hover_head(name: str, color: str) -> str:
+    """A tooltip's first line: a dot in the mark's colour, then the name in bold. Either may be a
+    template field, such as `%{customdata}` for a colour that differs from point to point."""
+    return f'<span style="color:{color}">●</span> <b>{name}</b>'
+
+
+def _hover_aside(text: str) -> str:
+    """A tooltip's secondary line, such as the year-over-year change: muted, a size down."""
+    style = f"color:{config.TEXT_MUTED};font-size:{config.FONT_SIZE_AXIS}px"
+    return f'<span style="{style}">{text}</span>'
+
+
 def _paper(margin: dict, x: float | None = None, y: float | None = None) -> float:
     """A point in the card's pixels (x from the left, y from the top) in paper coordinates, which
     run 0-1 across the plot area. Exactly one of `x` and `y`."""
@@ -709,8 +738,10 @@ def _add_series(
             },
             customdata=change_labels(series),
             hovertemplate=(
-                f"<b>{entity}</b><br>%{{x}}: %{{y:.0f}}%<br>%{{customdata}}<extra></extra>"
+                f"{_hover_head(entity, color)}<br>%{{x}}: %{{y:.0f}}%"
+                f"<br>{_hover_aside('%{customdata}')}<extra></extra>"
             ),
+            hoverlabel=hover_label(color),
         )
     )
 
@@ -917,6 +948,7 @@ def _bar(
     alphabetical order" names the order, and `sort_bars` rewrites it.
     """
     (year,) = years
+    colors = [bar_color(entity) for entity in entities]
     figure = go.Figure(
         go.Bar(
             x=entities,
@@ -924,12 +956,13 @@ def _bar(
             name=f"{vaccine} {year}",
             # 62% of each slot, at most 64 px: ten bars on 974 px are 60.4 px wide.
             width=min(0.62, 64 / (_BAR_PLOT_WIDTH / len(entities))),
-            marker={
-                "color": [bar_color(entity) for entity in entities],
-                "cornerradius": 6,
-                "line": {"width": 0},
-            },
-            hovertemplate=f"<b>%{{x}}</b><br>{year}: %{{y:.0f}}%<extra></extra>",
+            marker={"color": colors, "cornerradius": 6, "line": {"width": 0}},
+            # Each bar's colour, for its tooltip's dot. A sort reorders the axis, not the points.
+            customdata=colors,
+            hovertemplate=(
+                f"{_hover_head('%{x}', '%{customdata}')}<br>{year}: %{{y:.0f}}%<extra></extra>"
+            ),
+            hoverlabel=hover_label(colors),
         )
     )
     margin = _BAR_MARGIN
@@ -987,6 +1020,7 @@ def _scatter(
     figure = go.Figure()
     for entity in entities:
         x, y = _value(entity, vaccine, first, source), _value(entity, vaccine, last, source)
+        color = change_color(y - x)
         figure.add_trace(
             go.Scatter(
                 x=[x],
@@ -995,14 +1029,12 @@ def _scatter(
                 mode="markers",
                 # A dot at 99 would be cut in half at the plot's edge.
                 cliponaxis=False,
-                marker={
-                    "color": change_color(y - x),
-                    "size": config.SCATTER_MARKER_SIZE,
-                    "line": {"width": 0},
-                },
+                marker={"color": color, "size": config.SCATTER_MARKER_SIZE, "line": {"width": 0}},
                 hovertemplate=(
-                    f"<b>{entity}</b><br>{first}: %{{x:.0f}}%<br>{last}: %{{y:.0f}}%<extra></extra>"
+                    f"{_hover_head(entity, color)}<br>{first}: %{{x:.0f}}%"
+                    f"<br>{last}: %{{y:.0f}}%<extra></extra>"
                 ),
+                hoverlabel=hover_label(color),
             )
         )
         _name_dot(figure, entity, x, y)
@@ -1240,9 +1272,16 @@ def _heatmap(
     out of the static participant's reach.
     """
     margin = _HEAT_MARGIN
+    z = [[_value(entity, vaccine, year, source) for year in years] for entity in entities]
+    # Each cell's band, for its tooltip's dot and edge. A transparent trace would otherwise give
+    # its tooltips Plotly's default grey. A gap has no tooltip (`hoverongaps`).
+    bands = [
+        [config.NO_DATA_COLOR if v is None else band_color(v, config.HEATMAP_BANDS) for v in row]
+        for row in z
+    ]
     figure = go.Figure(
         go.Heatmap(
-            z=[[_value(entity, vaccine, year, source) for year in years] for entity in entities],
+            z=z,
             x=[str(year) for year in years],
             y=entities,
             zmin=config.Y_RANGE[0],
@@ -1251,24 +1290,13 @@ def _heatmap(
             showscale=False,
             opacity=0,
             hoverongaps=False,
-            hovertemplate="<b>%{y}</b><br>%{x}: %{z:.0f}%<extra></extra>",
+            customdata=bands,
+            hovertemplate=(
+                f"{_hover_head('%{y}', '%{customdata}')}<br>%{{x}}: %{{z:.0f}}%<extra></extra>"
+            ),
+            hoverlabel=hover_label(bands),
         )
     )
-    # A transparent trace gives its tooltips Plotly's default grey. Each is white with ink text
-    # instead, edged in its cell's band: no one text colour reaches 4.5:1 on every band (white and
-    # ink are both about 4.1:1 on 50-60), and the edge still says which cell it is.
-    (cells,) = figure.data
-    cells.hoverlabel = {
-        "bgcolor": config.BACKGROUND,
-        "bordercolor": [
-            [
-                config.NO_DATA_COLOR if v is None else band_color(v, config.HEATMAP_BANDS)
-                for v in row
-            ]
-            for row in cells.z
-        ],
-        "font": {"family": config.FONT_FAMILY, "color": config.TEXT_PRIMARY},
-    }
     _apply_base(figure, f"{vaccine} coverage, selected years", margin)
     heat_font = {**_axis_font(), "size": _HEAT_FONT}
     _category_axis(figure.update_xaxes, side="top", tickfont=heat_font, showline=False)
@@ -1529,6 +1557,8 @@ def _map(
         codes.append(row.iso_code)
         values.append(row.coverage_pct)
     margin = _MAP_MARGIN
+    # Each country's band, for its tooltip's dot and edge.
+    bands = [config.NO_DATA_COLOR if v is None else band_color(v, config.MAP_BANDS) for v in values]
     figure = go.Figure(
         go.Choropleth(
             locations=codes,
@@ -1544,7 +1574,11 @@ def _map(
             # full strength are selected, the rest fade. Nothing is selected until a control acts.
             selected={"marker": {"opacity": 1.0}},
             unselected={"marker": {"opacity": config.FADED_OPACITY}},
-            hovertemplate=f"<b>%{{text}}</b><br>{year}: %{{z:.0f}}%<extra></extra>",
+            customdata=bands,
+            hovertemplate=(
+                f"{_hover_head('%{text}', '%{customdata}')}<br>{year}: %{{z:.0f}}%<extra></extra>"
+            ),
+            hoverlabel=hover_label(bands),
         )
     )
     _apply_base(figure, f"{vaccine} coverage, {year}", margin)

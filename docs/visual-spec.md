@@ -86,9 +86,8 @@ by default, and B-T3's Oman sits at 99, 99.
 takes the same width as the other five-year steps. Cells 130 px wide and 46.75 px tall, with 4 px
 white gaps and 4 px rounded corners, so two adjacent cells of one band stay two cells. Plotly cannot
 round a heatmap's cells, so the cells are drawn as shapes, and the heatmap trace beneath them,
-fully transparent, carries the hover. Its tooltips are white with ink text, edged in the cell's
-band (a transparent trace would give Plotly's default grey, and no one text colour reaches 4.5:1 on
-every band: white and ink are both about 4.1:1 on 50–60). **No number is written in a cell**: that would give the
+fully transparent, carries the hover; its tooltips are every chart's white card (§7.1), edged in
+the cell's band. **No number is written in a cell**: that would give the
 static condition the exact value (§7). A cell with no value is `#EEE8E2` and reads "No data" (§3).
 Row names right-aligned 12 px left of the grid, years 9 px above it, and "A–Z" over the row names
 naming the row order (§7.2). The key is centred above the grid (§4).
@@ -553,6 +552,17 @@ India
 The other chart types' tooltips carry the value (bar, heatmap, map), or both values (scatter), and
 the country's name. Like the change line, they are in both conditions' figures.
 
+**Every tooltip is one white card (2026-10-12).** White fill, ink text at 14 px, the name bold
+after a dot in the mark's colour, a 1 px edge in the same colour, no pointer arrow, and a soft
+shadow (`zz-overrides.css`). The change line is muted ink at 13 px. The mark's colour is the line's,
+the bar's, the dot's change step, or the cell's or country's band. Plotly's default filled each
+tooltip with the mark's colour, and no one text colour reaches 4.5:1 on every band (white and ink
+are both about 4.1:1 on 50–60), so the text sits on white and the colour moves to the edge and the
+dot. The dot and edge repeat what the name already says, so the pale bands' weak contrast against
+white hides nothing. Plotly cannot round a tooltip's corners. The card is set in the figure, so it
+is in both conditions' figures, and the shadow rule matches nothing in the static condition, which
+draws no tooltip.
+
 ### 7.2 Sorting (defined 2026-09-15; bars added 2026-09-23)
 
 **On a line chart, sorting reorders the chips. It never reorders the chart.** A
@@ -788,6 +798,11 @@ strip and the hint row under the chart (§7).
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,
     in place of the six tiles;
+  - the heading wraps (no `.ui-step--nowrap`, 2026-10-12): at 21 px, on one line, it ran past
+    the panel's edge and was clipped on a narrower window (at 1536 px wide it fits with 5 px to
+    spare). Measured in headless Chrome, both forms and conditions: one line from 1440 px wide up,
+    two at 1366 × 768, Submit unmoved. At 1280 × 720 the panel is narrower than "description:"
+    itself, the open question of narrow windows. The tiles' shorter headings keep the class;
   - there is no step 2 and no justification box;
   - the box fills the height the tiles and the justification took, so Submit stays where the tiles
     would leave it. No new CSS: the handoff's own `.ui-decide` and `.ui-textarea` rules

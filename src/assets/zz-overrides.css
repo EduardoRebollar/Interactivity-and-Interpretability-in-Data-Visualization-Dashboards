@@ -267,3 +267,8 @@
    so "100%" and "10%" line up by their digits down the axis. Plotly's fonts have no such setting;
    this reaches its SVG text. Both conditions load this file, so both charts are drawn alike. */
 .js-plotly-plot .main-svg text { font-variant-numeric: tabular-nums; }
+
+/* Every tooltip's soft shadow, under the white card the figure sets (docs/visual-spec.md section
+   7.1). Plotly has no setting for a tooltip's shadow. The static condition draws no tooltip, so
+   this matches nothing there. */
+.js-plotly-plot .hoverlayer .hovertext { filter: drop-shadow(0 2px 6px rgba(36, 28, 24, 0.18)); }

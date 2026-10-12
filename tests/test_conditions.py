@@ -570,6 +570,39 @@ def test_every_chart_type_carries_its_hover_text_in_both_conditions(rows, chart_
         assert trace.hovertemplate and trace.hovertemplate.endswith("<extra></extra>")
 
 
+@pytest.mark.parametrize("chart_type", ("line", *NEW_CHARTS))
+def test_every_tooltip_is_the_white_card_edged_in_its_marks_colour(rows, chart_type):
+    """visual-spec.md section 7.1: white, ink text, no arrow; the dot and the edge in the colour
+    of the mark hovered, point by point where the marks differ."""
+    figure = (
+        figures.build_figure(ENTITIES, VACCINE, rows)
+        if chart_type == "line"
+        else _chart(chart_type, rows)
+    )
+    hovered = [t for t in figure.data if not (t.name or "").startswith("label:")]
+    assert hovered
+    for trace in hovered:
+        label = trace.hoverlabel
+        assert label.bgcolor == config.BACKGROUND
+        assert label.font.color == config.TEXT_PRIMARY
+        assert label.showarrow is False
+        if chart_type == "line":
+            mark = trace.line.color
+        elif chart_type == "scatter":
+            mark = trace.marker.color
+        else:
+            mark = trace.customdata
+        edge = label.bordercolor
+        assert (list(map(list, edge)) if chart_type == "heatmap" else edge) == (
+            list(map(list, mark)) if chart_type == "heatmap" else mark
+        )
+        dot = "%{customdata}" if chart_type in ("bar", "heatmap", "map") else mark
+        assert f'<span style="color:{dot}">●</span>' in trace.hovertemplate
+    if chart_type == "bar":
+        (bars,) = hovered
+        assert list(bars.customdata) == list(bars.marker.color)
+
+
 def test_each_bar_is_its_countrys_colour_and_opens_in_the_listed_order(rows):
     """visual-spec.md sections 1 and 4: a colour per bar, rounded tops, 62% of a slot."""
     task = TASK_BY_CHART["bar"]

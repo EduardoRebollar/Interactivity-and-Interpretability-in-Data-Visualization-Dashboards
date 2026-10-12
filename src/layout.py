@@ -1311,7 +1311,8 @@ def task_screen(
             html.Label(
                 [html.Span("1", className="ui-step-n"), tasks.CHOOSE_PROMPTS[task.kind]],
                 htmlFor="answer-input",
-                className="ui-step ui-step--nowrap",
+                # Wraps, unlike the tiles' headings: on one line it overruns a narrow panel.
+                className="ui-step",
             ),
             html.Div(
                 [
