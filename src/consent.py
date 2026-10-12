@@ -1,7 +1,8 @@
 """Informed consent: the form's text, the signed record, and where it is kept. No pandas: ships.
 
-The text is Occidental's informed consent form as submitted to HSRRC (`irb/COMP 490 Consent
-Form.pdf`, local only), word for word. `docs/study-design.md` section 9 describes the procedure.
+The text is Occidental's informed consent form as submitted to HSRRC (`irb/Oxy CS Senior Comps
+Informed Consent Form.pdf`, local only), word for word. `docs/study-design.md` section 9 describes
+the procedure.
 
 **The signed record is kept apart from the study data** (IRB form items 15 and 17). It carries the
 printed name, the date and the signature, and deliberately NO participant ID: it goes to its own

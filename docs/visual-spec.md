@@ -797,6 +797,14 @@ strip and the hint row under the chart (§7).
     the bar chart in the interactive condition, T1 and T6 alike.
 
   It is identical in both conditions; the chart, the controls and the hint row are untouched.
+- **Answer tiles' text, 15 px (2026-10-12, Eduardo).** study.css sets `.ui-tile-label` at 17 px,
+  where a long one-word option ran past its tile: B-T2's key, Mozambique, by 8 px at 1440 × 790,
+  and A-T2's Ethiopia and Vietnam by about 4 px at 1366 × 768. `zz-overrides.css` sets it 2 px
+  smaller, in both conditions. Measured in headless Chrome on every item, both forms and
+  conditions: at 1440 × 790, 1440 × 900 and 1536 × 864 every option sits inside its tile's border
+  (Mozambique 2 px into the padding). At 1366 × 768 the tiles are 102 px wide and form B's
+  Mozambique and Bangladesh still run past the border, clipping the radio button; at 1280 × 720
+  they are 59 px wide and 108 of the 132 options do. Both are open (`study-design.md` §10).
 - **Header.** On every screen: a band with the title, "Vaccination coverage study", and a seven-step
   indicator: Consent, Practice, Part 1, Break, Part 2, About you, Finished. It is display only, not
   links. The current step carries `aria-current="step"`, and the steps before it are ticked. The

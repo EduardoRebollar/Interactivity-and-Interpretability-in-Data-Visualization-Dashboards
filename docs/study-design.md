@@ -1057,10 +1057,10 @@ there is one." Or **interactive (9b):** "The charts in this half are **interacti
 > - Pointing at any line, bar, dot, cell or country shows its value. On line charts, it also shows
 >   the change from the year before.
 
-and 4b's second, third and fourth bullets. Both end: "As before, you'll answer a question about
-each chart and then say in one sentence how you decided. A break in a line means no value was
-reported for those years. You may skip any question, and you'll be asked to confirm if you leave one
-blank." Button: "Start the questions".
+and 4b's second, third and fourth bullets. Both end: "As before, the first question asks you to
+describe what a chart shows. For each of the others, you'll choose an answer and then say in one
+sentence how you decided. A break in a line means no value was reported for those years. You may
+skip any question, and you'll be asked to confirm if you leave one blank." Button: "Start the questions".
 
 The colour-key sentences in 4a and 9a are additions to the handoff, made so the static wording names
 the colour key the heatmap and map are read against, as the 2026-09-23 wording did.
@@ -1072,15 +1072,21 @@ the colour key the heatmap and map are read against, as the 2026-09-23 wording d
 > The next six questions are the ones that count. The charts use the same version
 > (static/interactive) that you experienced in the practice question.
 >
-> For each question, choose one answer, then write a short sentence response about your decision.
-> After the sixth question, there are a few quick reflecting questions about your experience with
-> this version.
+> For the first question, write a short description of what the chart shows. For each of the
+> others, choose one answer, then write a short sentence response about your decision. After the
+> sixth question, there are a few quick reflecting questions about your experience with this
+> version.
 >
 > You may skip a question at any time. If you leave one unanswered, you will be asked to confirm.
 
 Button: "Start the questions". **The break**, heading "Halfway There!": "Congratulations! The first
 half of the study is complete! The next set will ask different questions using the other version
 (static/interactive). Take a moment, then continue when you are ready." Button: "Continue".
+
+**T1's wording (2026-10-12).** Since T1 became a written description (2026-09-27), the
+practice-complete screen and the second half's closing paragraph had still said every question was
+chosen and then explained. Both now name the first question as a description. The practice's own
+instructions are unchanged, since the practice is chosen and explained.
 
 The practice answer is recorded under `task_id` `P0` so that its timing is available, and **excluded
 from scoring** (§7).
@@ -1159,7 +1165,7 @@ participant ID is {ID})."
 ## 9. Consent
 
 The consent screen shows the Occidental informed consent form submitted to HSRRC
-(`irb/COMP 490 Consent Form.pdf`, local only), word for word. The app's copy lives in
+(`irb/Oxy CS Senior Comps Informed Consent Form.pdf`, local only), word for word. The app's copy lives in
 `src/consent.py`; `tests/test_consent.py` pins it. **Until HSRRC approves it, the screen carries a
 "pending approval" banner** (`consent.APPROVED = False`), and no participant may be run.
 
@@ -1307,8 +1313,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   for one sitting in one tab instead. See §8.
 - ~~Whether the justification should be optional.~~ Resolved 2026-09-21: every question may be
   skipped (IRB form item 10), behind a confirmation popup. See §5.
-- **IRB paperwork revised 2026-09-26** (`irb/COMP 490 Request Form.pdf` and `irb/COMP 490 Consent
-  Form.pdf`, local only). The consent form is the app's text word for word (§9). The revision fixed
+- **IRB paperwork revised 2026-09-26** (then `irb/COMP 490 Request Form.pdf` and `irb/COMP 490
+  Consent Form.pdf`, renamed `irb/Oxy CS Senior Comps Approval Request Form.pdf` and `… Informed
+  Consent Form.pdf` on 2026-09-27; local only). The consent form is the app's text word for word (§9). The revision fixed
   every mismatch this list carried:
   - *Consent form:* about 40 minutes, not 20 to 35 (twice); the Risks sentence on childhood
     vaccination as a sensitive topic; "Neon (a managed PostgreSQL service)"; access to "identifying
@@ -1342,22 +1349,22 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     touchscreen.
   - *Request form 17* promises less than §6.2: it does not carry the aggregate-only reporting of
     About you or the rule for groups under five.
-- **To fix in the request form before sending** (as saved 2026-09-26):
-  - item 9: "WHO/UNICEG" for WHO/UNICEF;
-  - item 15: "the lasting records is the export";
-  - item 5B: "The participants answers six-multiple choice interpretation questions". Since
-    2026-09-27 it should say five multiple-choice questions and one written description of two
-    trends per version, and the one-sentence explanation follows the five multiple-choice questions
-    only;
-  - item 18: `irb/questionnaire.pdf` was re-exported after the T1 change (2026-09-27, 36 pages)
-    and after the T2 and T3 changes (2026-10-11). The chart restyle (2026-10-11) changes every
-    chart and T5's prompt, so re-export once it is built, and attach that copy;
+- **To fix in the request form before sending** (as saved 2026-09-28, `irb/Oxy CS Senior Comps
+  Approval Request Form.pdf`):
   - item 1: the initial submission date is still the placeholder "(Date sent to hsrrc@oxy.edu)";
-  - the investigator signed 9/21/26 and the faculty supervisor 9/23/2026, both before this revision;
-  - item 5B lists what the application logs, and since schema v10 (§8) it also logs the browser
-    window's size once, which the list does not name. The consent form's Procedures lists what is
-    logged too ("your task responses, response times, and interaction events"); adding the window
-    size there would change the consent text and its pinned hash.
+  - item 18: attach the latest `irb/questionnaire.pdf`, re-exported 2026-10-12 after the T1
+    wording (§8) and the new B-T2 and B-T4 questions.
+- **Fixed in the 2026-09-28 revision:** item 9's "WHO/UNICEG"; item 15's "the lasting records is
+  the export"; item 5B now says five multiple-choice questions and one written description per
+  version, the explanation after the multiple-choice answers, and names the window size among what
+  is logged; both signatures re-dated 9/28. The consent form's Procedures still does not name the
+  window size; adding it would change the consent text and its pinned hash.
+- **Answer tiles overflow on narrow windows (found 2026-10-11, partly fixed 2026-10-12).** The
+  tiles' text went from 17 px to 15 px (`visual-spec.md` §10), which fits every option at 1440 ×
+  790 and 1536 × 864. At 1366 × 768 form B's Mozambique (B-T2's key) and Bangladesh still run past
+  their tiles, clipping the radio button too; at 1280 × 720, a common laptop window at 150 %
+  scaling, 108 of the 132 options do. Participants use their own computers, so this is
+  open until the layout is changed or a minimum window is required.
 - **Fixed in the 2026-09-21 revision:** "randomized" is now "counterbalanced" in both forms; "hovers"
   and "so findings aren't platform specific" are gone from the request form; both forms now name
   Neon; the consent form now states the two-week withdrawal window.

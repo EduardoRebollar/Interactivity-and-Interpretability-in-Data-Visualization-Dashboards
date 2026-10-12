@@ -58,6 +58,10 @@
    it. The rule is general: a last tile alone on its row, in any odd-numbered set. */
 .ui-tiles > .dash-options-list-option:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
+/* The answer tiles' text, 2 px under study.css's 17 px: a one-word option cannot wrap, and at 17
+   px Mozambique ran 8 px past its tile at 1440 x 790 (visual-spec.md section 10). */
+.ui-tiles .ui-tile-label { font-size: 15px; }
+
 /* study.css's .field is display: block, for an <input>. dcc.Input puts the class on its box around
    the input, where block leaves the input at its own narrow width; a block-level flex box, like
    Dash's own inline-flex, lets it fill the field. */

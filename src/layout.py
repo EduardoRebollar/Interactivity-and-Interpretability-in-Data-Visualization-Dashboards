@@ -1101,7 +1101,8 @@ def practice_complete_screen() -> html.Main:
             "(static/interactive) that you experienced in the practice question."
         ),
         html.P(
-            "For each question, choose one answer, then write a short sentence response about your "
+            "For the first question, write a short description of what the chart shows. For each "
+            "of the others, choose one answer, then write a short sentence response about your "
             "decision. After the sixth question, there are a few quick reflecting questions about "
             "your experience with this version."
         ),
@@ -1163,9 +1164,10 @@ SECOND_HALF_POINTING = (
     "shows the change from the year before."
 )
 SECOND_HALF_CLOSE = (
-    "As before, you'll answer a question about each chart and then say in one sentence how you "
-    "decided. A break in a line means no value was reported for those years. You may skip any "
-    "question, and you'll be asked to confirm if you leave one blank."
+    "As before, the first question asks you to describe what a chart shows. For each of the "
+    "others, you'll choose an answer and then say in one sentence how you decided. A break in a "
+    "line means no value was reported for those years. You may skip any question, and you'll be "
+    "asked to confirm if you leave one blank."
 )
 
 

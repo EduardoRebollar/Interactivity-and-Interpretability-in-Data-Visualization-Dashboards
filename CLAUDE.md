@@ -464,7 +464,7 @@ tests/
   doc to match, or list the mismatch in `study-design.md` §10 so the IRB paperwork is amended.
 - `docs/study-redesign.md` — the redesign brief; read before any UI or study-content work.
 - **The consent text in `src/consent.py` is the form for HSRRC, word for word** (since 2026-09-26,
-  `irb/COMP 490 Consent Form.pdf` as revised that day, not yet sent). Its hash is
+  `irb/Oxy CS Senior Comps Informed Consent Form.pdf` as revised that day, not yet sent). Its hash is
   pinned in `tests/test_consent.py`. Change the wording only to match an approved form, and re-pin
   the hash when you do. `consent.APPROVED` stays False until HSRRC approves; while False, the screen
   shows a "pending approval" banner.
@@ -773,12 +773,26 @@ context cheap and the reports as long as they need to be.
   The forms now differ in question on T2 and T4, a pilot check (§4, §10). Key positions 0/1/3/3/2/1.
   Schema v17. 1279 tests. Headless Chrome, all four cells at 1440 × 790: every prompt, the new
   options and grid, no console errors. `irb/questionnaire.pdf` re-exported.
+- 2026-10-12 — **Answer tiles at 15 px; T1 named in the instructions** (uncommitted at time of
+  writing). The tiles' text is 2 px under study.css's 17 (`zz-overrides.css`, `visual-spec.md`
+  §10): every option now sits inside its tile at 1440 × 790, 1440 × 900 and 1536 × 864, B-T2's
+  Mozambique 2 px into the padding. Practice complete and the second half's closing paragraph no
+  longer say every question is chosen and explained (`study-design.md` §8). Headless Chrome, 660
+  tiles over every item, form, condition and five window sizes, and the three reworded screens:
+  no console errors. `irb/questionnaire.pdf` re-exported. The 2026-09-28 IRB forms checked: the
+  request form's §10 fixes are made, and the consent form still matches `src/consent.py` word for
+  word.
 - **Still to do before the pilot:**
-  - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
-    written description (`study-design.md` §10).
-  - The IRB forms were revised 2026-09-26 and match the app. Before sending, fix the request
-    form's typos, submission date and signature dates listed in `study-design.md` §10, then send
-    both forms with `irb/questionnaire.pdf` (item 18).
+  - Send the IRB forms (2026-09-28 revision). Fill in item 1's submission date, attach the
+    2026-10-12 `irb/questionnaire.pdf` (item 18), and ask the two signature questions below in
+    the same email. No pilot before approval: pilot participants are human subjects too.
+  - Answer tiles on narrow windows (Open questions).
+  - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
+    can answer (each item × form × condition cell gets about a quarter of it), what result changes
+    an item, how pilot data is kept out of the study (an ID prefix, or export, delete and note the
+    sequence number the study starts at), and that pilot participants cannot join the study.
+  - Before the first session: confirm production serves the committed head (Vercel dashboard; the
+    CLI is not installed and the API refused this team) and re-run `scripts/verify_deployment.py`.
   - Set `consent.APPROVED = True` only once HSRRC approves, and re-pin the text hash if the wording
     changed.
 - Next after IRB: pilot, and the checks in `study-design.md` §10: static accuracy on T2, T4 and T5
@@ -955,9 +969,11 @@ context cheap and the reports as long as they need to be.
 
 ## Open questions
 
-- Answer tiles overflow on long one-word options (found 2026-10-11). Fixing it changes the tiles'
-  layout in both conditions; not done without asking. Since 2026-10-12 one of them, Mozambique, is
-  B-T2's key.
+- Answer tiles overflow on narrow windows (found 2026-10-11). At 15 px (2026-10-12) every option
+  fits from 1440 px wide up. At 1366 × 768 form B's Mozambique (B-T2's key) and Bangladesh still
+  run past their tiles and clip the radio button; at 1280 × 720, a common laptop window at 150 %
+  scaling, 108 of 132 options do. Participants use their own computers. Fix the layout in both
+  conditions, or require a minimum window size; not done without asking (`study-design.md` §10).
 
 - Does HSRRC accept a drawn electronic signature? 45 CFR 46.117 allows electronic documentation;
   confirm with hsrrc@oxy.edu. The paper-copy box is the fallback either way.
@@ -972,8 +988,9 @@ context cheap and the reports as long as they need to be.
 
 <!-- e.g. - [Lit review draft](docs/lit-review.md) — 12 sources, interaction & cognitive load -->
 
-- `irb/COMP 490 Request Form.pdf` — the IRB approval request form (renamed and revised
-  2026-09-21; revised again 2026-09-26 for the redesign). **Gitignored; local only, never commit.**
+- `irb/Oxy CS Senior Comps Approval Request Form.pdf` — the IRB approval request form (revised
+  2026-09-21 and 2026-09-26; renamed and revised 2026-09-28, which made the §10 fixes and re-dated
+  the signatures). **Gitignored; local only, never commit.**
   It **outranks
   `docs/study-design.md`** (Eduardo, 2026-09-21): where they disagree, the form wins and the doc is
   changed to match — or, if following the form would break the method, flag it so the form is
@@ -981,7 +998,8 @@ context cheap and the reports as long as they need to be.
   recruitment, data handling, tasks, or measures; what it requires is written into
   `docs/study-design.md`, not into the form's folder. Extract text with `pdftotext` (poppler for the
   Read tool is not installed).
-- `irb/COMP 490 Consent Form.pdf` — the informed consent form, pages 1–2, the text participants
-  sign (revised 2026-09-21; revised 2026-09-26 for the redesign and the background questions). Also
-  gitignored. `src/consent.py` matches it word for word (checked 2026-09-26, all 961 words), and
+- `irb/Oxy CS Senior Comps Informed Consent Form.pdf` — the informed consent form, pages 1–2, the
+  text participants sign (revised 2026-09-21; revised 2026-09-26 for the redesign and the
+  background questions; renamed 2026-09-27). Also gitignored. `src/consent.py` matches it word for
+  word (checked 2026-09-26, all 961 words; re-checked 2026-10-12 against the renamed file), and
   the hash pinned in `tests/test_consent.py` guards that transcription.

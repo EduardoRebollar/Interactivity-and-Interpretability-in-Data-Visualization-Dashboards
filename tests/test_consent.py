@@ -1,8 +1,9 @@
 """The consent form, the signed record, and the two scripts that handle it afterwards.
 
-The consent text is the form submitted to HSRRC (`irb/COMP 490 Consent Form.pdf`, local only). Its
-hash is pinned here: a change to the wording must be deliberate, and must be matched by the form
-HSRRC approves. Update the pinned hash only together with the approved document.
+The consent text is the form submitted to HSRRC (`irb/Oxy CS Senior Comps Informed Consent
+Form.pdf`, local only). Its hash is pinned here: a change to the wording must be deliberate, and
+must be matched by the form HSRRC approves. Update the pinned hash only together with the approved
+document.
 """
 
 from __future__ import annotations
