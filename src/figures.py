@@ -608,9 +608,17 @@ def series_colors(entities: Sequence[str]) -> dict[str, str]:
     return colors
 
 
+# Names too long for a tag's margin: the handoff's one, and DR Congo's (on A-T6 since 2026-10-11)
+# as the map writes it.
+_TAG_NAMES = {
+    "Central African Republic": "Central African Rep.",
+    "Democratic Republic of Congo": "DR Congo",
+}
+
+
 def tag_name(entity: str) -> str:
-    """The name a tag shows: the handoff shortens one country to fit the margin."""
-    return "Central African Rep." if entity == "Central African Republic" else entity
+    """The name a tag shows, shortened where it would not fit the margin."""
+    return _TAG_NAMES.get(entity, entity)
 
 
 def _line(

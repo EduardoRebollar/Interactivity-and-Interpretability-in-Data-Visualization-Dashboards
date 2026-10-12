@@ -178,6 +178,12 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v15 (2026-10-11).** Each T6 chart draws eight lines, not two: A adds Afghanistan, Chad,
+Côte d'Ivoire, DR Congo, Nigeria and Somalia; B adds Benin, Cameroon, Gabon, Kenya, Madagascar and
+Sudan (`study-design.md` §4). Question, pair, key and options
+unchanged, but a v14 T6 answer was given against a different chart. No new event, key, table or
+column, so `init_db.py` needs no re-run. Nothing collected, so no migration.
+
 **Schema v14 (2026-10-11).** The chart handoff redraws every chart (`visual-spec.md`). T3's dots
 are named and coloured by change, with no legend; T4's cells are banded; T5 colours eighteen
 countries per form, Africa-wide, and its prompt says "in Africa"; line charts lose their legend, so
@@ -730,6 +736,16 @@ context cheap and the reports as long as they need to be.
   `window_size`, About you once. Every chart compared with the handoff at 2×: fixed the heatmap
   key (46 px right of centre) and Cameroon's map label (crowding Benin's). Bundle 109.9 MB.
   `irb/questionnaire.pdf` re-exported (36 pages). 1273 tests.
+- 2026-10-11 — **Six more lines on each T6** (uncommitted at time of writing), eight per form, so
+  isolating the two named lines has something to remove. A: +Afghanistan, Chad, Côte d'Ivoire, DR
+  Congo, Nigeria, Somalia; B: +Benin, Cameroon, Gabon, Kenya, Madagascar, Sudan; all in scope, every
+  series colour used once, keys and band margins unchanged. T6's rule gains T1's clause (no line
+  within 5 points of a named one for 5+ years); nearest line to the meeting point 7.4 points (A),
+  9.1 (B); the extra lines cross the pair 33 times in each form. DR Congo's line tag reads "DR
+  Congo", as on the map. Schema v15. 1275 tests. Headless Chrome, all four cells at 1440 × 790:
+  eight lines and tags, hover, isolation and Show all logged in interactive halves only, keys
+  logged, no console errors. At 1366 × 768 the interactive T6 Submit ends at 776 px (two chip
+  rows, as on T1). `irb/questionnaire.pdf` re-exported.
 - **Still to do before the pilot:**
   - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
     written description (`study-design.md` §10).
@@ -897,6 +913,12 @@ context cheap and the reports as long as they need to be.
   - Taken without asking: World stays black and dashed; the scatter key reads "pts"; the map key
     has no "No data" block; the map keeps its chips (18 per form); the bar and heatmap order labels
     follow their sorts; medium weight is drawn as the handoff's 0.45 px stroke.
+
+- 2026-10-11 — **T6 goes from two lines to eight** (Eduardo; five first, then eight), so the
+  interactive condition can show a benefit beyond hover. Taken without asking: the six countries
+  per form (found by search: each crosses the pair away from where they meet; none shared between
+  forms; not Congo beside DR Congo), adding T1's close-run clause to T6's rule, and "DR Congo" on
+  the line tag.
 
 ## Open questions
 

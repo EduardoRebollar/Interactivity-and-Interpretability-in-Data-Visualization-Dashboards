@@ -6,7 +6,7 @@ never the same form twice, so nobody answers a question they have already answer
 
 Each item pairs one chart type with the interactive affordance that makes it quicker to read
 (section 4): isolating a line in a tangle, sorting bars, hovering a dot or a cell, filtering a
-map by coverage, and hovering two lines where they cross.
+map by coverage, and isolating two lines among others, then hovering where they cross.
 Every item can still be answered from the static chart, because every key clears the acceptance
 rule in section 4.
 
@@ -223,9 +223,20 @@ FORM_A: tuple[Task, ...] = (
             "Roughly when did that first happen?"
         ),
         vaccine="DTP3",
-        # No World line, to match B-T6, where World runs through the crossing.
-        # docs/study-design.md section 4.
-        entities=("Central African Republic", "Ethiopia"),
+        # Six more lines that cross the pair away from where they meet, so isolating the two has
+        # something to remove (2026-10-11). Nigeria comes nearest, 7.4 points from the meeting
+        # point. Not Congo, whose tag would sit beside DR Congo's. No World line, to match B-T6,
+        # where World runs through the crossing. docs/study-design.md section 4.
+        entities=(
+            "Afghanistan",
+            "Central African Republic",
+            "Chad",
+            "Cote d'Ivoire",
+            "Democratic Republic of Congo",
+            "Ethiopia",
+            "Nigeria",
+            "Somalia",
+        ),
         options=CROSSING_BANDS,
     ),
 )
@@ -379,9 +390,19 @@ FORM_B: tuple[Task, ...] = (
             "that first happen?"
         ),
         vaccine="DTP3",
-        # No World line: it runs within 2 points of both lines at the 2019 crossing, and Pakistan
-        # crosses it too, in 2021. docs/study-design.md section 4.
-        entities=("Mozambique", "Pakistan"),
+        # Six more lines, as in A (2026-10-11); Sudan comes nearest, 9.1 points from the meeting
+        # point. No World line: it runs within 2 points of both lines at the 2019 crossing, and
+        # Pakistan crosses it too, in 2021. docs/study-design.md section 4.
+        entities=(
+            "Benin",
+            "Cameroon",
+            "Gabon",
+            "Kenya",
+            "Madagascar",
+            "Mozambique",
+            "Pakistan",
+            "Sudan",
+        ),
         options=CROSSING_BANDS,
     ),
 )

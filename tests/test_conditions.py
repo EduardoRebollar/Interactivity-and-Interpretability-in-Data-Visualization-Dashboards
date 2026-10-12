@@ -83,6 +83,8 @@ def test_each_chart_is_rendered_with_its_own_config(task):
 
 
 ALL_TASKS = [tasks.PRACTICE, *tasks.FORM_A, *tasks.FORM_B]
+FORM_A_T6 = next(t for t in tasks.FORM_A if t.task_id == "T6")
+FORM_B_T6 = next(t for t in tasks.FORM_B if t.task_id == "T6")
 
 
 def _task_id(task) -> str:
@@ -260,9 +262,34 @@ def test_series_take_their_countrys_colour(rows):
 @pytest.mark.parametrize(
     ("entities", "expected"),
     [
-        # A-T6 and B-T6: the country without a colour of its own takes the first one free.
-        (["Central African Republic", "Ethiopia"], {"Central African Republic": 0, "Ethiopia": 2}),
-        (["Mozambique", "Pakistan"], {"Mozambique": 0, "Pakistan": 6}),
+        # A-T6 and B-T6: eight lines, so every colour is used; each country without one of its own
+        # takes the first one free.
+        (
+            list(FORM_A_T6.entities),
+            {
+                "Afghanistan": 0,
+                "Central African Republic": 1,
+                "Chad": 3,
+                "Cote d'Ivoire": 4,
+                "Democratic Republic of Congo": 6,
+                "Ethiopia": 2,
+                "Nigeria": 5,
+                "Somalia": 7,
+            },
+        ),
+        (
+            list(FORM_B_T6.entities),
+            {
+                "Benin": 0,
+                "Cameroon": 1,
+                "Gabon": 2,
+                "Kenya": 3,
+                "Madagascar": 4,
+                "Mozambique": 5,
+                "Pakistan": 6,
+                "Sudan": 7,
+            },
+        ),
         # B-T1: Nepal and Uganda take the two colours its six owners leave.
         (
             ["Brazil", "China", "Ethiopia", "Indonesia", "Nepal", "Nigeria", "Pakistan", "Uganda"],
@@ -331,6 +358,7 @@ def test_every_series_is_named_by_a_tag(rows):
 
 def test_the_central_african_republic_is_shortened_on_its_tag():
     assert figures.tag_name("Central African Republic") == "Central African Rep."
+    assert figures.tag_name("Democratic Republic of Congo") == "DR Congo"
     assert figures.tag_name("Ethiopia") == "Ethiopia"
 
 

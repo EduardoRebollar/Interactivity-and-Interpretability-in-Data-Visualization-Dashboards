@@ -511,7 +511,9 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
     - the point where the lines meet on the chart sits at least a year inside the key band, so a
       reading one year off still lands in it;
     - no other line on the chart passes within 5 points of that point, where it would be taken for
-      one of the two.
+      one of the two;
+    - no other line runs within 5 points of either of the two for more than 4 years in a row, where
+      it could be followed by mistake (T1's clause, added 2026-10-11 when T6 went to five lines).
     """
     overtaker, overtaken = params["overtaker"], params["overtaken"]
     for entity in (overtaker, overtaken):
@@ -578,20 +580,31 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
         )
 
     meeting = ahead[previous] + fraction * (ahead[strictly_above] - ahead[previous])
+    years = list(range(min(ordered), max(ordered) + 1))
     clearance: dict[str, float] = {}
+    close_runs: dict[str, int] = {}
     for other in task.entities:
         if other in (overtaker, overtaken):
             continue
         values = _reported(other, task.vaccine, rows)
-        if previous not in values or strictly_above not in values:
-            continue  # not drawn through the crossing
-        at_meeting = values[previous] + fraction * (values[strictly_above] - values[previous])
-        clearance[other] = abs(at_meeting - meeting)
-        if clearance[other] < MIN_SEPARATION_PP:
-            raise KeyDerivationError(
-                f"{task.form}-{task.task_id}: {other}'s line passes {clearance[other]:.1f} pts "
-                f"from where {overtaker} and {overtaken} meet; it would be taken for one of them"
-            )
+        if previous in values and strictly_above in values:  # drawn through the crossing
+            at_meeting = values[previous] + fraction * (values[strictly_above] - values[previous])
+            clearance[other] = abs(at_meeting - meeting)
+            if clearance[other] < MIN_SEPARATION_PP:
+                raise KeyDerivationError(
+                    f"{task.form}-{task.task_id}: {other}'s line passes {clearance[other]:.1f} "
+                    f"pts from where {overtaker} and {overtaken} meet; it would be taken for one "
+                    "of them"
+                )
+        for named, series in ((overtaker, ahead), (overtaken, behind)):
+            length, first_year, last_year = _longest_close_run(series, values, years)
+            close_runs[other] = max(close_runs.get(other, 0), length)
+            if length > MAX_CLOSE_RUN_YEARS:
+                raise KeyDerivationError(
+                    f"{task.form}-{task.task_id}: {other}'s line runs within "
+                    f"{MIN_SEPARATION_PP:g} pts of {named}'s for {length} years "
+                    f"({first_year}-{last_year}); it could be followed by mistake"
+                )
 
     return DerivedKey(
         task.task_id,
@@ -608,6 +621,7 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
             "led_by_pp": led_by,
             "meeting_pp": round(meeting, 2),
             "other_lines_clearance_pp": {k: round(v, 2) for k, v in clearance.items()},
+            "other_lines_close_run_years": close_runs,
             "differences": differences,
             "adjacent_bands": sorted(adjacent_bands(strictly_above)),
         },

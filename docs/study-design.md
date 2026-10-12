@@ -10,8 +10,8 @@ crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4)
 2026-09-25 from the design handoff (`docs/design-handoff/`, `docs/study-redesign.md`): six options
 per item, controls on every chart, a new survey, and About you, which moves to the end; built and
 verified in headless Chrome 2026-09-26; restyled 2026-10-11 from the chart handoff
-(`docs/chart-handoff/`), with T5's maps redrawn (§4).** The consent text in §9 is the form submitted to
-Occidental's HSRRC and must not be shown to a participant until approved.
+(`docs/chart-handoff/`), with T5's maps redrawn and T6 given six more lines (§4).** The consent
+text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -143,7 +143,7 @@ read is costly and that affordance lowers the cost:
 | T3 | scatter | hovering a dot; hiding dots with the chips | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
 | T4 | heatmap | hovering a cell; sorting rows by lowest value | telling dark bands apart against the key |
 | T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
-| T6 | line, 2 countries | hovering both lines where they meet | placing, by eye, the year two lines cross |
+| T6 | line, 8 countries | isolating the two named lines; hovering both where they meet | following two lines through six others that cross them, then placing, by eye, the year they cross |
 
 **Redesign, 2026-09-25.** Every chart now has country chips and Reset view. The heatmap gained a
 row sort, and the map's range slider gave way to a typed threshold. The heatmap's Lowest value sort
@@ -190,7 +190,7 @@ heatmap's 0–20 band.
 | T3 most improved | The key's improvement beats every other dot's by at least **5 points**, and no two dots sit within **4 points** of each other (closer, and one dot hides the other, or their names collide). **The key shares its change colour with at least one other dot** (2026-10-11), so the colour alone never names it. |
 | T4 lowest cell | The lowest cell is at least **10 points** below the lowest cell of every other row, and **in a darker band** than any of them (2026-10-11). |
 | T5 count | Every coloured country is at least **10 points** from the threshold. The threshold, 50, is a band boundary, so the countries below it sit in the two darkest bands and those above in 60–70 or lighter: the 50–60 band stays empty. |
-| T6 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet. |
+| T6 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet, and none runs within **5 points** of either named line for **5 or more consecutive years** (T1's clause, added 2026-10-11 with T6's extra lines). |
 
 A bar, dot, cell or country with no reported value is refused outright: the chart would have nothing
 to show exactly where the question looks. A crossing is judged only on years both lines report. An
@@ -412,7 +412,7 @@ adjacent band moves.
 
 | | Form A | Form B |
 |---|---|---|
-| Lines | Central African Republic, Ethiopia | Mozambique, Pakistan |
+| Lines | Central African Republic, Ethiopia; and Afghanistan, Chad, Côte d'Ivoire, Democratic Republic of Congo, Nigeria, Somalia | Mozambique, Pakistan; and Benin, Cameroon, Gabon, Kenya, Madagascar, Sudan |
 | Before | Ethiopia trails from 2000, by up to 12 points (2004) | Pakistan trails from 2000, by up to 22 points (2008–2010) |
 | The crossing | Ethiopia rises (46, 50) as the Central African Republic falls (51, 48) | Pakistan climbs to 84 against Mozambique's 85; Mozambique then falls to 71 |
 | First year strictly above | **2007** | **2020** |
@@ -420,6 +420,8 @@ adjacent band moves.
 | Inside the band by | 1.79 years | 1.40 years |
 | After | Ethiopia leads every year to 2024, by up to 36 points | Pakistan leads every year to 2024, by up to 30 points |
 | Key | **2004-2008** | **2017-2020** |
+| Nearest other line where they meet | Nigeria, 7.4 points (Afghanistan 12.7, Somalia 12.9, DR Congo 15.3, Chad 16.4, Côte d'Ivoire 27.4) | Sudan, 9.1 points (Kenya 9.4, Benin 11.8, Gabon 14.3, Madagascar 14.8, Cameroon 16.5) |
+| Longest run of another line within 5 points of a named one | 4 years (Nigeria and Afghanistan, each beside Ethiopia) | 4 years (Madagascar) |
 
 Bands, not years, because the static condition has no hover and an exact crossing year cannot be
 read from the chart. **The key is the band containing the first year the overtaker is strictly
@@ -428,15 +430,32 @@ above** the other, having not been above the year before. The pairs were found b
 lines are both on A-T1's chart; Burkina Faso over Mozambique, only 1.17 years inside its band; and
 Niger over Madagascar, which ties in 2010 and leads by 2 points the next year.
 
-**Two lines, no World line.** In B-T6, World runs at 85–86 through 2014–2019, within 1 point of
-Mozambique, and at 2019 all three lines sit within 2 points of each other, exactly where the question
-looks. Pakistan also rises above World in 2021, a second crossing in the next band. The rule's last
-clause refuses that chart. A-T6 could keep World, which runs about 29 points above its crossing, but
-it is dropped there too, so both forms draw two lines.
+**Eight lines, no World line (2026-10-11).** Until then each chart drew its two lines alone: the
+static reader had only the crossing to place, and isolating a line had nothing to remove, so T6
+could show no benefit of interactivity but hover's. Each chart now draws six more countries,
+found by search over the scope for lines that cross the named pair away from where they meet. A
+static reader must first find the two named lines by their tags and colours and follow them back
+through the others. The extra lines cross the named ones elsewhere: in A, DR Congo passes the
+Central African Republic in 2004, Nigeria passes it in 2008 and Ethiopia in 2009, and Chad passes
+it in 2013 and again in 2018, Afghanistan passes Ethiopia in 2001 and 2018 and Somalia in 2022,
+and Côte d'Ivoire passes Ethiopia in 2012; in B, Pakistan passes Gabon and Benin in 2018 and
+Madagascar in 2014, Cameroon passes Mozambique in 2021, Kenya passes it in 2006 and 2018, and Sudan
+passes Pakistan in 2003. Each form's extra lines cross the named pair 33 times in all. Not Congo in
+A: its tag would sit beside DR Congo's. The rule keeps the item readable without the controls: no extra line comes
+within 5 points of where the pair meet, and none runs alongside a named line for 5 years or more,
+the clause T1 already used for the same reason. Every extra line reports every year, and no colour
+is shared (`docs/visual-spec.md` §4).
 
-**The affordance is hover.** Line charts use the closest-point tooltip, so hovering either line
-near the crossing gives its exact value, and the tooltip's change from the year before shows which
-line is rising. The line controls and zoom work here as on every line chart.
+World stays off both charts. In B-T6 it runs at 85–86 through 2014–2019, and at 2019 it sits 2.1
+points from where the pair meet; Pakistan also rises above it in 2021, a second crossing in the next
+band. The rule's meeting-point clause refuses that chart. A-T6 could draw World, which runs about 29
+points above its crossing, but it is left off there too, so both forms draw eight countries.
+
+**The affordances are isolation and hover.** A click on a line, or the chips, leaves the two
+named lines alone on the chart, which removes the six others the static reader must look past.
+Line charts use the closest-point tooltip, so hovering either line near the crossing gives its exact
+value, and the tooltip's change from the year before shows which line is rising. Zoom works here as
+on every line chart.
 
 > **Adjacent-band credit, pre-registered as a secondary for T6** (§7). A reader who puts the
 > crossing a year late or early lands in the key band in both forms, since the lines meet more than
@@ -462,7 +481,8 @@ than quietly unbalancing the forms. Four known differences go to the pilot (§10
   crowded than A's (T3 above).
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
-  cross.
+  cross. A's nearest extra line passes closer to where the pair meet (Nigeria, 7.4 points) than
+  B's (Sudan, 9.1), so A may be the harder form to read without isolation.
 
 ### Practice task (unscored)
 
@@ -572,6 +592,19 @@ the controls, not the questions or the keys.
   Zimbabwe): 68 entities, 6800 rows.
 - **Log schema v14** (`src/logging.py`): a v13 T3 or T5 answer was given against a different chart,
   and T5's prompt changed. Nothing had been collected.
+
+### Revision 2026-10-11: six more lines on T6
+
+- **Added:** six countries to each T6 chart, so isolation has lines to remove (T6 above). Form A:
+  Afghanistan, Chad, Côte d'Ivoire, Democratic Republic of Congo, Nigeria, Somalia. Form B: Benin,
+  Cameroon, Gabon, Kenya, Madagascar, Sudan. Eight lines per form, every series colour used once,
+  all already in the scope.
+- **Rule:** T6 gains T1's clause, so no other line runs within 5 points of a named one for 5 years
+  or more (`analysis/keys.py`).
+- **Unchanged:** the question, the pair, the key, the band margin, the options and the key's
+  position among them.
+- **Log schema v15:** a v14 T6 answer was given against two lines, a v15 one against eight
+  (`src/logging.py`). Nothing had been collected.
 
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
@@ -772,11 +805,11 @@ as per-chart-type effects.
 | T3 | hover; hiding dots with the chips | the chips only — `filter_change` (`chips`) |
 | T4 | hover; sorting rows by lowest value | the sort only — `sort_change` |
 | T5 | the highlight | yes — `filter_change` with `control` `threshold` |
-| T6 | hover | no (the line controls are, if used) |
+| T6 | isolating the two lines (also chips); hover | the line controls only — `line_isolate`, `filter_change` (`chips`, `show-all`) |
 
 For T3, T4 and T6, an interactive participant who answers correctly may or may not have hovered.
-Analyses of affordance use are confined to T1, T2, T4's sort and T5; for T3, T4 and T6 a correct
-interactive answer may rest on an unlogged hover, and the write-up says so.
+Analyses of affordance use are confined to T1, T2, T4's sort, T5 and T6's isolation; for T3, T4
+and T6 a correct interactive answer may rest on an unlogged hover, and the write-up says so.
 
 **Reasoning depth (RQ2).** Each justification coded on three binary features:
 
@@ -1147,6 +1180,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
       rather than the reading.
   - **T6 against its adjacent-band secondary.** If the two scores differ much, static readers are
     placing the crossing a band off, and the band edges are doing the work.
+  - **T6 with eight lines (2026-10-11).** Static accuracy, and form equivalence, since A's extra
+    lines sit nearer the crossing than B's (§4); and how often interactive participants isolate
+    the two lines before answering, which the logs show.
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the map's highlight and the bar sort, which the practice does not teach. The logs show
     all four (§7).

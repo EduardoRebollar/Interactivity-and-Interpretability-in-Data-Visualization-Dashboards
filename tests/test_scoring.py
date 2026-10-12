@@ -128,6 +128,26 @@ def test_the_margins_are_the_ones_study_design_records():
     assert table[("A", "T6")].evidence["band_inset_years"] == 1.79
     assert table[("B", "T6")].evidence["intersection"] == 2019.1
     assert table[("B", "T6")].evidence["band_inset_years"] == 1.4
+    # T6's six extra lines (2026-10-11): how far each passes from where the pair meet, and the
+    # longest run any of them keeps within 5 points of a named line.
+    assert table[("A", "T6")].evidence["other_lines_clearance_pp"] == {
+        "Afghanistan": 12.71,
+        "Chad": 16.43,
+        "Cote d'Ivoire": 27.43,
+        "Democratic Republic of Congo": 15.29,
+        "Nigeria": 7.43,
+        "Somalia": 12.86,
+    }
+    assert table[("B", "T6")].evidence["other_lines_clearance_pp"] == {
+        "Benin": 11.8,
+        "Cameroon": 16.5,
+        "Gabon": 14.3,
+        "Kenya": 9.4,
+        "Madagascar": 14.8,
+        "Sudan": 9.1,
+    }
+    for form in ("A", "B"):
+        assert max(table[(form, "T6")].evidence["other_lines_close_run_years"].values()) == 4
 
 
 @needs_data
@@ -677,6 +697,22 @@ def test_crossing_allows_a_third_line_well_clear(race):
     rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50, "C": {y: 80.0 for y in range(2000, 2025)}})
     key = keys.derive(_crossing_task(("A", "B", "C")), rows)
     assert key.evidence["other_lines_clearance_pp"] == {"C": 30.0}
+
+
+def test_crossing_refuses_a_line_that_runs_alongside_a_named_one(race):
+    """T1's clause, on T6 since 2026-10-11: C is 3 points above B for five years, away from the
+    crossing, long enough to be followed by mistake for B."""
+    c = {y: 80.0 for y in range(2000, 2025)} | {y: 53.0 for y in range(2015, 2020)}
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50, "C": c})
+    with pytest.raises(keys.KeyDerivationError, match="C's line runs within 5 pts of B's for 5"):
+        keys.derive(_crossing_task(("A", "B", "C")), rows)
+
+
+def test_crossing_allows_a_line_alongside_for_four_years(race):
+    c = {y: 80.0 for y in range(2000, 2025)} | {y: 53.0 for y in range(2015, 2019)}
+    rows = _rows({"A": _rising(37.0, 2.0), "B": FLAT_50, "C": c})
+    key = keys.derive(_crossing_task(("A", "B", "C")), rows)
+    assert key.evidence["other_lines_close_run_years"] == {"C": 4}
 
 
 def test_crossing_refuses_a_line_not_on_the_chart(race):

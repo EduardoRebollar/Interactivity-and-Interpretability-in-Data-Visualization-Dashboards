@@ -39,7 +39,7 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 | Type | Items | Encoding |
 |---|---|---|
-| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, a name tag at each line's end; World dashed where shown (only the practice draws it; T1 draws eight countries and T6 two) |
+| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, a name tag at each line's end; World dashed where shown (only the practice draws it; T1 and T6 draw eight countries each) |
 | Bar | T2 | One year's coverage, one bar per country in the listed order, each in its country's colour |
 | Scatter | T3 | Each country a named dot: coverage in 2000 across, in 2024 up, coloured by its change, with a dashed no-change diagonal |
 | Heatmap | T4 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as one of nine colour bands |
@@ -160,8 +160,11 @@ Colour tells lines apart on the line charts, and bars apart on the bar chart (be
 country, not by position (2026-10-11, the chart handoff).** Each of Form A's T1 countries owns one
 colour, in the table's order, and keeps it on every line chart and bar chart it appears on. Any other
 country on a line chart takes the first colour that chart does not already use: on B-T1, Nepal takes
-4 and Uganda 8; on the practice, Myanmar takes 1; on A-T6 the Central African Republic and on B-T6
-Mozambique take 1. A hidden line keeps its colour, so filtering never recolours (§7.3). The scatter
+4 and Uganda 8; on the practice, Myanmar takes 1. T6 draws eight lines since 2026-10-11, so each
+chart uses every colour: on A-T6 Afghanistan takes 1, the Central African Republic 2, Chad 4, Côte
+d'Ivoire 5, DR Congo 7 and Somalia 8; on B-T6 Benin takes 1, Cameroon 2, Gabon 3, Kenya 4,
+Madagascar 5, Mozambique 6 and Sudan 8. A hidden line keeps its colour, so filtering never
+recolours (§7.3). The scatter
 no longer uses these colours: its dots are coloured by change (below).
 
 | Order | Country | Hex | Ratio | Luminance | Note |
@@ -448,7 +451,8 @@ to land on the wrong option. A fixed-height container around the chart holds the
   a white pill 20 px tall, fully rounded, with a 1 px `#E4D8CC` edge, at x 860; inside it, a 4 px dot
   in the line's colour and the name, 13 px medium ink, 7 px from the right end. No value. A 1.4 px
   leader in the line's colour, a cubic Bézier from 6 px right of the end dot to the tag's left end,
-  joins them ("Central African Republic" is written "Central African Rep."). World's tag is drawn the
+  joins them ("Central African Republic" is written "Central African Rep.", and "Democratic Republic
+  of Congo", since A-T6 drew it on 2026-10-11, "DR Congo", as on the map). World's tag is drawn the
   same way.
 - **Tags never overlap.** They keep the order of their lines' last reported values and are spread
   so their centres are at least **23 px** apart, by the handoff's `spread()`, between 10 px above
