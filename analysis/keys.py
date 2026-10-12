@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import Any
 
-from src import config, runtime_data, tasks
+from src import config, figures, runtime_data, tasks
 from src.flow import Task
 from src.runtime_data import Row
 
@@ -361,7 +361,9 @@ def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
     """T3: the dot furthest above the no-change diagonal.
 
     Acceptance: its improvement beats every other dot's by at least 5 points, and no two dots sit
-    within 4 points of each other, where one would hide the other.
+    within 4 points of each other, where one would hide the other. Since 2026-10-11 dots are
+    coloured by their change, so the key must share its colour with at least one other dot: alone in
+    the darkest blue, the colour would name the answer (docs/study-design.md section 4).
     """
     first, last = task.years
     points = {
@@ -390,6 +392,17 @@ def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
             f"{task.form}-{task.task_id}: the dots for {closest[1]} and {closest[2]} are "
             f"{closest[0]:.1f} pts apart; one hides the other"
         )
+    key_colour = figures.change_color(improvement[key])
+    sharing = [
+        entity
+        for entity in task.entities
+        if entity != key and figures.change_color(improvement[entity]) == key_colour
+    ]
+    if not sharing:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {key} is alone in its change colour; the colour alone "
+            "names the answer"
+        )
     return DerivedKey(
         task.task_id,
         task.form,
@@ -402,6 +415,7 @@ def _improved(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
             "runner_up": runner_up,
             "margin_pp": margin,
             "closest_dots_pp": round(closest[0], 2),
+            "sharing_its_colour": sharing,
         },
     )
 
@@ -410,7 +424,9 @@ def _cell(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedK
     """T4: the row holding the heatmap's lowest cell.
 
     Acceptance: that cell is at least 10 points below the lowest cell of every other row. Colour is
-    the only channel here, and the rule for colour is twice the rule for position.
+    the only channel here, and the rule for colour is twice the rule for position. Since 2026-10-11
+    the cells are banded, so the cell must also sit in a darker band than every other row's lowest:
+    10 points does not cross a boundary inside the 0-20 band (docs/study-design.md section 4).
     """
     minima = {}
     for entity in task.entities:
@@ -424,6 +440,12 @@ def _cell(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> DerivedK
         raise KeyDerivationError(
             f"{task.form}-{task.task_id}: {key}'s lowest cell ({minima[key][0]:g}) is only "
             f"{margin:g} pts below {runner_up}'s; that close, the two colours cannot be told apart"
+        )
+    key_band = figures.band_color(minima[key][0], config.HEATMAP_BANDS)
+    if figures.band_color(minima[runner_up][0], config.HEATMAP_BANDS) == key_band:
+        raise KeyDerivationError(
+            f"{task.form}-{task.task_id}: {key}'s lowest cell ({minima[key][0]:g}) and "
+            f"{runner_up}'s ({minima[runner_up][0]:g}) fall in the same band"
         )
     return DerivedKey(
         task.task_id,

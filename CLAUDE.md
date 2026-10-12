@@ -98,8 +98,7 @@ boolean, one decision point — only the mechanism moved.
   Gabon, Ghana, Guinea, Malawi, Mauritania, Morocco, Namibia, Senegal, South Africa, Tunisia,
   Zimbabwe.
 - **Aggregates (7):** World, Africa, Asia, Europe, North America, South America, Oceania.
-- **Years:** 2000–2024. 68 entities × 25 years × 4 vaccines = **6800 rows** (5200 until B-T5's
-  sixteen countries are fetched, in the chart-handoff build).
+- **Years:** 2000–2024. 68 entities × 25 years × 4 vaccines = **6800 rows**.
 - Do not expand scope, add vaccines, or add countries without asking.
 - Note: the data scope is not the *display* scope. Far fewer entities can be shown on one chart at
   once and still be legible — see `docs/visual-spec.md`.
@@ -114,7 +113,7 @@ boolean, one decision point — only the mechanism moved.
 
 **Named exemption (2026-09-15): `data/deploy/coverage.csv` is committed.** A Vercel deployment only
 has what is in git or in the database — a local download does not reach it. This file is a generated
-build artifact (~151 KB, 5200 rows), produced by `scripts/export_deploy_data.py` from the validated
+build artifact (~195 KB, 6800 rows), produced by `scripts/export_deploy_data.py` from the validated
 parquet, never hand-edited. Regenerate it whenever the data is refreshed. Raw downloads and the
 parquet cache stay gitignored as before.
 
@@ -178,6 +177,14 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
   Oxy Drive and out of Neon.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v14 (2026-10-11).** The chart handoff redraws every chart (`visual-spec.md`). T3's dots
+are named and coloured by change, with no legend; T4's cells are banded; T5 colours eighteen
+countries per form, Africa-wide, and its prompt says "in Africa"; line charts lose their legend, so
+a `filter_change` from `legend` can no longer occur (its logging code stays). Keys and options are
+unchanged, but a v13 answer was given against a different chart. Sixteen countries joined the
+scope for B-T5 (6800 rows). No new event, key, table or column, so `init_db.py` needs no re-run.
+Nothing collected, so no migration.
 
 **Schema v13 (2026-10-11).** Each T3 scatter draws sixteen dots, not six, its colours used twice
 and a shape per dot (`study-design.md` §4, `visual-spec.md` §6). Question, key and options
@@ -686,6 +693,43 @@ context cheap and the reports as long as they need to be.
   (with B-T5's sixteen countries fetched, flags vendored, schema v14); 5 keys, tests, all four
   cells in headless Chrome at 1440 × 790 and 1366 × 768, compared with the handoff's screenshots,
   and `irb/questionnaire.pdf` re-exported.
+- 2026-10-11 — **Chart handoff, phase 2: the card and the line chart** (uncommitted at time of
+  writing). Every chart carries the handoff's title and source line, warm axes and gridlines, medium
+  weight (a text shadow in the figure) and fixed margins. Line charts: name tags with leaders, the
+  ringed end dot, colour by country, no legend (`order_legend` gone; the legend's logging code
+  stays). x runs 1999.75-2024.25 so edge dots are not clipped. The line hint and the instructions'
+  line bullet no longer name the legend. 1246 tests. Headless Chrome, A-T1 both conditions and the
+  practice: 21 checks (tags, hover, a chip hides a whole tag, isolation, Show all, zoom keeps the
+  tags and clips the guides, no console errors); plot area measured at 52-846 px as handed off.
+- 2026-10-11 — **Chart handoff, phase 3: the bar chart and the heatmap** (uncommitted at time of
+  writing). Bars: a colour per country (`config.BAR_COLORS`, searched; every pair on each T2 chart
+  clears 12 dE, so no exemption), rounded tops, the order label following the sort. Heatmap: nine
+  blue bands, cells drawn as rounded shapes over a transparent trace that keeps the hover, the
+  stepped key above, years on top, the "A–Z" label following the row sort; a chip fades a row's
+  cells. The blue scale replaces cividis in config. 1254 tests. Headless Chrome, A-T2, A-T4 and B-T4:
+  16 checks (sort moves bars and rows and their labels, hover through the transparent trace, chips
+  fade, static has no hover, no console errors); the line checks re-run clean.
+- 2026-10-11 — **Chart handoff, phase 4: the scatter, the map and B-T5's countries** (uncommitted
+  at time of writing).
+  - Scope +16 countries for B-T5 (61; 6800 rows): built from the existing raw download, the 5200
+    rows before them byte-identical. 16 flags vendored.
+  - T5: 18 countries per form, "in Africa"; keys unchanged (3, 2), all 12 derived keys match §4.
+  - `analysis/keys.py` enforces the two new clauses: T3's key shares its change colour, T4's key
+    cell sits a band below every other row's lowest.
+  - Scatter: named dots on knockouts, colour by change, the stepped key in points; no legend or
+    shapes (`MARKER_SYMBOLS` gone). Map: the whole continent, seven bands, names inside or on
+    leaders (text geo traces, no hover of their own), stepped key without "No data".
+  - Schema v14. 1273 tests.
+  - Headless Chrome: 15 scatter and map checks (names, hover through a label, chips take names,
+    "Below 50" leaves three countries, 18 flags, static has no hover), line and bar/heatmap checks
+    re-run clean. Interactive Submit now at 843 px on the map, 898 on the scatter (non-compact).
+- 2026-10-11 — **Chart handoff, phase 5: verification** (uncommitted at time of writing). Four
+  full sessions, one per counterbalancing cell, at 1440 × 790 and at 1366 × 768 in headless
+  Chrome, through the UI: 96 checks each, no console errors; every T2–T6 answer logged as its
+  derived key, chips, sorts and the map's threshold logged in interactive halves only, one
+  `window_size`, About you once. Every chart compared with the handoff at 2×: fixed the heatmap
+  key (46 px right of centre) and Cameroon's map label (crowding Benin's). Bundle 109.9 MB.
+  `irb/questionnaire.pdf` re-exported (36 pages). 1273 tests.
 - **Still to do before the pilot:**
   - Change request form 5B's "six multiple-choice questions" to five multiple-choice and one
     written description (`study-design.md` §10).

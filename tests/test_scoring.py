@@ -481,6 +481,15 @@ def test_improved_refuses_dots_that_hide_each_other(params):
         keys.derive(_task("improved", "ABC", "ABC", **SCATTER), rows)
 
 
+def test_improved_refuses_a_key_alone_in_its_change_colour(params):
+    """Since 2026-10-11 dots are coloured by change: alone in the darkest blue, the colour would
+    name the answer (study-design.md section 4)."""
+    params[("Z", "T1")] = {}
+    rows = _dots({"A": (34.0, 86.0), "B": (45.0, 80.0), "C": (30.0, 60.0)})
+    with pytest.raises(keys.KeyDerivationError, match="alone in its change colour"):
+        keys.derive(_task("improved", "ABC", "ABC", **SCATTER), rows)
+
+
 # --- T4: the lowest heatmap cell ----------------------------------------------------------------
 
 
@@ -510,6 +519,14 @@ def test_cell_refuses_two_colours_under_ten_points_apart(params):
     params[("Z", "T1")] = {}
     rows = _grid({"A": [40, 26, 45, 50, 60, 70], "B": [29, 50, 60, 70, 80, 90], "C": [80] * 6})
     with pytest.raises(keys.KeyDerivationError, match="cannot be told apart"):
+        keys.derive(_task("cell", "ABC", "ABC", **HEATMAP), rows)
+
+
+def test_cell_refuses_two_lowest_cells_in_one_band(params):
+    """10 points apart but both in the heatmap's 0-20 band: the same colour (2026-10-11)."""
+    params[("Z", "T1")] = {}
+    rows = _grid({"A": [40, 5, 45, 50, 60, 70], "B": [15, 50, 60, 70, 80, 90], "C": [80] * 6})
+    with pytest.raises(keys.KeyDerivationError, match="same band"):
         keys.derive(_task("cell", "ABC", "ABC", **HEATMAP), rows)
 
 

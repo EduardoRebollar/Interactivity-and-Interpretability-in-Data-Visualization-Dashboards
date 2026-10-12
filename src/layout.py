@@ -151,7 +151,7 @@ def latest_values(entities: list[str], vaccine: str) -> dict[str, float | None]:
 
 
 def sorted_entities(entities: list[str], vaccine: str, sort_key: str) -> list[str]:
-    """The line chart's chip and legend order. `listed` is the task's own order; `coverage` is
+    """The line chart's chip order. `listed` is the task's own order; `coverage` is
     highest-latest first, an entity with nothing reported last."""
     if sort_key not in ("listed", "coverage"):
         raise ValueError(f"Unknown line sort {sort_key!r}; expected listed or coverage")
@@ -172,13 +172,13 @@ SORTS = {
     ),
 }
 
-# The hint under each interactive chart, verbatim from the handoff's HINT.
+# The hint under each interactive chart, from the handoff's HINT. The line chart's named its legend,
+# which went with the chart handoff (2026-10-11); it names a click on a line instead.
 HINTS = {
-    "line": (
-        "Click a legend entry to hide or show a country; double-click to show only that country."
-    ),
+    "line": "Click a line to show only that country; click it again to bring the others back.",
     "bar": "Hover a bar to read its value.",
-    "scatter": "Hover a dot to see which country it is and its values.",
+    # The dots are named on the chart since the chart handoff (2026-10-11).
+    "scatter": "Hover a dot to read its two values.",
     "heatmap": "Hover a cell to read its value.",
     "map": "Countries not below the threshold turn grey. Hover a country to read its value.",
 }
@@ -1131,9 +1131,8 @@ INTERACTIVE_BULLETS = (
     "its value; on a line chart you also see its change from the year before.",
     "Under each chart, the country buttons show or hide countries, and Reset view undoes your "
     "changes.",
-    "On line charts you can also click a line, or double-click a name in the legend, to see one "
-    "country on its own; reorder the countries by coverage; and bring every line back with Show "
-    "all.",
+    "On line charts you can also click a line to see one country on its own; reorder the "
+    "countries by coverage; and bring every line back with Show all.",
     "The bar chart and the coloured grid can sort their bars or rows. The map can highlight only "
     "the countries below a coverage you type.",
 )

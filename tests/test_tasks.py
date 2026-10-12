@@ -177,7 +177,9 @@ def test_every_task_builds_a_figure(task):
     """Catch an unchartable task here rather than in front of a participant."""
     figure = figures.task_figure(task)
     one_trace_per_entity = task.chart in ("line", "scatter")
-    assert len(figure.data) == (len(task.entities) if one_trace_per_entity else 1)
+    # The map's names are text traces beside the one choropleth (visual-spec.md section 1).
+    marks = [t for t in figure.data if not (t.name or "").startswith("label:")]
+    assert len(marks) == (len(task.entities) if one_trace_per_entity else 1)
 
 
 @pytest.mark.parametrize("task", _all_tasks(), ids=lambda t: f"{t.form}-{t.task_id}")

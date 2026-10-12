@@ -60,6 +60,14 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v14 (2026-10-11): the chart handoff restyles every chart (docs/visual-spec.md). T3's dots are
+# named and coloured by change, with no legend; T4's cells are banded; T5 colours eighteen countries
+# per form, Africa-wide, and its prompt says "in Africa"; line charts lose their legend, so a
+# `filter_change` from `legend` can no longer occur. Keys and options are unchanged, but a v13
+# answer was given against a different chart, and a v13 T5 against a different question. The
+# record shape is unchanged: no new event, key or table, so no init_db.py re-run. Nothing has been
+# collected, so no migration.
+#
 # v13 (2026-10-11): each T3 scatter gains ten dots, sixteen in place of six, with colours repeating
 # and a shape per dot (docs/study-design.md section 4, visual-spec.md section 6). The question, key
 # and options are unchanged, but a v12 T3 answer was given against a different chart. The record
@@ -126,7 +134,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

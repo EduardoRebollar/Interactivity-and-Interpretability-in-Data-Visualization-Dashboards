@@ -236,8 +236,7 @@ INTERACTIVE_NOTES = {
     "line": (
         "The interactive version adds the controls under it: a button for each country, which "
         "hides or shows its line; a View control, which lists the countries by coverage; Show "
-        "all; and Reset view. Clicking a line shows it alone. Clicking a name in the legend hides "
-        "or shows that line, and double-clicking shows it alone. Hovering a point shows its value "
+        "all; and Reset view. Clicking a line shows it alone. Hovering a point shows its value "
         "and the change from the year before."
     ),
     "bar": (
@@ -443,8 +442,8 @@ by two questions comparing the versions;</li>
 <p>Every question may be skipped. Each half asks about five kinds of chart: line charts, a bar
 chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;
 the interactive one adds hover tooltips to every chart and controls under each one: a button per
-country that hides or shows it, and Reset view; on the line charts a clickable legend, reordering,
-Show all and isolating a line; sorting on the bar chart and the grid; and a highlight on the map.
+country that hides or shows it, and Reset view; on the line charts reordering, Show all and
+isolating a line; sorting on the bar chart and the grid; and a highlight on the map.
 Each participant answers form A with one version and form B with the other, in one of four
 counterbalanced orders.</p>
 <p class="q-note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the

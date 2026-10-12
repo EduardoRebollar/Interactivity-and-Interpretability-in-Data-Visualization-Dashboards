@@ -51,7 +51,14 @@ Every chart is one 1050 × 520 figure holding its own title and source line (§5
 joins and caps, and a dot of radius 2.6 px in the line's colour at every observed year. Markers are
 not decoration: after a gap, a lone observation with no neighbours draws no line segment at all, and
 without a marker it would silently vanish. A line's last point is a 4.6 px dot with a 2 px white
-ring, joined to its name tag (§6). Vertical guides at 2005, 2010, 2015 and 2020. No legend (§6).
+ring, joined to its name tag (§6). Vertical guides at 2005, 2010, 2015 and 2020, drawn as
+shapes on the axes so a zoom clips them to the plot. No legend (§6).
+
+**One departure from the handoff: the x axis runs from 1999.75 to 2024.25**, where the handoff puts
+2000 on the y axis and 2024 at the plot's right edge. Plotly clips markers at the plot's edge, so
+the first dot and the ringed end dot would be cut in half; a quarter year (8 px) holds them. A
+marker drawn unclipped would spill into the margins as soon as the participant zoomed. Reset axis
+restores 1999.75–2024.25 (§7.5).
 
 **Bar.** Vertical bars, one per country, each in its country's colour (§4) and named under it. Tops
 rounded 6 px (`marker.cornerradius`), the base square; a bar is 62% of its slot, at most 64 px wide.
@@ -79,7 +86,9 @@ by default, and B-T3's Oman sits at 99, 99.
 takes the same width as the other five-year steps. Cells 130 px wide and 46.75 px tall, with 4 px
 white gaps and 4 px rounded corners, so two adjacent cells of one band stay two cells. Plotly cannot
 round a heatmap's cells, so the cells are drawn as shapes, and the heatmap trace beneath them,
-drawn without fill, carries the hover. **No number is written in a cell**: that would give the
+fully transparent, carries the hover. Its tooltips are white with ink text, edged in the cell's
+band (a transparent trace would give Plotly's default grey, and no one text colour reaches 4.5:1 on
+every band: white and ink are both about 4.1:1 on 50–60). **No number is written in a cell**: that would give the
 static condition the exact value (§7). A cell with no value is `#EEE8E2` and reads "No data" (§3).
 Row names right-aligned 12 px left of the grid, years 9 px above it, and "A–Z" over the row names
 naming the row order (§7.2). The key is centred above the grid (§4).
@@ -87,8 +96,8 @@ naming the row order (§7.2). The key is centred above the grid (§4).
 **Map.** A choropleth on Plotly's Africa scope (Mercator) at 110m resolution, framed on the whole
 continent, Madagascar included (2026-10-11, the handoff's `africa map.png`; it was cropped at
 26°N). The countries an item names are coloured in seven bands (§4) and **named on the map**, 10 px
-bold: inside the country where the name fits, in white on the three darkest bands and in ink on the
-rest, and otherwise beside it, on a 1 px ink leader from a 2 px dot. "Central African Republic" is
+bold: inside the country where the name fits, in white on the four darkest bands and in ink on the
+rest (whichever reads better, as the handoff picks), and otherwise beside it, on a 1 px ink leader from a 2 px dot. "Central African Republic" is
 written "CAR" and "Democratic Republic of Congo" "DR Congo". Each form sets its own placements.
 Every other country is plain land (§4). The handoff's key carries a "No data" block for that land;
 this one does not, because those countries do report coverage and are only outside the question,
@@ -224,11 +233,26 @@ Colombia, Egypt, Mali, Mozambique and the United States.
   (above). Its Vietnam is 3.5 from Brazil's blue on the same chart, and its Mali is 6.0 from
   Indonesia's dark red on B-T2.
 - **No exemption is needed.** A search over sRGB found ten-colour sets for both charts with every
-  pair at least 12.2 ΔE apart. The luminance gap is not held: with ten colours, A-T2 has no room for
-  it between 3:1 and the darkest series colour. Colours must be saturated (C* at least 30), so no bar
-  reads as grey, the colour of land with no question attached.
-- **The colours themselves are chosen when the bar chart is built**, by that search and from a
-  rendered chart Eduardo reviews, and are recorded here then.
+  pair at least 12.2 ΔE apart on A-T2 and 12.6 on B-T2. The luminance gap is not held: with ten
+  colours, A-T2 has no room for it between 3:1 and the darkest series colour. Saturation (C*) is held
+  between 30 and 70, so no bar reads as grey, the colour of land with no question attached, or as
+  neon. Contrast is held between 3:1 and 10:1. Where the handoff gave a colour, the search took the
+  nearest that passes; the rest are the furthest from every other bar on their chart.
+
+| Country | Hex | Ratio | Chart | Handoff's |
+|---|---|---|---|---|
+| Afghanistan | `#705000` | 7.40:1 | A | `#B07A00` |
+| Kenya | `#0098E8` | 3.15:1 | A | `#2C8DBF` |
+| Mali | `#108078` | 4.79:1 | A, B | `#7A5C00` |
+| Vietnam | `#683860` | 9.04:1 | A | `#5E5E9E` |
+| Cambodia | `#A080F8` | 3.03:1 | B | |
+| Cameroon | `#C06000` | 4.27:1 | B | |
+| Colombia | `#703040` | 9.61:1 | B | |
+| Egypt | `#1070A8` | 5.38:1 | B | |
+| Mozambique | `#30A0A8` | 3.13:1 | B | |
+| United States | `#A84848` | 5.70:1 | B | |
+
+  They are `config.BAR_COLORS`, and `tests/test_palette.py` holds each T2 chart to the floors.
 
 The name under each bar identifies it (§6), so colour is never the only channel there either.
 
@@ -388,8 +412,16 @@ point is 4 px, which the acceptance rule's floors rest on (`docs/study-design.md
 
 **Medium weight.** Axis numbers and names are drawn at weight 500. Helvetica and Arial have no 500
 on most participants' computers, so the browser would draw them regular. The handoff draws the
-weight as a 0.45 px stroke in the text's own colour, and the app does the same, with a rule in
-`src/assets/` on the chart's text. It applies in both conditions.
+weight as a 0.45 px stroke in the text's own colour; the app draws the same as a text shadow a
+quarter of that each way (`figures.medium`), set in the figure's fonts, so both conditions carry
+it by construction.
+
+**Tabular numerals** come from one rule in `src/assets/zz-overrides.css` on the chart's SVG text:
+Plotly's fonts have no setting for them. Both conditions load the stylesheet.
+
+**Margins are fixed, not grown.** Plotly widens a margin to fit its tick labels unless told not to,
+which moved the line plot 5 px off the handoff's place (measured in Chrome); every figure turns
+that off.
 
 **The chart's size is reserved from the moment a task screen appears (2026-09-16), in both
 conditions.** Plotly is loaded on demand, the first time a chart is drawn in a session. Until it
@@ -462,6 +494,9 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | Heatmap | image | Sort rows: Default, Lowest value, Average |
 | Map | image | Highlight: fade every country not below a typed percentage |
 | Every chart | none | a hint row saying what the chart can do, and Reset view |
+
+The line chart's hint named its legend; since 2026-10-11 it reads "Click a line to show only that
+country; click it again to bring the others back."
 
 Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition hoverable
 and zoomable and the manipulation would be invalid. `staticPlot: True` is what makes "static"
@@ -595,10 +630,10 @@ static condition shows no modebar at all.
   reading; the pilot should look for them. The Zoom and Pan mode buttons are gone.
 - **Zoomed in, a sideways swipe moves the line chart's x axis** (2026-09-27): a touchpad's
   two-finger swipe, a tilt wheel, or Shift with the wheel, in the direction the participant's
-  system scrolls (`assets/chart_pan.js`). It moves only within the chart's own view (1999.5–2024.5)
+  system scrolls (`assets/chart_pan.js`). It moves only within the chart's own view (1999.75–2024.25 since 2026-10-11)
   and does nothing when not zoomed in; over the plot it never scrolls the page or triggers the
   browser's swipe back. Each swipe is one `view_change`, logged once it pauses, like a wheel zoom. Reset axis is Plotly's "Reset axes", retitled
-  in `graph_config` because only the x axis moves; it restores 1999.5–2024.5. Autoscale is removed:
+  in `graph_config` because only the x axis moves; it restores 1999.75–2024.25. Autoscale is removed:
   after a zoom it fits the axis to everything drawn, end labels included, and lands on 1998.4–2027.0
   (measured in Chrome), which is not the chart's own view.
 - **Zoomed in, the name tags and leaders stay where they are** (2026-10-11): they are drawn in paper
@@ -722,11 +757,22 @@ strip and the hint row under the chart (§7).
   scatter's by 42 px, the map's by 30–66), so a participant scrolls to Submit there. The question
   wraps under the position label, and the map's chips take three rows. The static condition fits
   everywhere. **Since 2026-10-11 the scatter's sixteen chips take four rows, not two**, and its
-  interactive card ends 72 px lower: Submit's bottom edge sits at 862 px, so the card scrolls on
-  any window under 862 px tall, 1440 × 790 included, where with six chips it ended at exactly
-  790 (measured in headless Chrome, both forms, against the committed six-dot version). **The map
-  chips go from 13 (A) and 11 (B) to 18 in each form (2026-10-11, `study-design.md` §4)**, so the
-  interactive map card grows too; its height is measured when the map is rebuilt, and recorded here.
+  interactive card ends 72 px lower: Submit's bottom edge sits at 862 px in compact mode, where
+  with six chips it ended at exactly 790 (measured in headless Chrome, both forms, against the
+  committed six-dot version). **The map's chips went from 13 (A) and 11 (B) to 18 in each form
+  (2026-10-11, `study-design.md` §4).** Measured in headless Chrome after the chart handoff, both
+  forms alike, Submit's bottom edge:
+
+  | Window | Scatter, interactive | Map, interactive | Scatter, static | Map, static |
+  |---|---|---|---|---|
+  | 1440 × 790 (compact) | 862 | 807 | 658 | 603 |
+  | 1366 × 768 (compact) | 862 | 836 | 674 | 648 |
+  | 1440 × 801 or taller | 898 | 843 | 690 | 635 |
+
+  So the interactive scatter card scrolls on any window under 898 px tall (862 in compact mode),
+  and the map card on any under 843 px (807–836 in compact mode, by width). The record before
+  2026-10-11 gave the scatter's split as 862 px for every window; outside compact mode it was
+  already 898. The static cards fit everywhere.
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

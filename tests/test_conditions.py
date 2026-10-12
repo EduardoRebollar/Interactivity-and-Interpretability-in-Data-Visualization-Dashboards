@@ -204,29 +204,19 @@ def test_the_change_label_is_in_both_conditions_figures(rows):
 
 
 def test_hiding_a_series_leaves_the_others_their_colour(rows):
-    """Rebuilding from a shorter list would recolour the survivors mid-task."""
+    """Colour goes by country, so a hidden line changes no other line's colour."""
     figure = figures.build_figure(["Nigeria", "India", "Brazil", "World"], VACCINE, rows)
     before = {trace.name: trace.line.color for trace in figure.data}
-
     figures.set_visible(figure, ["India", "Brazil", "World"])
-    after = {trace.name: trace.line.color for trace in figure.data}
-    assert after == before, "colour is assigned by position and must not shift when filtering"
+    assert {trace.name: trace.line.color for trace in figure.data} == before
 
 
 def test_hidden_series_are_legend_only_and_visible_ones_are_not(rows):
-    """Hidden, not removed from the legend: its greyed entry is how a click brings it back."""
+    """Hidden, not removed: the trace stays, so `curveNumber` still indexes the task's entities."""
     figure = figures.build_figure(["Nigeria", "India", "World"], VACCINE, rows)
     figures.set_visible(figure, ["India", "World"])
     by_name = {trace.name: trace.visible for trace in figure.data}
     assert by_name == {"Nigeria": "legendonly", "India": True, "World": True}
-
-
-def test_hiding_a_series_also_removes_its_end_label(rows):
-    """A label with no line under it would float over the chart naming nothing."""
-    figure = figures.build_figure(["Nigeria", "India", "World"], VACCINE, rows)
-    figures.set_visible(figure, ["India", "World"])
-    labelled = {annotation.text for annotation in figure.layout.annotations}
-    assert labelled == {"India", "World"}
 
 
 def test_showing_an_entity_that_is_not_on_the_figure_is_refused(rows):
@@ -260,10 +250,40 @@ def test_uk_hepb3_gap_survives_into_the_figure(rows):
     assert 0.0 not in [v for v in y_values if v is not None]
 
 
-def test_series_use_the_verified_palette(rows):
+def test_series_take_their_countrys_colour(rows):
+    """visual-spec.md section 4: Form A's T1 countries own a colour each, wherever they appear."""
     figure = figures.build_figure(["Nigeria", "India", "Brazil"], VACCINE, rows)
-    used = [trace.line.color for trace in figure.data]
-    assert used == config.SERIES_COLORS[:3]
+    used = {trace.name: trace.line.color for trace in figure.data}
+    assert used == {name: config.COUNTRY_COLORS[name] for name in used}
+
+
+@pytest.mark.parametrize(
+    ("entities", "expected"),
+    [
+        # A-T6 and B-T6: the country without a colour of its own takes the first one free.
+        (["Central African Republic", "Ethiopia"], {"Central African Republic": 0, "Ethiopia": 2}),
+        (["Mozambique", "Pakistan"], {"Mozambique": 0, "Pakistan": 6}),
+        # B-T1: Nepal and Uganda take the two colours its six owners leave.
+        (
+            ["Brazil", "China", "Ethiopia", "Indonesia", "Nepal", "Nigeria", "Pakistan", "Uganda"],
+            {"Nepal": 3, "Uganda": 7},
+        ),
+        (["Myanmar", "World"], {"Myanmar": 0}),
+    ],
+)
+def test_a_country_without_a_colour_takes_the_first_one_free(entities, expected):
+    colors = figures.series_colors(entities)
+    for name, index in expected.items():
+        assert colors[name] == config.SERIES_COLORS[index]
+    countries = [colors[e] for e in entities if e != figures.REFERENCE]
+    assert len(set(countries)) == len(countries)
+
+
+def test_every_task_line_chart_keeps_its_colours_apart():
+    for task in ALL_TASKS:
+        if task.chart == "line":
+            colors = figures.series_colors(list(task.entities))
+            assert len(set(colors.values())) == len(colors), task
 
 
 def test_world_is_the_dashed_black_reference(rows):
@@ -271,47 +291,153 @@ def test_world_is_the_dashed_black_reference(rows):
     world = [t for t in figure.data if t.name == "World"][0]
     assert world.line.color == config.REFERENCE_COLOR
     assert world.line.dash == config.REFERENCE_DASH
-    # World must not consume a palette slot meant for a country.
     nigeria = [t for t in figure.data if t.name == "Nigeria"][0]
-    assert nigeria.line.color == config.SERIES_COLORS[0]
+    assert nigeria.line.color == config.COUNTRY_COLORS["Nigeria"]
 
 
-def test_every_series_is_labelled_directly(rows):
+def _tag_parts(figure, entity):
+    name = f"{figures.TAG}{entity}"
+    shapes = [s for s in figure.layout.shapes if s.name == name]
+    annotations = [a for a in figure.layout.annotations if a.name == name]
+    return shapes, annotations
+
+
+def test_hiding_a_series_also_removes_its_name_tag(rows):
+    """A tag with no line under it would name nothing. Leader, pill, dot and name all go; the other
+    tags stay exactly where they were, and so does everything that names no line."""
+    figure = figures.build_figure(["Nigeria", "India", "World"], VACCINE, rows)
+    centres = figures.tag_centres(figure)
+    others = [s for s in figure.layout.shapes if not (s.name or "").startswith(figures.TAG)]
+    figures.set_visible(figure, ["India", "World"])
+    assert _tag_parts(figure, "Nigeria") == ([], [])
+    shapes, annotations = _tag_parts(figure, "India")
+    assert len(shapes) == 3 and len(annotations) == 1
+    assert figures.tag_centres(figure) == {k: v for k, v in centres.items() if k != "Nigeria"}
+    kept = [s for s in figure.layout.shapes if not (s.name or "").startswith(figures.TAG)]
+    assert kept == others
+    names = {a.name for a in figure.layout.annotations}
+    assert {"title", "source", "axis-title"} <= names
+
+
+def test_every_series_is_named_by_a_tag(rows):
     """Colour must never be the only channel identifying a line."""
     figure = figures.build_figure(ENTITIES, VACCINE, rows)
-    labelled = {a.text for a in figure.layout.annotations}
-    assert labelled == set(ENTITIES)
+    assert set(figures.tag_centres(figure)) == set(ENTITIES)
+    for entity in ENTITIES:
+        shapes, (annotation,) = _tag_parts(figure, entity)
+        assert annotation.text == figures.tag_name(entity)
+        assert len(shapes) == 3
 
 
-def _label_heights(figure) -> list[float]:
-    return sorted(figures.label_height(annotation) for annotation in figure.layout.annotations)
+def test_the_central_african_republic_is_shortened_on_its_tag():
+    assert figures.tag_name("Central African Republic") == "Central African Rep."
+    assert figures.tag_name("Ethiopia") == "Ethiopia"
 
 
 LINE_TASKS = [task for task in ALL_TASKS if task.chart == "line"]
 
 
 @pytest.mark.parametrize("task", LINE_TASKS, ids=_task_id)
-def test_end_labels_never_overlap_on_any_task_chart(rows, task):
-    """visual-spec.md section 6. Before 2026-09-22, labels collided on 9 of the 13 charts, leaving
-    colour as the only channel. A-T1 now has eight countries ending between 67 and 97."""
+def test_name_tags_never_overlap_on_any_task_chart(rows, task):
+    """visual-spec.md section 6: centres 23 px apart at least, between 10 px above the plot's top
+    and 4 px above its bottom, in the order of the lines' last reported values."""
     figure = figures.build_figure(list(task.entities), task.vaccine, rows)
-    heights = _label_heights(figure)
-    gaps = [upper - lower for lower, upper in zip(heights, heights[1:], strict=False)]
-    assert min(gaps, default=config.LABEL_MIN_GAP) >= config.LABEL_MIN_GAP - 1e-9
-    for annotation in figure.layout.annotations:
+    centres = figures.tag_centres(figure)
+    heights = sorted(centres.values())
+    gaps = [b - a for a, b in zip(heights, heights[1:], strict=False)]
+    assert min(gaps, default=config.TAG_GAP) >= config.TAG_GAP - 1e-3
+    margin = figure.layout.margin
+    assert margin.t - 10 - 1e-3 <= heights[0]
+    assert heights[-1] <= figure.layout.height - margin.b - 4 + 1e-3
+    last = {}
+    for entity in task.entities:
         reported = [
-            r
-            for r in runtime_data.series(annotation.text, task.vaccine, rows)
-            if r.coverage_pct is not None
+            r for r in runtime_data.series(entity, task.vaccine, rows) if r.coverage_pct is not None
         ]
-        # Spread, not relocated: a label stays close enough to its line to read as its label.
-        assert abs(figures.label_height(annotation) - reported[-1].coverage_pct) <= 6.0, (
-            annotation.text
-        )
-        assert annotation.x == reported[-1].year
-    # Labels may rise into the top margin by LABEL_HEADROOM, never above it or below the axis.
-    assert config.Y_RANGE[0] <= heights[0]
-    assert heights[-1] <= config.Y_RANGE[1] + config.LABEL_HEADROOM
+        last[entity] = reported[-1].coverage_pct
+    by_height = sorted(centres, key=lambda e: centres[e])
+    values = [last[e] for e in by_height]
+    assert values == sorted(values, reverse=True), "tags keep their lines' order"
+
+
+@pytest.mark.parametrize("task", LINE_TASKS, ids=_task_id)
+def test_every_tag_is_placed_where_plotly_will_draw_it(rows, task):
+    """Plotly skips an annotation whose data coordinate is off its axis (A-T1's China label,
+    2026-09-23), so everything a tag draws is in paper coordinates."""
+    figure = figures.build_figure(list(task.entities), task.vaccine, rows)
+    for item in [*figure.layout.annotations, *figure.layout.shapes]:
+        if (item.name or "").startswith(figures.TAG):
+            assert (item.xref, item.yref) == ("paper", "paper"), item.name
+
+
+def test_a_leader_starts_at_its_line_end_and_ends_at_its_tag(rows):
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    margin = figure.layout.margin.to_plotly_json()
+    centres = figures.tag_centres(figure)
+    for entity in ENTITIES:
+        reported = [
+            r for r in runtime_data.series(entity, VACCINE, rows) if r.coverage_pct is not None
+        ]
+        leader = _tag_parts(figure, entity)[0][0]
+        x = figures._paper(margin, x=figures._x_px(reported[-1].year) + 6)
+        y = figures._paper(margin, y=figures._y_px(reported[-1].coverage_pct))
+        assert leader.path.split()[0] == f"M{x},{y}"
+        tag_x = figures._paper(margin, x=config.TAG_X)
+        assert leader.path.split()[-1] == f"{tag_x},{figures._paper(margin, y=centres[entity])}"
+
+
+def test_each_line_ends_in_a_ringed_dot(rows):
+    figure = figures.build_figure(["United Kingdom"], "HepB3", rows)
+    (trace,) = figure.data
+    last = max(i for i, v in enumerate(trace.y) if v is not None)
+    for i, (size, ring) in enumerate(zip(trace.marker.size, trace.marker.line.width, strict=True)):
+        if i == last:
+            assert (size, ring) == (config.END_DOT_SIZE, config.END_DOT_RING)
+        else:
+            assert (size, ring) == (config.MARKER_SIZE, 0)
+    assert trace.marker.line.color == config.BACKGROUND
+
+
+def test_a_line_chart_has_no_legend(rows):
+    """visual-spec.md section 6 (2026-10-11): the name tags and the chips do the legend's work."""
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    assert figure.layout.showlegend is False
+
+
+def test_the_line_plot_keeps_4_px_a_point_and_794_px_across(rows):
+    """visual-spec.md section 5: the acceptance rule's floors rest on 4 px a coverage point."""
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    margin = figure.layout.margin
+    assert (margin.t, margin.b, margin.l, margin.r) == (68, 52, 52, 204)
+    assert (figure.layout.height - margin.t - margin.b) / 100 == 4
+    assert figure.layout.width - margin.l - margin.r == 794
+    # Plotly would widen a margin to fit tick labels and move the plot off the handoff's place.
+    assert figure.layout.xaxis.automargin is False and figure.layout.yaxis.automargin is False
+
+
+def test_the_line_x_axis_pads_a_quarter_year_and_guides_stand_at_2005_to_2020(rows):
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    assert list(figure.layout.xaxis.range) == [1999.75, 2024.25]
+    assert list(figure.layout.xaxis.tickvals) == [2000, 2005, 2010, 2015, 2020]
+    assert figure.layout.xaxis.showgrid is False
+    guides = [s.x0 for s in figure.layout.shapes if s.name == "guide"]
+    assert guides == [2005, 2010, 2015, 2020]
+
+
+@pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
+def test_every_chart_carries_its_title_and_the_source_line(rows, task):
+    """visual-spec.md section 5: drawn in the figure, so both conditions have them."""
+    figure = figures.task_figure(task, rows)
+    by_name = {a.name: a for a in figure.layout.annotations if a.name in ("title", "source")}
+    assert by_name["source"].text == config.SOURCE_TEXT
+    assert by_name["title"].text.startswith(f"{task.vaccine} coverage, ")
+    assert by_name["title"].font.weight == 700
+
+
+def test_axis_text_is_drawn_at_medium_weight(rows):
+    figure = figures.build_figure(ENTITIES, VACCINE, rows)
+    assert figure.layout.yaxis.tickfont.shadow == figures.medium(config.AXIS_COLOR)
+    assert figure.layout.yaxis.ticksuffix == "%"
 
 
 def test_spreading_leaves_well_separated_labels_where_they_are():
@@ -332,42 +458,11 @@ def test_spreading_refuses_more_labels_than_fit():
         figures.spread_labels([50.0] * 30, 0, 100, 4.5)
 
 
-def test_a_line_chart_has_a_legend_beyond_its_end_labels_and_none_for_world(rows):
-    """The legend is a control in the interactive condition; the end labels stay, for the static
-    reader. World cannot be hidden, so it has no entry (visual-spec.md section 6)."""
-    figure = figures.build_figure(ENTITIES, VACCINE, rows)
-    assert figure.layout.showlegend is True
-    assert figure.layout.legend.x > 1 and figure.layout.legend.xanchor == "left"
-    assert figure.layout.legend.itemclick == "toggle"
-    assert figure.layout.legend.itemdoubleclick == "toggleothers"
-    entries = {trace.name for trace in figure.data if trace.showlegend is not False}
-    assert entries == set(ENTITIES) - {"World"}
-    assert {annotation.text for annotation in figure.layout.annotations} == set(ENTITIES)
-
-
-def test_the_line_plot_keeps_4_px_a_point_and_640_px_across(rows):
-    """visual-spec.md section 5: the acceptance rule's floors rest on 4 px a coverage point."""
-    figure = figures.build_figure(ENTITIES, VACCINE, rows)
-    margin = figure.layout.margin
-    assert (figure.layout.height - margin.t - margin.b) / 100 == 4
-    assert figure.layout.width - margin.l - margin.r == 640
-
-
 @pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
 def test_every_chart_is_fixed_at_1050_by_520(rows, task):
     figure = figures.task_figure(task, rows)
     assert (figure.layout.width, figure.layout.height) == (1050, 520)
     assert figure.layout.autosize is False
-
-
-def test_the_legend_order_follows_the_view_and_moves_no_line(rows):
-    figure = figures.build_figure(ENTITIES, VACCINE, rows)
-    before = [trace.to_plotly_json() for trace in figure.data]
-    figures.order_legend(figure, ["Brazil", "India", "Nigeria"])
-    ranks = {trace.name: trace.legendrank for trace in figure.data}
-    assert ranks == {"Nigeria": 3, "India": 2, "Brazil": 1, "World": None}
-    figures.order_legend(figure, None)
-    assert [trace.to_plotly_json() for trace in figure.data] == before
 
 
 @pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
@@ -441,17 +536,48 @@ def _chart(chart_type, rows):
 def test_every_chart_type_carries_its_hover_text_in_both_conditions(rows, chart_type):
     """Hover is interactive-only because staticPlot suppresses it, not because figures differ."""
     for trace in _chart(chart_type, rows).data:
+        if (trace.name or "").startswith("label:"):
+            assert trace.hoverinfo == "skip", "a map name is not a mark: no hover of its own"
+            continue
         assert trace.hovertemplate and trace.hovertemplate.endswith("<extra></extra>")
 
 
-def test_bars_share_one_colour_and_open_in_the_listed_order(rows):
+def test_each_bar_is_its_countrys_colour_and_opens_in_the_listed_order(rows):
+    """visual-spec.md sections 1 and 4: a colour per bar, rounded tops, 62% of a slot."""
     task = TASK_BY_CHART["bar"]
     figure = _chart("bar", rows)
     (bars,) = figure.data
-    assert bars.marker.color == config.BAR_COLOR
+    assert list(bars.marker.color) == [figures.bar_color(e) for e in task.entities]
+    for entity in task.entities:
+        expected = config.COUNTRY_COLORS.get(entity) or config.BAR_COLORS[entity]
+        assert figures.bar_color(entity) == expected
+    assert bars.marker.cornerradius == 6
+    assert bars.width == pytest.approx(0.62)
     assert list(figure.layout.xaxis.categoryarray) == list(task.entities)
     assert list(figure.layout.yaxis.range) == list(config.Y_RANGE)
     assert figure.layout.yaxis.fixedrange is True
+    assert not bars.text and not bars.texttemplate, "no value on a bar"
+
+
+def test_a_bar_country_without_a_colour_is_refused(rows):
+    with pytest.raises(FigureError, match="no bar colour"):
+        figures.build_figure(["United Kingdom"], VACCINE, rows, chart_type="bar", years=(2010,))
+
+
+def _order_label(figure):
+    (label,) = [a for a in figure.layout.annotations if a.name == figures.ORDER_LABEL]
+    return label.text
+
+
+def test_the_bar_order_label_follows_the_sort(rows):
+    figure = _chart("bar", rows)
+    assert _order_label(figure) == "Countries in alphabetical order"
+    figures.sort_bars(figure, "desc")
+    assert _order_label(figure) == "Countries by coverage, highest first"
+    figures.sort_bars(figure, "asc")
+    assert _order_label(figure) == "Countries by coverage, lowest first"
+    figures.sort_bars(figure, "alpha")
+    assert figure.to_plotly_json() == _chart("bar", rows).to_plotly_json()
 
 
 def test_sorting_bars_moves_them_and_changes_nothing_else(rows):
@@ -502,47 +628,69 @@ def test_a_hidden_bar_fades_in_place(rows):
     assert figure.data[0].marker.opacity is None, "nothing hidden is the figure as first drawn"
 
 
-def test_scatter_dots_differ_in_colour_and_in_shape(rows):
-    """Colour is never the only channel (visual-spec.md section 6), and the scatter has no line
-    ends to label, so every dot has its own shape. Past eight dots the colours repeat in order."""
-    figure = _chart("scatter", rows)
-    colours = [trace.marker.color for trace in figure.data]
-    shapes = [trace.marker.symbol for trace in figure.data]
-    palette = config.SERIES_COLORS
-    assert colours == [palette[index % len(palette)] for index in range(len(colours))]
-    assert shapes == config.MARKER_SYMBOLS[: len(shapes)]
-    assert len(set(shapes)) == len(shapes)
+SCATTERS = [t for t in (*tasks.FORM_A, *tasks.FORM_B) if t.chart == "scatter"]
 
 
-@pytest.mark.parametrize(
-    "task", [t for t in (*tasks.FORM_A, *tasks.FORM_B) if t.chart == "scatter"], ids=_task_id
-)
-def test_every_scatter_dot_has_a_colour_and_shape_no_other_dot_has(rows, task):
-    """T3 draws sixteen dots on eight colours (2026-10-11): no pair may be the same mark, and the
-    two dots of one colour must have different shapes, since shape alone tells them apart."""
+@pytest.mark.parametrize("task", SCATTERS, ids=_task_id)
+def test_every_scatter_dot_is_named_and_coloured_by_its_change(rows, task):
+    """visual-spec.md sections 1 and 4 (the chart handoff): a name beside every dot, on a knockout,
+    and the dot coloured by its change in seven steps. No legend and no shapes."""
     figure = figures.build_figure(
         list(task.entities), task.vaccine, rows, chart_type="scatter", years=task.years
     )
-    marks = [(trace.marker.color, trace.marker.symbol) for trace in figure.data]
-    assert len(marks) == 16
-    assert len(set(marks)) == len(marks)
-    assert len({symbol for _, symbol in marks}) == len(marks)
-    assert {colour for colour, _ in marks} == set(config.SERIES_COLORS)
+    assert figure.layout.showlegend is False
+    for trace in figure.data:
+        (x,), (y,) = trace.x, trace.y
+        assert trace.marker.color == figures.change_color(y - x)
+        assert trace.marker.size == config.SCATTER_MARKER_SIZE
+        assert trace.marker.symbol is None
+        name = f"dot:{trace.name}"
+        (label,) = [a for a in figure.layout.annotations if a.name == name]
+        assert label.text == figures.tag_name(trace.name)
+        (knockout,) = [s for s in figure.layout.shapes if s.name == name]
+        assert knockout.fillcolor == config.BACKGROUND and knockout.layer == "between"
+
+
+@pytest.mark.parametrize(
+    ("change", "step"),
+    [
+        (52, 0),
+        (40.5, 0),
+        (40, 1),
+        (20, 2),
+        (5.5, 2),
+        (5, 3),
+        (0, 3),
+        (-5, 3),
+        (-5.5, 4),
+        (-20, 4),
+        (-21, 5),
+        (-40, 5),
+        (-41, 6),
+    ],
+)
+def test_a_change_on_a_boundary_takes_the_step_nearer_zero(change, step):
+    assert figures.change_color(change) == config.CHANGE_STEPS[step][1]
+
+
+@pytest.mark.parametrize("task", SCATTERS, ids=_task_id)
+def test_the_key_never_stands_alone_in_its_change_colour(rows, task):
+    """study-design.md section 4 (2026-10-11): the colour alone never names T3's answer. A-T3's
+    Niger shares the darkest blue with two dots, B-T3's India its step with three."""
+    figure = figures.build_figure(
+        list(task.entities), task.vaccine, rows, chart_type="scatter", years=task.years
+    )
+    colours = [trace.marker.color for trace in figure.data]
+    gains = [trace.y[0] - trace.x[0] for trace in figure.data]
+    key = colours[gains.index(max(gains))]
+    assert colours.count(key) >= 2
 
 
 def test_no_scatter_dot_is_clipped_at_the_plot_edge(rows):
-    """B-T3's Oman sits at 99, 99; clipped to the axes, half its shape was cut away (visual-spec.md
-    section 1)."""
+    """B-T3's Oman sits at 99, 99; clipped to the axes, half the dot would be cut away
+    (visual-spec.md section 1)."""
     figure = _chart("scatter", rows)
     assert all(trace.cliponaxis is False for trace in figure.data)
-
-
-def test_a_full_scatter_runs_through_the_palette_twice(rows):
-    """The cap is the shapes, not the colours: sixteen dots, each colour on exactly two."""
-    entities = config.COUNTRIES[: config.MAX_SCATTER_DOTS]
-    figure = figures.build_figure(entities, VACCINE, rows, chart_type="scatter", years=(2000, 2024))
-    colours = [trace.marker.color for trace in figure.data]
-    assert all(colours.count(colour) == 2 for colour in config.SERIES_COLORS)
 
 
 def test_the_scatter_axes_share_one_scale_so_the_diagonal_means_no_change(rows):
@@ -550,35 +698,79 @@ def test_the_scatter_axes_share_one_scale_so_the_diagonal_means_no_change(rows):
     assert figure.layout.yaxis.scaleanchor == "x" and figure.layout.yaxis.scaleratio == 1
     assert list(figure.layout.xaxis.range) == list(config.Y_RANGE)
     assert list(figure.layout.yaxis.range) == list(config.Y_RANGE)
-    (diagonal,) = figure.layout.shapes
+    assert figure.layout.xaxis.dtick == 25 and figure.layout.yaxis.dtick == 25
+    margin = figure.layout.margin
+    assert figure.layout.width - margin.l - margin.r == 400
+    assert figure.layout.height - margin.t - margin.b == 400
+    (diagonal,) = [s for s in figure.layout.shapes if s.name == "diagonal"]
     assert (diagonal.x0, diagonal.y0, diagonal.x1, diagonal.y1) == (0, 0, 100, 100)
+    assert figure.layout.shapes[0].name == "diagonal", "drawn first, under the knockouts"
 
 
-def test_the_scatter_legend_names_every_dot_and_cannot_hide_one(rows):
-    """A legend click would hide a dot: an uncontrolled filter that nothing logs."""
+def test_a_chip_hides_a_dot_with_its_name_and_knockout(rows):
     figure = _chart("scatter", rows)
-    assert figure.layout.showlegend is True
-    assert figure.layout.legend.itemclick is False
-    assert figure.layout.legend.itemdoubleclick is False
-    assert [trace.name for trace in figure.data] == list(TASK_BY_CHART["scatter"].entities)
+    names = [trace.name for trace in figure.data]
+    figures.set_visible(figure, names[1:])
+    hidden = f"dot:{names[0]}"
+    assert not [a for a in figure.layout.annotations if a.name == hidden]
+    assert not [s for s in figure.layout.shapes if s.name == hidden]
+    assert [a for a in figure.layout.annotations if a.name == f"dot:{names[1]}"]
 
 
 def test_hiding_a_series_leaves_annotations_that_name_no_series(rows):
+    """A chip takes a dot's name with it, and nothing else: the title, the axes, the diagonal's
+    label, the corners and the key stay."""
     figure = _chart("scatter", rows)
+
+    def unnamed(figure):
+        return [a.text for a in figure.layout.annotations if not (a.name or "").startswith("dot:")]
+
+    before = unnamed(figure)
     figures.set_visible(figure, [trace.name for trace in figure.data][:2])
-    assert [annotation.text for annotation in figure.layout.annotations] == ["no change"]
+    assert unnamed(figure) == before
+    assert "No change" in before
+
+
+def _cells(figure, name):
+    return [shape for shape in figure.layout.shapes if shape.name == f"cell:{name}"]
 
 
 def test_the_heatmap_carries_value_in_colour_alone(rows):
-    """No number in a cell: that would hand static participants the exact value."""
+    """No number in a cell: that would hand static participants the exact value. The trace is
+    transparent and carries the hover; the cells are banded shapes (visual-spec.md section 1)."""
     figure = _chart("heatmap", rows)
-    (cells,) = figure.data
-    assert (cells.zmin, cells.zmax) == config.Y_RANGE
-    assert [(float(p), c.upper()) for p, c in cells.colorscale] == [
-        (p, c.upper()) for p, c in config.SEQUENTIAL_SCALE
-    ]
-    assert cells.texttemplate is None and cells.text is None
+    (trace,) = figure.data
+    assert (trace.zmin, trace.zmax) == config.Y_RANGE
+    assert trace.opacity == 0 and trace.showscale is False
+    assert trace.texttemplate is None and trace.text is None
     assert figure.layout.yaxis.autorange == "reversed", "the first country listed is the top row"
+    for name, row in zip(trace.y, trace.z, strict=True):
+        cells = _cells(figure, name)
+        assert len(cells) == len(row)
+        for cell, value in zip(cells, row, strict=True):
+            assert cell.fillcolor == figures.band_color(value, config.HEATMAP_BANDS)
+            assert cell.opacity == 1
+    assert not [a for a in figure.layout.annotations if (a.name or "").startswith("cell:")]
+
+
+def test_the_banded_scale_steps_at_each_bound():
+    scale = figures.banded_scale(config.HEATMAP_BANDS)
+    assert scale[0] == [0.0, config.HEATMAP_BANDS[0][1]]
+    assert scale[1] == [0.2, config.HEATMAP_BANDS[0][1]]
+    assert scale[2] == [0.2, config.HEATMAP_BANDS[1][1]]
+    assert scale[-1] == [1.0, config.HEATMAP_BANDS[-1][1]]
+    assert figures.band_color(26, config.HEATMAP_BANDS) == "#0A386D"
+    assert figures.band_color(30, config.HEATMAP_BANDS) == "#084E92"
+    assert figures.band_color(100, config.HEATMAP_BANDS) == "#CCE9FF"
+
+
+def test_the_heatmap_order_label_follows_the_sort(rows):
+    figure = _chart("heatmap", rows)
+    assert _order_label(figure) == "A–Z"
+    figures.sort_rows(figure, "min")
+    assert _order_label(figure) == "Lowest value first"
+    figures.sort_rows(figure, "mean")
+    assert _order_label(figure) == "Lowest average first"
 
 
 def test_sorting_rows_orders_them_by_lowest_cell_or_average_and_back(rows):
@@ -602,41 +794,71 @@ def test_sorting_rows_orders_them_by_lowest_cell_or_average_and_back(rows):
     assert figure.to_plotly_json() == _chart("heatmap", rows).to_plotly_json()
 
 
-def test_a_hidden_row_is_covered_where_it_is_drawn_and_follows_a_sort(rows):
-    """A heatmap has one opacity for the whole trace, so a hidden row is covered with white at
-    0.85: exactly the row at 0.15 on the white plot, and never white like an unreported cell."""
+def test_a_hidden_row_fades_where_it_is_drawn_and_follows_a_sort(rows):
+    """A hidden row's cells fade to FADED_OPACITY in place: never white like an empty cell."""
     figure = _chart("heatmap", rows)
     names = list(figure.data[0].y)
     hidden = names[2]
     figures.set_visible(figure, [name for name in names if name != hidden])
-    (cover,) = figure.layout.shapes
-    assert cover.fillcolor == config.BACKGROUND
-    assert cover.opacity == pytest.approx(1 - config.FADED_OPACITY)
-    assert (cover.y0, cover.y1) == (1.5, 2.5)
-    assert (cover.x0, cover.x1) == (-0.5, len(figure.data[0].x) - 0.5)
+    for name in names:
+        expected = config.FADED_OPACITY if name == hidden else 1
+        assert {cell.opacity for cell in _cells(figure, name)} == {expected}
+    before = {name: [c.fillcolor for c in _cells(figure, name)] for name in names}
     figures.sort_rows(figure, "min")
-    (cover,) = figure.layout.shapes
     position = list(figure.layout.yaxis.categoryarray).index(hidden)
-    assert (cover.y0, cover.y1) == (position - 0.5, position + 0.5)
+    top = round(position - 0.5 + 2 / 46.75, 6)  # 2 px of the 4 px gap, in rows
+    for cell in _cells(figure, hidden):
+        assert cell.opacity == config.FADED_OPACITY
+        assert f",{top} " in cell.path, "the faded row is drawn where the sort put it"
+    assert {name: [c.fillcolor for c in _cells(figure, name)] for name in names} == before
 
 
 def test_the_map_colours_each_country_by_its_iso_code(rows):
     task = TASK_BY_CHART["map"]
     figure = _chart("map", rows)
-    (countries,) = figure.data
+    countries = figures._only(figure, go.Choropleth)
     codes = [runtime_data.series(e, task.vaccine, rows)[0].iso_code for e in task.entities]
     assert list(countries.locations) == codes
     assert countries.locationmode == "ISO-3"
     assert (countries.zmin, countries.zmax) == config.Y_RANGE
     assert figure.layout.geo.scope == figures.MAP_SCOPE
     assert figure.layout.dragmode is False, "a fixed view: no drag-to-pan"
+    assert countries.colorscale == tuple(
+        tuple(step) for step in figures.banded_scale(config.MAP_BANDS)
+    ) or [list(step) for step in countries.colorscale] == figures.banded_scale(config.MAP_BANDS)
+    assert countries.showscale is False
+
+
+@pytest.mark.parametrize("task", [t for t in ALL_TASKS if t.chart == "map"], ids=_task_id)
+def test_every_coloured_country_is_named_on_the_map(rows, task):
+    """visual-spec.md section 1: a name inside each coloured country or beside it on a leader;
+    the plain countries are not named, and no name has a hover of its own."""
+    figure = figures.task_figure(task, rows)
+    labels = [t for t in figure.data if (t.name or "").startswith("label:")]
+    named = {t.name[len("label:") :] for t in labels}
+    assert named == set(task.entities)
+    for trace in labels:
+        texts = [text for text in (trace.text or []) if text]
+        entity = trace.name[len("label:") :]
+        if texts:
+            assert texts == [config.MAP_SHORT_NAMES.get(entity, entity)]
+        assert trace.hoverinfo == "skip"
+
+
+def test_the_map_key_has_no_no_data_block(rows):
+    """The plain countries report coverage; they are only outside the question (visual-spec.md
+    section 1). The handoff's key carries a "No data" block, which would be false here."""
+    figure = _chart("map", rows)
+    texts = {a.text for a in figure.layout.annotations}
+    assert "No data" not in texts
+    assert {"100%", "50%", "0%", "Coverage"} <= texts
 
 
 def test_the_highlight_fades_countries_not_below_it_and_moves_nothing(rows):
     """Drawn as a selection: plotly.js 4 drops a per-country marker.opacity list without a word,
     which is how the map's first filter shipped -- fading nothing (visual-spec.md section 7.4)."""
     figure = _chart("map", rows)
-    (countries,) = figure.data
+    countries = figures._only(figure, go.Choropleth)
     assert countries.unselected.marker.opacity == config.FADED_OPACITY
     assert countries.marker.opacity is None, "a per-country opacity list is never rendered"
     before = list(countries.locations), list(countries.z)
@@ -648,13 +870,14 @@ def test_the_highlight_fades_countries_not_below_it_and_moves_nothing(rows):
 @pytest.mark.parametrize("threshold", [None, 100])
 def test_an_empty_box_or_100_highlights_nothing(rows, threshold):
     figure = figures.set_threshold(_chart("map", rows), threshold)
-    assert figure.data[0].selectedpoints is None, "no highlight is the figure build_figure made"
+    countries = figures._only(figure, go.Choropleth)
+    assert countries.selectedpoints is None, "no highlight is the figure build_figure made"
     assert all(figures.full_strength(figure))
 
 
 def test_a_country_hidden_by_its_chip_stays_faded_under_the_highlight(rows):
     figure = _chart("map", rows)
-    (countries,) = figure.data
+    countries = figures._only(figure, go.Choropleth)
     names = list(countries.text)
     lowest = names[min(range(len(names)), key=lambda i: countries.z[i])]
     figures.set_visible(figure, [name for name in names if name != lowest])
@@ -752,25 +975,17 @@ def test_an_unknown_chart_type_is_refused(rows):
         figures.build_figure(["Nigeria"], VACCINE, rows, chart_type="pie")
 
 
-def test_the_scatter_is_capped_by_its_shapes(rows):
-    """Not by the palette, as the line is: each dot has a shape of its own (visual-spec.md s. 6)."""
+def test_the_scatter_is_capped_at_sixteen_named_dots(rows):
+    """Not by the palette, as the line is: dots are coloured by change (visual-spec.md s. 6)."""
     too_many = config.COUNTRIES[: config.MAX_SCATTER_DOTS + 1]
-    with pytest.raises(FigureError, match="marker shapes"):
+    with pytest.raises(FigureError, match="at most 16"):
         figures.build_figure(too_many, VACCINE, rows, chart_type="scatter", years=(2000, 2024))
 
 
 def test_bars_and_heatmaps_are_not_capped_by_the_palette(rows):
-    """Bars are named on their axis and share one colour; rows are named and use the scale."""
+    """Bars are named on their axis and have colours of their own; rows are named, banded."""
+    coloured = [*config.COUNTRY_COLORS, *config.BAR_COLORS]
+    assert len(coloured) > config.MAX_SERIES
+    figures.build_figure(coloured, VACCINE, rows, chart_type="bar", years=(2010,))
     many = config.COUNTRIES[: config.MAX_SERIES + 4]
-    figures.build_figure(many, VACCINE, rows, chart_type="bar", years=(2010,))
     figures.build_figure(many, VACCINE, rows, chart_type="heatmap", years=(2000, 2010))
-
-
-@pytest.mark.parametrize("task", LINE_TASKS, ids=_task_id)
-def test_every_end_label_is_placed_where_plotly_will_draw_it(rows, task):
-    """Plotly skips an annotation whose data coordinate is off its axis. A-T1's China label sat at
-    102 on the 0-100 axis and was never drawn; a paper coordinate above 1 is drawn in the margin."""
-    figure = figures.build_figure(list(task.entities), task.vaccine, rows)
-    for annotation in figure.layout.annotations:
-        assert annotation.yref == "paper", annotation.text
-        assert 0 <= annotation.y <= 1 + config.LABEL_HEADROOM / 100, annotation.text

@@ -812,7 +812,7 @@ def test_the_practice_offers_no_chip_for_world_and_keeps_its_one_country(tmp_pat
     assert events == []
 
 
-def test_view_by_coverage_reorders_the_chips_and_the_legend_and_logs_it(tmp_path):
+def test_view_by_coverage_reorders_the_chips_and_logs_it(tmp_path):
     result, events = _interact("sort", tmp_path, sort_key="coverage")
 
     assert [e["event"] for e in events] == ["sort_change"]
@@ -822,15 +822,17 @@ def test_view_by_coverage_reorders_the_chips_and_the_legend_and_logs_it(tmp_path
     ordered = _chip_order(result)
     values = layout.latest_values(ordered, _first_task().vaccine)
     assert ordered == sorted(ordered, key=lambda e: -(values[e] or 0))
-    ranks = {trace.name: trace.legendrank for trace in result.figure.data}
-    assert sorted(ranks, key=lambda name: ranks[name]) == ordered
+    # No legend since 2026-10-11: the View reorders the chips and nothing on the chart.
+    assert all(trace.legendrank is None for trace in result.figure.data)
+    before = figures.task_figure(_first_task())
+    assert result.figure.layout.annotations == before.layout.annotations
     # The chips carry names alone, so a reorder moves nothing else (the handoff's state S5).
     labels = [option["label"] for row in result.chips for option in row["options"]]
     assert all("%" not in str(label) for label in labels)
 
 
 def test_the_view_does_not_change_which_lines_are_drawn_or_move_one(tmp_path):
-    """The lines are where the data puts them; only the chips and the legend reorder."""
+    """The lines are where the data puts them; only the chips reorder."""
     result, _events = _interact("sort", tmp_path, sort_key="coverage")
     assert _drawn(result.figure) == set(_countries())
     before = figures.task_figure(_first_task())
@@ -1317,9 +1319,12 @@ def test_a_chip_fades_a_heatmap_row_where_it_is_drawn(tmp_path):
     result, _events = _interact_on(
         "heatmap", "chips", tmp_path, control_state=sorted_view, chips=names[1:]
     )
-    (cover,) = result.figure.layout.shapes
+    shapes = [s for s in result.figure.layout.shapes if (s.name or "").startswith("cell:")]
+    faded = {s.name for s in shapes if s.opacity != 1}
+    assert faded == {f"cell:{names[0]}"}
     position = list(result.figure.layout.yaxis.categoryarray).index(names[0])
-    assert (cover.y0, cover.y1) == (position - 0.5, position + 0.5)
+    top = round(position - 0.5 + 2 / 46.75, 6)
+    assert all(f",{top} " in s.path for s in shapes if s.name == f"cell:{names[0]}")
 
 
 def test_a_chip_hides_a_scatter_dot_and_its_legend_entry_stays(tmp_path):

@@ -834,10 +834,7 @@ def _view_figure(task, control: dict[str, Any]):
     elif task.chart == "heatmap":
         figures.sort_rows(figure, control["sort"])
     figures.set_visible(figure, shown)
-    if task.chart == "line":
-        order = _chip_order(task, control) if control["sort"] == "coverage" else None
-        figures.order_legend(figure, order)
-    elif task.chart == "map":
+    if task.chart == "map":
         figures.set_threshold(figure, control["threshold"])
     return figure
 

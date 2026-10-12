@@ -258,3 +258,8 @@
 .matrix-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .matrix-row > .dash-options-list-option { display: flex; align-items: center; justify-content: center; min-height: 48px; cursor: pointer; }
 .matrix-row input { margin: 0; width: 18px; height: 18px; accent-color: var(--c-accent); cursor: pointer; }
+
+/* The chart's numerals are tabular, as the chart handoff draws them (docs/visual-spec.md section 5),
+   so "100%" and "10%" line up by their digits down the axis. Plotly's fonts have no such setting;
+   this reaches its SVG text. Both conditions load this file, so both charts are drawn alike. */
+.js-plotly-plot .main-svg text { font-variant-numeric: tabular-nums; }

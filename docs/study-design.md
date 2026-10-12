@@ -1158,10 +1158,10 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   accepted it over tightening the layout. In the pilot, look at the interactive time on T3 and T5
   for it. Participants use their own computers (request form 5B), so the window height varies by
   participant; `window_size` records it (§8), and `tasks.csv` carries it as `window_height`, so
-  the interactive T3 and T5 times can be split at 790 px. **Since 2026-10-11 the split for T3 is
-  862 px:** its sixteen chips take two more rows, and the interactive card scrolls on any window
-  under 862 px tall (`visual-spec.md` §10). **The map's split moves too (2026-10-11):** eighteen chips
-  in each form, where there were 13 and 11; it is measured when the map is rebuilt.
+  the interactive T3 and T5 times can be split at 790 px. **Since 2026-10-11 the splits are 898 px
+  for T3 and 843 px for T5** (862 and 807–836 in compact mode, at or under 800 px): T3's sixteen
+  chips take two more rows, and T5's map has eighteen chips in each form where it had 13 and 11
+  (`visual-spec.md` §10, measured in headless Chrome after the chart handoff).
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4

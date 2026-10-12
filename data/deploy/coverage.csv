@@ -199,6 +199,106 @@ Africa,OWID_AFR,2021,Polio3,72.9164
 Africa,OWID_AFR,2022,Polio3,72.956436
 Africa,OWID_AFR,2023,Polio3,76.03051
 Africa,OWID_AFR,2024,Polio3,
+Algeria,DZA,2000,DTP3,86.0
+Algeria,DZA,2001,DTP3,89.0
+Algeria,DZA,2002,DTP3,86.0
+Algeria,DZA,2003,DTP3,87.0
+Algeria,DZA,2004,DTP3,86.0
+Algeria,DZA,2005,DTP3,88.0
+Algeria,DZA,2006,DTP3,95.0
+Algeria,DZA,2007,DTP3,95.0
+Algeria,DZA,2008,DTP3,93.0
+Algeria,DZA,2009,DTP3,95.0
+Algeria,DZA,2010,DTP3,95.0
+Algeria,DZA,2011,DTP3,95.0
+Algeria,DZA,2012,DTP3,95.0
+Algeria,DZA,2013,DTP3,95.0
+Algeria,DZA,2014,DTP3,95.0
+Algeria,DZA,2015,DTP3,95.0
+Algeria,DZA,2016,DTP3,91.0
+Algeria,DZA,2017,DTP3,91.0
+Algeria,DZA,2018,DTP3,91.0
+Algeria,DZA,2019,DTP3,88.0
+Algeria,DZA,2020,DTP3,84.0
+Algeria,DZA,2021,DTP3,81.0
+Algeria,DZA,2022,DTP3,77.0
+Algeria,DZA,2023,DTP3,92.0
+Algeria,DZA,2024,DTP3,92.0
+Algeria,DZA,2000,HepB3,
+Algeria,DZA,2001,HepB3,
+Algeria,DZA,2002,HepB3,
+Algeria,DZA,2003,HepB3,
+Algeria,DZA,2004,HepB3,81.0
+Algeria,DZA,2005,HepB3,83.0
+Algeria,DZA,2006,HepB3,80.0
+Algeria,DZA,2007,HepB3,90.0
+Algeria,DZA,2008,HepB3,91.0
+Algeria,DZA,2009,HepB3,94.0
+Algeria,DZA,2010,HepB3,95.0
+Algeria,DZA,2011,HepB3,95.0
+Algeria,DZA,2012,HepB3,95.0
+Algeria,DZA,2013,HepB3,95.0
+Algeria,DZA,2014,HepB3,95.0
+Algeria,DZA,2015,HepB3,95.0
+Algeria,DZA,2016,HepB3,91.0
+Algeria,DZA,2017,HepB3,91.0
+Algeria,DZA,2018,HepB3,91.0
+Algeria,DZA,2019,HepB3,88.0
+Algeria,DZA,2020,HepB3,84.0
+Algeria,DZA,2021,HepB3,81.0
+Algeria,DZA,2022,HepB3,77.0
+Algeria,DZA,2023,HepB3,94.0
+Algeria,DZA,2024,HepB3,92.0
+Algeria,DZA,2000,MCV1,80.0
+Algeria,DZA,2001,MCV1,83.0
+Algeria,DZA,2002,MCV1,81.0
+Algeria,DZA,2003,MCV1,84.0
+Algeria,DZA,2004,MCV1,81.0
+Algeria,DZA,2005,MCV1,83.0
+Algeria,DZA,2006,MCV1,91.0
+Algeria,DZA,2007,MCV1,92.0
+Algeria,DZA,2008,MCV1,88.0
+Algeria,DZA,2009,MCV1,92.0
+Algeria,DZA,2010,MCV1,95.0
+Algeria,DZA,2011,MCV1,95.0
+Algeria,DZA,2012,MCV1,95.0
+Algeria,DZA,2013,MCV1,95.0
+Algeria,DZA,2014,MCV1,95.0
+Algeria,DZA,2015,MCV1,95.0
+Algeria,DZA,2016,MCV1,94.0
+Algeria,DZA,2017,MCV1,88.0
+Algeria,DZA,2018,MCV1,80.0
+Algeria,DZA,2019,MCV1,80.0
+Algeria,DZA,2020,MCV1,80.0
+Algeria,DZA,2021,MCV1,79.0
+Algeria,DZA,2022,MCV1,79.0
+Algeria,DZA,2023,MCV1,99.0
+Algeria,DZA,2024,MCV1,94.0
+Algeria,DZA,2000,Polio3,86.0
+Algeria,DZA,2001,Polio3,89.0
+Algeria,DZA,2002,Polio3,86.0
+Algeria,DZA,2003,Polio3,87.0
+Algeria,DZA,2004,Polio3,86.0
+Algeria,DZA,2005,Polio3,88.0
+Algeria,DZA,2006,Polio3,95.0
+Algeria,DZA,2007,Polio3,95.0
+Algeria,DZA,2008,Polio3,92.0
+Algeria,DZA,2009,Polio3,94.0
+Algeria,DZA,2010,Polio3,95.0
+Algeria,DZA,2011,Polio3,95.0
+Algeria,DZA,2012,Polio3,95.0
+Algeria,DZA,2013,Polio3,95.0
+Algeria,DZA,2014,Polio3,95.0
+Algeria,DZA,2015,Polio3,95.0
+Algeria,DZA,2016,Polio3,91.0
+Algeria,DZA,2017,Polio3,91.0
+Algeria,DZA,2018,Polio3,91.0
+Algeria,DZA,2019,Polio3,88.0
+Algeria,DZA,2020,Polio3,84.0
+Algeria,DZA,2021,Polio3,81.0
+Algeria,DZA,2022,Polio3,77.0
+Algeria,DZA,2023,Polio3,88.0
+Algeria,DZA,2024,Polio3,89.0
 Asia,OWID_ASI,2000,DTP3,71.955734
 Asia,OWID_ASI,2001,DTP3,73.00984
 Asia,OWID_ASI,2002,DTP3,72.07619
@@ -499,6 +599,106 @@ Benin,BEN,2021,Polio3,68.0
 Benin,BEN,2022,Polio3,69.0
 Benin,BEN,2023,Polio3,69.0
 Benin,BEN,2024,Polio3,63.0
+Botswana,BWA,2000,DTP3,97.0
+Botswana,BWA,2001,DTP3,97.0
+Botswana,BWA,2002,DTP3,97.0
+Botswana,BWA,2003,DTP3,96.0
+Botswana,BWA,2004,DTP3,96.0
+Botswana,BWA,2005,DTP3,96.0
+Botswana,BWA,2006,DTP3,96.0
+Botswana,BWA,2007,DTP3,96.0
+Botswana,BWA,2008,DTP3,96.0
+Botswana,BWA,2009,DTP3,96.0
+Botswana,BWA,2010,DTP3,95.0
+Botswana,BWA,2011,DTP3,95.0
+Botswana,BWA,2012,DTP3,95.0
+Botswana,BWA,2013,DTP3,95.0
+Botswana,BWA,2014,DTP3,95.0
+Botswana,BWA,2015,DTP3,95.0
+Botswana,BWA,2016,DTP3,95.0
+Botswana,BWA,2017,DTP3,95.0
+Botswana,BWA,2018,DTP3,95.0
+Botswana,BWA,2019,DTP3,95.0
+Botswana,BWA,2020,DTP3,95.0
+Botswana,BWA,2021,DTP3,95.0
+Botswana,BWA,2022,DTP3,86.0
+Botswana,BWA,2023,DTP3,95.0
+Botswana,BWA,2024,DTP3,95.0
+Botswana,BWA,2000,HepB3,86.0
+Botswana,BWA,2001,HepB3,87.0
+Botswana,BWA,2002,HepB3,88.0
+Botswana,BWA,2003,HepB3,90.0
+Botswana,BWA,2004,HepB3,91.0
+Botswana,BWA,2005,HepB3,92.0
+Botswana,BWA,2006,HepB3,93.0
+Botswana,BWA,2007,HepB3,93.0
+Botswana,BWA,2008,HepB3,94.0
+Botswana,BWA,2009,HepB3,94.0
+Botswana,BWA,2010,HepB3,95.0
+Botswana,BWA,2011,HepB3,95.0
+Botswana,BWA,2012,HepB3,95.0
+Botswana,BWA,2013,HepB3,95.0
+Botswana,BWA,2014,HepB3,95.0
+Botswana,BWA,2015,HepB3,95.0
+Botswana,BWA,2016,HepB3,95.0
+Botswana,BWA,2017,HepB3,95.0
+Botswana,BWA,2018,HepB3,95.0
+Botswana,BWA,2019,HepB3,95.0
+Botswana,BWA,2020,HepB3,95.0
+Botswana,BWA,2021,HepB3,95.0
+Botswana,BWA,2022,HepB3,86.0
+Botswana,BWA,2023,HepB3,95.0
+Botswana,BWA,2024,HepB3,95.0
+Botswana,BWA,2000,MCV1,91.0
+Botswana,BWA,2001,MCV1,91.0
+Botswana,BWA,2002,MCV1,92.0
+Botswana,BWA,2003,MCV1,92.0
+Botswana,BWA,2004,MCV1,93.0
+Botswana,BWA,2005,MCV1,93.0
+Botswana,BWA,2006,MCV1,94.0
+Botswana,BWA,2007,MCV1,95.0
+Botswana,BWA,2008,MCV1,95.0
+Botswana,BWA,2009,MCV1,96.0
+Botswana,BWA,2010,MCV1,96.0
+Botswana,BWA,2011,MCV1,97.0
+Botswana,BWA,2012,MCV1,97.0
+Botswana,BWA,2013,MCV1,97.0
+Botswana,BWA,2014,MCV1,97.0
+Botswana,BWA,2015,MCV1,97.0
+Botswana,BWA,2016,MCV1,97.0
+Botswana,BWA,2017,MCV1,97.0
+Botswana,BWA,2018,MCV1,97.0
+Botswana,BWA,2019,MCV1,97.0
+Botswana,BWA,2020,MCV1,87.0
+Botswana,BWA,2021,MCV1,97.0
+Botswana,BWA,2022,MCV1,90.0
+Botswana,BWA,2023,MCV1,97.0
+Botswana,BWA,2024,MCV1,97.0
+Botswana,BWA,2000,Polio3,97.0
+Botswana,BWA,2001,Polio3,97.0
+Botswana,BWA,2002,Polio3,97.0
+Botswana,BWA,2003,Polio3,96.0
+Botswana,BWA,2004,Polio3,96.0
+Botswana,BWA,2005,Polio3,96.0
+Botswana,BWA,2006,Polio3,96.0
+Botswana,BWA,2007,Polio3,96.0
+Botswana,BWA,2008,Polio3,96.0
+Botswana,BWA,2009,Polio3,96.0
+Botswana,BWA,2010,Polio3,96.0
+Botswana,BWA,2011,Polio3,96.0
+Botswana,BWA,2012,Polio3,96.0
+Botswana,BWA,2013,Polio3,96.0
+Botswana,BWA,2014,Polio3,96.0
+Botswana,BWA,2015,Polio3,96.0
+Botswana,BWA,2016,Polio3,96.0
+Botswana,BWA,2017,Polio3,96.0
+Botswana,BWA,2018,Polio3,96.0
+Botswana,BWA,2019,Polio3,96.0
+Botswana,BWA,2020,Polio3,96.0
+Botswana,BWA,2021,Polio3,96.0
+Botswana,BWA,2022,Polio3,86.0
+Botswana,BWA,2023,Polio3,96.0
+Botswana,BWA,2024,Polio3,96.0
 Brazil,BRA,2000,DTP3,98.0
 Brazil,BRA,2001,DTP3,98.0
 Brazil,BRA,2002,DTP3,99.0
@@ -1299,6 +1499,206 @@ Colombia,COL,2021,Polio3,86.0
 Colombia,COL,2022,Polio3,86.0
 Colombia,COL,2023,Polio3,90.0
 Colombia,COL,2024,Polio3,89.0
+Congo,COG,2000,DTP3,33.0
+Congo,COG,2001,DTP3,31.0
+Congo,COG,2002,DTP3,41.0
+Congo,COG,2003,DTP3,50.0
+Congo,COG,2004,DTP3,67.0
+Congo,COG,2005,DTP3,63.0
+Congo,COG,2006,DTP3,74.0
+Congo,COG,2007,DTP3,73.0
+Congo,COG,2008,DTP3,80.0
+Congo,COG,2009,DTP3,80.0
+Congo,COG,2010,DTP3,76.0
+Congo,COG,2011,DTP3,83.0
+Congo,COG,2012,DTP3,85.0
+Congo,COG,2013,DTP3,85.0
+Congo,COG,2014,DTP3,90.0
+Congo,COG,2015,DTP3,80.0
+Congo,COG,2016,DTP3,71.0
+Congo,COG,2017,DTP3,69.0
+Congo,COG,2018,DTP3,75.0
+Congo,COG,2019,DTP3,79.0
+Congo,COG,2020,DTP3,73.0
+Congo,COG,2021,DTP3,77.0
+Congo,COG,2022,DTP3,78.0
+Congo,COG,2023,DTP3,78.0
+Congo,COG,2024,DTP3,78.0
+Congo,COG,2000,HepB3,
+Congo,COG,2001,HepB3,
+Congo,COG,2002,HepB3,
+Congo,COG,2003,HepB3,
+Congo,COG,2004,HepB3,
+Congo,COG,2005,HepB3,
+Congo,COG,2006,HepB3,
+Congo,COG,2007,HepB3,64.0
+Congo,COG,2008,HepB3,73.0
+Congo,COG,2009,HepB3,75.0
+Congo,COG,2010,HepB3,74.0
+Congo,COG,2011,HepB3,70.0
+Congo,COG,2012,HepB3,62.0
+Congo,COG,2013,HepB3,65.0
+Congo,COG,2014,HepB3,71.0
+Congo,COG,2015,HepB3,64.0
+Congo,COG,2016,HepB3,57.0
+Congo,COG,2017,HepB3,57.0
+Congo,COG,2018,HepB3,66.0
+Congo,COG,2019,HepB3,79.0
+Congo,COG,2020,HepB3,69.0
+Congo,COG,2021,HepB3,74.0
+Congo,COG,2022,HepB3,78.0
+Congo,COG,2023,HepB3,78.0
+Congo,COG,2024,HepB3,78.0
+Congo,COG,2000,MCV1,34.0
+Congo,COG,2001,MCV1,35.0
+Congo,COG,2002,MCV1,37.0
+Congo,COG,2003,MCV1,50.0
+Congo,COG,2004,MCV1,65.0
+Congo,COG,2005,MCV1,54.0
+Congo,COG,2006,MCV1,61.0
+Congo,COG,2007,MCV1,59.0
+Congo,COG,2008,MCV1,69.0
+Congo,COG,2009,MCV1,63.0
+Congo,COG,2010,MCV1,75.0
+Congo,COG,2011,MCV1,83.0
+Congo,COG,2012,MCV1,80.0
+Congo,COG,2013,MCV1,80.0
+Congo,COG,2014,MCV1,80.0
+Congo,COG,2015,MCV1,80.0
+Congo,COG,2016,MCV1,67.0
+Congo,COG,2017,MCV1,70.0
+Congo,COG,2018,MCV1,75.0
+Congo,COG,2019,MCV1,73.0
+Congo,COG,2020,MCV1,68.0
+Congo,COG,2021,MCV1,68.0
+Congo,COG,2022,MCV1,65.0
+Congo,COG,2023,MCV1,65.0
+Congo,COG,2024,MCV1,72.0
+Congo,COG,2000,Polio3,31.0
+Congo,COG,2001,Polio3,32.0
+Congo,COG,2002,Polio3,41.0
+Congo,COG,2003,Polio3,50.0
+Congo,COG,2004,Polio3,67.0
+Congo,COG,2005,Polio3,62.0
+Congo,COG,2006,Polio3,73.0
+Congo,COG,2007,Polio3,71.0
+Congo,COG,2008,Polio3,77.0
+Congo,COG,2009,Polio3,76.0
+Congo,COG,2010,Polio3,72.0
+Congo,COG,2011,Polio3,72.0
+Congo,COG,2012,Polio3,68.0
+Congo,COG,2013,Polio3,69.0
+Congo,COG,2014,Polio3,77.0
+Congo,COG,2015,Polio3,68.0
+Congo,COG,2016,Polio3,61.0
+Congo,COG,2017,Polio3,60.0
+Congo,COG,2018,Polio3,68.0
+Congo,COG,2019,Polio3,73.0
+Congo,COG,2020,Polio3,69.0
+Congo,COG,2021,Polio3,74.0
+Congo,COG,2022,Polio3,52.0
+Congo,COG,2023,Polio3,52.0
+Congo,COG,2024,Polio3,76.0
+Cote d'Ivoire,CIV,2000,DTP3,65.0
+Cote d'Ivoire,CIV,2001,DTP3,66.0
+Cote d'Ivoire,CIV,2002,DTP3,65.0
+Cote d'Ivoire,CIV,2003,DTP3,62.0
+Cote d'Ivoire,CIV,2004,DTP3,68.0
+Cote d'Ivoire,CIV,2005,DTP3,77.0
+Cote d'Ivoire,CIV,2006,DTP3,77.0
+Cote d'Ivoire,CIV,2007,DTP3,76.0
+Cote d'Ivoire,CIV,2008,DTP3,74.0
+Cote d'Ivoire,CIV,2009,DTP3,81.0
+Cote d'Ivoire,CIV,2010,DTP3,78.0
+Cote d'Ivoire,CIV,2011,DTP3,61.0
+Cote d'Ivoire,CIV,2012,DTP3,82.0
+Cote d'Ivoire,CIV,2013,DTP3,75.0
+Cote d'Ivoire,CIV,2014,DTP3,73.0
+Cote d'Ivoire,CIV,2015,DTP3,79.0
+Cote d'Ivoire,CIV,2016,DTP3,87.0
+Cote d'Ivoire,CIV,2017,DTP3,83.0
+Cote d'Ivoire,CIV,2018,DTP3,83.0
+Cote d'Ivoire,CIV,2019,DTP3,79.0
+Cote d'Ivoire,CIV,2020,DTP3,72.0
+Cote d'Ivoire,CIV,2021,DTP3,73.0
+Cote d'Ivoire,CIV,2022,DTP3,73.0
+Cote d'Ivoire,CIV,2023,DTP3,79.0
+Cote d'Ivoire,CIV,2024,DTP3,77.0
+Cote d'Ivoire,CIV,2000,HepB3,
+Cote d'Ivoire,CIV,2001,HepB3,10.0
+Cote d'Ivoire,CIV,2002,HepB3,48.0
+Cote d'Ivoire,CIV,2003,HepB3,63.0
+Cote d'Ivoire,CIV,2004,HepB3,67.0
+Cote d'Ivoire,CIV,2005,HepB3,77.0
+Cote d'Ivoire,CIV,2006,HepB3,77.0
+Cote d'Ivoire,CIV,2007,HepB3,76.0
+Cote d'Ivoire,CIV,2008,HepB3,74.0
+Cote d'Ivoire,CIV,2009,HepB3,81.0
+Cote d'Ivoire,CIV,2010,HepB3,79.0
+Cote d'Ivoire,CIV,2011,HepB3,62.0
+Cote d'Ivoire,CIV,2012,HepB3,82.0
+Cote d'Ivoire,CIV,2013,HepB3,75.0
+Cote d'Ivoire,CIV,2014,HepB3,73.0
+Cote d'Ivoire,CIV,2015,HepB3,79.0
+Cote d'Ivoire,CIV,2016,HepB3,87.0
+Cote d'Ivoire,CIV,2017,HepB3,83.0
+Cote d'Ivoire,CIV,2018,HepB3,83.0
+Cote d'Ivoire,CIV,2019,HepB3,79.0
+Cote d'Ivoire,CIV,2020,HepB3,72.0
+Cote d'Ivoire,CIV,2021,HepB3,73.0
+Cote d'Ivoire,CIV,2022,HepB3,73.0
+Cote d'Ivoire,CIV,2023,HepB3,79.0
+Cote d'Ivoire,CIV,2024,HepB3,77.0
+Cote d'Ivoire,CIV,2000,MCV1,68.0
+Cote d'Ivoire,CIV,2001,MCV1,71.0
+Cote d'Ivoire,CIV,2002,MCV1,71.0
+Cote d'Ivoire,CIV,2003,MCV1,70.0
+Cote d'Ivoire,CIV,2004,MCV1,78.0
+Cote d'Ivoire,CIV,2005,MCV1,84.0
+Cote d'Ivoire,CIV,2006,MCV1,73.0
+Cote d'Ivoire,CIV,2007,MCV1,67.0
+Cote d'Ivoire,CIV,2008,MCV1,63.0
+Cote d'Ivoire,CIV,2009,MCV1,67.0
+Cote d'Ivoire,CIV,2010,MCV1,64.0
+Cote d'Ivoire,CIV,2011,MCV1,49.0
+Cote d'Ivoire,CIV,2012,MCV1,74.0
+Cote d'Ivoire,CIV,2013,MCV1,70.0
+Cote d'Ivoire,CIV,2014,MCV1,59.0
+Cote d'Ivoire,CIV,2015,MCV1,67.0
+Cote d'Ivoire,CIV,2016,MCV1,73.0
+Cote d'Ivoire,CIV,2017,MCV1,70.0
+Cote d'Ivoire,CIV,2018,MCV1,74.0
+Cote d'Ivoire,CIV,2019,MCV1,71.0
+Cote d'Ivoire,CIV,2020,MCV1,63.0
+Cote d'Ivoire,CIV,2021,MCV1,65.0
+Cote d'Ivoire,CIV,2022,MCV1,62.0
+Cote d'Ivoire,CIV,2023,MCV1,70.0
+Cote d'Ivoire,CIV,2024,MCV1,75.0
+Cote d'Ivoire,CIV,2000,Polio3,66.0
+Cote d'Ivoire,CIV,2001,Polio3,70.0
+Cote d'Ivoire,CIV,2002,Polio3,70.0
+Cote d'Ivoire,CIV,2003,Polio3,68.0
+Cote d'Ivoire,CIV,2004,Polio3,76.0
+Cote d'Ivoire,CIV,2005,Polio3,87.0
+Cote d'Ivoire,CIV,2006,Polio3,76.0
+Cote d'Ivoire,CIV,2007,Polio3,75.0
+Cote d'Ivoire,CIV,2008,Polio3,58.0
+Cote d'Ivoire,CIV,2009,Polio3,77.0
+Cote d'Ivoire,CIV,2010,Polio3,75.0
+Cote d'Ivoire,CIV,2011,Polio3,58.0
+Cote d'Ivoire,CIV,2012,Polio3,83.0
+Cote d'Ivoire,CIV,2013,Polio3,74.0
+Cote d'Ivoire,CIV,2014,Polio3,71.0
+Cote d'Ivoire,CIV,2015,Polio3,77.0
+Cote d'Ivoire,CIV,2016,Polio3,81.0
+Cote d'Ivoire,CIV,2017,Polio3,82.0
+Cote d'Ivoire,CIV,2018,Polio3,83.0
+Cote d'Ivoire,CIV,2019,Polio3,79.0
+Cote d'Ivoire,CIV,2020,Polio3,65.0
+Cote d'Ivoire,CIV,2021,Polio3,71.0
+Cote d'Ivoire,CIV,2022,Polio3,71.0
+Cote d'Ivoire,CIV,2023,Polio3,77.0
+Cote d'Ivoire,CIV,2024,Polio3,74.0
 Democratic Republic of Congo,COD,2000,DTP3,30.0
 Democratic Republic of Congo,COD,2001,DTP3,30.0
 Democratic Republic of Congo,COD,2002,DTP3,38.0
@@ -1499,6 +1899,106 @@ Egypt,EGY,2021,Polio3,96.0
 Egypt,EGY,2022,Polio3,97.0
 Egypt,EGY,2023,Polio3,96.0
 Egypt,EGY,2024,Polio3,97.0
+Eritrea,ERI,2000,DTP3,81.0
+Eritrea,ERI,2001,DTP3,86.0
+Eritrea,ERI,2002,DTP3,90.0
+Eritrea,ERI,2003,DTP3,93.0
+Eritrea,ERI,2004,DTP3,98.0
+Eritrea,ERI,2005,DTP3,96.0
+Eritrea,ERI,2006,DTP3,94.0
+Eritrea,ERI,2007,DTP3,95.0
+Eritrea,ERI,2008,DTP3,95.0
+Eritrea,ERI,2009,DTP3,95.0
+Eritrea,ERI,2010,DTP3,95.0
+Eritrea,ERI,2011,DTP3,94.0
+Eritrea,ERI,2012,DTP3,94.0
+Eritrea,ERI,2013,DTP3,94.0
+Eritrea,ERI,2014,DTP3,94.0
+Eritrea,ERI,2015,DTP3,95.0
+Eritrea,ERI,2016,DTP3,95.0
+Eritrea,ERI,2017,DTP3,95.0
+Eritrea,ERI,2018,DTP3,95.0
+Eritrea,ERI,2019,DTP3,95.0
+Eritrea,ERI,2020,DTP3,95.0
+Eritrea,ERI,2021,DTP3,95.0
+Eritrea,ERI,2022,DTP3,95.0
+Eritrea,ERI,2023,DTP3,95.0
+Eritrea,ERI,2024,DTP3,95.0
+Eritrea,ERI,2000,HepB3,
+Eritrea,ERI,2001,HepB3,
+Eritrea,ERI,2002,HepB3,86.0
+Eritrea,ERI,2003,HepB3,91.0
+Eritrea,ERI,2004,HepB3,84.0
+Eritrea,ERI,2005,HepB3,96.0
+Eritrea,ERI,2006,HepB3,94.0
+Eritrea,ERI,2007,HepB3,95.0
+Eritrea,ERI,2008,HepB3,95.0
+Eritrea,ERI,2009,HepB3,95.0
+Eritrea,ERI,2010,HepB3,95.0
+Eritrea,ERI,2011,HepB3,94.0
+Eritrea,ERI,2012,HepB3,94.0
+Eritrea,ERI,2013,HepB3,94.0
+Eritrea,ERI,2014,HepB3,94.0
+Eritrea,ERI,2015,HepB3,95.0
+Eritrea,ERI,2016,HepB3,95.0
+Eritrea,ERI,2017,HepB3,95.0
+Eritrea,ERI,2018,HepB3,95.0
+Eritrea,ERI,2019,HepB3,95.0
+Eritrea,ERI,2020,HepB3,95.0
+Eritrea,ERI,2021,HepB3,95.0
+Eritrea,ERI,2022,HepB3,95.0
+Eritrea,ERI,2023,HepB3,95.0
+Eritrea,ERI,2024,HepB3,95.0
+Eritrea,ERI,2000,MCV1,76.0
+Eritrea,ERI,2001,MCV1,84.0
+Eritrea,ERI,2002,MCV1,83.0
+Eritrea,ERI,2003,MCV1,92.0
+Eritrea,ERI,2004,MCV1,96.0
+Eritrea,ERI,2005,MCV1,95.0
+Eritrea,ERI,2006,MCV1,94.0
+Eritrea,ERI,2007,MCV1,92.0
+Eritrea,ERI,2008,MCV1,91.0
+Eritrea,ERI,2009,MCV1,93.0
+Eritrea,ERI,2010,MCV1,95.0
+Eritrea,ERI,2011,MCV1,96.0
+Eritrea,ERI,2012,MCV1,98.0
+Eritrea,ERI,2013,MCV1,94.0
+Eritrea,ERI,2014,MCV1,90.0
+Eritrea,ERI,2015,MCV1,97.0
+Eritrea,ERI,2016,MCV1,95.0
+Eritrea,ERI,2017,MCV1,93.0
+Eritrea,ERI,2018,MCV1,93.0
+Eritrea,ERI,2019,MCV1,93.0
+Eritrea,ERI,2020,MCV1,93.0
+Eritrea,ERI,2021,MCV1,93.0
+Eritrea,ERI,2022,MCV1,93.0
+Eritrea,ERI,2023,MCV1,93.0
+Eritrea,ERI,2024,MCV1,93.0
+Eritrea,ERI,2000,Polio3,83.0
+Eritrea,ERI,2001,Polio3,90.0
+Eritrea,ERI,2002,Polio3,93.0
+Eritrea,ERI,2003,Polio3,95.0
+Eritrea,ERI,2004,Polio3,99.0
+Eritrea,ERI,2005,Polio3,96.0
+Eritrea,ERI,2006,Polio3,94.0
+Eritrea,ERI,2007,Polio3,95.0
+Eritrea,ERI,2008,Polio3,95.0
+Eritrea,ERI,2009,Polio3,95.0
+Eritrea,ERI,2010,Polio3,95.0
+Eritrea,ERI,2011,Polio3,94.0
+Eritrea,ERI,2012,Polio3,94.0
+Eritrea,ERI,2013,Polio3,94.0
+Eritrea,ERI,2014,Polio3,94.0
+Eritrea,ERI,2015,Polio3,95.0
+Eritrea,ERI,2016,Polio3,95.0
+Eritrea,ERI,2017,Polio3,95.0
+Eritrea,ERI,2018,Polio3,95.0
+Eritrea,ERI,2019,Polio3,95.0
+Eritrea,ERI,2020,Polio3,95.0
+Eritrea,ERI,2021,Polio3,95.0
+Eritrea,ERI,2022,Polio3,95.0
+Eritrea,ERI,2023,Polio3,95.0
+Eritrea,ERI,2024,Polio3,95.0
 Ethiopia,ETH,2000,DTP3,30.0
 Ethiopia,ETH,2001,DTP3,32.0
 Ethiopia,ETH,2002,DTP3,35.0
@@ -1699,6 +2199,306 @@ Europe,OWID_EUR,2021,Polio3,92.698975
 Europe,OWID_EUR,2022,Polio3,91.9435
 Europe,OWID_EUR,2023,Polio3,92.46777
 Europe,OWID_EUR,2024,Polio3,
+Gabon,GAB,2000,DTP3,45.0
+Gabon,GAB,2001,DTP3,45.0
+Gabon,GAB,2002,DTP3,45.0
+Gabon,GAB,2003,DTP3,45.0
+Gabon,GAB,2004,DTP3,45.0
+Gabon,GAB,2005,DTP3,45.0
+Gabon,GAB,2006,DTP3,45.0
+Gabon,GAB,2007,DTP3,81.0
+Gabon,GAB,2008,DTP3,82.0
+Gabon,GAB,2009,DTP3,76.0
+Gabon,GAB,2010,DTP3,67.0
+Gabon,GAB,2011,DTP3,75.0
+Gabon,GAB,2012,DTP3,82.0
+Gabon,GAB,2013,DTP3,79.0
+Gabon,GAB,2014,DTP3,70.0
+Gabon,GAB,2015,DTP3,80.0
+Gabon,GAB,2016,DTP3,75.0
+Gabon,GAB,2017,DTP3,75.0
+Gabon,GAB,2018,DTP3,70.0
+Gabon,GAB,2019,DTP3,70.0
+Gabon,GAB,2020,DTP3,63.0
+Gabon,GAB,2021,DTP3,75.0
+Gabon,GAB,2022,DTP3,60.0
+Gabon,GAB,2023,DTP3,70.0
+Gabon,GAB,2024,DTP3,61.0
+Gabon,GAB,2000,HepB3,
+Gabon,GAB,2001,HepB3,
+Gabon,GAB,2002,HepB3,
+Gabon,GAB,2003,HepB3,
+Gabon,GAB,2004,HepB3,
+Gabon,GAB,2005,HepB3,28.0
+Gabon,GAB,2006,HepB3,52.0
+Gabon,GAB,2007,HepB3,75.0
+Gabon,GAB,2008,HepB3,82.0
+Gabon,GAB,2009,HepB3,79.0
+Gabon,GAB,2010,HepB3,67.0
+Gabon,GAB,2011,HepB3,75.0
+Gabon,GAB,2012,HepB3,82.0
+Gabon,GAB,2013,HepB3,79.0
+Gabon,GAB,2014,HepB3,70.0
+Gabon,GAB,2015,HepB3,80.0
+Gabon,GAB,2016,HepB3,75.0
+Gabon,GAB,2017,HepB3,75.0
+Gabon,GAB,2018,HepB3,70.0
+Gabon,GAB,2019,HepB3,70.0
+Gabon,GAB,2020,HepB3,63.0
+Gabon,GAB,2021,HepB3,75.0
+Gabon,GAB,2022,HepB3,60.0
+Gabon,GAB,2023,HepB3,70.0
+Gabon,GAB,2024,HepB3,61.0
+Gabon,GAB,2000,MCV1,55.0
+Gabon,GAB,2001,MCV1,55.0
+Gabon,GAB,2002,MCV1,55.0
+Gabon,GAB,2003,MCV1,55.0
+Gabon,GAB,2004,MCV1,55.0
+Gabon,GAB,2005,MCV1,55.0
+Gabon,GAB,2006,MCV1,55.0
+Gabon,GAB,2007,MCV1,62.0
+Gabon,GAB,2008,MCV1,67.0
+Gabon,GAB,2009,MCV1,63.0
+Gabon,GAB,2010,MCV1,62.0
+Gabon,GAB,2011,MCV1,72.0
+Gabon,GAB,2012,MCV1,71.0
+Gabon,GAB,2013,MCV1,70.0
+Gabon,GAB,2014,MCV1,61.0
+Gabon,GAB,2015,MCV1,68.0
+Gabon,GAB,2016,MCV1,64.0
+Gabon,GAB,2017,MCV1,63.0
+Gabon,GAB,2018,MCV1,59.0
+Gabon,GAB,2019,MCV1,62.0
+Gabon,GAB,2020,MCV1,53.0
+Gabon,GAB,2021,MCV1,64.0
+Gabon,GAB,2022,MCV1,52.0
+Gabon,GAB,2023,MCV1,66.0
+Gabon,GAB,2024,MCV1,57.0
+Gabon,GAB,2000,Polio3,44.0
+Gabon,GAB,2001,Polio3,44.0
+Gabon,GAB,2002,Polio3,44.0
+Gabon,GAB,2003,Polio3,44.0
+Gabon,GAB,2004,Polio3,44.0
+Gabon,GAB,2005,Polio3,44.0
+Gabon,GAB,2006,Polio3,44.0
+Gabon,GAB,2007,Polio3,78.0
+Gabon,GAB,2008,Polio3,81.0
+Gabon,GAB,2009,Polio3,74.0
+Gabon,GAB,2010,Polio3,68.0
+Gabon,GAB,2011,Polio3,75.0
+Gabon,GAB,2012,Polio3,80.0
+Gabon,GAB,2013,Polio3,77.0
+Gabon,GAB,2014,Polio3,68.0
+Gabon,GAB,2015,Polio3,79.0
+Gabon,GAB,2016,Polio3,74.0
+Gabon,GAB,2017,Polio3,74.0
+Gabon,GAB,2018,Polio3,64.0
+Gabon,GAB,2019,Polio3,70.0
+Gabon,GAB,2020,Polio3,62.0
+Gabon,GAB,2021,Polio3,69.0
+Gabon,GAB,2022,Polio3,59.0
+Gabon,GAB,2023,Polio3,69.0
+Gabon,GAB,2024,Polio3,60.0
+Ghana,GHA,2000,DTP3,88.0
+Ghana,GHA,2001,DTP3,79.0
+Ghana,GHA,2002,DTP3,78.0
+Ghana,GHA,2003,DTP3,80.0
+Ghana,GHA,2004,DTP3,80.0
+Ghana,GHA,2005,DTP3,84.0
+Ghana,GHA,2006,DTP3,84.0
+Ghana,GHA,2007,DTP3,94.0
+Ghana,GHA,2008,DTP3,93.0
+Ghana,GHA,2009,DTP3,94.0
+Ghana,GHA,2010,DTP3,94.0
+Ghana,GHA,2011,DTP3,91.0
+Ghana,GHA,2012,DTP3,92.0
+Ghana,GHA,2013,DTP3,90.0
+Ghana,GHA,2014,DTP3,98.0
+Ghana,GHA,2015,DTP3,89.0
+Ghana,GHA,2016,DTP3,93.0
+Ghana,GHA,2017,DTP3,99.0
+Ghana,GHA,2018,DTP3,97.0
+Ghana,GHA,2019,DTP3,97.0
+Ghana,GHA,2020,DTP3,94.0
+Ghana,GHA,2021,DTP3,98.0
+Ghana,GHA,2022,DTP3,99.0
+Ghana,GHA,2023,DTP3,95.0
+Ghana,GHA,2024,DTP3,95.0
+Ghana,GHA,2000,HepB3,
+Ghana,GHA,2001,HepB3,
+Ghana,GHA,2002,HepB3,80.0
+Ghana,GHA,2003,HepB3,80.0
+Ghana,GHA,2004,HepB3,80.0
+Ghana,GHA,2005,HepB3,84.0
+Ghana,GHA,2006,HepB3,84.0
+Ghana,GHA,2007,HepB3,94.0
+Ghana,GHA,2008,HepB3,93.0
+Ghana,GHA,2009,HepB3,94.0
+Ghana,GHA,2010,HepB3,94.0
+Ghana,GHA,2011,HepB3,91.0
+Ghana,GHA,2012,HepB3,92.0
+Ghana,GHA,2013,HepB3,90.0
+Ghana,GHA,2014,HepB3,98.0
+Ghana,GHA,2015,HepB3,89.0
+Ghana,GHA,2016,HepB3,93.0
+Ghana,GHA,2017,HepB3,99.0
+Ghana,GHA,2018,HepB3,97.0
+Ghana,GHA,2019,HepB3,97.0
+Ghana,GHA,2020,HepB3,94.0
+Ghana,GHA,2021,HepB3,98.0
+Ghana,GHA,2022,HepB3,99.0
+Ghana,GHA,2023,HepB3,95.0
+Ghana,GHA,2024,HepB3,95.0
+Ghana,GHA,2000,MCV1,90.0
+Ghana,GHA,2001,MCV1,78.0
+Ghana,GHA,2002,MCV1,78.0
+Ghana,GHA,2003,MCV1,80.0
+Ghana,GHA,2004,MCV1,83.0
+Ghana,GHA,2005,MCV1,83.0
+Ghana,GHA,2006,MCV1,85.0
+Ghana,GHA,2007,MCV1,95.0
+Ghana,GHA,2008,MCV1,86.0
+Ghana,GHA,2009,MCV1,93.0
+Ghana,GHA,2010,MCV1,93.0
+Ghana,GHA,2011,MCV1,91.0
+Ghana,GHA,2012,MCV1,89.0
+Ghana,GHA,2013,MCV1,89.0
+Ghana,GHA,2014,MCV1,92.0
+Ghana,GHA,2015,MCV1,89.0
+Ghana,GHA,2016,MCV1,89.0
+Ghana,GHA,2017,MCV1,95.0
+Ghana,GHA,2018,MCV1,92.0
+Ghana,GHA,2019,MCV1,92.0
+Ghana,GHA,2020,MCV1,88.0
+Ghana,GHA,2021,MCV1,94.0
+Ghana,GHA,2022,MCV1,95.0
+Ghana,GHA,2023,MCV1,90.0
+Ghana,GHA,2024,MCV1,90.0
+Ghana,GHA,2000,Polio3,88.0
+Ghana,GHA,2001,Polio3,81.0
+Ghana,GHA,2002,Polio3,80.0
+Ghana,GHA,2003,Polio3,80.0
+Ghana,GHA,2004,Polio3,81.0
+Ghana,GHA,2005,Polio3,85.0
+Ghana,GHA,2006,Polio3,84.0
+Ghana,GHA,2007,Polio3,94.0
+Ghana,GHA,2008,Polio3,92.0
+Ghana,GHA,2009,Polio3,94.0
+Ghana,GHA,2010,Polio3,94.0
+Ghana,GHA,2011,Polio3,91.0
+Ghana,GHA,2012,Polio3,91.0
+Ghana,GHA,2013,Polio3,91.0
+Ghana,GHA,2014,Polio3,94.0
+Ghana,GHA,2015,Polio3,88.0
+Ghana,GHA,2016,Polio3,95.0
+Ghana,GHA,2017,Polio3,94.0
+Ghana,GHA,2018,Polio3,98.0
+Ghana,GHA,2019,Polio3,97.0
+Ghana,GHA,2020,Polio3,92.0
+Ghana,GHA,2021,Polio3,98.0
+Ghana,GHA,2022,Polio3,90.0
+Ghana,GHA,2023,Polio3,91.0
+Ghana,GHA,2024,Polio3,91.0
+Guinea,GIN,2000,DTP3,46.0
+Guinea,GIN,2001,DTP3,50.0
+Guinea,GIN,2002,DTP3,53.0
+Guinea,GIN,2003,DTP3,57.0
+Guinea,GIN,2004,DTP3,60.0
+Guinea,GIN,2005,DTP3,59.0
+Guinea,GIN,2006,DTP3,57.0
+Guinea,GIN,2007,DTP3,63.0
+Guinea,GIN,2008,DTP3,60.0
+Guinea,GIN,2009,DTP3,57.0
+Guinea,GIN,2010,DTP3,64.0
+Guinea,GIN,2011,DTP3,63.0
+Guinea,GIN,2012,DTP3,59.0
+Guinea,GIN,2013,DTP3,56.0
+Guinea,GIN,2014,DTP3,52.0
+Guinea,GIN,2015,DTP3,48.0
+Guinea,GIN,2016,DTP3,47.0
+Guinea,GIN,2017,DTP3,49.0
+Guinea,GIN,2018,DTP3,51.0
+Guinea,GIN,2019,DTP3,53.0
+Guinea,GIN,2020,DTP3,54.0
+Guinea,GIN,2021,DTP3,56.0
+Guinea,GIN,2022,DTP3,58.0
+Guinea,GIN,2023,DTP3,60.0
+Guinea,GIN,2024,DTP3,63.0
+Guinea,GIN,2000,HepB3,
+Guinea,GIN,2001,HepB3,
+Guinea,GIN,2002,HepB3,
+Guinea,GIN,2003,HepB3,
+Guinea,GIN,2004,HepB3,
+Guinea,GIN,2005,HepB3,
+Guinea,GIN,2006,HepB3,
+Guinea,GIN,2007,HepB3,57.0
+Guinea,GIN,2008,HepB3,57.0
+Guinea,GIN,2009,HepB3,57.0
+Guinea,GIN,2010,HepB3,64.0
+Guinea,GIN,2011,HepB3,63.0
+Guinea,GIN,2012,HepB3,59.0
+Guinea,GIN,2013,HepB3,56.0
+Guinea,GIN,2014,HepB3,52.0
+Guinea,GIN,2015,HepB3,48.0
+Guinea,GIN,2016,HepB3,47.0
+Guinea,GIN,2017,HepB3,47.0
+Guinea,GIN,2018,HepB3,51.0
+Guinea,GIN,2019,HepB3,53.0
+Guinea,GIN,2020,HepB3,54.0
+Guinea,GIN,2021,HepB3,56.0
+Guinea,GIN,2022,HepB3,58.0
+Guinea,GIN,2023,HepB3,60.0
+Guinea,GIN,2024,HepB3,63.0
+Guinea,GIN,2000,MCV1,42.0
+Guinea,GIN,2001,MCV1,44.0
+Guinea,GIN,2002,MCV1,46.0
+Guinea,GIN,2003,MCV1,48.0
+Guinea,GIN,2004,MCV1,50.0
+Guinea,GIN,2005,MCV1,51.0
+Guinea,GIN,2006,MCV1,51.0
+Guinea,GIN,2007,MCV1,57.0
+Guinea,GIN,2008,MCV1,55.0
+Guinea,GIN,2009,MCV1,53.0
+Guinea,GIN,2010,MCV1,58.0
+Guinea,GIN,2011,MCV1,62.0
+Guinea,GIN,2012,MCV1,58.0
+Guinea,GIN,2013,MCV1,55.0
+Guinea,GIN,2014,MCV1,51.0
+Guinea,GIN,2015,MCV1,47.0
+Guinea,GIN,2016,MCV1,48.0
+Guinea,GIN,2017,MCV1,48.0
+Guinea,GIN,2018,MCV1,49.0
+Guinea,GIN,2019,MCV1,50.0
+Guinea,GIN,2020,MCV1,50.0
+Guinea,GIN,2021,MCV1,51.0
+Guinea,GIN,2022,MCV1,51.0
+Guinea,GIN,2023,MCV1,52.0
+Guinea,GIN,2024,MCV1,60.0
+Guinea,GIN,2000,Polio3,47.0
+Guinea,GIN,2001,Polio3,52.0
+Guinea,GIN,2002,Polio3,56.0
+Guinea,GIN,2003,Polio3,61.0
+Guinea,GIN,2004,Polio3,65.0
+Guinea,GIN,2005,Polio3,59.0
+Guinea,GIN,2006,Polio3,53.0
+Guinea,GIN,2007,Polio3,46.0
+Guinea,GIN,2008,Polio3,59.0
+Guinea,GIN,2009,Polio3,60.0
+Guinea,GIN,2010,Polio3,62.0
+Guinea,GIN,2011,Polio3,63.0
+Guinea,GIN,2012,Polio3,59.0
+Guinea,GIN,2013,Polio3,55.0
+Guinea,GIN,2014,Polio3,51.0
+Guinea,GIN,2015,Polio3,47.0
+Guinea,GIN,2016,Polio3,48.0
+Guinea,GIN,2017,Polio3,49.0
+Guinea,GIN,2018,Polio3,50.0
+Guinea,GIN,2019,Polio3,51.0
+Guinea,GIN,2020,Polio3,52.0
+Guinea,GIN,2021,Polio3,53.0
+Guinea,GIN,2022,Polio3,54.0
+Guinea,GIN,2023,Polio3,55.0
+Guinea,GIN,2024,Polio3,55.0
 India,IND,2000,DTP3,58.0
 India,IND,2001,DTP3,59.0
 India,IND,2002,DTP3,59.0
@@ -2699,6 +3499,106 @@ Madagascar,MDG,2021,Polio3,55.0
 Madagascar,MDG,2022,Polio3,55.0
 Madagascar,MDG,2023,Polio3,63.0
 Madagascar,MDG,2024,Polio3,62.0
+Malawi,MWI,2000,DTP3,75.0
+Malawi,MWI,2001,DTP3,90.0
+Malawi,MWI,2002,DTP3,64.0
+Malawi,MWI,2003,DTP3,84.0
+Malawi,MWI,2004,DTP3,89.0
+Malawi,MWI,2005,DTP3,93.0
+Malawi,MWI,2006,DTP3,99.0
+Malawi,MWI,2007,DTP3,87.0
+Malawi,MWI,2008,DTP3,91.0
+Malawi,MWI,2009,DTP3,93.0
+Malawi,MWI,2010,DTP3,93.0
+Malawi,MWI,2011,DTP3,97.0
+Malawi,MWI,2012,DTP3,96.0
+Malawi,MWI,2013,DTP3,89.0
+Malawi,MWI,2014,DTP3,91.0
+Malawi,MWI,2015,DTP3,88.0
+Malawi,MWI,2016,DTP3,84.0
+Malawi,MWI,2017,DTP3,88.0
+Malawi,MWI,2018,DTP3,92.0
+Malawi,MWI,2019,DTP3,95.0
+Malawi,MWI,2020,DTP3,94.0
+Malawi,MWI,2021,DTP3,93.0
+Malawi,MWI,2022,DTP3,86.0
+Malawi,MWI,2023,DTP3,91.0
+Malawi,MWI,2024,DTP3,91.0
+Malawi,MWI,2000,HepB3,
+Malawi,MWI,2001,HepB3,
+Malawi,MWI,2002,HepB3,64.0
+Malawi,MWI,2003,HepB3,84.0
+Malawi,MWI,2004,HepB3,89.0
+Malawi,MWI,2005,HepB3,93.0
+Malawi,MWI,2006,HepB3,99.0
+Malawi,MWI,2007,HepB3,87.0
+Malawi,MWI,2008,HepB3,91.0
+Malawi,MWI,2009,HepB3,93.0
+Malawi,MWI,2010,HepB3,93.0
+Malawi,MWI,2011,HepB3,97.0
+Malawi,MWI,2012,HepB3,96.0
+Malawi,MWI,2013,HepB3,89.0
+Malawi,MWI,2014,HepB3,91.0
+Malawi,MWI,2015,HepB3,88.0
+Malawi,MWI,2016,HepB3,84.0
+Malawi,MWI,2017,HepB3,88.0
+Malawi,MWI,2018,HepB3,92.0
+Malawi,MWI,2019,HepB3,95.0
+Malawi,MWI,2020,HepB3,94.0
+Malawi,MWI,2021,HepB3,93.0
+Malawi,MWI,2022,HepB3,86.0
+Malawi,MWI,2023,HepB3,91.0
+Malawi,MWI,2024,HepB3,91.0
+Malawi,MWI,2000,MCV1,73.0
+Malawi,MWI,2001,MCV1,81.0
+Malawi,MWI,2002,MCV1,69.0
+Malawi,MWI,2003,MCV1,77.0
+Malawi,MWI,2004,MCV1,80.0
+Malawi,MWI,2005,MCV1,82.0
+Malawi,MWI,2006,MCV1,85.0
+Malawi,MWI,2007,MCV1,83.0
+Malawi,MWI,2008,MCV1,88.0
+Malawi,MWI,2009,MCV1,92.0
+Malawi,MWI,2010,MCV1,93.0
+Malawi,MWI,2011,MCV1,96.0
+Malawi,MWI,2012,MCV1,90.0
+Malawi,MWI,2013,MCV1,88.0
+Malawi,MWI,2014,MCV1,85.0
+Malawi,MWI,2015,MCV1,87.0
+Malawi,MWI,2016,MCV1,81.0
+Malawi,MWI,2017,MCV1,83.0
+Malawi,MWI,2018,MCV1,87.0
+Malawi,MWI,2019,MCV1,92.0
+Malawi,MWI,2020,MCV1,90.0
+Malawi,MWI,2021,MCV1,90.0
+Malawi,MWI,2022,MCV1,82.0
+Malawi,MWI,2023,MCV1,87.0
+Malawi,MWI,2024,MCV1,89.0
+Malawi,MWI,2000,Polio3,73.0
+Malawi,MWI,2001,Polio3,86.0
+Malawi,MWI,2002,Polio3,79.0
+Malawi,MWI,2003,Polio3,85.0
+Malawi,MWI,2004,Polio3,94.0
+Malawi,MWI,2005,Polio3,94.0
+Malawi,MWI,2006,Polio3,99.0
+Malawi,MWI,2007,Polio3,88.0
+Malawi,MWI,2008,Polio3,92.0
+Malawi,MWI,2009,Polio3,93.0
+Malawi,MWI,2010,Polio3,86.0
+Malawi,MWI,2011,Polio3,97.0
+Malawi,MWI,2012,Polio3,95.0
+Malawi,MWI,2013,Polio3,89.0
+Malawi,MWI,2014,Polio3,87.0
+Malawi,MWI,2015,Polio3,88.0
+Malawi,MWI,2016,Polio3,83.0
+Malawi,MWI,2017,Polio3,87.0
+Malawi,MWI,2018,Polio3,91.0
+Malawi,MWI,2019,Polio3,94.0
+Malawi,MWI,2020,Polio3,93.0
+Malawi,MWI,2021,Polio3,89.0
+Malawi,MWI,2022,Polio3,87.0
+Malawi,MWI,2023,Polio3,91.0
+Malawi,MWI,2024,Polio3,90.0
 Mali,MLI,2000,DTP3,43.0
 Mali,MLI,2001,DTP3,49.0
 Mali,MLI,2002,DTP3,61.0
@@ -2799,6 +3699,206 @@ Mali,MLI,2021,Polio3,69.0
 Mali,MLI,2022,Polio3,75.0
 Mali,MLI,2023,Polio3,72.0
 Mali,MLI,2024,Polio3,72.0
+Mauritania,MRT,2000,DTP3,51.0
+Mauritania,MRT,2001,DTP3,75.0
+Mauritania,MRT,2002,DTP3,89.0
+Mauritania,MRT,2003,DTP3,76.0
+Mauritania,MRT,2004,DTP3,70.0
+Mauritania,MRT,2005,DTP3,71.0
+Mauritania,MRT,2006,DTP3,68.0
+Mauritania,MRT,2007,DTP3,75.0
+Mauritania,MRT,2008,DTP3,74.0
+Mauritania,MRT,2009,DTP3,64.0
+Mauritania,MRT,2010,DTP3,64.0
+Mauritania,MRT,2011,DTP3,75.0
+Mauritania,MRT,2012,DTP3,80.0
+Mauritania,MRT,2013,DTP3,80.0
+Mauritania,MRT,2014,DTP3,81.0
+Mauritania,MRT,2015,DTP3,73.0
+Mauritania,MRT,2016,DTP3,74.0
+Mauritania,MRT,2017,DTP3,76.0
+Mauritania,MRT,2018,DTP3,77.0
+Mauritania,MRT,2019,DTP3,80.0
+Mauritania,MRT,2020,DTP3,81.0
+Mauritania,MRT,2021,DTP3,77.0
+Mauritania,MRT,2022,DTP3,85.0
+Mauritania,MRT,2023,DTP3,90.0
+Mauritania,MRT,2024,DTP3,86.0
+Mauritania,MRT,2000,HepB3,
+Mauritania,MRT,2001,HepB3,
+Mauritania,MRT,2002,HepB3,
+Mauritania,MRT,2003,HepB3,
+Mauritania,MRT,2004,HepB3,
+Mauritania,MRT,2005,HepB3,42.0
+Mauritania,MRT,2006,HepB3,68.0
+Mauritania,MRT,2007,HepB3,74.0
+Mauritania,MRT,2008,HepB3,74.0
+Mauritania,MRT,2009,HepB3,64.0
+Mauritania,MRT,2010,HepB3,64.0
+Mauritania,MRT,2011,HepB3,75.0
+Mauritania,MRT,2012,HepB3,80.0
+Mauritania,MRT,2013,HepB3,80.0
+Mauritania,MRT,2014,HepB3,81.0
+Mauritania,MRT,2015,HepB3,73.0
+Mauritania,MRT,2016,HepB3,74.0
+Mauritania,MRT,2017,HepB3,76.0
+Mauritania,MRT,2018,HepB3,77.0
+Mauritania,MRT,2019,HepB3,80.0
+Mauritania,MRT,2020,HepB3,81.0
+Mauritania,MRT,2021,HepB3,77.0
+Mauritania,MRT,2022,HepB3,85.0
+Mauritania,MRT,2023,HepB3,90.0
+Mauritania,MRT,2024,HepB3,86.0
+Mauritania,MRT,2000,MCV1,46.0
+Mauritania,MRT,2001,MCV1,58.0
+Mauritania,MRT,2002,MCV1,87.0
+Mauritania,MRT,2003,MCV1,84.0
+Mauritania,MRT,2004,MCV1,73.0
+Mauritania,MRT,2005,MCV1,65.0
+Mauritania,MRT,2006,MCV1,62.0
+Mauritania,MRT,2007,MCV1,67.0
+Mauritania,MRT,2008,MCV1,65.0
+Mauritania,MRT,2009,MCV1,59.0
+Mauritania,MRT,2010,MCV1,67.0
+Mauritania,MRT,2011,MCV1,67.0
+Mauritania,MRT,2012,MCV1,75.0
+Mauritania,MRT,2013,MCV1,80.0
+Mauritania,MRT,2014,MCV1,75.0
+Mauritania,MRT,2015,MCV1,70.0
+Mauritania,MRT,2016,MCV1,73.0
+Mauritania,MRT,2017,MCV1,75.0
+Mauritania,MRT,2018,MCV1,78.0
+Mauritania,MRT,2019,MCV1,75.0
+Mauritania,MRT,2020,MCV1,82.0
+Mauritania,MRT,2021,MCV1,75.0
+Mauritania,MRT,2022,MCV1,84.0
+Mauritania,MRT,2023,MCV1,92.0
+Mauritania,MRT,2024,MCV1,93.0
+Mauritania,MRT,2000,Polio3,58.0
+Mauritania,MRT,2001,Polio3,75.0
+Mauritania,MRT,2002,Polio3,91.0
+Mauritania,MRT,2003,Polio3,75.0
+Mauritania,MRT,2004,Polio3,68.0
+Mauritania,MRT,2005,Polio3,71.0
+Mauritania,MRT,2006,Polio3,68.0
+Mauritania,MRT,2007,Polio3,75.0
+Mauritania,MRT,2008,Polio3,73.0
+Mauritania,MRT,2009,Polio3,63.0
+Mauritania,MRT,2010,Polio3,52.0
+Mauritania,MRT,2011,Polio3,73.0
+Mauritania,MRT,2012,Polio3,80.0
+Mauritania,MRT,2013,Polio3,80.0
+Mauritania,MRT,2014,Polio3,81.0
+Mauritania,MRT,2015,Polio3,67.0
+Mauritania,MRT,2016,Polio3,69.0
+Mauritania,MRT,2017,Polio3,70.0
+Mauritania,MRT,2018,Polio3,72.0
+Mauritania,MRT,2019,Polio3,75.0
+Mauritania,MRT,2020,Polio3,81.0
+Mauritania,MRT,2021,Polio3,76.0
+Mauritania,MRT,2022,Polio3,81.0
+Mauritania,MRT,2023,Polio3,90.0
+Mauritania,MRT,2024,Polio3,85.0
+Morocco,MAR,2000,DTP3,95.0
+Morocco,MAR,2001,DTP3,96.0
+Morocco,MAR,2002,DTP3,94.0
+Morocco,MAR,2003,DTP3,91.0
+Morocco,MAR,2004,DTP3,97.0
+Morocco,MAR,2005,DTP3,98.0
+Morocco,MAR,2006,DTP3,97.0
+Morocco,MAR,2007,DTP3,95.0
+Morocco,MAR,2008,DTP3,99.0
+Morocco,MAR,2009,DTP3,99.0
+Morocco,MAR,2010,DTP3,99.0
+Morocco,MAR,2011,DTP3,99.0
+Morocco,MAR,2012,DTP3,99.0
+Morocco,MAR,2013,DTP3,99.0
+Morocco,MAR,2014,DTP3,99.0
+Morocco,MAR,2015,DTP3,99.0
+Morocco,MAR,2016,DTP3,99.0
+Morocco,MAR,2017,DTP3,99.0
+Morocco,MAR,2018,DTP3,99.0
+Morocco,MAR,2019,DTP3,99.0
+Morocco,MAR,2020,DTP3,99.0
+Morocco,MAR,2021,DTP3,98.0
+Morocco,MAR,2022,DTP3,98.0
+Morocco,MAR,2023,DTP3,97.0
+Morocco,MAR,2024,DTP3,96.0
+Morocco,MAR,2000,HepB3,43.0
+Morocco,MAR,2001,HepB3,84.0
+Morocco,MAR,2002,HepB3,92.0
+Morocco,MAR,2003,HepB3,90.0
+Morocco,MAR,2004,HepB3,95.0
+Morocco,MAR,2005,HepB3,96.0
+Morocco,MAR,2006,HepB3,95.0
+Morocco,MAR,2007,HepB3,95.0
+Morocco,MAR,2008,HepB3,97.0
+Morocco,MAR,2009,HepB3,98.0
+Morocco,MAR,2010,HepB3,98.0
+Morocco,MAR,2011,HepB3,98.0
+Morocco,MAR,2012,HepB3,99.0
+Morocco,MAR,2013,HepB3,99.0
+Morocco,MAR,2014,HepB3,99.0
+Morocco,MAR,2015,HepB3,99.0
+Morocco,MAR,2016,HepB3,99.0
+Morocco,MAR,2017,HepB3,99.0
+Morocco,MAR,2018,HepB3,99.0
+Morocco,MAR,2019,HepB3,99.0
+Morocco,MAR,2020,HepB3,99.0
+Morocco,MAR,2021,HepB3,98.0
+Morocco,MAR,2022,HepB3,98.0
+Morocco,MAR,2023,HepB3,97.0
+Morocco,MAR,2024,HepB3,96.0
+Morocco,MAR,2000,MCV1,93.0
+Morocco,MAR,2001,MCV1,96.0
+Morocco,MAR,2002,MCV1,94.0
+Morocco,MAR,2003,MCV1,90.0
+Morocco,MAR,2004,MCV1,95.0
+Morocco,MAR,2005,MCV1,97.0
+Morocco,MAR,2006,MCV1,95.0
+Morocco,MAR,2007,MCV1,95.0
+Morocco,MAR,2008,MCV1,96.0
+Morocco,MAR,2009,MCV1,98.0
+Morocco,MAR,2010,MCV1,98.0
+Morocco,MAR,2011,MCV1,99.0
+Morocco,MAR,2012,MCV1,99.0
+Morocco,MAR,2013,MCV1,99.0
+Morocco,MAR,2014,MCV1,99.0
+Morocco,MAR,2015,MCV1,99.0
+Morocco,MAR,2016,MCV1,99.0
+Morocco,MAR,2017,MCV1,99.0
+Morocco,MAR,2018,MCV1,99.0
+Morocco,MAR,2019,MCV1,99.0
+Morocco,MAR,2020,MCV1,99.0
+Morocco,MAR,2021,MCV1,99.0
+Morocco,MAR,2022,MCV1,99.0
+Morocco,MAR,2023,MCV1,98.0
+Morocco,MAR,2024,MCV1,98.0
+Morocco,MAR,2000,Polio3,95.0
+Morocco,MAR,2001,Polio3,93.0
+Morocco,MAR,2002,Polio3,94.0
+Morocco,MAR,2003,Polio3,91.0
+Morocco,MAR,2004,Polio3,97.0
+Morocco,MAR,2005,Polio3,98.0
+Morocco,MAR,2006,Polio3,97.0
+Morocco,MAR,2007,Polio3,95.0
+Morocco,MAR,2008,Polio3,99.0
+Morocco,MAR,2009,Polio3,99.0
+Morocco,MAR,2010,Polio3,99.0
+Morocco,MAR,2011,Polio3,98.0
+Morocco,MAR,2012,Polio3,99.0
+Morocco,MAR,2013,Polio3,99.0
+Morocco,MAR,2014,Polio3,99.0
+Morocco,MAR,2015,Polio3,99.0
+Morocco,MAR,2016,Polio3,99.0
+Morocco,MAR,2017,Polio3,99.0
+Morocco,MAR,2018,Polio3,99.0
+Morocco,MAR,2019,Polio3,99.0
+Morocco,MAR,2020,Polio3,99.0
+Morocco,MAR,2021,Polio3,98.0
+Morocco,MAR,2022,Polio3,98.0
+Morocco,MAR,2023,Polio3,97.0
+Morocco,MAR,2024,Polio3,96.0
 Mozambique,MOZ,2000,DTP3,70.0
 Mozambique,MOZ,2001,DTP3,73.0
 Mozambique,MOZ,2002,DTP3,76.0
@@ -2999,6 +4099,106 @@ Myanmar,MMR,2021,Polio3,43.0
 Myanmar,MMR,2022,Polio3,75.0
 Myanmar,MMR,2023,Polio3,73.0
 Myanmar,MMR,2024,Polio3,71.0
+Namibia,NAM,2000,DTP3,79.0
+Namibia,NAM,2001,DTP3,78.0
+Namibia,NAM,2002,DTP3,77.0
+Namibia,NAM,2003,DTP3,79.0
+Namibia,NAM,2004,DTP3,81.0
+Namibia,NAM,2005,DTP3,86.0
+Namibia,NAM,2006,DTP3,86.0
+Namibia,NAM,2007,DTP3,86.0
+Namibia,NAM,2008,DTP3,83.0
+Namibia,NAM,2009,DTP3,83.0
+Namibia,NAM,2010,DTP3,83.0
+Namibia,NAM,2011,DTP3,82.0
+Namibia,NAM,2012,DTP3,84.0
+Namibia,NAM,2013,DTP3,89.0
+Namibia,NAM,2014,DTP3,88.0
+Namibia,NAM,2015,DTP3,92.0
+Namibia,NAM,2016,DTP3,85.0
+Namibia,NAM,2017,DTP3,88.0
+Namibia,NAM,2018,DTP3,89.0
+Namibia,NAM,2019,DTP3,87.0
+Namibia,NAM,2020,DTP3,93.0
+Namibia,NAM,2021,DTP3,94.0
+Namibia,NAM,2022,DTP3,84.0
+Namibia,NAM,2023,DTP3,83.0
+Namibia,NAM,2024,DTP3,74.0
+Namibia,NAM,2000,HepB3,
+Namibia,NAM,2001,HepB3,
+Namibia,NAM,2002,HepB3,
+Namibia,NAM,2003,HepB3,
+Namibia,NAM,2004,HepB3,
+Namibia,NAM,2005,HepB3,
+Namibia,NAM,2006,HepB3,
+Namibia,NAM,2007,HepB3,
+Namibia,NAM,2008,HepB3,
+Namibia,NAM,2009,HepB3,
+Namibia,NAM,2010,HepB3,83.0
+Namibia,NAM,2011,HepB3,82.0
+Namibia,NAM,2012,HepB3,84.0
+Namibia,NAM,2013,HepB3,89.0
+Namibia,NAM,2014,HepB3,88.0
+Namibia,NAM,2015,HepB3,92.0
+Namibia,NAM,2016,HepB3,85.0
+Namibia,NAM,2017,HepB3,88.0
+Namibia,NAM,2018,HepB3,89.0
+Namibia,NAM,2019,HepB3,87.0
+Namibia,NAM,2020,HepB3,93.0
+Namibia,NAM,2021,HepB3,94.0
+Namibia,NAM,2022,HepB3,84.0
+Namibia,NAM,2023,HepB3,83.0
+Namibia,NAM,2024,HepB3,74.0
+Namibia,NAM,2000,MCV1,69.0
+Namibia,NAM,2001,MCV1,58.0
+Namibia,NAM,2002,MCV1,68.0
+Namibia,NAM,2003,MCV1,70.0
+Namibia,NAM,2004,MCV1,70.0
+Namibia,NAM,2005,MCV1,73.0
+Namibia,NAM,2006,MCV1,63.0
+Namibia,NAM,2007,MCV1,69.0
+Namibia,NAM,2008,MCV1,73.0
+Namibia,NAM,2009,MCV1,76.0
+Namibia,NAM,2010,MCV1,75.0
+Namibia,NAM,2011,MCV1,74.0
+Namibia,NAM,2012,MCV1,76.0
+Namibia,NAM,2013,MCV1,82.0
+Namibia,NAM,2014,MCV1,83.0
+Namibia,NAM,2015,MCV1,85.0
+Namibia,NAM,2016,MCV1,75.0
+Namibia,NAM,2017,MCV1,80.0
+Namibia,NAM,2018,MCV1,82.0
+Namibia,NAM,2019,MCV1,80.0
+Namibia,NAM,2020,MCV1,90.0
+Namibia,NAM,2021,MCV1,91.0
+Namibia,NAM,2022,MCV1,89.0
+Namibia,NAM,2023,MCV1,86.0
+Namibia,NAM,2024,MCV1,79.0
+Namibia,NAM,2000,Polio3,80.0
+Namibia,NAM,2001,Polio3,79.0
+Namibia,NAM,2002,Polio3,78.0
+Namibia,NAM,2003,Polio3,82.0
+Namibia,NAM,2004,Polio3,81.0
+Namibia,NAM,2005,Polio3,86.0
+Namibia,NAM,2006,Polio3,74.0
+Namibia,NAM,2007,Polio3,81.0
+Namibia,NAM,2008,Polio3,83.0
+Namibia,NAM,2009,Polio3,83.0
+Namibia,NAM,2010,Polio3,83.0
+Namibia,NAM,2011,Polio3,85.0
+Namibia,NAM,2012,Polio3,84.0
+Namibia,NAM,2013,Polio3,89.0
+Namibia,NAM,2014,Polio3,88.0
+Namibia,NAM,2015,Polio3,92.0
+Namibia,NAM,2016,Polio3,84.0
+Namibia,NAM,2017,Polio3,83.0
+Namibia,NAM,2018,Polio3,84.0
+Namibia,NAM,2019,Polio3,84.0
+Namibia,NAM,2020,Polio3,92.0
+Namibia,NAM,2021,Polio3,73.0
+Namibia,NAM,2022,Polio3,86.0
+Namibia,NAM,2023,Polio3,77.0
+Namibia,NAM,2024,Polio3,75.0
 Nepal,NPL,2000,DTP3,74.0
 Nepal,NPL,2001,DTP3,72.0
 Nepal,NPL,2002,DTP3,72.0
@@ -3799,6 +4999,106 @@ Philippines,PHL,2021,Polio3,66.0
 Philippines,PHL,2022,Polio3,83.0
 Philippines,PHL,2023,Polio3,77.0
 Philippines,PHL,2024,Polio3,88.0
+Senegal,SEN,2000,DTP3,52.0
+Senegal,SEN,2001,DTP3,52.0
+Senegal,SEN,2002,DTP3,60.0
+Senegal,SEN,2003,DTP3,73.0
+Senegal,SEN,2004,DTP3,87.0
+Senegal,SEN,2005,DTP3,84.0
+Senegal,SEN,2006,DTP3,89.0
+Senegal,SEN,2007,DTP3,94.0
+Senegal,SEN,2008,DTP3,88.0
+Senegal,SEN,2009,DTP3,86.0
+Senegal,SEN,2010,DTP3,89.0
+Senegal,SEN,2011,DTP3,92.0
+Senegal,SEN,2012,DTP3,91.0
+Senegal,SEN,2013,DTP3,92.0
+Senegal,SEN,2014,DTP3,89.0
+Senegal,SEN,2015,DTP3,89.0
+Senegal,SEN,2016,DTP3,93.0
+Senegal,SEN,2017,DTP3,93.0
+Senegal,SEN,2018,DTP3,92.0
+Senegal,SEN,2019,DTP3,91.0
+Senegal,SEN,2020,DTP3,83.0
+Senegal,SEN,2021,DTP3,85.0
+Senegal,SEN,2022,DTP3,93.0
+Senegal,SEN,2023,DTP3,92.0
+Senegal,SEN,2024,DTP3,91.0
+Senegal,SEN,2000,HepB3,
+Senegal,SEN,2001,HepB3,
+Senegal,SEN,2002,HepB3,
+Senegal,SEN,2003,HepB3,
+Senegal,SEN,2004,HepB3,54.0
+Senegal,SEN,2005,HepB3,84.0
+Senegal,SEN,2006,HepB3,89.0
+Senegal,SEN,2007,HepB3,94.0
+Senegal,SEN,2008,HepB3,88.0
+Senegal,SEN,2009,HepB3,86.0
+Senegal,SEN,2010,HepB3,89.0
+Senegal,SEN,2011,HepB3,92.0
+Senegal,SEN,2012,HepB3,91.0
+Senegal,SEN,2013,HepB3,92.0
+Senegal,SEN,2014,HepB3,89.0
+Senegal,SEN,2015,HepB3,89.0
+Senegal,SEN,2016,HepB3,93.0
+Senegal,SEN,2017,HepB3,93.0
+Senegal,SEN,2018,HepB3,92.0
+Senegal,SEN,2019,HepB3,91.0
+Senegal,SEN,2020,HepB3,83.0
+Senegal,SEN,2021,HepB3,85.0
+Senegal,SEN,2022,HepB3,93.0
+Senegal,SEN,2023,HepB3,92.0
+Senegal,SEN,2024,HepB3,91.0
+Senegal,SEN,2000,MCV1,48.0
+Senegal,SEN,2001,MCV1,48.0
+Senegal,SEN,2002,MCV1,54.0
+Senegal,SEN,2003,MCV1,60.0
+Senegal,SEN,2004,MCV1,57.0
+Senegal,SEN,2005,MCV1,74.0
+Senegal,SEN,2006,MCV1,80.0
+Senegal,SEN,2007,MCV1,84.0
+Senegal,SEN,2008,MCV1,77.0
+Senegal,SEN,2009,MCV1,79.0
+Senegal,SEN,2010,MCV1,81.0
+Senegal,SEN,2011,MCV1,84.0
+Senegal,SEN,2012,MCV1,83.0
+Senegal,SEN,2013,MCV1,84.0
+Senegal,SEN,2014,MCV1,80.0
+Senegal,SEN,2015,MCV1,80.0
+Senegal,SEN,2016,MCV1,93.0
+Senegal,SEN,2017,MCV1,90.0
+Senegal,SEN,2018,MCV1,86.0
+Senegal,SEN,2019,MCV1,86.0
+Senegal,SEN,2020,MCV1,82.0
+Senegal,SEN,2021,MCV1,88.0
+Senegal,SEN,2022,MCV1,87.0
+Senegal,SEN,2023,MCV1,87.0
+Senegal,SEN,2024,MCV1,87.0
+Senegal,SEN,2000,Polio3,49.0
+Senegal,SEN,2001,Polio3,49.0
+Senegal,SEN,2002,Polio3,60.0
+Senegal,SEN,2003,Polio3,73.0
+Senegal,SEN,2004,Polio3,87.0
+Senegal,SEN,2005,Polio3,84.0
+Senegal,SEN,2006,Polio3,89.0
+Senegal,SEN,2007,Polio3,93.0
+Senegal,SEN,2008,Polio3,87.0
+Senegal,SEN,2009,Polio3,83.0
+Senegal,SEN,2010,Polio3,76.0
+Senegal,SEN,2011,Polio3,89.0
+Senegal,SEN,2012,Polio3,83.0
+Senegal,SEN,2013,Polio3,89.0
+Senegal,SEN,2014,Polio3,85.0
+Senegal,SEN,2015,Polio3,85.0
+Senegal,SEN,2016,Polio3,92.0
+Senegal,SEN,2017,Polio3,91.0
+Senegal,SEN,2018,Polio3,92.0
+Senegal,SEN,2019,Polio3,97.0
+Senegal,SEN,2020,Polio3,94.0
+Senegal,SEN,2021,Polio3,89.0
+Senegal,SEN,2022,Polio3,92.0
+Senegal,SEN,2023,Polio3,92.0
+Senegal,SEN,2024,Polio3,91.0
 Somalia,SOM,2000,DTP3,33.0
 Somalia,SOM,2001,DTP3,33.0
 Somalia,SOM,2002,DTP3,40.0
@@ -3899,6 +5199,106 @@ Somalia,SOM,2021,Polio3,63.0
 Somalia,SOM,2022,Polio3,72.0
 Somalia,SOM,2023,Polio3,71.0
 Somalia,SOM,2024,Polio3,71.0
+South Africa,ZAF,2000,DTP3,73.0
+South Africa,ZAF,2001,DTP3,71.0
+South Africa,ZAF,2002,DTP3,70.0
+South Africa,ZAF,2003,DTP3,69.0
+South Africa,ZAF,2004,DTP3,74.0
+South Africa,ZAF,2005,DTP3,81.0
+South Africa,ZAF,2006,DTP3,84.0
+South Africa,ZAF,2007,DTP3,85.0
+South Africa,ZAF,2008,DTP3,82.0
+South Africa,ZAF,2009,DTP3,81.0
+South Africa,ZAF,2010,DTP3,77.0
+South Africa,ZAF,2011,DTP3,75.0
+South Africa,ZAF,2012,DTP3,71.0
+South Africa,ZAF,2013,DTP3,81.0
+South Africa,ZAF,2014,DTP3,85.0
+South Africa,ZAF,2015,DTP3,85.0
+South Africa,ZAF,2016,DTP3,85.0
+South Africa,ZAF,2017,DTP3,84.0
+South Africa,ZAF,2018,DTP3,82.0
+South Africa,ZAF,2019,DTP3,85.0
+South Africa,ZAF,2020,DTP3,84.0
+South Africa,ZAF,2021,DTP3,86.0
+South Africa,ZAF,2022,DTP3,85.0
+South Africa,ZAF,2023,DTP3,79.0
+South Africa,ZAF,2024,DTP3,74.0
+South Africa,ZAF,2000,HepB3,73.0
+South Africa,ZAF,2001,HepB3,72.0
+South Africa,ZAF,2002,HepB3,72.0
+South Africa,ZAF,2003,HepB3,71.0
+South Africa,ZAF,2004,HepB3,76.0
+South Africa,ZAF,2005,HepB3,79.0
+South Africa,ZAF,2006,HepB3,83.0
+South Africa,ZAF,2007,HepB3,83.0
+South Africa,ZAF,2008,HepB3,76.0
+South Africa,ZAF,2009,HepB3,74.0
+South Africa,ZAF,2010,HepB3,71.0
+South Africa,ZAF,2011,HepB3,76.0
+South Africa,ZAF,2012,HepB3,70.0
+South Africa,ZAF,2013,HepB3,73.0
+South Africa,ZAF,2014,HepB3,85.0
+South Africa,ZAF,2015,HepB3,85.0
+South Africa,ZAF,2016,HepB3,85.0
+South Africa,ZAF,2017,HepB3,84.0
+South Africa,ZAF,2018,HepB3,82.0
+South Africa,ZAF,2019,HepB3,85.0
+South Africa,ZAF,2020,HepB3,84.0
+South Africa,ZAF,2021,HepB3,86.0
+South Africa,ZAF,2022,HepB3,85.0
+South Africa,ZAF,2023,HepB3,79.0
+South Africa,ZAF,2024,HepB3,74.0
+South Africa,ZAF,2000,MCV1,72.0
+South Africa,ZAF,2001,MCV1,69.0
+South Africa,ZAF,2002,MCV1,65.0
+South Africa,ZAF,2003,MCV1,62.0
+South Africa,ZAF,2004,MCV1,63.0
+South Africa,ZAF,2005,MCV1,64.0
+South Africa,ZAF,2006,MCV1,69.0
+South Africa,ZAF,2007,MCV1,68.0
+South Africa,ZAF,2008,MCV1,73.0
+South Africa,ZAF,2009,MCV1,77.0
+South Africa,ZAF,2010,MCV1,72.0
+South Africa,ZAF,2011,MCV1,77.0
+South Africa,ZAF,2012,MCV1,79.0
+South Africa,ZAF,2013,MCV1,78.0
+South Africa,ZAF,2014,MCV1,84.0
+South Africa,ZAF,2015,MCV1,86.0
+South Africa,ZAF,2016,MCV1,84.0
+South Africa,ZAF,2017,MCV1,81.0
+South Africa,ZAF,2018,MCV1,81.0
+South Africa,ZAF,2019,MCV1,83.0
+South Africa,ZAF,2020,MCV1,84.0
+South Africa,ZAF,2021,MCV1,87.0
+South Africa,ZAF,2022,MCV1,86.0
+South Africa,ZAF,2023,MCV1,80.0
+South Africa,ZAF,2024,MCV1,76.0
+South Africa,ZAF,2000,Polio3,71.0
+South Africa,ZAF,2001,Polio3,71.0
+South Africa,ZAF,2002,Polio3,70.0
+South Africa,ZAF,2003,Polio3,70.0
+South Africa,ZAF,2004,Polio3,73.0
+South Africa,ZAF,2005,Polio3,75.0
+South Africa,ZAF,2006,Polio3,79.0
+South Africa,ZAF,2007,Polio3,79.0
+South Africa,ZAF,2008,Polio3,77.0
+South Africa,ZAF,2009,Polio3,75.0
+South Africa,ZAF,2010,Polio3,72.0
+South Africa,ZAF,2011,Polio3,71.0
+South Africa,ZAF,2012,Polio3,69.0
+South Africa,ZAF,2013,Polio3,79.0
+South Africa,ZAF,2014,Polio3,85.0
+South Africa,ZAF,2015,Polio3,85.0
+South Africa,ZAF,2016,Polio3,85.0
+South Africa,ZAF,2017,Polio3,84.0
+South Africa,ZAF,2018,Polio3,82.0
+South Africa,ZAF,2019,Polio3,85.0
+South Africa,ZAF,2020,Polio3,84.0
+South Africa,ZAF,2021,Polio3,86.0
+South Africa,ZAF,2022,Polio3,85.0
+South Africa,ZAF,2023,Polio3,79.0
+South Africa,ZAF,2024,Polio3,74.0
 South America,OWID_SAM,2000,DTP3,90.7119
 South America,OWID_SAM,2001,DTP3,89.77683
 South America,OWID_SAM,2002,DTP3,91.45592
@@ -4399,6 +5799,106 @@ Thailand,THA,2021,Polio3,93.0
 Thailand,THA,2022,Polio3,93.0
 Thailand,THA,2023,Polio3,93.0
 Thailand,THA,2024,Polio3,93.0
+Tunisia,TUN,2000,DTP3,97.0
+Tunisia,TUN,2001,DTP3,98.0
+Tunisia,TUN,2002,DTP3,96.0
+Tunisia,TUN,2003,DTP3,95.0
+Tunisia,TUN,2004,DTP3,97.0
+Tunisia,TUN,2005,DTP3,98.0
+Tunisia,TUN,2006,DTP3,99.0
+Tunisia,TUN,2007,DTP3,98.0
+Tunisia,TUN,2008,DTP3,99.0
+Tunisia,TUN,2009,DTP3,99.0
+Tunisia,TUN,2010,DTP3,98.0
+Tunisia,TUN,2011,DTP3,98.0
+Tunisia,TUN,2012,DTP3,97.0
+Tunisia,TUN,2013,DTP3,98.0
+Tunisia,TUN,2014,DTP3,98.0
+Tunisia,TUN,2015,DTP3,98.0
+Tunisia,TUN,2016,DTP3,98.0
+Tunisia,TUN,2017,DTP3,98.0
+Tunisia,TUN,2018,DTP3,97.0
+Tunisia,TUN,2019,DTP3,98.0
+Tunisia,TUN,2020,DTP3,97.0
+Tunisia,TUN,2021,DTP3,97.0
+Tunisia,TUN,2022,DTP3,97.0
+Tunisia,TUN,2023,DTP3,97.0
+Tunisia,TUN,2024,DTP3,97.0
+Tunisia,TUN,2000,HepB3,94.0
+Tunisia,TUN,2001,HepB3,94.0
+Tunisia,TUN,2002,HepB3,93.0
+Tunisia,TUN,2003,HepB3,92.0
+Tunisia,TUN,2004,HepB3,96.0
+Tunisia,TUN,2005,HepB3,97.0
+Tunisia,TUN,2006,HepB3,99.0
+Tunisia,TUN,2007,HepB3,98.0
+Tunisia,TUN,2008,HepB3,99.0
+Tunisia,TUN,2009,HepB3,99.0
+Tunisia,TUN,2010,HepB3,98.0
+Tunisia,TUN,2011,HepB3,98.0
+Tunisia,TUN,2012,HepB3,97.0
+Tunisia,TUN,2013,HepB3,98.0
+Tunisia,TUN,2014,HepB3,98.0
+Tunisia,TUN,2015,HepB3,98.0
+Tunisia,TUN,2016,HepB3,98.0
+Tunisia,TUN,2017,HepB3,98.0
+Tunisia,TUN,2018,HepB3,97.0
+Tunisia,TUN,2019,HepB3,98.0
+Tunisia,TUN,2020,HepB3,97.0
+Tunisia,TUN,2021,HepB3,97.0
+Tunisia,TUN,2022,HepB3,97.0
+Tunisia,TUN,2023,HepB3,97.0
+Tunisia,TUN,2024,HepB3,97.0
+Tunisia,TUN,2000,MCV1,95.0
+Tunisia,TUN,2001,MCV1,92.0
+Tunisia,TUN,2002,MCV1,94.0
+Tunisia,TUN,2003,MCV1,90.0
+Tunisia,TUN,2004,MCV1,95.0
+Tunisia,TUN,2005,MCV1,96.0
+Tunisia,TUN,2006,MCV1,98.0
+Tunisia,TUN,2007,MCV1,98.0
+Tunisia,TUN,2008,MCV1,98.0
+Tunisia,TUN,2009,MCV1,98.0
+Tunisia,TUN,2010,MCV1,97.0
+Tunisia,TUN,2011,MCV1,96.0
+Tunisia,TUN,2012,MCV1,96.0
+Tunisia,TUN,2013,MCV1,94.0
+Tunisia,TUN,2014,MCV1,98.0
+Tunisia,TUN,2015,MCV1,98.0
+Tunisia,TUN,2016,MCV1,96.0
+Tunisia,TUN,2017,MCV1,98.0
+Tunisia,TUN,2018,MCV1,96.0
+Tunisia,TUN,2019,MCV1,98.0
+Tunisia,TUN,2020,MCV1,98.0
+Tunisia,TUN,2021,MCV1,95.0
+Tunisia,TUN,2022,MCV1,95.0
+Tunisia,TUN,2023,MCV1,96.0
+Tunisia,TUN,2024,MCV1,96.0
+Tunisia,TUN,2000,Polio3,97.0
+Tunisia,TUN,2001,Polio3,98.0
+Tunisia,TUN,2002,Polio3,96.0
+Tunisia,TUN,2003,Polio3,95.0
+Tunisia,TUN,2004,Polio3,97.0
+Tunisia,TUN,2005,Polio3,98.0
+Tunisia,TUN,2006,Polio3,99.0
+Tunisia,TUN,2007,Polio3,98.0
+Tunisia,TUN,2008,Polio3,99.0
+Tunisia,TUN,2009,Polio3,99.0
+Tunisia,TUN,2010,Polio3,98.0
+Tunisia,TUN,2011,Polio3,98.0
+Tunisia,TUN,2012,Polio3,97.0
+Tunisia,TUN,2013,Polio3,98.0
+Tunisia,TUN,2014,Polio3,98.0
+Tunisia,TUN,2015,Polio3,98.0
+Tunisia,TUN,2016,Polio3,98.0
+Tunisia,TUN,2017,Polio3,98.0
+Tunisia,TUN,2018,Polio3,97.0
+Tunisia,TUN,2019,Polio3,98.0
+Tunisia,TUN,2020,Polio3,97.0
+Tunisia,TUN,2021,Polio3,97.0
+Tunisia,TUN,2022,Polio3,97.0
+Tunisia,TUN,2023,Polio3,97.0
+Tunisia,TUN,2024,Polio3,96.0
 Uganda,UGA,2000,DTP3,52.0
 Uganda,UGA,2001,DTP3,55.0
 Uganda,UGA,2002,DTP3,57.0
@@ -5199,3 +6699,103 @@ Zambia,ZMB,2021,Polio3,87.0
 Zambia,ZMB,2022,Polio3,94.0
 Zambia,ZMB,2023,Polio3,91.0
 Zambia,ZMB,2024,Polio3,90.0
+Zimbabwe,ZWE,2000,DTP3,78.0
+Zimbabwe,ZWE,2001,DTP3,75.0
+Zimbabwe,ZWE,2002,DTP3,71.0
+Zimbabwe,ZWE,2003,DTP3,68.0
+Zimbabwe,ZWE,2004,DTP3,65.0
+Zimbabwe,ZWE,2005,DTP3,68.0
+Zimbabwe,ZWE,2006,DTP3,70.0
+Zimbabwe,ZWE,2007,DTP3,73.0
+Zimbabwe,ZWE,2008,DTP3,75.0
+Zimbabwe,ZWE,2009,DTP3,73.0
+Zimbabwe,ZWE,2010,DTP3,89.0
+Zimbabwe,ZWE,2011,DTP3,93.0
+Zimbabwe,ZWE,2012,DTP3,95.0
+Zimbabwe,ZWE,2013,DTP3,95.0
+Zimbabwe,ZWE,2014,DTP3,91.0
+Zimbabwe,ZWE,2015,DTP3,87.0
+Zimbabwe,ZWE,2016,DTP3,90.0
+Zimbabwe,ZWE,2017,DTP3,89.0
+Zimbabwe,ZWE,2018,DTP3,89.0
+Zimbabwe,ZWE,2019,DTP3,90.0
+Zimbabwe,ZWE,2020,DTP3,86.0
+Zimbabwe,ZWE,2021,DTP3,88.0
+Zimbabwe,ZWE,2022,DTP3,90.0
+Zimbabwe,ZWE,2023,DTP3,90.0
+Zimbabwe,ZWE,2024,DTP3,91.0
+Zimbabwe,ZWE,2000,HepB3,79.0
+Zimbabwe,ZWE,2001,HepB3,76.0
+Zimbabwe,ZWE,2002,HepB3,73.0
+Zimbabwe,ZWE,2003,HepB3,70.0
+Zimbabwe,ZWE,2004,HepB3,68.0
+Zimbabwe,ZWE,2005,HepB3,65.0
+Zimbabwe,ZWE,2006,HepB3,68.0
+Zimbabwe,ZWE,2007,HepB3,72.0
+Zimbabwe,ZWE,2008,HepB3,75.0
+Zimbabwe,ZWE,2009,HepB3,73.0
+Zimbabwe,ZWE,2010,HepB3,90.0
+Zimbabwe,ZWE,2011,HepB3,94.0
+Zimbabwe,ZWE,2012,HepB3,97.0
+Zimbabwe,ZWE,2013,HepB3,95.0
+Zimbabwe,ZWE,2014,HepB3,91.0
+Zimbabwe,ZWE,2015,HepB3,87.0
+Zimbabwe,ZWE,2016,HepB3,90.0
+Zimbabwe,ZWE,2017,HepB3,89.0
+Zimbabwe,ZWE,2018,HepB3,89.0
+Zimbabwe,ZWE,2019,HepB3,90.0
+Zimbabwe,ZWE,2020,HepB3,86.0
+Zimbabwe,ZWE,2021,HepB3,88.0
+Zimbabwe,ZWE,2022,HepB3,90.0
+Zimbabwe,ZWE,2023,HepB3,90.0
+Zimbabwe,ZWE,2024,HepB3,91.0
+Zimbabwe,ZWE,2000,MCV1,75.0
+Zimbabwe,ZWE,2001,MCV1,73.0
+Zimbabwe,ZWE,2002,MCV1,70.0
+Zimbabwe,ZWE,2003,MCV1,68.0
+Zimbabwe,ZWE,2004,MCV1,66.0
+Zimbabwe,ZWE,2005,MCV1,67.0
+Zimbabwe,ZWE,2006,MCV1,68.0
+Zimbabwe,ZWE,2007,MCV1,69.0
+Zimbabwe,ZWE,2008,MCV1,70.0
+Zimbabwe,ZWE,2009,MCV1,76.0
+Zimbabwe,ZWE,2010,MCV1,90.0
+Zimbabwe,ZWE,2011,MCV1,92.0
+Zimbabwe,ZWE,2012,MCV1,97.0
+Zimbabwe,ZWE,2013,MCV1,93.0
+Zimbabwe,ZWE,2014,MCV1,92.0
+Zimbabwe,ZWE,2015,MCV1,86.0
+Zimbabwe,ZWE,2016,MCV1,95.0
+Zimbabwe,ZWE,2017,MCV1,90.0
+Zimbabwe,ZWE,2018,MCV1,88.0
+Zimbabwe,ZWE,2019,MCV1,85.0
+Zimbabwe,ZWE,2020,MCV1,85.0
+Zimbabwe,ZWE,2021,MCV1,88.0
+Zimbabwe,ZWE,2022,MCV1,90.0
+Zimbabwe,ZWE,2023,MCV1,90.0
+Zimbabwe,ZWE,2024,MCV1,90.0
+Zimbabwe,ZWE,2000,Polio3,78.0
+Zimbabwe,ZWE,2001,Polio3,76.0
+Zimbabwe,ZWE,2002,Polio3,73.0
+Zimbabwe,ZWE,2003,Polio3,70.0
+Zimbabwe,ZWE,2004,Polio3,67.0
+Zimbabwe,ZWE,2005,Polio3,69.0
+Zimbabwe,ZWE,2006,Polio3,71.0
+Zimbabwe,ZWE,2007,Polio3,73.0
+Zimbabwe,ZWE,2008,Polio3,75.0
+Zimbabwe,ZWE,2009,Polio3,69.0
+Zimbabwe,ZWE,2010,Polio3,89.0
+Zimbabwe,ZWE,2011,Polio3,93.0
+Zimbabwe,ZWE,2012,Polio3,95.0
+Zimbabwe,ZWE,2013,Polio3,95.0
+Zimbabwe,ZWE,2014,Polio3,92.0
+Zimbabwe,ZWE,2015,Polio3,88.0
+Zimbabwe,ZWE,2016,Polio3,90.0
+Zimbabwe,ZWE,2017,Polio3,89.0
+Zimbabwe,ZWE,2018,Polio3,89.0
+Zimbabwe,ZWE,2019,Polio3,90.0
+Zimbabwe,ZWE,2020,Polio3,86.0
+Zimbabwe,ZWE,2021,Polio3,88.0
+Zimbabwe,ZWE,2022,Polio3,90.0
+Zimbabwe,ZWE,2023,Polio3,90.0
+Zimbabwe,ZWE,2024,Polio3,91.0

@@ -11,7 +11,7 @@ import re
 
 import pytest
 
-from src import config, contrast
+from src import config, contrast, tasks
 from src.contrast import (
     GRAPHIC_MIN,
     TEXT_MIN,
@@ -176,33 +176,53 @@ def test_no_series_colour_can_be_mistaken_for_the_world_reference():
         assert distance >= config.MIN_CVD_DISTANCE, f"{color} is {distance:.1f} dE from black"
 
 
-def test_marker_symbols_give_every_scatter_series_its_own_shape():
-    """The scatter's second channel: colour is never the only one (visual-spec.md section 6)."""
-    assert len(config.MARKER_SYMBOLS) >= config.MAX_SERIES
-    assert len(set(config.MARKER_SYMBOLS)) == len(config.MARKER_SYMBOLS)
+# --- The scatter's change scale (docs/visual-spec.md section 4, 2026-10-11) -----------------------
 
 
-def test_the_scatter_uses_each_colour_at_most_twice():
-    """Two dots of one colour are told apart by shape alone; a third would make that harder, and
-    nothing in visual-spec.md section 6 has measured it."""
-    assert config.MAX_SCATTER_DOTS == len(config.MARKER_SYMBOLS) <= 2 * len(config.SERIES_COLORS)
+def test_every_change_step_clears_the_graphic_floor():
+    for _bound, color in config.CHANGE_STEPS:
+        assert contrast_ratio(color, BG) >= GRAPHIC_MIN, color
 
 
-def test_the_shapes_are_the_ones_visual_spec_pairs_by_colour():
-    """visual-spec.md section 6's table: the eight shapes added 2026-10-11, each paired with the
-    shape that shares its colour. Pentagon, hexagon and the -x variants read as circles at 12 px."""
-    assert config.MARKER_SYMBOLS[8:] == [
-        "hourglass",
-        "star-diamond",
-        "bowtie",
-        "star-square",
-        "triangle-left",
-        "hexagram",
-        "triangle-right",
-        "diamond-tall",
-    ]
-    rejected = {"pentagon", "hexagon", "square-x", "circle-x", "diamond-cross", "arrow-up"}
-    assert not rejected & set(config.MARKER_SYMBOLS)
+@pytest.mark.parametrize("vision", ["normal", "deutan", "protan"])
+def test_the_change_steps_darken_away_from_no_change(vision):
+    """Each side darkens as the change grows: the darkest blue and red are the largest changes."""
+    lightness = [_lightness(color, vision) for _bound, color in config.CHANGE_STEPS]
+    rises, fall = lightness[:4], lightness[3:]
+    assert rises == sorted(rises), "blues lighten towards no change"
+    assert fall == sorted(fall, reverse=True), "reds darken away from no change"
+
+
+# --- Bar colours (docs/visual-spec.md section 4, 2026-10-11) -------------------------------------
+
+BAR_CHARTS = [task for task in (*tasks.FORM_A, *tasks.FORM_B) if task.chart == "bar"]
+
+
+@pytest.mark.parametrize("task", BAR_CHARTS, ids=lambda t: t.task_id)
+def test_every_bar_chart_holds_the_series_floor(task):
+    """A colour per bar, held to the floors the series colours meet: 3:1 on white, and every pair
+    on one chart MIN_CVD_DISTANCE apart under normal vision, deuteranopia and protanopia."""
+    from src import figures
+
+    colors = [figures.bar_color(entity) for entity in task.entities]
+    assert len(set(colors)) == len(colors)
+    for color in colors:
+        assert contrast_ratio(color, BG) >= GRAPHIC_MIN, color
+    distance, first, second = contrast.weakest_pair(colors)
+    assert distance >= config.MIN_CVD_DISTANCE, f"{first} / {second}: {distance:.1f}"
+
+
+def test_no_bar_colour_reads_as_grey_or_neon():
+    """Saturation (C*) 30 to 70: a grey bar would read as land with no question attached."""
+    import math
+
+    for country, color in config.BAR_COLORS.items():
+        _l, a, b = contrast.to_lab(contrast.simulate(color, "normal"))
+        assert 30 <= math.hypot(a, b) <= 70, country
+
+
+def test_the_bar_countries_each_have_one_colour():
+    assert not set(config.BAR_COLORS) & set(config.COUNTRY_COLORS)
 
 
 # --- The sequential scale (heatmap and map) ------------------------------------------------------

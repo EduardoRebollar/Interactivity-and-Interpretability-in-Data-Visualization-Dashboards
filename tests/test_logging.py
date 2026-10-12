@@ -131,9 +131,9 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_thirteen():
-    """v13: each T3 scatter draws sixteen dots, where a v12 one drew six."""
-    assert SCHEMA_VERSION == 13
+def test_schema_version_is_fourteen():
+    """v14: the chart handoff redraws every chart, and T5 asks about eighteen countries."""
+    assert SCHEMA_VERSION == 14
 
 
 @pytest.mark.parametrize(

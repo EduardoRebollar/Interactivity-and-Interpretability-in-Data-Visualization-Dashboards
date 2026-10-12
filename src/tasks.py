@@ -184,24 +184,30 @@ FORM_A: tuple[Task, ...] = (
         chart="map",
         years=(2013,),
         prompt=(
-            "The map colours 13 countries in sub-Saharan Africa by their coverage in 2013. "
+            "The map colours 18 countries in Africa by their coverage in 2013. "
             "How many of those countries had coverage below 50%?"
         ),
         vaccine="DTP3",
-        # Every country at least 10 points from 50% in 2013. Somalia (44), South Sudan (53), Angola
-        # (54) and Ethiopia (59) are left uncoloured: their side of the line is a colour judgement
-        # too fine to make without hover. docs/study-design.md section 4.
+        # The chart handoff's 20 African countries, less Somalia (44) and Ethiopia (59): within 10
+        # points of 50% in 2013, their side of the line is a colour judgement too fine to make
+        # without hover. Egypt, Libya and Sudan are not sub-Saharan, so the prompt says "Africa"
+        # (2026-10-11). docs/study-design.md section 4.
         entities=(
+            "Benin",
+            "Burkina Faso",
             "Cameroon",
             "Central African Republic",
             "Chad",
             "Democratic Republic of Congo",
+            "Egypt",
             "Kenya",
+            "Libya",
             "Madagascar",
             "Mali",
             "Mozambique",
             "Niger",
             "Nigeria",
+            "Sudan",
             "Tanzania",
             "Uganda",
             "Zambia",
@@ -333,24 +339,34 @@ FORM_B: tuple[Task, ...] = (
         chart="map",
         years=(2007,),
         prompt=(
-            "The map colours 11 countries in sub-Saharan Africa by their coverage in 2007. "
+            "The map colours 18 countries in Africa by their coverage in 2007. "
             "How many of those countries had coverage below 50%?"
         ),
         vaccine="DTP3",
-        # Every country at least 10 points from 50% in 2007. Nigeria (42), Angola (43), the Central
-        # African Republic (48), Ethiopia (50) and Niger (58) are too close to colour.
+        # As many as form A's, as far as possible different ones (2026-10-11): Chad (29) and Somalia
+        # (40), the only countries in the older scope clear below 50% in 2007, and sixteen added for
+        # this map, each at least 13 points above the line. Every African country within 10 points
+        # of 50% in 2007 is left out: Nigeria (42), Angola (43), the Central African Republic and
+        # Equatorial Guinea (48), Ethiopia (50), Niger (58). docs/study-design.md section 4.
         entities=(
-            "Cameroon",
+            "Algeria",
+            "Botswana",
             "Chad",
-            "Democratic Republic of Congo",
-            "Kenya",
-            "Madagascar",
-            "Mali",
-            "Mozambique",
+            "Congo",
+            "Cote d'Ivoire",
+            "Eritrea",
+            "Gabon",
+            "Ghana",
+            "Guinea",
+            "Malawi",
+            "Mauritania",
+            "Morocco",
+            "Namibia",
+            "Senegal",
             "Somalia",
-            "Tanzania",
-            "Uganda",
-            "Zambia",
+            "South Africa",
+            "Tunisia",
+            "Zimbabwe",
         ),
         options=COUNT_OPTIONS,
     ),
