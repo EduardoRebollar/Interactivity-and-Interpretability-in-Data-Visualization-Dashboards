@@ -779,7 +779,7 @@ _SORT_DIRECTION = {
     "asc": "asc",
     "default": "none",
     "min": "asc",
-    "mean": "asc",
+    "max": "desc",
 }
 
 
@@ -1174,7 +1174,7 @@ def control_step(
 
     figure = _view_figure(task, control)
     order = _chip_order(task, control)
-    chip_rows = layout.chip_rows(order, _shown(control))
+    chip_rows = layout.chip_rows(order, _shown(control), task.chart)
     group = layout.chip_group(task, order, _shown(control)) if order != order_before else no_update
     # Logged AFTER the figure is built. Logged first, a database failure left the participant's
     # click with no visible effect -- the chart simply did not change.

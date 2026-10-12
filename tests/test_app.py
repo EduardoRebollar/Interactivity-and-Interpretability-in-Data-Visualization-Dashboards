@@ -770,12 +770,72 @@ def test_a_chip_hides_a_line_and_logs_it(tmp_path):
     assert result.sort is no_update and result.threshold is no_update
 
 
-def test_the_chips_split_into_two_rows_the_first_taking_the_extra_one(tmp_path):
+def test_the_chips_split_into_even_rows_of_at_most_six(tmp_path):
     result, _events = _interact("chips", tmp_path, chips=_countries()[:3])
-    first, second = result.chips
-    half = -(-len(_countries()) // 2)
-    assert [o["value"] for o in first["options"]] == _countries()[:half]
-    assert [o["value"] for o in second["options"]] == _countries()[half:]
+    assert [o["value"] for row in result.chips for o in row["options"]] == _countries()
+    assert [len(row["options"]) for row in result.chips] == [4, 4]
+
+
+@pytest.mark.parametrize(
+    ("count", "sizes"),
+    [
+        (1, [1]),
+        (6, [6]),
+        (7, [4, 3]),
+        (8, [4, 4]),
+        (10, [5, 5]),
+        (13, [5, 4, 4]),
+        (16, [6, 5, 5]),
+        (18, [6, 6, 6]),
+    ],
+)
+def test_chip_rows_hold_at_most_six_and_the_first_rows_take_the_extra(count, sizes):
+    """The scatter's sixteen ran in four ragged rows when there were always two (pilot session 1,
+    visual-spec.md section 7.3)."""
+    names = [f"Country {index:02d}" for index in range(count)]
+    rows = layout.chip_rows(names, names[:2], "scatter")
+    assert [len(row["options"]) for row in rows] == sizes
+    assert [o["value"] for row in rows for o in row["options"]] == names
+    assert [name for row in rows for name in row["value"]] == names[:2]
+
+
+def test_every_chart_lays_its_chips_out_in_full_rows():
+    """No item's chips leave an empty row, which `chip_group` would drop and the view callback's
+    chip outputs would then miscount."""
+    for form in ("A", "B"):
+        for task in tasks.for_form(form):
+            order = layout.filterable(list(task.entities))
+            rows = layout.chip_rows(order, order, task.chart)
+            assert all(row["options"] for row in rows), task.task_id
+            assert max(len(row["options"]) for row in rows) <= layout.chips_per_row(task.chart)
+
+
+@pytest.mark.parametrize(
+    ("chart", "expected"),
+    [
+        ("map", {"Central African Republic": "CAR", "Democratic Republic of Congo": "DR Congo"}),
+        (
+            "line",
+            {
+                "Central African Republic": "Central African Rep.",
+                "Democratic Republic of Congo": "DR Congo",
+            },
+        ),
+    ],
+)
+def test_a_chip_names_its_country_as_the_chart_does_and_logs_the_full_name(chart, expected):
+    names = [*expected, "Chad"]
+    (row,) = layout.chip_rows(names, names, chart)
+    labels = {o["value"]: o["label"][-1].children for o in row["options"]}
+    assert labels == {**expected, "Chad": "Chad"}
+    assert [o["value"] for o in row["options"]] == names
+
+
+def test_the_maps_chips_run_five_to_a_row_beside_the_highlight_box(tmp_path):
+    """Six wrapped beside the Highlight box at every window size (headless Chrome, 2026-10-12)."""
+    names = _countries(_task_at("map"))
+    result, _events = _interact_on("map", "chips", tmp_path, chips=names[1:])
+    assert [len(row["options"]) for row in result.chips] == [5, 5, 4, 4]
 
 
 def test_unticking_the_last_chip_is_refused_and_the_chip_put_back(tmp_path):
@@ -1301,17 +1361,23 @@ def test_a_chip_fades_a_bar_in_place(tmp_path):
     assert list(result.figure.data[0].x) == names
 
 
-@pytest.mark.parametrize("key", ["min", "mean"])
-def test_sorting_the_heatmap_rows_reorders_them_lowest_first_and_logs_it(tmp_path, key):
+@pytest.mark.parametrize(("key", "direction"), [("min", "asc"), ("max", "desc")])
+def test_sorting_the_heatmap_rows_reorders_them_and_logs_it(tmp_path, key, direction):
     result, events = _interact_on("heatmap", "sort", tmp_path, sort_key=key)
-    assert events[0]["payload"] == {"key": key, "direction": "asc"}
+    assert events[0]["payload"] == {"key": key, "direction": direction}
     cells = result.figure.data[0]
     reported = {
         name: [v for v in row if v is not None] for name, row in zip(cells.y, cells.z, strict=True)
     }
-    statistic = min if key == "min" else (lambda values: sum(values) / len(values))
+    statistic = min if key == "min" else (lambda values: -max(values))
     order = list(result.figure.layout.yaxis.categoryarray)
     assert order == sorted(order, key=lambda name: statistic(reported[name]))
+
+
+def test_the_heatmap_has_no_average_sort_any_more(tmp_path):
+    """`mean` went after the first pilot session; a stored or sent one is not a sort."""
+    result, events = _interact_on("heatmap", "sort", tmp_path, sort_key="mean")
+    assert result == app.UNCHANGED and events == []
 
 
 def test_a_chip_fades_a_heatmap_row_where_it_is_drawn(tmp_path):

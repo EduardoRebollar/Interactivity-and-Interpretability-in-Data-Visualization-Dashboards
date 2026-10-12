@@ -60,6 +60,13 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v18 (2026-10-12): the changes after the first pilot session (docs/study-design.md section 10).
+# The practice asks about 2019-2021, not 2015-2021, so a v17 P0 answer was given to a different
+# question. The heatmap's row sort is `default`, `min` or `max` (each row's highest cell, highest
+# first); `mean` can no longer occur. The record shape is unchanged: no new event, key or table, so
+# no init_db.py re-run. Nothing has been collected under v18; the pilot's v17 session is kept out
+# of the study.
+#
 # v17 (2026-10-12): reworded prompts and two new questions (docs/study-design.md section 4). T1, T3
 # and A-T4 keep their keys under new words. B-T2 asks for the sixth-highest bar, in 2017 (key
 # Mozambique), and B-T4 for the highest cell, with Laos and Cameroon in place of Myanmar and Uganda
@@ -154,7 +161,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -220,7 +227,8 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "filter_change": ("control", "action", "value", "previous"),
     "line_isolate": ("entity", "isolated"),
     # `key`: the line chart's View `listed` or `coverage`; the bar chart's `alpha`, `desc` or `asc`;
-    # the heatmap's `default`, `min` or `mean`. `direction`: `none`, `desc` or `asc`.
+    # the heatmap's `default`, `min` or `max` (`mean` until v18). `direction`: `none`, `desc` or
+    # `asc`.
     "sort_change": ("key", "direction"),
     # Reset view: undoes filtering, sorting, isolating and the highlight in one press. `previous` is
     # the view it undid.

@@ -250,8 +250,8 @@ INTERACTIVE_NOTES = {
     ),
     "heatmap": (
         "The interactive version adds the controls under it: a button for each country, which "
-        "fades or restores its row; a Sort rows control (Default, Lowest value, Average), which "
-        "reorders the rows; and Reset view. Hovering a cell shows its exact value."
+        "fades or restores its row; a Sort rows control (A-Z, Lowest cell first, Highest cell "
+        "first), which reorders the rows; and Reset view. Hovering a cell shows its exact value."
     ),
     "map": (
         "The interactive version adds the controls under it: a button for each country, which "

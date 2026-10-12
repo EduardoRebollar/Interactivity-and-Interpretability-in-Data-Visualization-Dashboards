@@ -178,6 +178,12 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v18 (2026-10-12).** The changes after the first pilot session (`study-design.md` §10).
+The practice asks about 2019–2021, not 2015–2021. The heatmap's row sort is `default`, `min` or
+`max` (highest cell first); `mean` can no longer occur. More of v18 is planned (the Years slider,
+key highlighting, T7), and this entry grows with it before anything is collected. No new event,
+key, table or column so far, so `init_db.py` needs no re-run.
+
 **Schema v17 (2026-10-12).** T1, T3 and A-T4 reworded, keys unchanged. B-T2 asks for the
 sixth-highest bar, in 2017 (key Mozambique); B-T4 for the highest cell, Laos and Cameroon replacing
 Myanmar and Uganda (key Nepal); both option lists changed (`study-design.md` §4). The T4 rule takes
@@ -807,6 +813,24 @@ context cheap and the reports as long as they need to be.
   src.app` serves it; the deployed app (`create_app()`, preview off) does not, so trying a change
   needs no commit and production no longer exposes both forms. 1312 tests. Headless Chrome: the
   local /preview draws its chart and logs nothing; the deployed app's /preview is the study.
+- 2026-10-12 — **Pilot session 1**, with Eduardo's faculty supervisor (static A, then interactive
+  B; 36 min). Findings, the transcript, and the changes it led to are in `study-design.md` §10. The
+  plan runs in phases:
+  - Phase 0: keep the pilot out of the study data; ask HSRRC about an amendment.
+  - Phase 1: quick fixes.
+  - Phase 2: line chart.
+  - Phase 3: clickable keys.
+  - Phase 4: T7.
+- 2026-10-12 — **Pilot changes, phase 1** (uncommitted at time of writing). Practice window
+  2019–2021. Heatmap sort A–Z / Lowest cell first / Highest cell first (B-T4's key row now comes
+  to the top too). Chips at most six to a row, five on the map beside the Highlight box, named as
+  the chart names them ("DR Congo"). The line hint names hover. A full-screen request on the first
+  instructions screen, "explain each one on its own" in the second half, and a researcher script
+  (§8). Schema v18. 1333 tests. Headless Chrome, both forms and conditions at 1440 × 790, 1366 ×
+  768 and 1440 × 900: no chip row wraps, the sort brings each T4 key row to the top, the new
+  wording is on screen, no console errors. Against the committed version, only the interactive
+  T3 card moved (36 px up). Found, not caused: the interactive T1 card ends at 802 px on a
+  790-tall window.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
@@ -986,6 +1010,20 @@ context cheap and the reports as long as they need to be.
   cheapest), the swaps (Guinea, Algeria, Benin, each found by search with the key and its option
   position kept), and Benin over Niger in A-T4, which would have matched B's margin but shared a
   third identical row across forms.
+
+- 2026-10-12 — **After pilot session 1** (Eduardo; the supervisor's points are in `study-design.md`
+  §10).
+  - A Years range slider replaces View on line charts. Zoom is named once in the instructions.
+  - A click on a colour in the key highlights it on the scatter, heatmap and map. The map's
+    "Below n %" box goes: the supervisor found it mirrored the question ("almost cheating").
+  - T7 is added: an at-a-glance item, scored separately, as the supervisor's counterpoint where
+    interactivity may not help.
+  - The main study stays logging only: no think-aloud, no questions at the break, no debrief.
+  - Taken on recommendation:
+    - practice window 2019–2021;
+    - clicking a line fades the others instead of hiding them;
+    - heatmap sort by lowest or highest cell;
+    - chips at most six to a row.
 
 ## Open questions
 

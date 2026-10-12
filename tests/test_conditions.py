@@ -829,12 +829,29 @@ def test_the_heatmap_order_label_follows_the_sort(rows):
     figure = _chart("heatmap", rows)
     assert _order_label(figure) == "A–Z"
     figures.sort_rows(figure, "min")
-    assert _order_label(figure) == "Lowest value first"
-    figures.sort_rows(figure, "mean")
-    assert _order_label(figure) == "Lowest average first"
+    assert _order_label(figure) == "Lowest cell first"
+    figures.sort_rows(figure, "max")
+    assert _order_label(figure) == "Highest cell first"
 
 
-def test_sorting_rows_orders_them_by_lowest_cell_or_average_and_back(rows):
+def test_the_row_sort_options_are_named_as_their_order_labels():
+    """The control and the label over the rows say the same thing (visual-spec.md section 7.2)."""
+    _legend, options = layout.SORTS["heatmap"]
+    assert dict(options) == figures.ROW_ORDER_LABELS
+    assert tuple(value for value, _label in options) == figures.ROW_SORTS
+
+
+def test_each_t4_key_row_comes_to_the_top_in_one_sort():
+    """A-T4 asks for the lowest cell and B-T4 for the highest: Lowest cell first and Highest cell
+    first each put that form's key row on top (study-design.md section 4, 2026-10-12)."""
+    for form, key, expected in (("A", "min", "Chad"), ("B", "max", "Nepal")):
+        (task,) = [t for t in tasks.for_form(form) if t.chart == "heatmap"]
+        figure = figures.task_figure(task)
+        figures.sort_rows(figure, key)
+        assert list(figure.layout.yaxis.categoryarray)[0] == expected, form
+
+
+def test_sorting_rows_orders_them_by_lowest_or_highest_cell_and_back(rows):
     task = TASK_BY_CHART["heatmap"]
     figure = _chart("heatmap", rows)
     (cells,) = figure.data
@@ -846,9 +863,9 @@ def test_sorting_rows_orders_them_by_lowest_cell_or_average_and_back(rows):
     assert list(figure.layout.yaxis.categoryarray) == sorted(
         task.entities, key=lambda n: min(reported[n])
     )
-    figures.sort_rows(figure, "mean")
+    figures.sort_rows(figure, "max")
     assert list(figure.layout.yaxis.categoryarray) == sorted(
-        task.entities, key=lambda n: sum(reported[n]) / len(reported[n])
+        task.entities, key=lambda n: -max(reported[n])
     )
     assert figure.data[0].to_plotly_json() == before, "no cell changes"
     figures.sort_rows(figure, "default")

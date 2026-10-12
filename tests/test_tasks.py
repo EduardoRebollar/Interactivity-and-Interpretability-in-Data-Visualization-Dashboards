@@ -312,6 +312,21 @@ def test_the_practice_country_is_on_neither_t1_chart():
         assert not practised & set(t1.entities), form
 
 
+def test_the_practice_window_is_the_fall_alone():
+    """The practice asks whether Myanmar's coverage rose, fell or stayed level. Until the first
+    pilot session the window was 2015-2021, and Myanmar held near 90% for all but its last two
+    years (study-design.md section 4). Every year in the window but the last must already be high,
+    and the last far below the first."""
+    first, last = (int(year) for year in re.findall(r"\b(20\d\d)\b", tasks.PRACTICE.prompt))
+    series = {
+        r.year: r.coverage_pct
+        for r in runtime_data.series("Myanmar", tasks.PRACTICE.vaccine, runtime_data.load_rows())
+    }
+    assert (first, last) == (2019, 2021)
+    assert series[last] <= series[first] - 40
+    assert all(series[year] >= 80 for year in range(first, last))
+
+
 def test_practice_task_shows_no_missing_data():
     """The practice teaches the interface on a complete line. A gap would need explaining first."""
     rows = runtime_data.load_rows()

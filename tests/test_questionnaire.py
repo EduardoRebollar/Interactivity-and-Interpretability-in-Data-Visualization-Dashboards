@@ -68,6 +68,7 @@ def test_both_versions_of_the_instructions_are_in_it(page):
     wording = [layout.STATIC_BULLET, layout.STATIC_OTHER_CHARTS, *layout.INTERACTIVE_BULLETS]
     wording += [layout.SECOND_HALF_POINTING, layout.SECOND_HALF_STATIC.strip()]
     wording += [*layout.PRACTICE_INTRO, layout.SECOND_HALF_INTRO, layout.SECOND_HALF_CLOSE]
+    wording += [layout.FULL_SCREEN]
     for text in wording:
         assert html.escape(text) in page, text
     assert "<b>static</b>" in page and "<b>interactive</b>" in page

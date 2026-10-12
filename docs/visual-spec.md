@@ -501,12 +501,14 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | Country chips | none | every chart: show or hide each country drawn |
 | Line charts | image | View (reorder the chips), Show all, isolate a line, zoom and pan the x axis |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
-| Heatmap | image | Sort rows: Default, Lowest value, Average |
+| Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first |
 | Map | image | Highlight: fade every country not below a typed percentage |
 | Every chart | none | a hint row saying what the chart can do, and Reset view |
 
-The line chart's hint named its legend; since 2026-10-11 it reads "Click a line to show only that
-country; click it again to bring the others back."
+The line chart's hint named its legend. From 2026-10-11 it read "Click a line to show only that
+country; click it again to bring the others back." Since 2026-10-12 it starts "Hover a line to read
+its values." The pilot's participant asked whether the line chart gave exact values: every other
+chart's hint named hover, and the line chart's did not.
 
 Plotly is interactive by default, so a plain `dcc.Graph` would leave the static condition hoverable
 and zoomable and the manipulation would be invalid. `staticPlot: True` is what makes "static"
@@ -583,15 +585,40 @@ chart's top right says the order (2026-10-11): "Countries in alphabetical order"
 coverage, highest first" or "Countries by coverage, lowest first".
 
 **On the heatmap, sorting moves the rows** (2026-09-25), for the same reason: its rows are names,
-not a scale. Control: **Sort rows**, `Default` (the listed order), `Lowest value` (each row's lowest
-cell, lowest first) and `Average` (each row's mean over its columns, lowest first). Ties keep the
-listed order. Each row keeps its cells and its label; no cell changes colour. The label over the
-row names says the order (2026-10-11): "A–Z", "Lowest value first" or "Lowest average first".
+not a scale. Control: **Sort rows**:
+- `A–Z`, the listed order;
+- `Lowest cell first`: each row's lowest cell, lowest first;
+- `Highest cell first`: each row's highest cell, highest first.
+
+Ties keep the listed order, and a row with nothing reported sorts last. Each row keeps its cells and
+its label; no cell changes colour. The label over the row names says the order: "A–Z", "Lowest
+cell first" or "Highest cell first".
+
+The options are named as their order labels are, since 2026-10-12. Until then they were `Default`,
+`Lowest value` and `Average` (each row's mean, lowest first). The first pilot session found that
+sort unclear, and of no use on B-T4, which asks for the highest cell (`docs/study-design.md` §4).
+Average answered neither form's question.
 
 ### 7.3 Filtering and line isolation
 
 - **Chips on every chart (2026-09-25).** One chip per country the chart draws, with its flag, in
   the task's entity order (the View control reorders them on line charts). World has none.
+- **At most six chips to a row (2026-10-12), five on the map.** The rows are as even as the count
+  allows, the first taking any extra:
+  - 16 run 6/5/5 (T3);
+  - 10 run 5/5 (T2);
+  - 8 run 4/4 (T1, T4, T6);
+  - the map's 18 run 5/5/4/4 (T5). Its strip also holds the Highlight box, and six chips beside it
+    wrapped at every window size (headless Chrome).
+
+  A chip names its country as the chart prints it (`figures.drawn_name`): "CAR" and "DR Congo" on
+  the map, "Central African Rep." and "DR Congo" elsewhere. Spelled out, "Democratic Republic of
+  Congo" still wrapped form A's map row. The chip's value, which is what is logged, stays the full
+  name.
+
+  Until then there were always two rows, each wrapping on its own. The scatter's sixteen chips then
+  stood in four ragged rows, which the first pilot session found awkward. Each row is its own
+  checklist (`layout.chip_rows`).
 - **Filtering hides; it does not rebuild the chart from a shorter list.** A rebuild would move
   every name tag, and before 2026-10-11, when colour went by position, it would also have recoloured
   the survivors.
@@ -794,6 +821,20 @@ strip and the hint row under the chart (§7).
   and the map card on any under 843 px (807–836 in compact mode, by width). The record before
   2026-10-11 gave the scatter's split as 862 px for every window; outside compact mode it was
   already 898. The static cards fit everywhere.
+
+  **Since 2026-10-12 the scatter's chips take three rows** (§7.3), and its interactive card ends
+  36 px higher in both forms. Measured in headless Chrome against the committed version; nothing
+  else on any task screen moved:
+
+  | Window | Scatter, interactive | Map, interactive | T1, interactive |
+  |---|---|---|---|
+  | 1440 × 790 (compact) | 826 | 807 | 802 |
+  | 1366 × 768 (compact) | 826 | 836 | 802 |
+  | 1440 × 900 | 862 | 843 | 838 |
+
+  The same run found that the interactive T1 card also runs past a 790 px window, by 12 px, in both
+  forms. That was already so before these changes: T1's two-line question sits above its card. Its
+  static card ends at 658.
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

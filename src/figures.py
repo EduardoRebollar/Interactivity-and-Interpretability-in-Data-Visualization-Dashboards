@@ -139,7 +139,10 @@ def task_figure(task, rows: tuple[Row, ...] | None = None) -> go.Figure:
 # --- The view functions: what the interactive controls change --------------------------------
 
 BAR_SORTS = ("alpha", "desc", "asc")
-ROW_SORTS = ("default", "min", "mean")
+# Each row's lowest cell, lowest first, or its highest, highest first: A-T4 asks for the lowest
+# cell and B-T4 for the highest, so each form's key row comes to the top in one click. "mean" (each
+# row's average) went after the first pilot session (2026-10-12); neither question turns on it.
+ROW_SORTS = ("default", "min", "max")
 # The label naming the order the bars or rows stand in (visual-spec.md section 7.2). It follows the
 # sort, so it never says "alphabetical" over bars that are not.
 ORDER_LABEL = "order"
@@ -148,7 +151,7 @@ BAR_ORDER_LABELS = {
     "desc": "Countries by coverage, highest first",
     "asc": "Countries by coverage, lowest first",
 }
-ROW_ORDER_LABELS = {"default": "A–Z", "min": "Lowest value first", "mean": "Lowest average first"}
+ROW_ORDER_LABELS = {"default": "A–Z", "min": "Lowest cell first", "max": "Highest cell first"}
 
 
 def _set_order_label(figure: go.Figure, text: str) -> None:
@@ -277,9 +280,10 @@ def sort_bars(figure: go.Figure, key: str) -> go.Figure:
 
 
 def sort_rows(figure: go.Figure, key: str) -> go.Figure:
-    """Order the heatmap's rows: as listed, by each row's lowest cell, or by its average, lowest
-    first (visual-spec.md section 7.2). Each row keeps its cells and its label, so no cell changes
-    colour; ties keep the listed order, and a row with nothing reported sorts last."""
+    """Order the heatmap's rows: as listed, by each row's lowest cell, lowest first, or by its
+    highest cell, highest first (visual-spec.md section 7.2). Each row keeps its cells and its
+    label, so no cell changes colour; ties keep the listed order, and a row with nothing reported
+    sorts last."""
     if key not in ROW_SORTS:
         raise FigureError(f"Unknown row sort {key!r}; expected one of {ROW_SORTS}")
     cells = _only(figure, go.Heatmap)
@@ -293,13 +297,15 @@ def sort_rows(figure: go.Figure, key: str) -> go.Figure:
         values = reported[name]
         if not values:
             return None
-        return min(values) if key == "min" else sum(values) / len(values)
+        return min(values) if key == "min" else max(values)
 
     if key == "default":
         order = listed
     else:
+        sign = 1 if key == "min" else -1
         order = sorted(
-            listed, key=lambda n: (statistic(n) is None, statistic(n) or 0, listed.index(n))
+            listed,
+            key=lambda n: (statistic(n) is None, sign * (statistic(n) or 0), listed.index(n)),
         )
     faded = _faded_rows(figure)
     figure.update_yaxes(categoryorder="array", categoryarray=order)
@@ -648,6 +654,15 @@ _TAG_NAMES = {
 def tag_name(entity: str) -> str:
     """The name a tag shows, shortened where it would not fit the margin."""
     return _TAG_NAMES.get(entity, entity)
+
+
+def drawn_name(entity: str, chart_type: str) -> str:
+    """The name a chart of this type prints for `entity`: on the map its short name
+    (`_name_country`), elsewhere its tag name. The chips use it too (2026-10-12), so a chip says
+    what the chart says, and "Democratic Republic of Congo" no longer wraps a row of chips."""
+    if chart_type == "map":
+        return config.MAP_SHORT_NAMES.get(entity, entity)
+    return tag_name(entity)
 
 
 def _line(

@@ -60,7 +60,7 @@ Identical in every visual respect. The only difference is the Plotly render conf
 | Country chips | none | every chart: show or hide each country drawn |
 | Line charts | image | View (as listed / by coverage), Show all, click a line to isolate it, zoom and pan |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
-| Heatmap | image | Sort rows: Default, Lowest value, Average |
+| Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first |
 | Map | image | Highlight: fade every country not below a typed percentage |
 | Every chart | — | Reset view: undo filtering, sorting, isolating and the highlight |
 
@@ -142,15 +142,15 @@ read is costly and that affordance lowers the cost:
 | T1 | line, 8 countries | isolating lines: a click on a line, or the chips | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
 | T3 | scatter | hovering a dot; hiding dots with the chips | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
-| T4 | heatmap | hovering a cell; in A, sorting rows by lowest value | telling dark (A) or light (B) bands apart against the key |
+| T4 | heatmap | hovering a cell; sorting rows by lowest (A) or highest (B) cell | telling dark (A) or light (B) bands apart against the key |
 | T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
 | T6 | line, 8 countries | isolating the two named lines; hovering both where they meet | following two lines through six others that cross them, then placing, by eye, the year they cross |
 
 **Redesign, 2026-09-25.** Every chart now has country chips and Reset view. The heatmap gained a
-row sort, and the map's range slider gave way to a typed threshold. The heatmap's Lowest value sort
-answers A-T4 in one click, as the bar sort answers T2. Like the bar sort, it lowers the static cost
-rather than making the item answerable, because T4's key already clears the acceptance rule. Since
-2026-10-12 B-T4 asks for the highest cell, which no row sort brings to the top (T4 below).
+row sort, and the map's range slider gave way to a typed threshold. The heatmap's row sort answers
+T4 in one click, as the bar sort answers T2: Lowest cell first in A and, since the first pilot
+session (2026-10-12, T4 below), Highest cell first in B. Like the bar sort, it lowers the static
+cost rather than making the item answerable, because T4's key already clears the acceptance rule.
 
 Chart type here is **variety** — evidence that an effect holds across formats — not a per-type
 claim. Each type carries one item per form, the line chart two, so per-chart-type differences
@@ -383,7 +383,8 @@ which.)
 | Key | **Chad** | **Nepal** |
 
 No number is written in a cell. Static participants match each cell's band against the stepped key;
-hover gives the exact value. In A the Lowest value row sort brings the key's row to the top. Since
+hover gives the exact value. The row sort brings the key's row to the top: Lowest cell first in A,
+and Highest cell first in B (since 2026-10-12, below). Since
 2026-10-11 the cells are banded (`docs/visual-spec.md` §4): the key cell is the only one of its
 colour in either grid, at least one band from the next. A's options are its six lowest rows, B's
 its six highest.
@@ -399,6 +400,13 @@ its six highest.
 > must know to look at the bottom; A's Lowest value sort puts the key on top. B's key is also one
 > band from the next row (A's two), and the light bands may be harder to tell apart than the dark
 > ones. Pilot checks (§10).
+
+> **Highest cell first, 2026-10-12** (pilot session 1, Eduardo). In the pilot's interactive half,
+> on B-T4, the row sort was unclear and of no help: it had no order by highest cell. Its options
+> became A–Z, Lowest cell first and Highest cell first; Average went, since neither form's question
+> turns on a row's average (`docs/visual-spec.md` §7.2). Each form's key row now comes to the top in
+> one click, so the sort no longer helps A more than B. Whether T4 then sits at ceiling in the
+> interactive condition is a pilot check (§10).
 
 > **Moved to MCV1, 2026-10-11** (Eduardo), with T2. On DTP3, A's grid had the Central African
 > Republic where Benin is (Chad 26 against the CAR's 37, margin 11), and B's key cell was 24 against
@@ -546,8 +554,8 @@ than quietly unbalancing the forms. Six known differences go to the pilot (§10)
 
 ### Practice task (unscored)
 
-*Practice (not scored). Look at Myanmar's line. Did coverage rise, fall, or stay level between 2015
-and 2021?* Myanmar and World, DTP3, 2000–2024: a fall from 89% to 37%, unmissable. Shown in the
+*Practice (not scored). Look at Myanmar's line. Did coverage rise, fall, or stay level between 2019
+and 2021?* Myanmar and World, DTP3, 2000–2024: a fall from 90% to 37%, unmissable. Shown in the
 participant's first condition only, identical across forms, to teach the interface rather than the
 concept. It is a line chart, the type with the most controls. The other types' controls are
 described in the instructions and by the hint row under each chart in the interactive condition.
@@ -560,6 +568,11 @@ described in the instructions and by the hint row under each chart in the intera
 > 2015 and 2021: exactly B-T1's story. The practice moved to Myanmar, which no scored prompt names
 > and which is no longer on either T1 chart. It appeared elsewhere only as an unasked heatmap row in
 > B-T4, whose columns skip 2021, until that row left B-T4 on 2026-10-12.
+
+> **Changed 2026-10-12** (pilot session 1, Eduardo). The window was 2015–2021. Myanmar holds at
+> 89–91% through 2019 and falls only at the end, to 84 in 2020 and 37 in 2021, so most of the
+> window reads as level. 2019–2021 is the fall alone, 90% to 37%. (Ending in 2020 instead would
+> have asked about 89 → 84, which reads as close to level.)
 
 ### Revision 2026-09-23, in brief
 
@@ -1013,11 +1026,17 @@ name in it.
 
 First half, both versions. Heading "Instructions", then "Practice Question":
 
+> Before you start, please make this browser window full screen.
+>
 > Before the main set of questions, you'll try one practice question so you know what to expect. It
 > won't be scored.
 >
 > You'll see a line chart of childhood vaccination coverage (the share of children who received a
 > vaccine each year). Answer the question, then explain in one sentence how you decided.
+
+The full-screen sentence was added on 2026-10-12, after the first pilot session, at the supervisor's
+suggestion. It stands on the screen whose Begin records `window_size` (below), so the logged size
+is the window the participant answered in.
 
 Then, **static (4a):**
 
@@ -1059,8 +1078,14 @@ there is one." Or **interactive (9b):** "The charts in this half are **interacti
 
 and 4b's second, third and fourth bullets. Both end: "As before, the first question asks you to
 describe what a chart shows. For each of the others, you'll choose an answer and then say in one
-sentence how you decided. A break in a line means no value was reported for those years. You may
-skip any question, and you'll be asked to confirm if you leave one blank." Button: "Start the questions".
+sentence how you decided. Explain each one on its own, even if your reasoning is the same as in the
+first half. A break in a line means no value was reported for those years. You may skip any
+question, and you'll be asked to confirm if you leave one blank." Button: "Start the questions".
+
+"Explain each one on its own…" was added on 2026-10-12. In the first pilot session the participant
+asked, in the second half, whether an explanation given in the first had to be written again. A
+participant who writes "same as before" gives the second half's explanations less to code, so
+reasoning depth (RQ2) would depend on order.
 
 The colour-key sentences in 4a and 9a are additions to the handoff, made so the static wording names
 the colour key the heatmap and map are read against, as the 2026-09-23 wording did.
@@ -1090,6 +1115,24 @@ instructions are unchanged, since the practice is chosen and explained.
 
 The practice answer is recorded under `task_id` `P0` so that its timing is available, and **excluded
 from scoring** (§7).
+
+**Researcher script (2026-10-12, after the first pilot session).** Sessions are run in person
+(request form 5B). The researcher says the same few things in each, and nothing else about the
+charts:
+- before the consent form: who the researcher is, and that the study compares two versions of the
+  same charts of childhood vaccination data;
+- before the link is opened: please make the browser window full screen (the first instructions
+  screen asks again);
+- if asked whether an explanation from the first half has to be written again: yes, explain each
+  answer on its own (the second half's instructions say so too);
+- to any other question about reading a chart or using a control: "Please do whatever you would do
+  on your own."
+
+The study's data is what the app logs (request form 5B). The researcher does not record what a
+participant says or does. After the pilot, the supervisor proposed thinking aloud during the tasks,
+follow-up questions at the break, and a debrief showing the controls left unused. Eduardo kept the
+main study to logging only (2026-10-12): thinking aloud slows the timed tasks, a question at the
+break can change how the second half is done, and the approved forms describe neither.
 
 Participants self-serve from one URL. Session state lives in `sessionStorage`, so a closed tab ends
 the session. Re-entering the same participant ID returns the same condition and form assignment,
@@ -1261,6 +1304,24 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 ## 10. Open items
 
 - IRB approval, and the final consent wording.
+- **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
+  on form A, the interactive half on form B, 36 minutes in all. It is pilot data. Before the study
+  starts, it is exported and removed from Neon, and the sequence number the study starts at is
+  recorded here. The participant knows the study's hypotheses, and the instrument changed after the
+  session. Changed because of it:
+  - the practice asks about 2019–2021, not 2015–2021 (§4);
+  - the heatmap's row sort is A–Z, Lowest cell first, Highest cell first; Average went (§4, T4);
+  - the chips run at most six to a row (`docs/visual-spec.md` §7.3);
+  - the line chart's hint names hover;
+  - the first instructions screen asks for a full-screen window;
+  - the second half asks for each answer to be explained on its own;
+  - a researcher script (§8).
+  
+  Not changed:
+  - no background music;
+  - the heatmap's cells stay colour only: numbers in them would give a static reader exact values
+    (§2), and the participant preferred reading the key;
+  - the one-sentence explanation stays (the participant found it useful, not repetitive).
 - **Pilot checks for the 2026-09-23 bank, as redesigned 2026-09-25:**
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
@@ -1289,12 +1350,13 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the map's highlight and the bar sort, which the practice does not teach. The logs show
     all four (§7).
-  - **Whether A-T4 sits at ceiling in the interactive condition** because the Lowest value row sort
-    answers it in one click (§4).
+  - **Whether T4 sits at ceiling in the interactive condition**, since the row sort answers it in
+    one click in both forms: Lowest cell first in A and, since 2026-10-12, Highest cell first in B
+    (§4).
   - **T2 and T4 asking different questions per form (2026-10-12).** B-T2 counts to the
-    sixth-highest bar with 5 points above it; B-T4 asks for the highest cell, among light bands,
-    with no sort for it (§4). Compare each item's static and interactive accuracy per form; if B
-    is clearly harder on either, the pair is not one item measured twice.
+    sixth-highest bar with 5 points above it; B-T4 asks for the highest cell, among light bands
+    (§4). Compare each item's static and interactive accuracy per form; if B is clearly harder on
+    either, the pair is not one item measured twice.
 - **Scrolling differs by condition on two items (accepted 2026-09-26).** On a window 790 px tall
   or less, the interactive scatter (T3) and map (T5) cards run past the fold, so interactive
   participants scroll to Submit there and static ones never do (`visual-spec.md` §10). Eduardo
@@ -1304,7 +1366,10 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   the interactive T3 and T5 times can be split at 790 px. **Since 2026-10-11 the splits are 898 px
   for T3 and 843 px for T5** (862 and 807–836 in compact mode, at or under 800 px): T3's sixteen
   chips take two more rows, and T5's map has eighteen chips in each form where it had 13 and 11
-  (`visual-spec.md` §10, measured in headless Chrome after the chart handoff).
+  (`visual-spec.md` §10, measured in headless Chrome after the chart handoff). **Since 2026-10-12
+  T3's split is 862 px (826 in compact mode)**, its chips in three rows. The same measurement found
+  the interactive T1 card past the fold too: 838 px, 802 in compact mode. Split T1's interactive
+  times the same way.
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4

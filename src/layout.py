@@ -166,16 +166,22 @@ def sorted_entities(entities: list[str], vaccine: str, sort_key: str) -> list[st
 SORTS = {
     "line": ("View", (("listed", "as listed"), ("coverage", "by coverage"))),
     "bar": ("Sort", (("alpha", "A–Z"), ("desc", "High → low"), ("asc", "Low → high"))),
+    # Named as the order label over the rows names each order (figures.ROW_ORDER_LABELS).
     "heatmap": (
         "Sort rows",
-        (("default", "Default"), ("min", "Lowest value"), ("mean", "Average")),
+        (("default", "A–Z"), ("min", "Lowest cell first"), ("max", "Highest cell first")),
     ),
 }
 
 # The hint under each interactive chart, from the handoff's HINT. The line chart's named its legend,
-# which went with the chart handoff (2026-10-11); it names a click on a line instead.
+# which went with the chart handoff (2026-10-11); it names a click on a line instead. It names hover
+# too since the first pilot session (2026-10-12), as every other chart's hint does: the participant
+# asked whether the line chart gave exact values.
 HINTS = {
-    "line": "Click a line to show only that country; click it again to bring the others back.",
+    "line": (
+        "Hover a line to read its values. Click a line to show only that country; click it again "
+        "to bring the others back."
+    ),
     "bar": "Hover a bar to read its value.",
     # The dots are named on the chart since the chart handoff (2026-10-11).
     "scatter": "Hover a dot to read its two values.",
@@ -192,7 +198,17 @@ UNDO_ICON = (
     "%3Cpath d='M2.5 2.5v3.5H6'/%3E%3C/svg%3E"
 )
 THRESHOLD_START = 100
-CHIP_ROWS = 2
+# At most this many chips to a row (visual-spec.md section 7.3, 2026-10-12). Until then there were
+# always two rows, each wrapping on its own, so the scatter's sixteen chips stood in four ragged
+# rows. The map's strip also holds the Highlight box, which leaves room for five: six wrapped there
+# at every window size (headless Chrome, 2026-10-12).
+CHIPS_PER_ROW = 6
+MAP_CHIPS_PER_ROW = 5
+
+
+def chips_per_row(chart_type: str) -> int:
+    """How many chips a row of this chart's controls strip holds."""
+    return MAP_CHIPS_PER_ROW if chart_type == "map" else CHIPS_PER_ROW
 
 
 def default_sort(chart_type: str) -> str | None:
@@ -222,19 +238,28 @@ def flag_src(entity: str) -> str | None:
     return None
 
 
-def chip_rows(order: list[str], shown: list[str]) -> list[dict[str, list]]:
-    """The chips in two rows, the first taking the extra one: each row's options and ticked values.
+def chip_rows(order: list[str], shown: list[str], chart: str = "line") -> list[dict[str, list]]:
+    """The chips in rows of at most `chips_per_row(chart)`, as even as the count allows, the first
+    rows taking any extra: each row's options and ticked values.
 
-    Two rows as in the handoff, so a long set wraps where the design wraps it, and a reorder by
-    coverage moves chips between rows without moving anything else on the page (its state S5).
+    Sixteen run 6/5/5 and eight 4/4. The count sets the rows, not the window, so a reorder by
+    coverage moves chips between rows without moving anything else on the page (the handoff's state
+    S5). A chip names its country as the chart prints it (`figures.drawn_name`); its value, which
+    is what is logged, is the full name.
     """
-    half = -(-len(order) // CHIP_ROWS)
+    count = max(1, -(-len(order) // chips_per_row(chart)))
+    size, extra = divmod(len(order), count)
+    bounds, start = [], 0
+    for index in range(count):
+        end = start + size + (1 if index < extra else 0)
+        bounds.append((start, end))
+        start = end
     rows = []
-    for names in (order[:half], order[half:]):
+    for names in (order[low:high] for low, high in bounds):
         options = []
         for name in names:
             flag = flag_src(name)
-            label = [html.Span(name)]
+            label = [html.Span(figures.drawn_name(name, chart))]
             if flag:
                 label.insert(
                     0, html.Img(src=flag, alt="", width=24, height=16, className="chip-flag")
@@ -249,9 +274,8 @@ def chip_group(task, order: list[str], shown: list[str]) -> list:
 
     Built afresh whenever the chips' order changes (the View control, or Reset view undoing it),
     rather than by sending the checklists new options. A chip's label is a flag and a name, as
-    components, and Dash 4 loses track of them when one moves to the other row's checklist: the
-    renderer throws and the chips vanish (headless Chrome, 2026-09-26). An empty row, the
-    practice's second, is left out.
+    components, and Dash 4 loses track of them when one moves to another row's checklist: the
+    renderer throws and the chips vanish (headless Chrome, 2026-09-26). An empty row is left out.
     """
     justify = "space-between" if task.chart == "line" else "flex-start"
     return [
@@ -266,7 +290,7 @@ def chip_group(task, order: list[str], shown: list[str]) -> list:
                 # Data-driven, as in the handoff: line charts spread their chips across the row.
                 style={"justifyContent": justify},
             )
-            for index, row in enumerate(chip_rows(order, shown))
+            for index, row in enumerate(chip_rows(order, shown, task.chart))
             if row["options"]
         ],
     ]
@@ -1120,6 +1144,10 @@ def practice_complete_screen() -> html.Main:
 # The instructions' wording: the design handoff's screens 4a, 4b, 9a and 9b, with the copy fixes in
 # docs/study-redesign.md section 5 and its interactive bullets rewritten to describe the controls
 # the charts have (docs/study-design.md section 8, where the approved wording is quoted).
+# First on the first instructions screen (2026-10-12, the supervisor's suggestion after the first
+# pilot session), because that screen's Begin records `window_size`: asked here, the logged size is
+# the window the participant answered in (docs/study-design.md section 8).
+FULL_SCREEN = "Before you start, please make this browser window full screen."
 PRACTICE_INTRO = (
     "Before the main set of questions, you'll try one practice question so you know what to "
     "expect. It won't be scored.",
@@ -1165,9 +1193,10 @@ SECOND_HALF_POINTING = (
 )
 SECOND_HALF_CLOSE = (
     "As before, the first question asks you to describe what a chart shows. For each of the "
-    "others, you'll choose an answer and then say in one sentence how you decided. A break in a "
-    "line means no value was reported for those years. You may skip any question, and you'll be "
-    "asked to confirm if you leave one blank."
+    "others, you'll choose an answer and then say in one sentence how you decided. Explain each "
+    "one on its own, even if your reasoning is the same as in the first half. A break in a line "
+    "means no value was reported for those years. You may skip any question, and you'll be asked "
+    "to confirm if you leave one blank."
 )
 
 
@@ -1193,6 +1222,9 @@ def instructions_screen(interactive: bool, practice: bool = False) -> html.Main:
         subtitle = "Practice Question"
         body = html.Div(
             [
+                FULL_SCREEN,
+                html.Br(),
+                html.Br(),
                 PRACTICE_INTRO[0],
                 html.Br(),
                 html.Br(),

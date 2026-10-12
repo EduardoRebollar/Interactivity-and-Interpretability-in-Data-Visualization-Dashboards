@@ -40,14 +40,16 @@ SCATTER_YEARS = (2000, 2024)
 # The practice item is identical in both forms and is not scored. It teaches the interface, so it is
 # a line chart, the one chart type with every control, and its change is unmissable. Myanmar,
 # because no scored item asks about it and neither T1 chart draws it. Brazil's fall, the practice
-# until 2026-09-27, is B-T1's story, as Ukraine's collapse was A-T1's before that.
+# until 2026-09-27, is B-T1's story, as Ukraine's collapse was A-T1's before that. The window was
+# 2015-2021 until the first pilot session (2026-10-12): Myanmar holds near 90% until 2019, so most
+# of it read as level; 2019-2021 is the fall alone, 90% to 37%.
 PRACTICE = Task(
     task_id="P0",
     form="both",
     kind="practice",
     prompt=(
         "Practice (not scored). Look at Myanmar's line. Did coverage rise, fall, or stay level "
-        "between 2015 and 2021?"
+        "between 2019 and 2021?"
     ),
     vaccine="DTP3",
     entities=("Myanmar", "World"),
