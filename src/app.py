@@ -754,7 +754,8 @@ def _open_task(
 #
 # The country chips on every chart; the line chart's Years slider, Show all and line clicks (and
 # its legend clicks, which no chart can raise since the legends went); the bar and heatmap sorts;
-# the map's highlight; Reset view; zoom and pan (visual-spec.md section 7). They
+# the key's colours on the scatter, heatmap and map; Reset view; zoom and pan (visual-spec.md
+# section 7). They
 # exist ONLY in the interactive condition -- the static condition renders none of the controls, and
 # `staticPlot: True` means its chart can be neither clicked nor zoomed -- so every event below is,
 # by construction, an interactive-condition event. The static chart does still send Plotly's
@@ -769,7 +770,7 @@ _VIEW_KEYS = ("xaxis.range", "yaxis.range", "xaxis.autorange", "yaxis.autorange"
 # The controls under the chart, by the `control` of their pattern id (`layout.control_id`). The
 # chart's own events are named by their prop id: "chart.clickData", "chart.relayoutData" and
 # "chart.restyleData" (a legend click).
-CONTROLS = ("chips", "sort", "show-all", "threshold", "years", "reset")
+CONTROLS = ("chips", "sort", "show-all", "years", "key-band", "reset")
 
 # `sort_change.direction` for each sort key: which way the new order runs. The line chart's View
 # (`listed`, `coverage`) went on 2026-10-12.
@@ -787,16 +788,16 @@ class ControlResult(NamedTuple):
     """What one control interaction changes. Any field may be `no_update`.
 
     `chips` is a list of rows, each {"options", "value"}, as `layout.chip_rows` makes them. `sort`
-    and `threshold` are the values the sort control and the highlight box must be set to, which
-    only Reset view, and a refused box, ever change. `years` is the Years slider's [first, last],
-    set when a zoom it did not make moves the axis, and by Reset view.
+    is the value the sort control must be set to, which only Reset view changes. `years` is the
+    Years slider's [first, last], set when a zoom it did not make moves the axis, and by Reset view.
+    `keys` is each key button's class, in their order, marking the highlighted bands.
     """
 
     figure: Any
     chips: Any
     sort: Any
-    threshold: Any
     years: Any
+    keys: Any
     control: Any
     spool: Any
 
@@ -868,19 +869,12 @@ def _legend_change(restyle: Any, task, shown: list[str]) -> tuple[list[str], str
     return result, action
 
 
-def _threshold(raw: Any) -> tuple[bool, int | None]:
-    """The highlight box's value: (True, a whole number 0-100), (True, None) when the box is empty,
-    or (False, None) for anything else. A typed decimal is rounded to the nearest whole number, the
-    box's step."""
-    if raw is None or raw == "":
-        return True, None
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
-        return False, None
-    if not 0 <= value <= 100:
-        return False, None
-    return True, int(value + 0.5)
+def _key_bands(task) -> list[int]:
+    """The bands a chart's key offers, by their lower bounds, in button order; none for a chart
+    without a key."""
+    if task.chart not in figures.KEY_CHARTS:
+        return []
+    return [block.lower for block in figures.key_blocks(task.chart)]
 
 
 def _shown(control: dict[str, Any]) -> list[str]:
@@ -910,8 +904,10 @@ def _view_figure(task, control: dict[str, Any]):
     figures.set_visible(figure, shown)
     if task.chart == "line":
         figures.focus_line(figure, control["isolated"])
-    if task.chart == "map":
-        figures.set_threshold(figure, control["threshold"])
+    if task.chart in figures.KEY_CHARTS:
+        # Last, so what the chips hid or faded stays so, and the heatmap's cells are where the
+        # row sort drew them.
+        figures.set_bands(figure, control["bands"])
     return figure
 
 
@@ -937,7 +933,7 @@ def _fresh_control(task, screen: str) -> dict[str, Any]:
         "selected": layout.filterable(list(task.entities)),
         "isolated": None,
         "sort": layout.default_sort(task.chart),
-        "threshold": None,
+        "bands": [],
         "xrange": None,
     }
 
@@ -965,9 +961,18 @@ def _stored_control(task, screen: str, control_state: dict[str, Any] | None) -> 
     sorts = [value for value, _label in layout.SORTS.get(task.chart, ("", ()))[1]]
     if stored.get("sort") in sorts:
         control["sort"] = stored["sort"]
-    valid, threshold = _threshold(stored.get("threshold"))
-    if task.chart == "map" and valid and threshold is not None and threshold < 100:
-        control["threshold"] = threshold
+    stored_bands = stored.get("bands")
+    if isinstance(stored_bands, list):
+        offered = _key_bands(task)
+        # Bands the key offers, each once, in order. Whole numbers only: a boolean is not a band,
+        # and anything unhashable would stop the set.
+        control["bands"] = sorted(
+            {
+                b
+                for b in stored_bands
+                if isinstance(b, int) and not isinstance(b, bool) and b in offered
+            }
+        )
     if task.chart == "line":
         control["xrange"] = _range(stored.get("xrange"))
     return control
@@ -1003,8 +1008,8 @@ def control_step(
     *,
     chips: list[str] | None = None,
     sort_key: str | None = None,
-    threshold: Any = None,
     years: Any = None,
+    key_band: int | None = None,
     click_data: dict[str, Any] | None = None,
     relayout: dict[str, Any] | None = None,
     restyle: Any = None,
@@ -1018,16 +1023,17 @@ def control_step(
     "chart". The chart raises several inputs and the component id alone cannot tell them apart:
     `clickData` stays set on the component after a click, so a later zoom arrives with a stale
     `click_data` still populated and would be read as the participant clicking the same line a
-    second time. `chips` is every ticked chip, both rows together.
+    second time. `chips` is every ticked chip, both rows together. `key_band` is the index of the
+    key button clicked, None when the press is not one (`view` passes it only for a real click).
 
     Returns UNCHANGED when nothing actually changed. Dash fires input callbacks when a component is
     recreated, which happens on every task render, and logging those would fill the interaction
     record with events no participant caused.
 
     Some changes are refused: unticking the last chip, a legend click that would leave no line, a
-    highlight that is not a number from 0 to 100, a Years value that is not two whole years in
-    order. The browser has already moved the control by then, so a refusal puts it back rather
-    than leaving it saying something the chart does not. Nothing is logged for one.
+    Years value that is not two whole years in order. The browser has already moved the control by
+    then, so a refusal puts it back rather than leaving it saying something the chart does not.
+    Nothing is logged for one.
 
     `preview` is the `preview-state` store. When it names a task, the chart is the preview's
     (`preview_task`), not the session's, and nothing is logged at all.
@@ -1055,7 +1061,6 @@ def control_step(
     before = _shown(control)
     event: tuple[str, dict[str, Any]] | None = None
     sort_value: Any = no_update
-    threshold_value: Any = no_update
     years_value: Any = no_update
 
     if triggered == "chips":
@@ -1096,27 +1101,27 @@ def control_step(
         control["selected"] = list(options)
         control["isolated"] = None
 
-    elif triggered == "threshold":
-        if task.chart != "map":
+    elif triggered == "key-band":
+        # A colour in the key (visual-spec.md section 7.4): highlights its band, or releases it.
+        offered = _key_bands(task)
+        if (
+            not isinstance(key_band, int)
+            or isinstance(key_band, bool)
+            or not 0 <= key_band < len(offered)
+        ):
             return UNCHANGED
-        valid, typed = _threshold(threshold)
-        chosen = typed if valid and typed is not None and typed < 100 else None
-        if not valid:
-            # Put the box back to what the map shows.
-            threshold_value = control["threshold"] or layout.THRESHOLD_START
-        elif chosen == control["threshold"]:
-            return UNCHANGED
-        else:
-            event = (
-                "filter_change",
-                {
-                    "control": "threshold",
-                    "action": "clear" if chosen is None else "highlight",
-                    "value": chosen,
-                    "previous": control["threshold"],
-                },
-            )
-            control["threshold"] = chosen
+        band = offered[key_band]
+        chosen = sorted(set(control["bands"]) ^ {band})
+        event = (
+            "filter_change",
+            {
+                "control": "key",
+                "action": "add" if band in chosen else "remove",
+                "value": chosen,
+                "previous": control["bands"],
+            },
+        )
+        control["bands"] = chosen
 
     elif triggered == "years":
         # The line chart's Years slider (visual-spec.md section 7.6): it zooms the x axis.
@@ -1137,7 +1142,7 @@ def control_step(
         unchanged = (
             before == options
             and control["sort"] == default_sort
-            and control["threshold"] is None
+            and not control["bands"]
             and control["isolated"] is None
             and control["xrange"] is None
         )
@@ -1150,16 +1155,15 @@ def control_step(
                     "selected": before,
                     "sort": control["sort"],
                     "isolated": control["isolated"],
-                    "threshold": control["threshold"],
+                    "bands": control["bands"],
                     "xrange": control["xrange"],
                 }
             },
         )
         control.update(
-            selected=list(options), isolated=None, sort=default_sort, threshold=None, xrange=None
+            selected=list(options), isolated=None, sort=default_sort, bands=[], xrange=None
         )
         sort_value = default_sort if default_sort is not None else no_update
-        threshold_value = layout.THRESHOLD_START if task.chart == "map" else no_update
         years_value = list(layout.YEARS_START) if task.chart == "line" else no_update
 
     elif triggered == "chart.clickData":
@@ -1216,14 +1220,18 @@ def control_step(
 
     figure = _view_figure(task, control)
     chip_rows = layout.chip_rows(options, _shown(control), task.chart)
+    offered = _key_bands(task)
+    keys = (
+        [layout.key_class(band in control["bands"]) for band in offered] if offered else no_update
+    )
     # Logged AFTER the figure is built. Logged first, a database failure left the participant's
     # click with no visible effect -- the chart simply did not change.
     return ControlResult(
         figure,
         chip_rows,
         sort_value,
-        threshold_value,
         years_value,
+        keys,
         control,
         log(event),
     )
@@ -1264,25 +1272,48 @@ def _control_trigger(prop_id: str) -> str:
     return prop_id
 
 
+def _key_press(fired: dict[str, Any]) -> int | None:
+    """The key button a fired input pressed, by its index, or None.
+
+    Dash fires the buttons' callback when a screen inserts them, with `n_clicks` 0, and a click is
+    the only thing that raises it. So a press is a key button's input with `n_clicks` above 0;
+    without that check, every key screen would highlight a band the moment it appeared."""
+    component, _dot, prop = fired.get("prop_id", "").rpartition(".")
+    if not component.startswith("{") or prop != "n_clicks" or not fired.get("value"):
+        return None
+    pattern = json.loads(component)
+    if pattern.get("control") != "key-band":
+        return None
+    index = pattern.get("index")
+    return index if isinstance(index, int) and not isinstance(index, bool) else None
+
+
 def view_outputs(result: ControlResult, counts: list[int]) -> tuple[Any, ...]:
-    """The `view` callback's outputs for a result, given how many components each of its four
-    `ALL` outputs matched on this screen (the chips, sort, threshold, years).
+    """The `view` callback's outputs for a result, given how many components each of its five
+    `ALL` outputs matched on this screen (the chips, sort, years, and the key buttons' class and
+    `aria-pressed`).
 
     An `ALL` output must be a list with one entry per component, `no_update` entries included:
     Dash 4 refuses a bare `no_update` there with a server error, which the tests calling
     `control_step` could never see (found in headless Chrome).
     """
-    chips, sorts, thresholds, years = counts
+    chips, sorts, years, key_classes, key_pressed = counts
     if result.chips is not no_update:
         values = [row["value"] for row in result.chips][:chips]
     else:
         values = [no_update] * chips
+    if result.keys is not no_update:
+        classes = list(result.keys)[:key_classes]
+        pressed = ["true" if "is-on" in cls else "false" for cls in result.keys][:key_pressed]
+    else:
+        classes, pressed = [no_update] * key_classes, [no_update] * key_pressed
     return (
         result.figure,
         values,
         [result.sort] * sorts,
-        [result.threshold] * thresholds,
         [result.years] * years,
+        classes,
+        pressed,
         result.control,
         result.spool,
     )
@@ -1524,8 +1555,9 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         Output("chart", "figure", allow_duplicate=True),
         Output(layout.control_id("chips", ALL), "value"),
         Output(layout.control_id("sort", ALL), "value"),
-        Output(layout.control_id("threshold", ALL), "value"),
         Output(layout.control_id("years", ALL), "value"),
+        Output(layout.control_id("key-band", ALL), "className"),
+        Output(layout.control_id("key-band", ALL), "aria-pressed"),
         Output("control-state", "data", allow_duplicate=True),
         Output("spool-state", "data", allow_duplicate=True),
         Input("chart", "clickData"),
@@ -1534,8 +1566,8 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         Input(layout.control_id("chips", ALL), "value"),
         Input(layout.control_id("sort", ALL), "value"),
         Input(layout.control_id("show-all", ALL), "n_clicks"),
-        Input(layout.control_id("threshold", ALL), "value"),
         Input(layout.control_id("years", ALL), "value"),
+        Input(layout.control_id("key-band", ALL), "n_clicks"),
         Input(layout.control_id("reset", ALL), "n_clicks"),
         State("session-state", "data"),
         State("log-state", "data"),
@@ -1551,8 +1583,8 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         chips,
         sorts,
         _show_all,
-        thresholds,
         year_ranges,
+        _key_clicks,
         _reset,
         stored,
         log,
@@ -1573,8 +1605,8 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
             control_state,
             chips=[name for row in chips or [] for name in row or []],
             sort_key=sorts[0] if sorts else None,
-            threshold=thresholds[0] if thresholds else None,
             years=year_ranges[0] if year_ranges else None,
+            key_band=_key_press(fired[0]) if fired else None,
             click_data=click_data,
             relayout=relayout,
             restyle=restyle,
@@ -1584,7 +1616,7 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         if result == UNCHANGED:
             # Most calls: a screen being built, or a render-time relayout. Nothing to send.
             raise PreventUpdate
-        counts = [len(outputs) for outputs in callback_context.outputs_list[1:5]]
+        counts = [len(outputs) for outputs in callback_context.outputs_list[1:6]]
         return view_outputs(result, counts)
 
     # Stamps the browser clock when a screen appears. Clientside so it never touches the server

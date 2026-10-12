@@ -85,10 +85,10 @@ def test_every_chart_types_interactive_version_is_shown(page):
         assert f"The interactive version of a question: {chart} chart" in page
 
 
-def test_the_map_highlight_is_printed_with_its_starting_value(page):
-    """The box starts at 100, which highlights nothing (visual-spec.md section 7.4)."""
-    assert page.count(f'type="number" value="{layout.THRESHOLD_START}"') == 1
-    assert "Below" in page
+def test_the_map_has_no_highlight_box_any_more(page):
+    """The box went on 2026-10-12; the key's colours took its place (visual-spec.md section 7.4)."""
+    assert 'class="tb-num' not in page, "the box's number field"
+    assert "Clicking a colour in the key" in page
 
 
 def test_the_map_prints_without_fetching_its_shapes(page):

@@ -78,8 +78,30 @@ def test_scroll_zoom_is_on_for_the_line_chart_only(chart_type):
 
 @pytest.mark.parametrize("task", [tasks.PRACTICE, *tasks.FORM_A, *tasks.FORM_B], ids=str)
 def test_each_chart_is_rendered_with_its_own_config(task):
-    graph = layout.chart(task, interactive=True).children
+    (graph,) = [
+        node
+        for node in _walk(layout.chart(task, interactive=True))
+        if getattr(node, "id", None) == "chart"
+    ]
     assert graph.config == figures.graph_config(True, task.chart)
+
+
+@pytest.mark.parametrize("task", [*tasks.FORM_A, *tasks.FORM_B], ids=str)
+def test_only_an_interactive_chart_with_a_key_carries_key_buttons(task):
+    """The buttons are an overlay beside the graph, not part of the figure (visual-spec.md 7.4)."""
+    for interactive in (False, True):
+        buttons = [
+            node
+            for node in _walk(layout.chart(task, interactive=interactive))
+            if isinstance(getattr(node, "id", None), dict) and node.id["control"] == "key-band"
+        ]
+        expected = (
+            len(figures.key_blocks(task.chart))
+            if interactive and (task.chart in figures.KEY_CHARTS)
+            else 0
+        )
+        assert len(buttons) == expected, (task.task_id, interactive)
+        assert [b.id["index"] for b in buttons] == list(range(expected))
 
 
 ALL_TASKS = [tasks.PRACTICE, *tasks.FORM_A, *tasks.FORM_B]
@@ -116,14 +138,15 @@ def test_the_task_screen_opens_on_the_same_chart_in_both_conditions(rows, task):
 
 # Each chart type's controls (visual-spec.md section 7), by the `control` of their pattern ids:
 # chips (in their group) and Reset view on every chart, a sort on the bar and heatmap, the Years
-# slider and Show all on the line (its View went on 2026-10-12), the map a highlight.
+# slider and Show all on the line (its View went on 2026-10-12), and buttons over the key on the
+# scatter, heatmap and map (the map's highlight box went the same day).
 _EVERY_CHART = {"chip-group", "chips", "reset"}
 CONTROL_IDS = {
     "line": _EVERY_CHART | {"years", "show-all"},
     "bar": _EVERY_CHART | {"sort"},
-    "scatter": _EVERY_CHART,
-    "heatmap": _EVERY_CHART | {"sort"},
-    "map": _EVERY_CHART | {"threshold"},
+    "scatter": _EVERY_CHART | {"key-band"},
+    "heatmap": _EVERY_CHART | {"sort", "key-band"},
+    "map": _EVERY_CHART | {"key-band"},
 }
 
 
@@ -1007,7 +1030,7 @@ def test_the_map_key_has_no_no_data_block(rows):
     assert {"100%", "50%", "0%", "Coverage"} <= texts
 
 
-def test_the_highlight_fades_countries_not_below_it_and_moves_nothing(rows):
+def test_a_key_band_on_the_map_fades_the_rest_and_moves_nothing(rows):
     """Drawn as a selection: plotly.js 4 drops a per-country marker.opacity list without a word,
     which is how the map's first filter shipped -- fading nothing (visual-spec.md section 7.4)."""
     figure = _chart("map", rows)
@@ -1015,34 +1038,76 @@ def test_the_highlight_fades_countries_not_below_it_and_moves_nothing(rows):
     assert countries.unselected.marker.opacity == config.FADED_OPACITY
     assert countries.marker.opacity is None, "a per-country opacity list is never rendered"
     before = list(countries.locations), list(countries.z)
-    figures.set_threshold(figure, 50)
+    figures.set_bands(figure, [0, 40])
     assert figures.full_strength(figure) == [value < 50 for value in countries.z]
     assert (list(countries.locations), list(countries.z)) == before
 
 
-@pytest.mark.parametrize("threshold", [None, 100])
-def test_an_empty_box_or_100_highlights_nothing(rows, threshold):
-    figure = figures.set_threshold(_chart("map", rows), threshold)
-    countries = figures._only(figure, go.Choropleth)
-    assert countries.selectedpoints is None, "no highlight is the figure build_figure made"
-    assert all(figures.full_strength(figure))
+@pytest.mark.parametrize("chart_type", ["scatter", "heatmap", "map"])
+def test_no_band_chosen_is_the_figure_as_drawn(rows, chart_type):
+    figure = figures.set_bands(_chart(chart_type, rows), [])
+    assert figure.to_plotly_json() == _chart(chart_type, rows).to_plotly_json()
 
 
-def test_a_country_hidden_by_its_chip_stays_faded_under_the_highlight(rows):
+def test_a_country_hidden_by_its_chip_stays_faded_in_a_chosen_band(rows):
     figure = _chart("map", rows)
     countries = figures._only(figure, go.Choropleth)
     names = list(countries.text)
     lowest = names[min(range(len(names)), key=lambda i: countries.z[i])]
     figures.set_visible(figure, [name for name in names if name != lowest])
-    figures.set_threshold(figure, 100)
-    assert figures.full_strength(figure)[names.index(lowest)] is False
-    figures.set_threshold(figure, 99)
+    figures.set_bands(figure, [0])
     assert figures.full_strength(figure)[names.index(lowest)] is False
 
 
-def test_a_highlight_below_0_is_refused(rows):
-    with pytest.raises(FigureError, match="threshold"):
-        figures.set_threshold(_chart("map", rows), -5)
+@pytest.mark.parametrize("chart_type", ["line", "bar"])
+def test_only_a_chart_with_a_key_has_bands(chart_type):
+    with pytest.raises(FigureError, match="no stepped key"):
+        figures.key_blocks(chart_type)
+
+
+def test_a_band_the_key_does_not_offer_is_refused(rows):
+    with pytest.raises(FigureError, match="Not a band"):
+        figures.set_bands(_chart("map", rows), [55])
+
+
+@pytest.mark.parametrize(
+    ("chart_type", "lowers", "first_label"),
+    [
+        ("scatter", [40, 20, 5, -5, -20, -40, -100], "+40 to +100 pts"),
+        ("heatmap", [0, 20, 30, 40, 50, 60, 70, 80, 90], "0–20%"),
+        ("map", [90, 80, 70, 60, 50, 40, 0], "90–100%"),
+    ],
+)
+def test_each_key_block_names_its_band_in_reading_order(chart_type, lowers, first_label):
+    blocks = figures.key_blocks(chart_type)
+    assert [b.lower for b in blocks] == lowers
+    assert [b.index for b in blocks] == list(range(len(blocks)))
+    assert blocks[0].label == first_label
+    assert len({b.color for b in blocks}) == len(blocks), "a band is told by its colour"
+
+
+@pytest.mark.parametrize("chart_type", ["scatter", "heatmap", "map"])
+def test_each_key_button_stands_over_the_block_it_names(rows, chart_type):
+    """`key_blocks` and the drawn key come from one geometry: every block's box holds a key shape
+    filled with that block's colour, in the card's pixels (visual-spec.md section 7.4)."""
+    figure = _chart(chart_type, rows)
+    margin = figure.layout.margin.to_plotly_json()
+    width = config.CHART_WIDTH - margin["l"] - margin["r"]
+    height = config.CHART_HEIGHT - margin["t"] - margin["b"]
+
+    def card(x_paper, y_paper):
+        return margin["l"] + x_paper * width, config.CHART_HEIGHT - margin["b"] - y_paper * height
+
+    keys = [s for s in figure.layout.shapes if s.name == "key" and s.fillcolor]
+    for block in figures.key_blocks(chart_type):
+        x, y, w, h = block.box
+        filled = [s for s in keys if s.fillcolor == block.color]
+        assert filled, block
+        for shape in filled:
+            if shape.type == "rect":
+                (x0, y0), (x1, y1) = card(shape.x0, shape.y0), card(shape.x1, shape.y1)
+                assert x - 0.01 <= min(x0, x1) and max(x0, x1) <= x + w + 0.01, block
+                assert y - 0.01 <= min(y0, y1) and max(y0, y1) <= y + h + 0.01, block
 
 
 def test_an_aggregate_cannot_be_mapped(rows):

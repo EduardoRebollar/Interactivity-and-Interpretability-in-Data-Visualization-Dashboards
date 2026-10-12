@@ -52,9 +52,12 @@ These are methodological requirements, not preferences. Do not relax them withou
   every chart; on the line charts the Years slider (which replaced the View reorder, 2026-10-12),
   Show all, focusing a line (the others fade; until 2026-10-12 they were hidden) and the
   year-over-year change in the tooltip (the clickable legend went with the chart handoff,
-  2026-10-11); sorting the bar chart and the heatmap's rows; the map's "Below [n] %" highlight;
-  hover on every chart. All are built and defined in `docs/visual-spec.md` §7, and all sit under
-  the chart, so the chart stands in the same place in both conditions.
+  2026-10-11); sorting the bar chart and the heatmap's rows; on the scatter, heatmap and map, a
+  click on a colour in the key highlights its band (replacing the map's "Below [n] %" box,
+  2026-10-12); hover on every chart. All are built and defined in `docs/visual-spec.md` §7. All
+  sit under the chart except the key's buttons, an overlay standing over the key in the chart's
+  own box. That overlay is no part of the figure, so the chart stands in the same place, and is
+  the same figure, in both conditions.
 - **Five chart types, one builder each** (2026-09-23): line, bar, scatter, heatmap, map. The rule
   above holds for every one — `tests/test_conditions.py` checks byte-identical JSON for every task.
 - **Year-over-year change lives in the hover tooltip, not on the chart** (`visual-spec.md` §7.1). A
@@ -65,7 +68,7 @@ These are methodological requirements, not preferences. Do not relax them withou
   A rebuild would move every name tag, and (until 2026-10-11, when colour went by position) recolour
   the survivors mid-task. Lines and dots
   go `legendonly`; bars, heatmap rows and map countries fade to 0.15. The map fades by
-  **selection** (`figures.set_visible`, `set_threshold`): plotly.js 4 silently ignores a per-country
+  **selection** (`figures.set_visible`, `set_bands`): plotly.js 4 silently ignores a per-country
   `marker.opacity` list on a choropleth, which only a browser showed.
 - **Each figure removes its own modebar buttons** (`layout.modebar.remove`, `visual-spec.md` §7.5):
   box and lasso select everywhere (unlogged, and they would override the map's selection), zoom
@@ -189,9 +192,13 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - `line_isolate` now focuses (the others fade; the chips no longer follow).
 - Show all also releases a focus.
 - `view_reset.previous` gains `xrange`: Reset view undoes a zoom.
+- The map's box went, so `filter_change` from `threshold` can no longer occur.
+- A click on a key colour logs `filter_change` with `control` `key`, `action` `add`/`remove`, and
+  the chosen bands' lower bounds.
+- `view_reset.previous` has `bands` in place of `threshold`.
 
-More of v18 is planned (key highlighting, T7), and this entry grows with it before anything is
-collected. No new event, key, table or column so far, so `init_db.py` needs no re-run.
+More of v18 is planned (T7), and this entry grows with it before anything is collected. No new
+event, key, table or column so far, so `init_db.py` needs no re-run.
 
 **Schema v17 (2026-10-12).** T1, T3 and A-T4 reworded, keys unchanged. B-T2 asks for the
 sixth-highest bar, in 2017 (key Mozambique); B-T4 for the highest cell, Laos and Cameroon replacing
@@ -859,6 +866,20 @@ context cheap and the reports as long as they need to be.
     move the slider; focus, Show all, Reset view; static has no slider), with the log showing one
     event per action and none spurious, and no console errors.
   - Line-chart cards are 12 px shorter: T1 now fits a 790 px window, not a 768 one.
+- 2026-10-12 — **Pilot changes, phase 3: the key's colours** (uncommitted at time of writing).
+  - On the scatter, heatmap and map, a click on a key block highlights its band: other marks fade
+    to 0.15 (dots, single cells, countries by selection). Several bands can be chosen; a second
+    click releases one, and so does Reset view.
+  - The buttons are native, an overlay over the key in `.ui-chart`, placed from
+    `figures.key_blocks`, which the key builders now share. All 13 figures are byte-identical to
+    before.
+  - The map's "Below [n] %" box went. Its chips run 6/6/6 again, and its card is 36 px shorter
+    (fits 1440 × 790).
+  - Clicks are told from render-time firings by `n_clicks` > 0 (`app._key_press`).
+  - 1394 tests. Headless Chrome: 23 checks (each button over its own colour by pixel, clicks and
+    Space, the pressed outline and `aria-pressed`, hover through the overlay, each chart's fade,
+    the sort with a band, static has no buttons), one logged event per click, none on load, and no
+    console errors.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small

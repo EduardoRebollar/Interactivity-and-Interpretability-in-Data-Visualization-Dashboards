@@ -60,9 +60,10 @@ Identical in every visual respect. The only difference is the Plotly render conf
 | Country chips | none | every chart: show or hide each country drawn |
 | Line charts | image | Years (a range slider), Show all, click a line to focus on it, zoom and pan |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
-| Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first |
-| Map | image | Highlight: fade every country not below a typed percentage |
-| Every chart | — | Reset view: undo filtering, sorting, focusing, zooming and the highlight |
+| Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first; the key's colours highlight cells |
+| Scatter | image | the key's colours: a click highlights the dots in that band |
+| Map | image | the key's colours: a click highlights the countries in that band |
+| Every chart | — | Reset view: undo filtering, sorting, focusing, zooming and a highlight |
 
 The controls and a one-line hint sit under the chart, so the chart is in the same place in both
 conditions.
@@ -107,7 +108,7 @@ chart types, in the same order, with matched margins — over different data.
 
 Each task shows **the same fixed set of entities in both conditions.** No control reaches an entity
 the static condition cannot see: the chips hide entities within the set, the sorts
-reorder them, and the map's highlight fades countries within it.
+reorder them, and a highlight from the key fades marks within it.
 
 This is deliberate. If interactive participants could pull in entities that static participants could
 not, interactivity would be changing *what data is available* as well as *how it is worked with*, and
@@ -141,9 +142,9 @@ read is costly and that affordance lowers the cost:
 |---|---|---|---|
 | T1 | line, 8 countries | setting lines aside: a click on a line fades the rest, the chips hide them | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
-| T3 | scatter | hovering a dot; hiding dots with the chips | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
-| T4 | heatmap | hovering a cell; sorting rows by lowest (A) or highest (B) cell | telling dark (A) or light (B) bands apart against the key |
-| T5 | map | the highlight: countries below a typed percentage | sorting every country's colour against the key |
+| T3 | scatter | hovering a dot; hiding dots with the chips; highlighting a change band from the key | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
+| T4 | heatmap | hovering a cell; sorting rows by lowest (A) or highest (B) cell; highlighting a band from the key | telling dark (A) or light (B) bands apart against the key |
+| T5 | map | highlighting bands from the key: a click on a colour | sorting every country's colour against the key |
 | T6 | line, 8 countries | hiding the six other lines with the chips; hovering both where they meet | following two lines through six others that cross them, then placing, by eye, the year they cross |
 
 **Redesign, 2026-09-25.** Every chart now has country chips and Reset view. The heatmap gained a
@@ -334,6 +335,12 @@ cost is choosing among the dots that share the darkest change colour: judging, b
 furthest above the diagonal, 6 points ahead in A and 8 in B. Hover gives each dot's two values
 exactly.
 
+> **Highlighting from the key, 2026-10-12** (pilot session 1). The pilot's participant wanted to
+> click the key to filter. A click on the key's band now fades every dot outside it
+> (`docs/visual-spec.md` §7.4). On the key's band that leaves 3 dots in A (more than +40) and 4 in
+> B (+20 to +40). The acceptance rule makes the key share its colour, so the key narrows the
+> choice and never names the answer.
+
 > **Restyled 2026-10-11** (the chart handoff, Eduardo). Until then the dots were named only by a
 > legend, matched by colour and shape, and that matching was the static cost hover lowered. The
 > names remove it, and the change colours narrow the answer to three dots in A and four in B, never
@@ -389,6 +396,13 @@ and Highest cell first in B (since 2026-10-12, below). Since
 colour in either grid, at least one band from the next. A's options are its six lowest rows, B's
 its six highest.
 
+> **Highlighting from the key, 2026-10-12** (pilot session 1). A click on a colour in the key fades
+> every cell outside that band (`docs/visual-spec.md` §7.4). No other row has a cell in the key
+> cell's band, so a click on it leaves only the key's row lit: Chad's 2000 and 2005 cells in A
+> (20–30), Nepal's 2024 in B (90 and over).
+> With the row sort, T4 has two one-click routes in each form. Whether it sits at ceiling in the
+> interactive condition is a pilot check (§10).
+
 > **B-T4 asks for the highest cell, 2026-10-12** (Eduardo). On B's grid as it stood, Nepal's 97 was
 > 6 points above Myanmar's 91 and 7 above Uganda's 90, all three in the 90-and-over band, so the
 > rule refused it. Laos (highest 78) and Cameroon (79), found by search, replace Myanmar and
@@ -425,7 +439,7 @@ its six highest.
 > B also traded India and Indonesia for rows form A does not show, so the two grids share only Mali
 > and Pakistan. The spec's keys, Chad and Afghanistan, stayed.
 
-### T5 — Countries below 50% (map, highlight)
+### T5 — Countries below 50% (map, the key)
 
 *The map colours {n} countries in Africa by their coverage in {year}. How many of those countries
 had coverage below 50%?* (Until 2026-10-11, "in sub-Saharan Africa".)
@@ -442,6 +456,15 @@ had coverage below 50%?* (Until 2026-10-11, "in sub-Saharan Africa".)
 
 Every other country is plain land, and the prompt states how many are coloured. Each coloured
 country is named on the map (`docs/visual-spec.md` §1). The forms share one country, Chad.
+
+> **The key replaces the highlight box, 2026-10-12** (pilot session 1, Eduardo). Until then the
+> interactive map had a "Below [n] %" box; typing 50 left exactly the answer at full strength. The
+> pilot's participant found it "almost cheating" and "biased": the control echoed the question's
+> own words. In its place, a click on a colour in the key highlights the countries in that band
+> (`docs/visual-spec.md` §7.4). The key names no threshold: 50 is one of its six boundaries, and
+> the countries below it fill the two darkest bands (the acceptance rule above), so a reader must
+> work out which bands to choose. Two clicks then leave the answer at full strength. The pilot
+> checks whether T5 still sits at ceiling in the interactive condition (§10).
 
 > **Redrawn 2026-10-11 from the chart handoff** (Eduardo). The handoff's Form A map colours all 20
 > African countries then in scope. Somalia (44) and Ethiopia (59) sit within 10 points of 50%, and
@@ -905,16 +928,17 @@ as per-chart-type effects.
 
 | Item | Affordance | Logged? |
 |---|---|---|
-| T1 | isolating lines (also chips, sort, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `show-all`), `sort_change`, `view_change`, `view_reset`. `filter_change` from `legend` stays in the vocabulary but cannot occur since the legend went (2026-10-11). |
+| T1 | focusing a line (also chips, the Years slider, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `show-all`), `view_change` (`chart`, `years`), `view_reset`. `filter_change` from `legend` stays in the vocabulary but cannot occur since the legend went (2026-10-11); `sort_change` from View cannot since View went (2026-10-12). |
 | T2 | sorting the bars | yes — `sort_change` |
-| T3 | hover; hiding dots with the chips | the chips only — `filter_change` (`chips`) |
-| T4 | hover; sorting rows by lowest value (A; B asks for the highest, §4) | the sort only — `sort_change` |
-| T5 | the highlight | yes — `filter_change` with `control` `threshold` |
-| T6 | isolating the two lines (also chips); hover | the line controls only — `line_isolate`, `filter_change` (`chips`, `show-all`) |
+| T3 | hover; hiding dots with the chips; highlighting a band from the key | the chips and the key — `filter_change` (`chips`, `key`) |
+| T4 | hover; sorting rows by lowest (A) or highest (B) cell; highlighting a band from the key | the sort and the key — `sort_change`, `filter_change` (`key`) |
+| T5 | highlighting bands from the key (also chips) | yes — `filter_change` with `control` `key` (`threshold` until 2026-10-12) |
+| T6 | hiding lines with the chips, focusing a line; hover | the line controls only — `line_isolate`, `filter_change` (`chips`, `show-all`) |
 
 For T3, T4 and T6, an interactive participant who answers correctly may or may not have hovered.
-Analyses of affordance use are confined to T1, T2, T4's sort, T5 and T6's isolation; for T3, T4
-and T6 a correct interactive answer may rest on an unlogged hover, and the write-up says so.
+Analyses of affordance use are confined to T1, T2, T3's and T4's key, T4's sort, T5 and T6's line
+controls; for T3, T4 and T6 a correct interactive answer may rest on an unlogged hover, and the
+write-up says so.
 
 **Reasoning depth (RQ2).** Each justification coded on three binary features:
 
@@ -1026,7 +1050,8 @@ interactive condition, a hint row under each chart restates what that chart can 
 name in it. Since 2026-10-12 the third bullet names the Years slider and zoom in place of View's
 reorder, and says "focus on it" for a click on a line, which now fades the others rather than
 hiding them (`docs/visual-spec.md` §7.3, §7.6). It is the one place zoom is named (Eduardo,
-after the first pilot session).
+after the first pilot session). The fourth bullet names the key's colours in place of the map's
+"Below [n] %" box, which went the same day (§7.4 of the visual spec).
 
 First half, both versions. Heading "Instructions", then "Practice Question":
 
@@ -1060,8 +1085,8 @@ Or **interactive (4b):**
 >   changes.
 > - On line charts you can also click a line to focus on it, choose which years to show (or drag
 >   across the chart to zoom), and bring every line back with Show all.
-> - The bar chart and the coloured grid can sort their bars or rows. The map can highlight only the
->   countries below a coverage you type.
+> - The bar chart and the coloured grid can sort their bars or rows. On a chart with a colour key,
+>   click a colour in the key to highlight what is drawn in that colour.
 > - A break in a line means no value was reported for those years.
 > - You can skip the question. If you leave it blank, you'll be asked to confirm.
 >
@@ -1322,6 +1347,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - a Years slider replaces View on the line charts, and zoom is named once in the instructions
     (`docs/visual-spec.md` §7.6);
   - a click on a line fades the others instead of hiding them (`docs/visual-spec.md` §7.3);
+  - a click on a colour in the key highlights its band on the scatter, heatmap and map; the map's
+    "Below [n] %" box went (`docs/visual-spec.md` §7.4);
   - the line chart's hint names hover;
   - the first instructions screen asks for a full-screen window;
   - the second half asks for each answer to be explained on its own;
@@ -1358,11 +1385,12 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     lines sit nearer the crossing than B's (§4); and how often interactive participants hide the
     other lines, or focus one of the two, before answering, which the logs show.
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
-    row sort, the map's highlight and the bar sort, which the practice does not teach. The logs show
+    row sort, the key's colours and the bar sort, which the practice does not teach. The logs show
     all four (§7).
-  - **Whether T4 sits at ceiling in the interactive condition**, since the row sort answers it in
-    one click in both forms: Lowest cell first in A and, since 2026-10-12, Highest cell first in B
-    (§4).
+  - **Whether T4 and T5 sit at ceiling in the interactive condition.** On T4 the row sort answers it
+    in one click in both forms: Lowest cell first in A and, since 2026-10-12, Highest cell first in
+    B. So does a click on the key cell's band. On T5, two clicks on the key's darkest bands leave the
+    answer at full strength, once the reader has worked out that those bands are below 50 (§4).
   - **T2 and T4 asking different questions per form (2026-10-12).** B-T2 counts to the
     sixth-highest bar with 5 points above it; B-T4 asks for the highest cell, among light bands
     (§4). Compare each item's static and interactive accuracy per form; if B is clearly harder on
@@ -1380,11 +1408,12 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   T3's split is 862 px (826 in compact mode)**, its chips in three rows. The same measurement found
   the interactive T1 card past the fold too. With the Years slider in place of View, its split is
   826 px (790 in compact mode, so it scrolls at 1366 × 768 but not at 1440 × 790). Split T1's
-  interactive times the same way.
+  interactive times the same way. **With the map's highlight box gone, T5's split is 807 px** (771
+  in compact mode at 1440 wide, 800 at 1366 × 768).
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
-  with only the row sort. The chips, the sorts, the highlight, Show all and Reset view all work from
+  with only the row sort. The chips, the sorts, the key's colours, Show all and Reset view all work from
   the keyboard (`docs/visual-spec.md` §8); a whole session was run from the keyboard alone on
   2026-09-26, consent (by the paper-copy box) to About you. Since 2026-10-12 the Years slider also
   zooms the line charts from the keyboard.

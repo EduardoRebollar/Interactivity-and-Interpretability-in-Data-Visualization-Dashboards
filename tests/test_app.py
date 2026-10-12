@@ -767,7 +767,7 @@ def test_a_chip_hides_a_line_and_logs_it(tmp_path):
     assert _drawn(result.figure) == set(keep)
     assert _ticked(result) == keep
     assert _chip_order(result) == _countries()
-    assert result.sort is no_update and result.threshold is no_update
+    assert result.sort is no_update and result.keys is no_update
 
 
 def test_the_chips_split_into_even_rows_of_at_most_six(tmp_path):
@@ -807,7 +807,7 @@ def test_every_chart_lays_its_chips_out_in_full_rows():
             order = layout.filterable(list(task.entities))
             rows = layout.chip_rows(order, order, task.chart)
             assert all(row["options"] for row in rows), task.task_id
-            assert max(len(row["options"]) for row in rows) <= layout.chips_per_row(task.chart)
+            assert max(len(row["options"]) for row in rows) <= layout.CHIPS_PER_ROW
 
 
 @pytest.mark.parametrize(
@@ -831,11 +831,11 @@ def test_a_chip_names_its_country_as_the_chart_does_and_logs_the_full_name(chart
     assert [o["value"] for o in row["options"]] == names
 
 
-def test_the_maps_chips_run_five_to_a_row_beside_the_highlight_box(tmp_path):
-    """Six wrapped beside the Highlight box at every window size (headless Chrome, 2026-10-12)."""
+def test_the_maps_chips_run_six_to_a_row_now_the_highlight_box_is_gone(tmp_path):
+    """Five to a row while the Highlight box shared the strip; six since it went (2026-10-12)."""
     names = _countries(_task_at("map"))
     result, _events = _interact_on("map", "chips", tmp_path, chips=names[1:])
-    assert [len(row["options"]) for row in result.chips] == [5, 5, 4, 4]
+    assert [len(row["options"]) for row in result.chips] == [6, 6, 6]
 
 
 def test_unticking_the_last_chip_is_refused_and_the_chip_put_back(tmp_path):
@@ -1048,7 +1048,7 @@ def test_reset_view_undoes_filtering_focusing_and_zooming_and_logs_what_it_undid
             "selected": ["China", "India"],
             "sort": None,
             "isolated": "India",
-            "threshold": None,
+            "bands": [],
             "xrange": [2004.75, 2015.25],
         }
     }
@@ -1234,17 +1234,18 @@ def test_a_view_from_another_task_is_discarded_even_when_its_entities_fit(tmp_pa
     [
         {"sort": "desc"},
         {"sort": 7},
-        {"threshold": 40},
+        {"bands": [0, 40]},
+        {"bands": "0"},
         {"isolated": "Ukraine"},
         {"selected": "China"},
     ],
 )
 def test_a_malformed_stored_view_falls_back_to_the_fresh_one(tmp_path, stored):
     """The store is written by this app, but it lives in the browser. Whatever it says is checked
-    against the task: a line chart has no bar sort and no highlight."""
+    against the task: a line chart has no bar sort and no key."""
     result, _events = _interact("chips", tmp_path, control_state=_view(**stored), chips=["China"])
     assert result.control["sort"] is None, "a line chart has no sort"
-    assert result.control["threshold"] is None
+    assert result.control["bands"] == []
     assert result.control["isolated"] is None
 
 
@@ -1487,87 +1488,149 @@ def test_a_chip_hides_a_scatter_dot_and_its_legend_entry_stays(tmp_path):
     assert _drawn(result.figure) == set(names[1:])
 
 
-def test_the_highlight_fades_countries_not_below_it_and_logs_it(tmp_path):
-    result, events = _interact_on("map", "threshold", tmp_path, threshold=50)
+def _key_index(chart: str, lower: int) -> int:
+    """The key button for the band starting at `lower`."""
+    (block,) = [b for b in figures.key_blocks(chart) if b.lower == lower]
+    return block.index
+
+
+def _pressed(result) -> list[int]:
+    return [i for i, cls in enumerate(result.keys) if "is-on" in cls]
+
+
+def test_a_key_colour_highlights_its_band_on_the_map_and_logs_it(tmp_path):
+    """visual-spec.md section 7.4: a click on the 0-40 block leaves only those countries at full
+    strength. A-T5's three countries below 50% are all in it."""
+    index = _key_index("map", 0)
+    result, events = _interact_on("map", "key-band", tmp_path, key_band=index)
     assert [e["event"] for e in events] == ["filter_change"]
     assert events[0]["payload"] == {
-        "control": "threshold",
-        "action": "highlight",
-        "value": 50,
-        "previous": None,
+        "control": "key",
+        "action": "add",
+        "value": [0],
+        "previous": [],
     }
-    assert result.control["threshold"] == 50
-    assert result.threshold is no_update, "the box already shows what the participant typed"
-    strong = figures.full_strength(result.figure)
-    assert strong == [z < 50 for z in result.figure.data[0].z]
+    assert result.control["bands"] == [0]
+    assert figures.full_strength(result.figure) == [z < 40 for z in result.figure.data[0].z]
+    assert _pressed(result) == [index]
 
 
-@pytest.mark.parametrize("cleared", [None, "", 100])
-def test_emptying_the_box_or_typing_100_clears_the_highlight_and_logs_it(tmp_path, cleared):
+def test_a_second_click_on_the_colour_releases_it(tmp_path):
+    index = _key_index("map", 0)
     result, events = _interact_on(
-        "map", "threshold", tmp_path, control_state=_view_at("map", threshold=50), threshold=cleared
+        "map", "key-band", tmp_path, control_state=_view_at("map", bands=[0]), key_band=index
     )
     assert events[0]["payload"] == {
-        "control": "threshold",
-        "action": "clear",
-        "value": None,
-        "previous": 50,
+        "control": "key",
+        "action": "remove",
+        "value": [],
+        "previous": [0],
     }
     assert all(figures.full_strength(result.figure))
+    assert _pressed(result) == []
 
 
-@pytest.mark.parametrize("unchanged", [None, 100, "100"])
-def test_a_box_at_rest_logs_nothing(tmp_path, unchanged):
-    """The box starts at 100, which highlights nothing; its render-time callback is no action."""
-    result, events = _interact_on("map", "threshold", tmp_path, threshold=unchanged)
-    assert result == app.UNCHANGED
-    assert events == []
-
-
-def test_a_decimal_is_rounded_to_the_boxs_step(tmp_path):
-    result, events = _interact_on("map", "threshold", tmp_path, threshold=49.6)
-    assert events[0]["payload"]["value"] == 50
-
-
-@pytest.mark.parametrize("typed", ["a", -5, 200, [50]])
-def test_a_highlight_that_is_not_a_number_from_0_to_100_is_refused_and_the_box_put_back(
-    tmp_path, typed
-):
+def test_two_colours_highlight_together(tmp_path):
+    """The two darkest bands are the countries below 50%: the key names no threshold, and the reader
+    works out which bands to choose (study-design.md section 4, T5)."""
     result, events = _interact_on(
-        "map", "threshold", tmp_path, control_state=_view_at("map", threshold=40), threshold=typed
+        "map",
+        "key-band",
+        tmp_path,
+        control_state=_view_at("map", bands=[0]),
+        key_band=_key_index("map", 40),
     )
-    assert events == []
-    assert result.threshold == 40, "the box is set back to what the map shows"
-    assert result.control["threshold"] == 40
+    assert events[0]["payload"]["value"] == [0, 40]
+    assert figures.full_strength(result.figure) == [z < 50 for z in result.figure.data[0].z]
+    assert sum(figures.full_strength(result.figure)) == 3, "A-T5's key"
 
 
-def test_a_chip_and_the_highlight_combine(tmp_path):
+def test_a_key_colour_fades_the_scatter_dots_of_other_colours(tmp_path):
+    """A-T3: more than +40 holds the key, Niger, and two others; the key always shares its colour
+    (the acceptance rule), so the key narrows the choice and never names the answer."""
+    result, events = _interact_on(
+        "scatter", "key-band", tmp_path, key_band=_key_index("scatter", 40)
+    )
+    assert events[0]["payload"]["value"] == [40]
+    strong = {t.name for t in result.figure.data if t.opacity != config.FADED_OPACITY}
+    assert strong == {"Burkina Faso", "Ethiopia", "Niger"}
+    faded_names = {
+        a.name for a in result.figure.layout.annotations if a.opacity == config.FADED_OPACITY
+    }
+    assert faded_names == {f"dot:{t.name}" for t in result.figure.data} - {
+        f"dot:{name}" for name in strong
+    }
+
+
+def test_a_key_colour_fades_heatmap_cells_not_rows(tmp_path):
+    """A-T4: 20-30 holds only Chad's 2000 and 2005 cells; Chad's other cells fade with the rest."""
+    result, _events = _interact_on(
+        "heatmap", "key-band", tmp_path, key_band=_key_index("heatmap", 20)
+    )
+    cells = [s for s in result.figure.layout.shapes if (s.name or "").startswith("cell:")]
+    strong = [s for s in cells if s.opacity != config.FADED_OPACITY]
+    assert [s.name for s in strong] == ["cell:Chad", "cell:Chad"]
+
+
+def test_a_chip_and_a_key_colour_combine(tmp_path):
+    """A country its chip faded stays faded when its band is highlighted."""
     task = _task_at("map")
     names = _countries(task)
+    lowest = min(range(len(names)), key=lambda i: figures.task_figure(task).data[0].z[i])
+    keep = [name for i, name in enumerate(names) if i != lowest]
+    result, _events = _interact_on("map", "chips", tmp_path, chips=keep)
     result, _events = _interact_on(
-        "map", "chips", tmp_path, control_state=_view_at("map", threshold=100), chips=names[1:]
+        "map", "key-band", tmp_path, control_state=result.control, key_band=_key_index("map", 0)
     )
-    assert figures.full_strength(result.figure)[0] is False
-    result, _events = _interact_on(
-        "map",
-        "threshold",
-        tmp_path,
-        control_state=result.control,
-        threshold=99,
-    )
-    strong = figures.full_strength(result.figure)
-    assert strong[0] is False, "a country hidden by its chip stays faded under the highlight"
+    assert figures.full_strength(result.figure)[lowest] is False
 
 
-def test_reset_view_on_the_map_empties_the_highlight_and_sets_the_box_back(tmp_path):
+@pytest.mark.parametrize("pressed", [None, -1, 7, 99, True, "0"])
+def test_a_press_that_names_no_key_button_changes_nothing(tmp_path, pressed):
+    """`view` passes None for the render-time call, when the buttons are inserted with n_clicks
+    0."""
+    result, events = _interact_on("map", "key-band", tmp_path, key_band=pressed)
+    assert result == app.UNCHANGED and events == []
+
+
+@pytest.mark.parametrize("chart", ["line", "bar"])
+def test_a_chart_without_a_key_takes_no_key_press(tmp_path, chart):
+    result, events = _interact_on(chart, "key-band", tmp_path, key_band=0)
+    assert result == app.UNCHANGED and events == []
+
+
+def test_a_malformed_stored_band_is_dropped(tmp_path):
+    stored = _view_at("map", bands=[0, "x", 13, True, 40.0, {"a": 1}, 0])
+    result, _events = _interact_on(
+        "map", "key-band", tmp_path, control_state=stored, key_band=_key_index("map", 90)
+    )
+    assert result.control["bands"] == [0, 90]
+
+
+def test_reset_view_on_the_map_releases_every_colour(tmp_path):
     names = _countries(_task_at("map"))
-    changed = _view_at("map", threshold=50, selected=names[:3])
+    changed = _view_at("map", bands=[0, 40], selected=names[:3])
     result, events = _interact_on("map", "reset", tmp_path, control_state=changed)
     assert events[0]["event"] == "view_reset"
-    assert events[0]["payload"]["previous"]["threshold"] == 50
-    assert result.threshold == layout.THRESHOLD_START
+    assert events[0]["payload"]["previous"]["bands"] == [0, 40]
+    assert result.control["bands"] == []
+    assert _pressed(result) == []
     assert result.sort is no_update, "the map has no sort control to set back"
     assert all(figures.full_strength(result.figure))
+
+
+@pytest.mark.parametrize(
+    ("prop_id", "value", "expected"),
+    [
+        ('{"control":"key-band","index":3}.n_clicks', 1, 3),
+        ('{"control":"key-band","index":3}.n_clicks', 0, None),
+        ('{"control":"key-band","index":3}.n_clicks', None, None),
+        ('{"control":"reset","index":0}.n_clicks', 1, None),
+        ("chart.clickData", {"points": []}, None),
+    ],
+)
+def test_only_a_clicked_key_button_is_a_key_press(prop_id, value, expected):
+    assert app._key_press({"prop_id": prop_id, "value": value}) == expected
 
 
 @pytest.mark.parametrize("chart", ["bar", "scatter", "heatmap", "map"])
@@ -1584,7 +1647,7 @@ def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
     """A control arriving on a screen whose chart has no such control is not an action."""
     foreign = {
         "sort": {"sort_key": "coverage" if chart != "line" else "desc"},
-        "threshold": {"threshold": 40},
+        "key-band": {"key_band": 0},
         "show-all": {},
         "years": {"years": [2005, 2010]},
         "chart.restyleData": {"restyle": [{"visible": ["legendonly"]}, [0]]},
@@ -1592,9 +1655,9 @@ def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
     own = {
         "line": {"show-all", "years", "chart.restyleData"},
         "bar": {"sort"},
-        "heatmap": {"sort"},
-        "scatter": set(),
-        "map": {"threshold"},
+        "heatmap": {"sort", "key-band"},
+        "scatter": {"key-band"},
+        "map": {"key-band"},
     }[chart]
     for triggered, kwargs in foreign.items():
         if triggered in own and triggered != "sort":
@@ -1631,13 +1694,18 @@ def test_every_pattern_output_is_a_list_one_entry_per_component(tmp_path):
     output is a list as long as the components it matched, whatever the result."""
     changed, _events = _interact("chips", tmp_path, chips=_countries()[:2])
     reset, _events = _interact("reset", tmp_path, control_state=_view(xrange=[2004.75, 2015.25]))
-    for result in (changed, changed._replace(chips=no_update), reset):
-        for counts in ([2, 0, 0, 1], [1, 1, 0, 0], [2, 0, 1, 0], [0, 0, 0, 0]):
+    keyed, _events = _interact_on("map", "key-band", tmp_path, key_band=_key_index("map", 0))
+    for result in (changed, changed._replace(chips=no_update), reset, keyed):
+        for counts in ([2, 0, 1, 0, 0], [1, 1, 0, 0, 0], [2, 0, 0, 7, 7], [0, 0, 0, 0, 0]):
             outputs = app.view_outputs(result, counts)
-            assert len(outputs) == 7
-            for output, count in zip(outputs[1:5], counts, strict=True):
+            assert len(outputs) == 8
+            for output, count in zip(outputs[1:6], counts, strict=True):
                 assert isinstance(output, list) and len(output) == count
-    assert app.view_outputs(reset, [2, 0, 0, 1])[4] == [[2000, 2024]]
+    assert app.view_outputs(reset, [2, 0, 1, 0, 0])[3] == [[2000, 2024]]
+    pressed = app.view_outputs(keyed, [3, 0, 0, 7, 7])
+    index = _key_index("map", 0)
+    assert pressed[4][index] == "ui-key is-on" and pressed[5][index] == "true"
+    assert pressed[5].count("true") == 1
 
 
 def test_every_sort_key_has_a_direction():
@@ -3430,7 +3498,7 @@ def test_no_callback_is_dead_on_the_preview():
 def test_choosing_on_the_preview_bar_shows_that_item():
     body, preview = app.preview_step("B", "T5", "static", app.PREVIEW_START)
     assert preview == {"form": "B", "item": "T5", "interactive": False}
-    assert '"threshold"' not in _json(body)  # no controls on the static map
+    assert '"key-band"' not in _json(body)  # no key buttons on the static map
     assert json.dumps(tasks.for_form("B")[4].prompt)[1:-1] in _json(body)
 
 

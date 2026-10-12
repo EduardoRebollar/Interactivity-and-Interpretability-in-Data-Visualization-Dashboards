@@ -501,8 +501,9 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | Country chips | none | every chart: show or hide each country drawn |
 | Line charts | image | Years (a range slider), Show all, focus a line, zoom and pan the x axis |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
-| Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first |
-| Map | image | Highlight: fade every country not below a typed percentage |
+| Scatter | image | the key's colours: a click highlights the dots in that band |
+| Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first; the key's colours highlight cells |
+| Map | image | the key's colours: a click highlights the countries in that band |
 | Every chart | none | a hint row saying what the chart can do, and Reset view |
 
 The line chart's hint named its legend. From 2026-10-11 it read "Click a line to show only that
@@ -600,13 +601,15 @@ Average answered neither form's question.
 
 - **Chips on every chart (2026-09-25).** One chip per country the chart draws, with its flag, in
   the task's entity order. World has none.
-- **At most six chips to a row (2026-10-12), five on the map.** The rows are as even as the count
-  allows, the first taking any extra:
+- **At most six chips to a row (2026-10-12).** The rows are as even as the count allows, the first
+  taking any extra:
   - 16 run 6/5/5 (T3);
+  - 18 run 6/6/6 (T5);
   - 10 run 5/5 (T2);
-  - 8 run 4/4 (T1, T4, T6);
-  - the map's 18 run 5/5/4/4 (T5). Its strip also holds the Highlight box, and six chips beside it
-    wrapped at every window size (headless Chrome).
+  - 8 run 4/4 (T1, T4, T6).
+
+  Until the map's Highlight box went (§7.4, later the same day), the map's ran five to a row: six
+  beside the box wrapped at every window size (headless Chrome).
 
   A chip names its country as the chart prints it (`figures.drawn_name`): "CAR" and "DR Congo" on
   the map, "Central African Rep." and "DR Congo" elsewhere. Spelled out, "Democratic Republic of
@@ -639,29 +642,54 @@ Average answered neither form's question.
   - **Why fade (pilot session 1):** a hidden line took its context with it, where the question is
     how one line relates to the others. Every other chart already faded rather than hid what a
     control set aside. An isolated line hid the others, and its chip alone stayed ticked.
-- **Reset view**, on every chart, undoes filtering, sorting, focusing, the map's highlight and,
+- **Reset view**, on every chart, undoes filtering, sorting, focusing, a highlight from the key and,
   since 2026-10-12, a zoom: the line chart returns to 2000–2024. Until then a zoom was left to the
   modebar's own reset. The zoom is kept by the app, not by Plotly: every control redraws the chart,
   and each redraw keeps the range the participant zoomed to.
 - All of it resets between tasks: no task inherits the previous task's view.
 
-### 7.4 The map's highlight (defined 2026-09-25, replacing the coverage range)
+### 7.4 Highlighting from the key (defined 2026-10-12, replacing the map's highlight box)
 
-- Control: **Highlight**, "Below [n] %", a number box from 0 to 100 in steps of 1. It starts at 100.
-  The participant types the number. A preset "below 50%" button was rejected on 2026-09-23 because
-  it would name the question's own threshold; the box names none, and does what dragging the old
-  range's upper handle did (Eduardo, 2026-09-25).
-- **Countries at n or above fade to 0.15 opacity.** Countries below n stay at full strength. They
-  keep their colour, their place and their name.
-- **100 or an empty box means no highlight**, so the map at rest is exactly the figure
-  `build_figure` made, and no country can be faded by the starting value.
-- Drawn as a **selection**. The countries shown at full strength are selected and the rest take the
-  trace's `unselected` opacity. plotly.js 4 applies a choropleth's `marker.opacity` to the whole
-  trace, so the first build's per-country opacity list faded nothing. Only a browser showed it. A
-  country hidden by its chip is left out of the selection too.
-- Typing commits on Enter or when the box loses focus. Reset view empties the highlight.
-- The hint says countries not below the threshold "turn grey": faded to 0.15 over the grey land,
-  they read as nearly grey.
+On the scatter, the heatmap and the map, each block of the stepped key (§4) is a button, in the
+interactive condition only.
+- **A click highlights its band.** Every mark in another band fades to 0.15 opacity:
+  - a scatter dot, with its name and knockout;
+  - a heatmap cell (a single cell, not its row), with "No data" cells and their labels;
+  - a map country.
+
+  Each keeps its place and colour. A second click on the same block releases its band. Several
+  bands may be chosen at once, and their marks show together. With none chosen, the chart is as
+  drawn.
+- **With the chips.** A mark is at full strength only if its chip shows it and, when bands are
+  chosen, it is in one of them. A dot its chip hid stays hidden; a row or country its chip faded
+  stays faded.
+- **The buttons are an overlay, not the figure.** Native buttons stand over the key's blocks, inside
+  the chart's own box, at the positions the figure draws the blocks (`figures.key_blocks`, one
+  source for both). The figure carries nothing new, so it stays byte-identical in both conditions
+  (§7). Their positions are inline styles set from that data, as the chips' spacing is (§10).
+  - A pressed block carries a 2 px ink outline.
+  - Keyboard focus shows the focus ring.
+  - Each button is named by its band ("Highlight 40–50%", "Highlight +20 to +40 pts") and carries
+    `aria-pressed`.
+  - The heatmap's blocks are 16 px tall, so each button reaches 6 px above and below its block.
+- **Drawn as the chips draw.** Dots and cells by opacity. Countries by **selection**: the countries
+  at full strength are selected and the rest take the trace's `unselected` opacity, since plotly.js
+  4 applies a choropleth's `marker.opacity` to the whole trace. Only a browser showed it, for the
+  map's first filter.
+- **Reset view** releases every band.
+- **The hints** on these three charts name it: "Click a colour in the key to highlight its dots"
+  (cells, countries).
+- **Why (the first pilot session, 2026-10-12).**
+  - The participant, on the scatter, wanted to click the key to filter.
+  - On the map, they found the "Below [n] %" box "almost cheating": it echoed the question's own
+    words.
+  - The key names no threshold. 50 is one of its six boundaries, and a reader must work out which
+    bands lie below it.
+  - One mechanism now serves every chart with a key. Eduardo removed the map's box rather than keep
+    both.
+- **Before 2026-10-12** the map had a **Highlight** box, "Below [n] %", from 0 to 100, which faded
+  every country at n or above. It replaced a range slider on 2026-09-25, and a preset "below 50%"
+  button was rejected on 2026-09-23 for naming the threshold. The box's code is in the git history.
 
 ### 7.5 The modebar (defined 2026-09-23)
 
@@ -728,7 +756,7 @@ On every line chart, in the controls strip, where View stood. *Show all* sits un
   simulated colour-vision deficiency (§4), and the blue bands' steady lightness under it.
 - All controls are keyboard-operable (CLAUDE.md baseline):
   - the chips are native checkboxes, and Sort and Sort rows are native radios;
-  - Show all and Reset view are native buttons, and the map's highlight is a native number box;
+  - Show all, Reset view and the key's colours (2026-10-12) are native buttons;
   - Years' handles take the arrow keys (2026-10-12).
 - Focus rings appear only for keyboard focus (`:focus-visible`), as a 2 px white gap and a 2 px
   accent ring (§10).
@@ -770,7 +798,8 @@ strip and the hint row under the chart (§7).
   copied unchanged to `src/assets/study.css`, where Dash loads it automatically. Where Dash's markup
   cannot match one of its selectors, the smallest possible rule goes in `src/assets/zz-overrides.css`,
   each commented with why. No inline style dicts in `layout.py`, beyond the data-driven values the
-  handoff sets inline itself (the chips' spacing on line charts).
+  handoff sets inline itself (the chips' spacing on line charts) and, since 2026-10-12, the key
+  buttons' positions, which come from the figure's own key geometry (§7.4).
 - **Dash 4's option lists (2026-09-26).** The stylesheet puts a class on each option's `<label>`
   (`.chip`, `.ui-tile`, `.seg-item`). Dash 4 cannot: its labels are `.dash-options-list-option`,
   and `labelClassName` goes on the text beside the input. `src/assets/zz-bridge.css`, generated from
@@ -872,6 +901,15 @@ strip and the hint row under the chart (§7).
   - T6 at 735 (A at 1366 × 768: 764).
   
   Nothing else moved (headless Chrome, against the commit before it).
+
+  **The map's highlight box went the same day** (§7.4). Its chips now run three rows of six, not
+  four of five, so the interactive map card ends 36 px higher in both forms:
+  - 771 at 1440 × 790, inside the window;
+  - 800 at 1366 × 768, still 32 px past;
+  - 807 outside compact mode.
+
+  The key's buttons sit over the chart and take no room. The scatter, heatmap and map hints, one
+  sentence longer, stay on one line. Nothing else moved.
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

@@ -282,3 +282,15 @@
 .ui-years .dash-slider-track { background: var(--c-line); }
 .ui-years .dash-slider-mark { color: var(--c-muted); font-size: var(--fs-12); }
 .ui-years .dash-slider-thumb:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* The key's colours on the scatter, heatmap and map take clicks (docs/visual-spec.md section 7.4).
+   A layer of buttons over the chart, in the interactive condition only: `.ui-chart` is exactly the
+   figure's box, so it positions them; the layer lets every other pointer event through to the
+   chart. A pressed colour carries a 2 px ink outline (16.74:1 on the card); keyboard focus keeps
+   the page's focus ring. `position: relative` changes nothing on the static chart, which has no
+   layer. */
+.ui-chart { position: relative; }
+.ui-keys { position: absolute; inset: 0; pointer-events: none; }
+.ui-key { position: absolute; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; pointer-events: auto; }
+.ui-key:hover { outline: 1px solid var(--c-line); outline-offset: 1px; }
+.ui-key.is-on { outline: 2px solid var(--c-ink); outline-offset: 1px; }

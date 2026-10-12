@@ -246,17 +246,19 @@ INTERACTIVE_NOTES = {
     ),
     "scatter": (
         "The interactive version adds a button for each country under it, which hides or shows its "
-        "dot, and Reset view. Hovering a dot shows the country's name and its two values."
+        "dot, and Reset view. Clicking a colour in the key fades every dot of another colour. "
+        "Hovering a dot shows the country's name and its two values."
     ),
     "heatmap": (
         "The interactive version adds the controls under it: a button for each country, which "
         "fades or restores its row; a Sort rows control (A-Z, Lowest cell first, Highest cell "
-        "first), which reorders the rows; and Reset view. Hovering a cell shows its exact value."
+        "first), which reorders the rows; and Reset view. Clicking a colour in the key fades every "
+        "cell of another colour. Hovering a cell shows its exact value."
     ),
     "map": (
         "The interactive version adds the controls under it: a button for each country, which "
-        "fades or restores it; a Highlight box, which fades every country whose coverage is not "
-        "below the number typed; and Reset view. Hovering a country shows its name and exact value."
+        "fades or restores it, and Reset view. Clicking a colour in the key fades every country of "
+        "another colour. Hovering a country shows its name and exact value."
     ),
 }
 
@@ -442,8 +444,9 @@ by two questions comparing the versions;</li>
 <p>Every question may be skipped. Each half asks about five kinds of chart: line charts, a bar
 chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;
 the interactive one adds hover tooltips to every chart and controls under each one: a button per
-country that hides or shows it, and Reset view; on the line charts reordering, Show all and
-isolating a line; sorting on the bar chart and the grid; and a highlight on the map.
+country that hides or shows it, and Reset view; on the line charts a Years slider, Show all and
+focusing a line; sorting on the bar chart and the grid; and, on the scatter plot, the grid and the
+map, highlighting a colour by clicking it in the key.
 Each participant answers form A with one version and form B with the other, in one of four
 counterbalanced orders.</p>
 <p class="q-note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the

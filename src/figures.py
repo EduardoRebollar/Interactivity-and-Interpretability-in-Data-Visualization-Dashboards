@@ -14,14 +14,15 @@ text of BOTH conditions' figures. `staticPlot: True` is what keeps the static pa
 reaching it, so the information is interactive-only without the figures differing.
 
 The controls change a figure only through the view functions below (`set_visible`, `sort_bars`,
-`sort_rows`, `set_threshold`). Each hides, reorders or fades what is already there; none
-rebuilds the chart from a shorter list, which would move every name tag on a line chart.
+`sort_rows`, `focus_line`, `set_bands`). Each hides, reorders or fades what is already there;
+none rebuilds the chart from a shorter list, which would move every name tag on a line chart.
 """
 
 from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from typing import NamedTuple
 
 import plotly.graph_objects as go
 
@@ -228,8 +229,8 @@ def set_visible(figure: go.Figure, entities: Sequence[str]) -> go.Figure:
     elif chart == "heatmap":
         _draw_cells(figure, _row_order(figure), [name for name in names if name not in visible])
     else:
-        # A selection, as the highlight is (`set_threshold`): plotly.js 4 ignores a per-country
-        # opacity list on a choropleth.
+        # A selection, as a highlight from the key is (`set_bands`): plotly.js 4 ignores a
+        # per-country opacity list on a choropleth.
         countries = _only(figure, go.Choropleth)
         countries.selectedpoints = (
             None if everything else [i for i, name in enumerate(names) if name in visible]
@@ -315,29 +316,132 @@ def sort_rows(figure: go.Figure, key: str) -> go.Figure:
     return figure
 
 
-def set_threshold(figure: go.Figure, threshold: float | None) -> go.Figure:
-    """Fade every country on the map whose coverage is `threshold` or more (visual-spec.md 7.4).
+class KeyBlock(NamedTuple):
+    """One block of a chart's stepped key (visual-spec.md sections 4 and 7.4).
 
-    None, or 100, means no highlight, so the map at rest is the figure `build_figure` made. A
-    country the chips hid stays faded. Faded, not removed: the map keeps its shape, and a faded
-    country is still where it was; the colour scale is fixed to 0-100, so no colour changes.
-
-    Drawn as a SELECTION: the countries at full strength are selected and the rest take the trace's
-    `unselected` opacity. plotly.js 4 applies a choropleth's `marker.opacity` to the whole trace,
-    so a list of per-country opacities is silently dropped -- the map's first filter shipped that
-    way and faded nothing, which only a browser showed.
+    `lower` names the band: its lower bound, in % on the heatmap and the map and in points of
+    change on the scatter. `box` is (x, y, width, height) in the card's pixels, from the top left:
+    where the block is drawn, so the interactive condition's buttons stand over it.
     """
-    if threshold is None or threshold >= config.Y_RANGE[1]:
+
+    index: int
+    lower: int
+    color: str
+    label: str
+    box: tuple[float, float, float, float]
+
+
+KEY_CHARTS = ("scatter", "heatmap", "map")
+
+
+def _signed(points: int) -> str:
+    """A change as the scatter's key prints it: "+40", "−5" (a true minus sign)."""
+    return f"+{points}" if points > 0 else f"−{abs(points)}"
+
+
+def _band_label(bands: Sequence[tuple[int, str]], index: int) -> str:
+    upper = bands[index + 1][0] if index + 1 < len(bands) else config.Y_RANGE[1]
+    return f"{bands[index][0]}–{upper}%"
+
+
+def key_blocks(chart_type: str) -> list[KeyBlock]:
+    """The blocks of a chart's stepped key, in the order a reader meets them: the scatter's and the
+    map's from the top, the heatmap's from the left. The key builders draw from the same geometry
+    (`_CHANGE_KEY`, `_HEAT_KEY`, `_MAP_KEY`), so a button placed by this cannot drift from its
+    block."""
+    if chart_type == "scatter":
+        left, top, step, width = _CHANGE_KEY
+        return [
+            KeyBlock(
+                index,
+                lower,
+                color,
+                f"{_signed(lower)} to {_signed(upper)} pts",
+                (left, top + index * step, width, step),
+            )
+            for index, ((_bound, color), upper, lower) in enumerate(
+                zip(config.CHANGE_STEPS, _CHANGE_BOUNDS, _CHANGE_BOUNDS[1:], strict=False)
+            )
+        ]
+    if chart_type == "heatmap":
+        left, top, height, width = _HEAT_KEY
+        bands = config.HEATMAP_BANDS
+        block = width / len(bands)
+        return [
+            KeyBlock(
+                index,
+                lower,
+                color,
+                _band_label(bands, index),
+                (left + index * block, top, block, height),
+            )
+            for index, (lower, color) in enumerate(bands)
+        ]
+    if chart_type == "map":
+        left, top, height, gap, width = _MAP_KEY
+        bands = config.MAP_BANDS
+        order = list(reversed(range(len(bands))))
+        return [
+            KeyBlock(
+                index,
+                bands[band][0],
+                bands[band][1],
+                _band_label(bands, band),
+                (left, top + index * (height + gap), width, height),
+            )
+            for index, band in enumerate(order)
+        ]
+    raise FigureError(f"A {chart_type} chart has no stepped key")
+
+
+def set_bands(figure: go.Figure, bands: Sequence[int]) -> go.Figure:
+    """Highlight the marks in the key's chosen bands: every other mark fades to FADED_OPACITY
+    (visual-spec.md section 7.4, 2026-10-12). `bands` are the chosen blocks' `lower` bounds; none
+    leaves the chart as it is.
+
+    A mark is in a band when it is drawn in that band's colour, which is how a reader matches it to
+    the key. On the scatter a dot fades with its name and knockout, keeping its hover. On the
+    heatmap a single cell fades, not its row, and "No data" cells fade whenever a band is chosen.
+    On the map a country fades by SELECTION, as the chips' fade does: plotly.js 4 applies a
+    choropleth's `marker.opacity` to the whole trace. What the chips hid or faded stays so: run
+    this after `set_visible`, and after `sort_rows`, which redraws the cells.
+    """
+    if not bands:
         return figure
-    if threshold < config.Y_RANGE[0]:
-        raise FigureError(f"A highlight threshold must be 0-100, got {threshold}")
-    countries = _only(figure, go.Choropleth)
-    strong = full_strength(figure)
-    countries.selectedpoints = [
-        index
-        for index, (keep, value) in enumerate(zip(strong, countries.z, strict=True))
-        if keep and value is not None and value < threshold
-    ]
+    chart = chart_type_of(figure)
+    blocks = key_blocks(chart)
+    unknown = set(bands) - {block.lower for block in blocks}
+    if unknown:
+        raise FigureError(f"Not a band of the {chart} chart's key: {sorted(unknown)}")
+    chosen = {block.color for block in blocks if block.lower in set(bands)}
+    if chart == "scatter":
+        faded = set()
+        for trace in figure.data:
+            if trace.marker.color not in chosen:
+                trace.opacity = config.FADED_OPACITY
+                faded.add(f"{_DOT}{trace.name}")
+        for item in (*figure.layout.shapes, *figure.layout.annotations):
+            if (item.name or "") in faded:
+                item.opacity = config.FADED_OPACITY
+    elif chart == "heatmap":
+        for shape in figure.layout.shapes:
+            if (shape.name or "").startswith(_CELL) and shape.fillcolor not in chosen:
+                shape.opacity = config.FADED_OPACITY
+        for annotation in figure.layout.annotations:
+            # The "No data" labels: their cells are never in a band.
+            if (annotation.name or "").startswith(_CELL):
+                annotation.opacity = config.FADED_OPACITY
+    else:
+        countries = _only(figure, go.Choropleth)
+        strong = full_strength(figure)
+        colours = [
+            None if value is None else band_color(value, config.MAP_BANDS) for value in countries.z
+        ]
+        countries.selectedpoints = [
+            index
+            for index, (keep, colour) in enumerate(zip(strong, colours, strict=True))
+            if keep and colour in chosen
+        ]
     return figure
 
 
@@ -1177,6 +1281,10 @@ def _scatter(
 
 
 _SCATTER_MARGIN = {"l": 290, "r": 360, "t": 68, "b": 52}
+# The change key's left edge, top, step and block width, in the card's pixels (`_change_key`,
+# `key_blocks`), and the boundaries it prints, in points, from the top.
+_CHANGE_KEY = (820, _SCATTER_MARGIN["t"] + 58, 36, 20)
+_CHANGE_BOUNDS = (100, 40, 20, 5, -5, -20, -40, -100)
 _DOT = "dot:"
 _DOT_NAME_SIZE = 11.5
 
@@ -1252,7 +1360,7 @@ def _change_key(figure: go.Figure, first: int) -> None:
     """The stepped key in the right margin (visual-spec.md section 4): seven 20 x 36 px blocks 2 px
     apart, the outer ends rounded 6 px, the boundaries in percentage points, three names beside."""
     margin = figure.layout.margin.to_plotly_json()
-    left, top, step, width = 820, margin["t"] + 58, 36, 20
+    left, top, step, width = _CHANGE_KEY
 
     def x(px: float) -> float:
         return _paper(margin, x=px)
@@ -1298,8 +1406,7 @@ def _change_key(figure: go.Figure, first: int) -> None:
             layer="above",
             name="key",
         )
-    bounds = ["+100", "+40", "+20", "+5", "−5", "−20", "−40", "−100"]
-    for index, bound in enumerate(bounds):
+    for index, bound in enumerate(_signed(bound) for bound in _CHANGE_BOUNDS):
         _text(
             figure,
             margin,
@@ -1400,6 +1507,10 @@ def _heatmap(
 # The grid runs from x 215 to 995 and y 118 to 492 in the card: six 130 px columns, rows 46.75 px
 # tall for eight rows, 4 px gaps, 4 px corners (visual-spec.md section 1).
 _HEAT_MARGIN = {"l": 215, "r": 55, "t": 118, "b": 28}
+# The heatmap key's bar: left edge, top, height and width, in the card's pixels (`_heat_key`,
+# `key_blocks`). "Coverage" (about 84 px) and the 560 px bar together are centred on the card's
+# 525 px middle.
+_HEAT_KEY = (525 - (560 - 84) / 2, 40, 16, 560)
 _HEAT_FONT = 15
 _CELL = "cell:"
 _CELL_GAP = 4
@@ -1506,9 +1617,8 @@ def _heat_key(figure: go.Figure) -> None:
     colour, its boundaries labelled under it."""
     margin = figure.layout.margin.to_plotly_json()
     bands = config.HEATMAP_BANDS
-    block = 560 / len(bands)
-    # "Coverage" (about 84 px) and the bar together are centred on the card's 525 px middle.
-    left, top, height = 525 - (560 - 84) / 2, 40, 16
+    left, top, height, bar = _HEAT_KEY
+    block = bar / len(bands)
     right = left + block * len(bands)
 
     def x(px: float) -> float:
@@ -1639,8 +1749,9 @@ def _map(
             colorscale=banded_scale(config.MAP_BANDS),
             showscale=False,
             marker={"line": {"color": config.MAP_BORDER_COLOR, "width": 1.25}},
-            # How the highlight and the chips draw (`set_threshold`, `set_visible`): countries at
-            # full strength are selected, the rest fade. Nothing is selected until a control acts.
+            # How the chips and a highlight from the key draw (`set_visible`, `set_bands`):
+            # countries at full strength are selected, the rest fade. Nothing is selected until a
+            # control acts.
             selected={"marker": {"opacity": 1.0}},
             unselected={"marker": {"opacity": config.FADED_OPACITY}},
             customdata=bands,
@@ -1682,6 +1793,9 @@ def _map(
 # map.png; the frame runs wider, x 150 to 654, so names on leaders beside the coast are not cut off
 # (a geo trace's text is clipped to its frame). The key stands at x 694 (visual-spec.md section 4).
 _MAP_MARGIN = {"l": 150, "r": 396, "t": 64, "b": 46}
+# The map key's left edge, top, block height, gap and width, in the card's pixels (`_map_key`,
+# `key_blocks`).
+_MAP_KEY = (694, 108, 26, 5, 22)
 _LABEL = "label:"
 _MAP_NAME_SIZE = 10
 # White on the four darkest bands, ink on the rest: whichever reads better, as the handoff picks
@@ -1783,7 +1897,7 @@ def _map_key(figure: go.Figure) -> None:
     """The stepped key at the right (visual-spec.md section 4): seven 22 x 26 px blocks, rounded
     4 px, 5 px apart, the highest band at the top, the boundaries labelled between them."""
     margin = figure.layout.margin.to_plotly_json()
-    left, top, height, gap, width = 694, 108, 26, 5, 22
+    left, top, height, gap, width = _MAP_KEY
 
     def x(px: float) -> float:
         return _paper(margin, x=px)

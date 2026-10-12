@@ -72,6 +72,11 @@ from src import config, db
 # - Show all also releases a focused line, so a `show-all` whose `value` equals its `previous`
 #   released only that.
 # - `view_reset.previous` gains `xrange`, since Reset view now undoes a zoom.
+# - The map's "Below [n] %" box went, so `filter_change` from `threshold` can no longer occur. A
+#   click on a colour in the key (scatter, heatmap, map) logs `filter_change` with `control`
+#   `key`, `action` `add` or `remove`, and `value` and `previous` the chosen bands' lower bounds,
+#   ascending: % on the heatmap and the map, points of change on the scatter.
+# - `view_reset.previous` has `bands` (the chosen lower bounds) in place of `threshold`.
 # The record shape is unchanged: no new event, key or table, so no init_db.py re-run. Nothing has
 # been collected under v18; the pilot's v17 session is kept out of the study.
 #
@@ -227,12 +232,13 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # c1 and c2 (one of tasks.COMPARISON_OPTIONS) and c3 (free text): after the SECOND condition
     # only.
     "comparison": ("c1", "c2", "c3"),
-    # Interactive-only affordances. `control` says which: `chips`, `legend`, `show-all` or
-    # `threshold` (see v9 above). `action` is `hide` or `show`; a legend double-click that leaves
-    # one line is `only`; the highlight is `highlight` or `clear`. `value` and `previous` are the
-    # countries on the chart after and before, except for `threshold`, where they are the typed
-    # number or null. Show all also releases a focused line (v18): pressed with every chip already
-    # ticked, its `value` equals its `previous`.
+    # Interactive-only affordances. `control` says which: `chips`, `legend`, `show-all` or `key`
+    # (`threshold` until v18; see v9 above). `action` is `hide` or `show`; a legend double-click
+    # that leaves one line is `only`; a key colour is `add` or `remove` (the box was `highlight` or
+    # `clear`). `value` and `previous` are the countries on the chart after and before, except for
+    # `key`, where they are the chosen bands' lower bounds (v18), and `threshold`, where they were
+    # the typed number or null. Show all also releases a focused line (v18): pressed with every
+    # chip already ticked, its `value` equals its `previous`.
     "filter_change": ("control", "action", "value", "previous"),
     # A click on a line: `isolated` true focuses it (the others fade, since v18; until then they
     # were hidden), false releases it.
@@ -241,8 +247,9 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # (`mean` until v18; the line chart's View `listed` or `coverage` until v18). `direction`:
     # `none`, `desc` or `asc`.
     "sort_change": ("key", "direction"),
-    # Reset view: undoes filtering, sorting, focusing, the highlight and (since v18) a zoom in one
-    # press. `previous` is the view it undid: `selected`, `sort`, `isolated`, `threshold`, `xrange`.
+    # Reset view: undoes filtering, sorting, focusing, a highlight and (since v18) a zoom in one
+    # press. `previous` is the view it undid: `selected`, `sort`, `isolated`, `bands`, `xrange`
+    # (`threshold` in place of `bands` until v18).
     "view_reset": ("previous",),
     # A zoom or pan of the line chart's x axis. `control` `chart` is the chart's own relayout
     # (`value` its payload, `previous` null); `years` is the Years slider (v18), `value` and

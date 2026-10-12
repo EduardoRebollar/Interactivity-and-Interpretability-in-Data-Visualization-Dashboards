@@ -109,16 +109,19 @@ def chart(task, interactive: bool, element_id: str = "chart") -> html.Div:
     Plotly on demand and renders at zero height until it arrives, so without it the answers and
     Submit jumped 520 px while a participant might be clicking them (visual-spec.md section 5).
     Not responsive: the figure sets its own size, the same on every screen.
+
+    In the interactive condition, a chart with a stepped key also carries the key's buttons
+    (`key_buttons`), laid over the figure rather than drawn in it.
     """
-    return html.Div(
-        dcc.Graph(
-            id=element_id,
-            figure=figures.task_figure(task),
-            config=figures.graph_config(interactive, task.chart),
-            responsive=False,
-        ),
-        className="ui-chart",
+    graph = dcc.Graph(
+        id=element_id,
+        figure=figures.task_figure(task),
+        config=figures.graph_config(interactive, task.chart),
+        responsive=False,
     )
+    if interactive and task.chart in figures.KEY_CHARTS:
+        return html.Div([graph, key_buttons(task)], className="ui-chart")
+    return html.Div(graph, className="ui-chart")
 
 
 def filterable(entities: list[str]) -> list[str]:
@@ -146,7 +149,8 @@ SORTS = {
 # The hint under each interactive chart, from the handoff's HINT. The line chart's named its legend,
 # which went with the chart handoff (2026-10-11); it names a click on a line instead. It names hover
 # too since the first pilot session (2026-10-12), as every other chart's hint does: the participant
-# asked whether the line chart gave exact values.
+# asked whether the line chart gave exact values. The charts with a key name its colours (the same
+# day): a click on one highlights its band (visual-spec.md section 7.4).
 HINTS = {
     "line": (
         "Hover a line to read its values. Click a line to focus on it; click it again to bring "
@@ -154,12 +158,16 @@ HINTS = {
     ),
     "bar": "Hover a bar to read its value.",
     # The dots are named on the chart since the chart handoff (2026-10-11).
-    "scatter": "Hover a dot to read its two values.",
-    "heatmap": "Hover a cell to read its value.",
-    "map": "Countries not below the threshold turn grey. Hover a country to read its value.",
+    "scatter": (
+        "Hover a dot to read its two values. Click a colour in the key to highlight its dots."
+    ),
+    "heatmap": "Hover a cell to read its value. Click a colour in the key to highlight its cells.",
+    "map": (
+        "Hover a country to read its value. Click a colour in the key to highlight its countries."
+    ),
 }
 
-RESET_TITLE = "Undo any filtering, sorting, focusing or zooming on this chart"
+RESET_TITLE = "Undo any filtering, sorting, highlighting, focusing or zooming on this chart"
 # The handoff's undo arrow, in the button's ink. An image because Dash has no SVG components.
 UNDO_ICON = (
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' "
@@ -167,18 +175,14 @@ UNDO_ICON = (
     "stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8a5.5 5.5 0 1 0 1.7-4'/%3E"
     "%3Cpath d='M2.5 2.5v3.5H6'/%3E%3C/svg%3E"
 )
-THRESHOLD_START = 100
 # At most this many chips to a row (visual-spec.md section 7.3, 2026-10-12). Until then there were
 # always two rows, each wrapping on its own, so the scatter's sixteen chips stood in four ragged
-# rows. The map's strip also holds the Highlight box, which leaves room for five: six wrapped there
-# at every window size (headless Chrome, 2026-10-12).
+# rows. The map's ran five to a row while its strip also held the Highlight box.
 CHIPS_PER_ROW = 6
-MAP_CHIPS_PER_ROW = 5
 
-
-def chips_per_row(chart_type: str) -> int:
-    """How many chips a row of this chart's controls strip holds."""
-    return MAP_CHIPS_PER_ROW if chart_type == "map" else CHIPS_PER_ROW
+# How far each key button reaches past its block, across and down, in px: the heatmap's blocks are
+# 16 px tall and touch their neighbours; the scatter's touch above and below (visual-spec.md 7.4).
+_KEY_REACH = {"scatter": (4, 0), "heatmap": (0, 6), "map": (4, 2)}
 
 
 def default_sort(chart_type: str) -> str | None:
@@ -209,15 +213,15 @@ def flag_src(entity: str) -> str | None:
 
 
 def chip_rows(order: list[str], shown: list[str], chart: str = "line") -> list[dict[str, list]]:
-    """The chips in rows of at most `chips_per_row(chart)`, as even as the count allows, the first
-    rows taking any extra: each row's options and ticked values.
+    """The chips in rows of at most CHIPS_PER_ROW, as even as the count allows, the first rows
+    taking any extra: each row's options and ticked values.
 
     Sixteen run 6/5/5 and eight 4/4. The count sets the rows, not the window, so a reorder by
     coverage moves chips between rows without moving anything else on the page (the handoff's state
     S5). A chip names its country as the chart prints it (`figures.drawn_name`); its value, which
     is what is logged, is the full name.
     """
-    count = max(1, -(-len(order) // chips_per_row(chart)))
+    count = max(1, -(-len(order) // CHIPS_PER_ROW))
     size, extra = divmod(len(order), count)
     bounds, start = [], 0
     for index in range(count):
@@ -345,34 +349,42 @@ def _years_group() -> html.Div:
     )
 
 
-def _highlight_group() -> html.Div:
-    """The map's "Below [n] %" box (visual-spec.md section 7.4). It commits on Enter or when it
-    loses focus (`debounce`), so a number half typed does not fade the map."""
-    return html.Div(
-        [
-            html.Span("Highlight", className="ui-legend"),
-            html.Label(
-                [
-                    "Below",
-                    dcc.Input(
-                        id=control_id("threshold"),
-                        type="number",
-                        min=0,
-                        max=100,
-                        step=1,
-                        value=THRESHOLD_START,
-                        debounce=True,
-                        className="tb-num",
-                    ),
-                    "%",
-                ],
-                className="tb-inline",
-            ),
-        ],
-        className="ui-group ui-group--fit",
-        role="group",
-        **{"aria-label": "Highlight"},
-    )
+def key_class(pressed: bool) -> str:
+    """A key button's class: `is-on` while its band is highlighted."""
+    return "ui-key is-on" if pressed else "ui-key"
+
+
+def key_buttons(task) -> html.Div:
+    """A button over each block of the chart's stepped key (visual-spec.md section 7.4). Rendered
+    ONLY in the interactive condition, and only on the charts with a key (`figures.KEY_CHARTS`).
+
+    The buttons are not part of the figure, so the figure stays byte-identical in both conditions.
+    They stand in the chart's own box (`.ui-chart`, exactly the figure's 1050 x 520), each at the
+    position `figures.key_blocks` gives its block: one source for the drawing and the buttons. The
+    positions are inline styles because they are data. The layer lets every other pointer event
+    through to the chart.
+    """
+    reach_x, reach_y = _KEY_REACH[task.chart]
+    buttons = []
+    for block in figures.key_blocks(task.chart):
+        x, y, width, height = block.box
+        name = f"Highlight {block.label}"
+        buttons.append(
+            html.Button(
+                id=control_id("key-band", block.index),
+                n_clicks=0,
+                title=name,
+                className=key_class(False),
+                style={
+                    "left": f"{x - reach_x:g}px",
+                    "top": f"{y - reach_y:g}px",
+                    "width": f"{width + 2 * reach_x:g}px",
+                    "height": f"{height + 2 * reach_y:g}px",
+                },
+                **{"aria-label": name, "aria-pressed": "false"},
+            )
+        )
+    return html.Div(buttons, className="ui-keys")
 
 
 def task_controls(task) -> html.Div:
@@ -380,11 +392,11 @@ def task_controls(task) -> html.Div:
 
     These are the study's independent variable. The chart they act on is the same chart the static
     condition sees; what differs is that it can be worked with rather than only looked at. Every
-    chart has the country chips (visual-spec.md section 7.3); the bar and heatmap add a sort, the
-    line chart the Years slider and Show all, and the map the highlight. Each opens on the chart as
-    first drawn: every country shown, in the listed order, nothing faded, 2000-2024. The view they
-    change lives in the app's `control-state` store, keyed to the task, so no task inherits
-    another's.
+    chart has the country chips (visual-spec.md section 7.3); the bar and heatmap add a sort, and
+    the line chart the Years slider and Show all. The scatter's, heatmap's and map's keys take
+    clicks too (`key_buttons`, over the chart). Each opens on the chart as first drawn: every
+    country shown, in the listed order, nothing faded, 2000-2024. The view they change lives in the
+    app's `control-state` store, keyed to the task, so no task inherits another's.
 
     Every control is a native form element or, for Years, Dash's slider, whose handles take the
     arrow keys, so keyboard navigation comes for free (the accessibility baseline in CLAUDE.md). Do
@@ -396,8 +408,6 @@ def task_controls(task) -> html.Div:
         groups.append(_sort_group(task))
     if task.chart == "line":
         groups.append(_years_group())
-    if task.chart == "map":
-        groups.append(_highlight_group())
     return html.Div(groups, className="ui-controls")
 
 
@@ -1181,8 +1191,8 @@ INTERACTIVE_BULLETS = (
     "changes.",
     "On line charts you can also click a line to focus on it, choose which years to show (or drag "
     "across the chart to zoom), and bring every line back with Show all.",
-    "The bar chart and the coloured grid can sort their bars or rows. The map can highlight only "
-    "the countries below a coverage you type.",
+    "The bar chart and the coloured grid can sort their bars or rows. On a chart with a colour "
+    "key, click a colour in the key to highlight what is drawn in that colour.",
 )
 GAP_BULLET = "A break in a line means no value was reported for those years."
 PRACTICE_SKIP_BULLET = (
