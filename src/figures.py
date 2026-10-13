@@ -91,8 +91,8 @@ def graph_config(interactive: bool, chart_type: str = "line") -> dict:
 #
 # The line chart keeps drag-to-zoom, Zoom in, Zoom out and Reset axes (titled "Reset axis" in
 # graph_config). Its Zoom and Pan mode buttons go, and so does Autoscale: after a zoom it fits the
-# axis to everything drawn, end labels included (1998.4-2027.0, measured in Chrome), where Reset
-# axes restores the chart's own 1999.75-2024.25.
+# axis to everything drawn, end labels included (1998.4-2027.0 on the chart drawn from 2000,
+# measured in Chrome), where Reset axes restores the chart's own 1984.6-2024.4.
 _SELECTION_BUTTONS = ["select", "lasso"]
 _SHARING_BUTTONS = ["toimage", "sendcharttocloud"]
 _VIEW_BUTTONS = ["zoom", "pan", "zoomin", "zoomout", "autoscale", "resetscale"]
@@ -528,7 +528,7 @@ def set_display(figure: go.Figure, shown: Sequence[str]) -> go.Figure:
 
 def year_window(first: int, last: int) -> list[float] | None:
     """The line chart's x range showing `first` to `last`, with the chart's own margin either side
-    (the Years slider, visual-spec.md section 7.6). None for 2000-2024: the chart as first drawn."""
+    (the Years slider, visual-spec.md section 7.6). None for 1985-2024: the chart as first drawn."""
     if (first, last) == (config.YEAR_MIN, config.YEAR_MAX):
         return None
     return [first - config.LINE_X_PAD, last + config.LINE_X_PAD]
@@ -536,7 +536,7 @@ def year_window(first: int, last: int) -> list[float] | None:
 
 def years_shown(xrange: Sequence[float] | None) -> list[int]:
     """The whole years an x range shows, as the Years slider reads them: 2005.2-2015.8 is
-    2006-2015. Always at least a year apart, within 2000-2024, since the slider's handles are."""
+    2006-2015. Always at least a year apart, within 1985-2024, since the slider's handles are."""
     if xrange is None:
         return [config.YEAR_MIN, config.YEAR_MAX]
     low, high = xrange
@@ -902,8 +902,9 @@ def _line(
         zeroline=False,
     )
     _coverage_axis(figure.update_yaxes)
-    # The vertical guides, as shapes on the axes, so they stand at 2005-2020 and not at 2000, which
-    # the handoff leaves to the axis line.
+    # The vertical guides, as shapes on the axes, so they stand at 1990-2020 and not at 1985, which
+    # the handoff leaves to the axis line. 2000 takes a guide like any other fifth year: a mark of
+    # its own would point at the questions' window (visual-spec.md section 1).
     for year in range(config.YEAR_MIN + 5, config.YEAR_MAX, 5):
         figure.add_shape(
             type="line",

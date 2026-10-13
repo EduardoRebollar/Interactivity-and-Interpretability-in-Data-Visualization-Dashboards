@@ -243,12 +243,13 @@ def test_counts_stay_in_their_natural_order():
 
 
 def test_crossing_options_are_the_bands_in_calendar_order():
-    """Contiguous, inclusive at both ends, and spanning the data's whole range, so every crossing
-    year has exactly one band."""
+    """Contiguous, inclusive at both ends, and spanning the years the question asks about, so every
+    crossing year it can mean has exactly one band. The chart draws from 1985 since 2026-10-12, but
+    T6 asks "after 2000"."""
     spans = [tuple(int(y) for y in band.split("-")) for band in tasks.CROSSING_BANDS]
     assert all(start <= end for start, end in spans)
     assert all(nxt[0] == prev[1] + 1 for prev, nxt in zip(spans, spans[1:], strict=False))
-    assert spans[0][0] == config.YEAR_MIN
+    assert spans[0][0] == tasks.ASKED_FROM
     assert spans[-1][1] == config.YEAR_MAX
     for form in FORMS:
         for task in tasks.for_form(form):
@@ -261,7 +262,8 @@ def test_line_items_ask_about_a_country_on_the_chart():
         for task in tasks.for_form(form):
             if task.kind == "crossing":
                 named = re.match(
-                    r"(.+)'s coverage became higher than (?:the )?(.+)'s at some point\.",
+                    r"(.+)'s coverage became higher than (?:the )?(.+)'s at some point "
+                    r"after 2000\.",
                     task.prompt,
                 )
                 assert named, task.task_id
@@ -272,6 +274,17 @@ def test_line_items_ask_about_a_country_on_the_chart():
                 assert set(named.groups()) <= set(task.entities), task.task_id
                 # Named alphabetically, like the chart's entities (section 5).
                 assert list(named.groups()) == sorted(named.groups()), task.task_id
+
+
+def test_every_scored_line_item_names_the_year_its_question_starts():
+    """The line charts draw from 1985 and every line item asks about 2000 onward (2026-10-12,
+    study-design.md section 4). A prompt that did not say so would ask about the whole chart: T6's
+    pairs both cross before 2000."""
+    assert config.YEAR_MIN < tasks.ASKED_FROM
+    line_items = [task for form in FORMS for task in tasks.for_form(form) if task.chart == "line"]
+    assert len(line_items) == 4
+    for task in line_items:
+        assert str(tasks.ASKED_FROM) in task.prompt, (task.form, task.task_id)
 
 
 def test_each_map_prompt_counts_the_countries_it_colours():

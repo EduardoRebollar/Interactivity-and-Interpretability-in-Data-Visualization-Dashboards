@@ -281,11 +281,12 @@ def test_gaps_are_never_bridged(rows):
 
 
 def test_uk_hepb3_gap_survives_into_the_figure(rows):
-    """The 19 unreported UK years must reach Plotly as None, not 0 and not dropped."""
+    """The 34 unreported UK years (1985-2018; 19 when the scope began at 2000) must reach Plotly as
+    None, not 0 and not dropped."""
     figure = figures.build_figure(["United Kingdom"], "HepB3", rows)
     y_values = list(figure.data[0].y)
     assert len(y_values) == config.YEAR_MAX - config.YEAR_MIN + 1
-    assert sum(1 for v in y_values if v is None) == 19
+    assert sum(1 for v in y_values if v is None) == 34
     assert 0.0 not in [v for v in y_values if v is not None]
 
 
@@ -314,18 +315,26 @@ def test_series_take_their_countrys_colour(rows):
                 "Somalia": 7,
             },
         ),
+        # B-T6 since 2026-10-12, Ghana and Guinea for Cameroon and Madagascar: the named pair keep
+        # their colours (Mozambique 5, Pakistan 6).
         (
             list(FORM_B_T6.entities),
             {
                 "Benin": 0,
-                "Cameroon": 1,
-                "Gabon": 2,
-                "Kenya": 3,
-                "Madagascar": 4,
+                "Gabon": 1,
+                "Ghana": 2,
+                "Guinea": 3,
+                "Kenya": 4,
                 "Mozambique": 5,
                 "Pakistan": 6,
                 "Sudan": 7,
             },
+        ),
+        # A-T1 since 2026-10-12: Gabon, standing where Nigeria stood, takes the colour Nigeria
+        # owns, the one A-T1's seven owners leave.
+        (
+            ["Brazil", "China", "Ethiopia", "Gabon", "India", "Indonesia", "Pakistan", "Ukraine"],
+            {"Gabon": 5},
         ),
         # B-T1: Nepal and Uganda take the two colours its six owners leave.
         (
@@ -480,13 +489,21 @@ def test_the_line_plot_keeps_4_px_a_point_and_794_px_across(rows):
     assert figure.layout.xaxis.automargin is False and figure.layout.yaxis.automargin is False
 
 
-def test_the_line_x_axis_pads_a_quarter_year_and_guides_stand_at_2005_to_2020(rows):
+def test_the_line_x_axis_pads_8_px_and_guides_stand_at_1990_to_2020(rows):
+    """Drawn from 1985 since 2026-10-12 (visual-spec.md section 1). 2000 is ticked and guided like
+    any other fifth year, with no mark of its own."""
     figure = figures.build_figure(ENTITIES, VACCINE, rows)
-    assert list(figure.layout.xaxis.range) == [1999.75, 2024.25]
-    assert list(figure.layout.xaxis.tickvals) == [2000, 2005, 2010, 2015, 2020]
+    low, high = figure.layout.xaxis.range
+    assert [low, high] == [1984.6, 2024.4]
+    assert list(figure.layout.xaxis.tickvals) == [1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020]
     assert figure.layout.xaxis.showgrid is False
     guides = [s.x0 for s in figure.layout.shapes if s.name == "guide"]
-    assert guides == [2005, 2010, 2015, 2020]
+    assert guides == [1990, 1995, 2000, 2005, 2010, 2015, 2020]
+    # The margin holds the ringed end dot, 5.6 px to the ring's outer edge: 8 px, as the quarter
+    # year was over 2000-2024.
+    pad_px = config.LINE_X_PAD * 794 / (high - low)
+    ring = config.END_DOT_SIZE / 2 + config.END_DOT_RING / 2
+    assert 7.9 < pad_px < 8.1 and pad_px > ring
 
 
 @pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)
@@ -684,14 +701,15 @@ def test_show_turns_off_points_or_tags_and_both_on_is_the_chart_as_drawn(rows):
 
 
 @pytest.mark.parametrize(
-    ("first", "last"), [(2000, 2024), (2000, 2001), (2023, 2024), (2005, 2015), (2012, 2013)]
+    ("first", "last"),
+    [(1985, 2024), (1985, 1986), (2000, 2024), (2023, 2024), (2005, 2015), (2012, 2013)],
 )
 def test_the_years_slider_and_the_axis_agree_both_ways(first, last):
     """A slider value becomes an x range with the chart's own margin, and that range reads back as
     the same years."""
     window = figures.year_window(first, last)
     assert figures.years_shown(window) == [first, last]
-    if (first, last) == (2000, 2024):
+    if (first, last) == (1985, 2024):
         assert window is None
     else:
         assert window == [first - config.LINE_X_PAD, last + config.LINE_X_PAD]
@@ -702,15 +720,17 @@ def test_the_years_slider_and_the_axis_agree_both_ways(first, last):
     [
         ([2005.2, 2015.8], [2006, 2015]),
         ([2005.0, 2015.0], [2005, 2015]),
-        ([1998.4, 2027.0], [2000, 2024]),
+        ([1983.4, 2027.0], [1985, 2024]),
+        ([1984.6, 2024.4], [1985, 2024]),
         ([2005.3, 2005.8], [2006, 2007]),
         ([2023.6, 2024.4], [2023, 2024]),
-        ([1990.0, 1995.0], [2000, 2001]),
-        (None, [2000, 2024]),
+        ([1990.0, 1995.0], [1990, 1995]),
+        ([1970.0, 1980.0], [1985, 1986]),
+        (None, [1985, 2024]),
     ],
 )
 def test_a_zoom_reads_as_the_whole_years_it_shows(xrange, years):
-    """Always two whole years, at least a year apart, within 2000-2024, as the slider's handles
+    """Always two whole years, at least a year apart, within 1985-2024, as the slider's handles
     are."""
     assert figures.years_shown(xrange) == years
 
@@ -1280,7 +1300,7 @@ def test_world_is_the_line_charts_reference_and_nothing_else(rows, chart_type):
         ("scatter", (2010,)),
         ("heatmap", (2010,)),
         ("heatmap", (2010, 2005)),
-        ("map", (1999,)),
+        ("map", (1984,)),
     ],
 )
 def test_a_chart_is_refused_the_wrong_years(rows, chart_type, years):

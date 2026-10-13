@@ -60,6 +60,16 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v19 (2026-10-12): the line charts draw 1985-2024, not 2000-2024 (docs/study-design.md section
+# 4). Every line item still asks about 2000 onward.
+# - A v18 T1, T6 or practice answer was given against a chart drawn from 2000.
+# - T6 now says "after 2000", so a v18 T6 answer was given to different words.
+# - A-T1 draws Gabon in place of Nigeria; B-T6 draws Ghana and Guinea in place of Cameroon and
+#   Madagascar.
+# - The Years slider's `value` and `previous` run from 1985, and `session_start.year_range` is
+#   [1985, 2024].
+# No new event, key, table or column, so scripts/init_db.py needs no re-run.
+#
 # v18 (2026-10-12): the changes after the first pilot session (docs/study-design.md section 10).
 # - The practice asks about 2019-2021, not 2015-2021, so a v17 P0 answer was given to a different
 #   question.
@@ -179,7 +189,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

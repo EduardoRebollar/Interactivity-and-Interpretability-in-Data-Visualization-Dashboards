@@ -963,7 +963,7 @@ def _coverage(raw: Any) -> list[int] | None:
 
 
 def _years(raw: Any) -> list[int] | None:
-    """The Years slider's value as [first, last]: whole years within 2000-2024, first before last.
+    """The Years slider's value as [first, last]: whole years within 1985-2024, first before last.
     None for anything else."""
     if not isinstance(raw, (list, tuple)) or len(raw) != 2:
         return None
@@ -1230,7 +1230,8 @@ def control_step(
             control["yrange"] = None if chosen == layout.COVERAGE_START else chosen
 
     elif triggered == "chip-order":
-        # T1's Order: the chips by name or by coverage in 2000 or 2024. The lines never move.
+        # T1's Order: the chips by name or by coverage in 2000 or 2024, the years T1 asks about (not
+        # the chart's 1985). The lines never move.
         offered = dict(layout.CHIP_ORDERS)
         if not extra or not isinstance(chip_order, str) or chip_order not in offered:
             return UNCHANGED

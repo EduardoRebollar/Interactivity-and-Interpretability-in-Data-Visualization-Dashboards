@@ -26,6 +26,11 @@ from src.flow import Task
 # Six options, like every other item (2026-09-25): "4 or more" became "4" and "5 or more".
 COUNT_OPTIONS = ("0", "1", "2", "3", "4", "5 or more")
 
+# The first year every line item asks about. The line charts draw from config.YEAR_MIN, 1985 since
+# 2026-10-12, so the Years slider has years to set aside; T1 asks about 2000 to 2024, and T6 about
+# "after 2000", since both its pairs cross before then. docs/study-design.md section 4.
+ASKED_FROM = 2000
+
 # The crossing item's options. Bands rather than years, because the static condition has no hover
 # and an exact crossing year cannot be read from the chart. Inclusive at both ends, contiguous.
 # 2000-2003 added 2026-09-25, so the crossing item offers six options like every other.
@@ -84,14 +89,16 @@ FORM_A: tuple[Task, ...] = (
         vaccine="DTP3",
         # Eight countries, no World line (2026-09-25): the tangle the isolation control cuts
         # through. India rises steadily; Ukraine collapses and recovers; India passes it in 2009.
-        # docs/study-design.md section 4.
+        # Gabon in place of Nigeria since 2026-10-12: drawn from 1985, Nigeria ran within 5 points
+        # of India for five years (1985-1989). Gabon crosses the pair as often as Nigeria did, and
+        # is African, as Nigeria is, for the Regions control. docs/study-design.md section 4.
         entities=(
             "Brazil",
             "China",
             "Ethiopia",
+            "Gabon",
             "India",
             "Indonesia",
-            "Nigeria",
             "Pakistan",
             "Ukraine",
         ),
@@ -218,9 +225,11 @@ FORM_A: tuple[Task, ...] = (
         task_id="T6",
         form="A",
         kind="crossing",
+        # "after 2000" since 2026-10-12, when the chart began at 1985: Ethiopia is also above the
+        # Central African Republic in 1994-1997.
         prompt=(
-            "Ethiopia's coverage became higher than the Central African Republic's at some point. "
-            "Roughly when did that first happen?"
+            "Ethiopia's coverage became higher than the Central African Republic's at some point "
+            "after 2000. Roughly when did that first happen?"
         ),
         vaccine="DTP3",
         # Six more lines that cross the pair away from where they meet, so isolating the two has
@@ -385,20 +394,24 @@ FORM_B: tuple[Task, ...] = (
         task_id="T6",
         form="B",
         kind="crossing",
+        # "after 2000" since 2026-10-12, when the chart began at 1985: the two change places five
+        # times between 1987 and 1996.
         prompt=(
-            "Pakistan's coverage became higher than Mozambique's at some point. Roughly when did "
-            "that first happen?"
+            "Pakistan's coverage became higher than Mozambique's at some point after 2000. Roughly "
+            "when did that first happen?"
         ),
         vaccine="DTP3",
         # Six more lines, as in A (2026-10-11); Sudan comes nearest, 9.1 points from the meeting
         # point. No World line: it runs within 2 points of both lines at the 2019 crossing, and
-        # Pakistan crosses it too, in 2021. docs/study-design.md section 4.
+        # Pakistan crosses it too, in 2021. Ghana and Guinea in place of Cameroon and Madagascar
+        # since 2026-10-12: drawn from 1985, Madagascar ran within 5 points of Pakistan for nine
+        # years (1995-2003) and Cameroon for seven (1996-2002). docs/study-design.md section 4.
         entities=(
             "Benin",
-            "Cameroon",
             "Gabon",
+            "Ghana",
+            "Guinea",
             "Kenya",
-            "Madagascar",
             "Mozambique",
             "Pakistan",
             "Sudan",

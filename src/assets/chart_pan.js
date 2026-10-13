@@ -7,7 +7,7 @@
    mostly sideways before Plotly sees it. Only where scroll zoom is on (the line chart, in the
    interactive condition: figures.graph_config) and only over the plotting area.
 
-   - Only when zoomed in: the axis moves within the chart's own view (1999.75-2024.25, Plotly's
+   - Only when zoomed in: the axis moves within the chart's own view (1984.6-2024.4, Plotly's
      initial range, which Reset axis also returns to), never past it. Not zoomed, a sideways
      swipe does nothing, rather than the browser's swipe-to-go-back leaving the study.
    - Logged as one view_change per swipe, like a wheel zoom. During the swipe the axis moves by

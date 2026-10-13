@@ -300,6 +300,7 @@ def _sort_group(task) -> html.Div:
 
 
 YEARS_START = [config.YEAR_MIN, config.YEAR_MAX]
+YEARS_MARK_STEP = 13
 
 
 def _years_group() -> html.Div:
@@ -310,8 +311,12 @@ def _years_group() -> html.Div:
     (`allow_direct_input`): Dash 4's commit only on blur, not on Enter, so a typed year would sit
     there doing nothing. The handles take the arrow keys.
     """
-    # Every six years, so both ends are marked and the labels are evenly spaced.
-    marks = {year: str(year) for year in range(config.YEAR_MIN, config.YEAR_MAX + 1, 6)}
+    # Every 13 years (1985, 1998, 2011, 2024), so both ends are marked and the labels are evenly
+    # spaced; every six over 2000-2024, until 2026-10-12. 2000 has no mark of its own, as it has
+    # none on the chart: one would point at the questions' window.
+    marks = {
+        year: str(year) for year in range(config.YEAR_MIN, config.YEAR_MAX + 1, YEARS_MARK_STEP)
+    }
     return html.Div(
         [
             html.Span("Years", className="ui-legend"),
@@ -389,10 +394,15 @@ def key_buttons(task) -> html.Div:
 
 # --- T1's extra controls: the overload (visual-spec.md section 7.7, 2026-10-12) -----------------
 
-# Order: the chips by name, or by coverage in the first or the last year, highest first. Never by
-# change since 2000, which would rank the countries by how far they rose or fell: part of T1's
-# rubric, and T1 stays in RQ1.
-CHIP_ORDERS = (("alpha", "A–Z"), ("start", "Highest in 2000"), ("end", "Highest in 2024"))
+# Order: the chips by name, or by coverage in the first or the last year T1 asks about, highest
+# first. Never by change since 2000, which would rank the countries by how far they rose or fell:
+# part of T1's rubric, and T1 stays in RQ1. The first year is the question's, 2000, not the chart's,
+# 1985 since 2026-10-12: Ukraine reports nothing before 1992.
+CHIP_ORDERS = (
+    ("alpha", "A–Z"),
+    ("start", f"Highest in {tasks.ASKED_FROM}"),
+    ("end", f"Highest in {config.YEAR_MAX}"),
+)
 COVERAGE_START = list(config.Y_RANGE)
 # Regions: every one in both forms, a region with no country on the chart disabled (Europe on
 # B-T1), so both forms carry the same four. Only T1's countries need one.
@@ -401,6 +411,7 @@ REGION_OF = {
     "Brazil": "Americas",
     "China": "Asia",
     "Ethiopia": "Africa",
+    "Gabon": "Africa",
     "India": "Asia",
     "Indonesia": "Asia",
     "Nepal": "Asia",
@@ -413,8 +424,9 @@ DISPLAY_OPTIONS = (("points", "Points"), ("tags", "Name tags"))
 
 
 def chip_order(task, key: str) -> list[str]:
-    """T1's chips in the Order control's order: listed (A to Z), or by coverage in 2000 or in the
-    last year reported, highest first; a country with nothing to sort by last."""
+    """T1's chips in the Order control's order: listed (A to Z), or by coverage in 2000 (the first
+    year T1 asks about, `tasks.ASKED_FROM`) or in the last year reported, highest first; a country
+    with nothing to sort by last."""
     from src import runtime_data
 
     listed = filterable(list(task.entities))
@@ -425,10 +437,13 @@ def chip_order(task, key: str) -> list[str]:
     rows = runtime_data.load_rows()
     values = {}
     for entity in listed:
-        reported = [r.coverage_pct for r in runtime_data.series(entity, task.vaccine, rows)]
+        series = runtime_data.series(entity, task.vaccine, rows)
         if key == "start":
-            values[entity] = reported[0]
+            values[entity] = next(
+                (r.coverage_pct for r in series if r.year == tasks.ASKED_FROM), None
+            )
         else:
+            reported = [r.coverage_pct for r in series]
             values[entity] = next((v for v in reversed(reported) if v is not None), None)
     return sorted(listed, key=lambda e: (values[e] is None, -(values[e] or 0), listed.index(e)))
 
@@ -578,7 +593,10 @@ def gap_note(
     The static condition has no tooltip to explain a gap, so this caption is the only channel
     available — and it must therefore appear in BOTH conditions to keep them identical.
 
-    `years` limits the check to the years the chart shows; empty means all of them, as on a line.
+    `years` limits the check to the years the chart shows. Empty, as on a line, means the years
+    every line item asks about, from `tasks.ASKED_FROM` (2000): the line charts draw from 1985 for
+    the Years slider (2026-10-12), and a line that starts late before 2000, as Ukraine's does on
+    A-T1, has no break for the caption to explain (visual-spec.md section 3).
     """
     from src import runtime_data
 
@@ -587,7 +605,9 @@ def gap_note(
     for entity in entities:
         series = runtime_data.series(entity, vaccine, rows)
         missing = [
-            r.year for r in series if r.coverage_pct is None and (not years or r.year in years)
+            r.year
+            for r in series
+            if r.coverage_pct is None and (r.year in years if years else r.year >= tasks.ASKED_FROM)
         ]
         if missing:
             incomplete.append(f"{entity} ({_year_ranges(missing)})")

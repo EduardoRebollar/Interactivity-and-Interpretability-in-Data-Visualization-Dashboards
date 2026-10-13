@@ -207,7 +207,8 @@ about 2000 onward. The rule splits on that line:
   last peak before the trough), and none within 5 points of where T6's pair meet. A line followed
   by mistake in 1995 is still followed by mistake.
 - **A named line must report every year asked.** Before 2000 it may start late: Ukraine, A-T1's
-  falling line, reports from 1992, which the chart's gap caption names (`docs/visual-spec.md` §3).
+  falling line, reports from 1992. The gap caption names only years missing from 2000 on, so it
+  does not name that one (`docs/visual-spec.md` §3).
 
 Drawn from 1985, A-T1 failed the second clause (Nigeria within 5 points of India, 1985–1989) and
 so did B-T6 (Madagascar beside Pakistan for 9 years, 1995–2003, and beside Mozambique 1986–1990;
@@ -273,8 +274,9 @@ the Years slider can also set aside the fifteen years before the question's.
 > 2024, and the rubric is unchanged. Before 2000:
 > - India rises from 18% (1985) to 70% (1990) and falls back to 56% (1992). That dip is 14 points,
 >   over the riser's 12, but it falls before the years asked, so the rule does not count it.
-> - Ukraine reports from 1992 only. The chart's caption says so, in both conditions; B-T1 has no
->   caption, since every line on it reports every year.
+> - Ukraine reports from 1992 only, so its line starts there. There is no caption: on a line
+>   chart the caption names only years missing from 2000 on (`docs/visual-spec.md` §3; Eduardo
+>   had A-T1's removed the same day).
 > - **Nigeria left A-T1** for running within 5 points of India for five years, 1985–1989. **Gabon
 >   took its place**, found by search. It is African, so A-T1's Regions control keeps two African
 >   countries. It crosses the named pair four times between 2000 and 2024, as Nigeria did: it
@@ -663,9 +665,10 @@ than quietly unbalancing the forms. Eight known differences go to the pilot (§1
   A, Ethiopia is above the Central African Republic for four years, 1994–1997. In B, Pakistan and
   Mozambique change places five times, 1987–1996, mostly by a few points. B's earlier crossings are
   more, and A's is plainer. Which one draws more readers who miss "after 2000" is for the pilot.
-- **Only A-T1 carries a gap caption (2026-10-12).** Ukraine reports from 1992, so A-T1's chart is
-  captioned "No data reported for: Ukraine (1985–1991)" in both conditions. It names the falling
-  line, and makes A-T1's card taller than B-T1's.
+- **A-T1's falling line starts mid-chart (2026-10-12).** Ukraine reports from 1992, and no
+  caption says why (`docs/visual-spec.md` §3); every line on B-T1 starts in 1985. Also, with
+  "after 2000", A-T6's question takes two lines on a 1440-wide window where B-T6's takes one
+  (§10).
 
 ### Practice task (unscored)
 
@@ -1548,7 +1551,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
       condition. A cluster there means readers took the first crossing on the chart and missed
       "after 2000".
     - Whether T1 descriptions turn on 1985–1999, and how coders handle them (§4, T1).
-    - A-T1's gap caption naming Ukraine, which B-T1 does not carry (§4, Matching the forms).
+    - Whether A-T1 descriptions treat Ukraine's line, which starts in 1992 with no caption to
+      say why, as part of its trend (§4, Matching the forms).
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the key's colours and the bar sort, which the practice does not teach. The logs show
     all four (§7).
@@ -1556,7 +1560,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     - Do interactive participants find the four extra controls, and use them?
     - Does T1 take longer interactively than statically, by more than T6, the other line chart?
     - The second controls strip pushes T1's Submit past the fold on common windows, a 1440 × 900
-      laptop included (measured, below). Split T1's interactive times at 932 px.
+      laptop included (measured, below). Split T1's interactive times at 944 px (932 until the
+      spacing of 2026-10-13, below).
   - **Whether T4 and T5 sit at ceiling in the interactive condition.** On T4 the row sort answers it
     in one click in both forms: Lowest cell first in A and, since 2026-10-12, Highest cell first in
     B. So does a click on the key cell's band. On T5, two clicks on the key's darkest bands leave the
@@ -1581,7 +1586,15 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   interactive times the same way. **With the map's highlight box gone, T5's split is 807 px** (771
   in compact mode at 1440 wide, 800 at 1366 × 768). **With T1's four extra controls (§4, T1),
   T1's split is 932 px (896 in compact mode)**: its interactive card is the only one that runs
-  past a 1440 × 900 window, by 32 px.
+  past a 1440 × 900 window, by 32 px. **Drawn from 1985 (2026-10-12), T1's split stays 932 px in
+  both forms**: A-T1 carries no gap caption (§4). T6's wording ("after 2000") wraps A-T6's question
+  onto a second line at 1440 and 1536 wide, as it already did at 1366. Its card is 29 px taller
+  there in both conditions, and its interactive Submit still ends inside a 1440 × 790 window
+  (about 764 px). Measured in headless Chrome against B-T1, which the change left as it was.
+  **Since 2026-10-13 every interactive Submit ends 12 px lower**: the controls strip stands
+  further from the chart (`visual-spec.md` §10). The splits are now T1 944 px (908 in compact
+  mode), T3 874 (838), and T5 819 (783 at 1440 wide, 812 at 1366 × 768). A-T6's interactive
+  Submit ends at about 776 px, still inside a 1440 × 790 window. The static cards are unchanged.
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4

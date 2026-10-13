@@ -288,6 +288,14 @@
    Coverage slider styled as Years. The pair keeps the gap the strip keeps from the hint row. */
 .ui-controls-pair { display: flex; flex-direction: column; gap: var(--s-3); }
 
+/* The controls strip stands 14 px below the chart's box, not study.css's 2 px, so the source line,
+   the figure's last line, is not crowded against the strip's legend: 17 px above it, not 5
+   (docs/visual-spec.md section 10, 2026-10-13). On T1 the pair takes 12 px and its first strip
+   keeps its own 2. The strip is in the interactive condition only, and so is this space: the chart
+   stands where it does in both. */
+.ui-main > .ui-controls { margin-top: 14px; }
+.ui-main > .ui-controls-pair { margin-top: var(--s-3); }
+
 /* The key's colours on the scatter, heatmap and map take clicks (docs/visual-spec.md section 7.4).
    A layer of buttons over the chart, in the interactive condition only: `.ui-chart` is exactly the
    figure's box, so it positions them; the layer lets every other pointer event through to the

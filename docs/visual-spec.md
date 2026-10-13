@@ -154,12 +154,16 @@ It appears in **both** conditions, which is what makes it admissible: interactiv
 what information is available, only how it is reached. It sits directly under the chart, above the
 interactive condition's controls, so it is in the same place in both.
 
-**One chart shows a gap, A-T1, since 2026-10-12.** The line charts are drawn from 1985, and
-Ukraine, A-T1's falling line, reports DTP3 only from 1992 (it was part of the USSR). Its line
-starts there, and A-T1 carries the caption *"No data reported for: Ukraine (1985–1991)"* in both
-conditions. Every other line on every line chart reports every year from 1985. The acceptance rule
-still refuses a missing bar, dot, cell or country, and a named line missing any year a question asks
-about (`docs/study-design.md` §4). Until 2026-10-12 no chart showed a gap.
+**On a line chart the caption names only years missing from 2000 on (2026-10-12, Eduardo),** the
+years every line item asks about (`docs/study-design.md` §4). The line charts are drawn from 1985,
+and Ukraine, A-T1's falling line, reports DTP3 only from 1992 (it was part of the USSR), so its line
+starts there. Those years are drawn for the Years slider and asked about by no question, and the line
+does not break, so A-T1 carries no caption. Before it was ever deployed, A-T1 was captioned *"No
+data reported for: Ukraine (1985-1991)"* in both conditions, which made its card 26 px taller
+than B-T1's; Eduardo had it removed. Every other line on every line chart reports every year from 1985. A gap from 2000 on is
+still captioned, and the acceptance rule still refuses a missing bar, dot, cell or country, and a
+named line missing any year a question asks about. No chart in the current task bank shows a
+caption.
 
 Enforced by `tests/test_app.py::test_gap_note_names_the_series_with_unreported_years`.
 
@@ -947,7 +951,12 @@ strip and the hint row under the chart (§7).
 - **Layout of the task screen.** A header band with the title and the stepper; the position label
   and the question on one line; one card holding the chart column (the 1050 px chart plus 16 px each
   side) and the answer panel. Under the chart: the gap caption (§3), then, in the interactive
-  condition only, the controls strip and the hint row. Submit sits above the fold of a 1440 × 900
+  condition only, the controls strip and the hint row. **The strip stands 14 px below the chart's
+  box (2026-10-13, Eduardo; 2 px before)**, so the source line, the figure's last line, sits 17 px
+  above the strip's legend instead of 5 (15 instead of 3 in compact mode). The space belongs to the
+  strip, so it exists only where the strip does, and the chart stands where it did in both
+  conditions. It moved every interactive Submit 12 px lower (`study-design.md` §10 gives the
+  splits). Submit sits above the fold of a 1440 × 900
   laptop with a one-line question. **Scrolling accepted (Eduardo, 2026-09-26):** on a window 790 px
   tall or less, the interactive scatter and map cards run past the fold (at 1366 × 768 the
   scatter's by 42 px, the map's by 30–66), so a participant scrolls to Submit there. The question

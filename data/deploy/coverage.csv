@@ -1,4 +1,19 @@
 country,iso_code,year,vaccine,coverage_pct
+Afghanistan,AFG,1985,DTP3,15.0
+Afghanistan,AFG,1986,DTP3,11.0
+Afghanistan,AFG,1987,DTP3,25.0
+Afghanistan,AFG,1988,DTP3,35.0
+Afghanistan,AFG,1989,DTP3,33.0
+Afghanistan,AFG,1990,DTP3,25.0
+Afghanistan,AFG,1991,DTP3,23.0
+Afghanistan,AFG,1992,DTP3,21.0
+Afghanistan,AFG,1993,DTP3,18.0
+Afghanistan,AFG,1994,DTP3,12.0
+Afghanistan,AFG,1995,DTP3,20.0
+Afghanistan,AFG,1996,DTP3,31.0
+Afghanistan,AFG,1997,DTP3,28.0
+Afghanistan,AFG,1998,DTP3,27.0
+Afghanistan,AFG,1999,DTP3,27.0
 Afghanistan,AFG,2000,DTP3,24.0
 Afghanistan,AFG,2001,DTP3,33.0
 Afghanistan,AFG,2002,DTP3,36.0
@@ -24,6 +39,21 @@ Afghanistan,AFG,2021,DTP3,55.0
 Afghanistan,AFG,2022,DTP3,58.0
 Afghanistan,AFG,2023,DTP3,60.0
 Afghanistan,AFG,2024,DTP3,59.0
+Afghanistan,AFG,1985,HepB3,
+Afghanistan,AFG,1986,HepB3,
+Afghanistan,AFG,1987,HepB3,
+Afghanistan,AFG,1988,HepB3,
+Afghanistan,AFG,1989,HepB3,
+Afghanistan,AFG,1990,HepB3,
+Afghanistan,AFG,1991,HepB3,
+Afghanistan,AFG,1992,HepB3,
+Afghanistan,AFG,1993,HepB3,
+Afghanistan,AFG,1994,HepB3,
+Afghanistan,AFG,1995,HepB3,
+Afghanistan,AFG,1996,HepB3,
+Afghanistan,AFG,1997,HepB3,
+Afghanistan,AFG,1998,HepB3,
+Afghanistan,AFG,1999,HepB3,
 Afghanistan,AFG,2000,HepB3,
 Afghanistan,AFG,2001,HepB3,
 Afghanistan,AFG,2002,HepB3,
@@ -49,6 +79,21 @@ Afghanistan,AFG,2021,HepB3,55.0
 Afghanistan,AFG,2022,HepB3,58.0
 Afghanistan,AFG,2023,HepB3,60.0
 Afghanistan,AFG,2024,HepB3,59.0
+Afghanistan,AFG,1985,MCV1,14.0
+Afghanistan,AFG,1986,MCV1,14.0
+Afghanistan,AFG,1987,MCV1,31.0
+Afghanistan,AFG,1988,MCV1,34.0
+Afghanistan,AFG,1989,MCV1,22.0
+Afghanistan,AFG,1990,MCV1,20.0
+Afghanistan,AFG,1991,MCV1,19.0
+Afghanistan,AFG,1992,MCV1,22.0
+Afghanistan,AFG,1993,MCV1,25.0
+Afghanistan,AFG,1994,MCV1,40.0
+Afghanistan,AFG,1995,MCV1,41.0
+Afghanistan,AFG,1996,MCV1,42.0
+Afghanistan,AFG,1997,MCV1,38.0
+Afghanistan,AFG,1998,MCV1,31.0
+Afghanistan,AFG,1999,MCV1,31.0
 Afghanistan,AFG,2000,MCV1,27.0
 Afghanistan,AFG,2001,MCV1,37.0
 Afghanistan,AFG,2002,MCV1,35.0
@@ -74,6 +119,21 @@ Afghanistan,AFG,2021,MCV1,51.0
 Afghanistan,AFG,2022,MCV1,56.0
 Afghanistan,AFG,2023,MCV1,55.0
 Afghanistan,AFG,2024,MCV1,55.0
+Afghanistan,AFG,1985,Polio3,15.0
+Afghanistan,AFG,1986,Polio3,11.0
+Afghanistan,AFG,1987,Polio3,25.0
+Afghanistan,AFG,1988,Polio3,35.0
+Afghanistan,AFG,1989,Polio3,33.0
+Afghanistan,AFG,1990,Polio3,25.0
+Afghanistan,AFG,1991,Polio3,23.0
+Afghanistan,AFG,1992,Polio3,21.0
+Afghanistan,AFG,1993,Polio3,18.0
+Afghanistan,AFG,1994,Polio3,8.0
+Afghanistan,AFG,1995,Polio3,20.0
+Afghanistan,AFG,1996,Polio3,31.0
+Afghanistan,AFG,1997,Polio3,28.0
+Afghanistan,AFG,1998,Polio3,28.0
+Afghanistan,AFG,1999,Polio3,27.0
 Afghanistan,AFG,2000,Polio3,24.0
 Afghanistan,AFG,2001,Polio3,35.0
 Afghanistan,AFG,2002,Polio3,36.0
@@ -99,6 +159,21 @@ Afghanistan,AFG,2021,Polio3,55.0
 Afghanistan,AFG,2022,Polio3,60.0
 Afghanistan,AFG,2023,Polio3,59.0
 Afghanistan,AFG,2024,Polio3,59.0
+Africa,OWID_AFR,1985,DTP3,36.273804
+Africa,OWID_AFR,1986,DTP3,40.47414
+Africa,OWID_AFR,1987,DTP3,46.71855
+Africa,OWID_AFR,1988,DTP3,50.22169
+Africa,OWID_AFR,1989,DTP3,55.134563
+Africa,OWID_AFR,1990,DTP3,59.96432
+Africa,OWID_AFR,1991,DTP3,52.78793
+Africa,OWID_AFR,1992,DTP3,53.432983
+Africa,OWID_AFR,1993,DTP3,53.492268
+Africa,OWID_AFR,1994,DTP3,57.247498
+Africa,OWID_AFR,1995,DTP3,56.69431
+Africa,OWID_AFR,1996,DTP3,54.87563
+Africa,OWID_AFR,1997,DTP3,53.40453
+Africa,OWID_AFR,1998,DTP3,52.293278
+Africa,OWID_AFR,1999,DTP3,53.57892
 Africa,OWID_AFR,2000,DTP3,55.335575
 Africa,OWID_AFR,2001,DTP3,56.13366
 Africa,OWID_AFR,2002,DTP3,57.02247
@@ -124,6 +199,21 @@ Africa,OWID_AFR,2021,DTP3,74.67615
 Africa,OWID_AFR,2022,DTP3,74.54658
 Africa,OWID_AFR,2023,DTP3,75.83329
 Africa,OWID_AFR,2024,DTP3,
+Africa,OWID_AFR,1985,HepB3,
+Africa,OWID_AFR,1986,HepB3,
+Africa,OWID_AFR,1987,HepB3,
+Africa,OWID_AFR,1988,HepB3,
+Africa,OWID_AFR,1989,HepB3,
+Africa,OWID_AFR,1990,HepB3,
+Africa,OWID_AFR,1991,HepB3,0.1474861
+Africa,OWID_AFR,1992,HepB3,0.41907984
+Africa,OWID_AFR,1993,HepB3,0.5242127
+Africa,OWID_AFR,1994,HepB3,4.6038184
+Africa,OWID_AFR,1995,HepB3,5.896559
+Africa,OWID_AFR,1996,HepB3,6.760703
+Africa,OWID_AFR,1997,HepB3,10.124232
+Africa,OWID_AFR,1998,HepB3,10.557017
+Africa,OWID_AFR,1999,HepB3,11.379977
 Africa,OWID_AFR,2000,HepB3,12.694634
 Africa,OWID_AFR,2001,HepB3,14.137585
 Africa,OWID_AFR,2002,HepB3,29.480455
@@ -149,6 +239,21 @@ Africa,OWID_AFR,2021,HepB3,74.663315
 Africa,OWID_AFR,2022,HepB3,74.54658
 Africa,OWID_AFR,2023,HepB3,75.87646
 Africa,OWID_AFR,2024,HepB3,
+Africa,OWID_AFR,1985,MCV1,37.62574
+Africa,OWID_AFR,1986,MCV1,43.977665
+Africa,OWID_AFR,1987,MCV1,48.090973
+Africa,OWID_AFR,1988,MCV1,53.309116
+Africa,OWID_AFR,1989,MCV1,58.952354
+Africa,OWID_AFR,1990,MCV1,60.099186
+Africa,OWID_AFR,1991,MCV1,57.623325
+Africa,OWID_AFR,1992,MCV1,54.89886
+Africa,OWID_AFR,1993,MCV1,55.636944
+Africa,OWID_AFR,1994,MCV1,58.456398
+Africa,OWID_AFR,1995,MCV1,58.0215
+Africa,OWID_AFR,1996,MCV1,58.00786
+Africa,OWID_AFR,1997,MCV1,57.545433
+Africa,OWID_AFR,1998,MCV1,55.333866
+Africa,OWID_AFR,1999,MCV1,53.57708
 Africa,OWID_AFR,2000,MCV1,54.72067
 Africa,OWID_AFR,2001,MCV1,56.288155
 Africa,OWID_AFR,2002,MCV1,57.418213
@@ -174,6 +279,21 @@ Africa,OWID_AFR,2021,MCV1,70.49194
 Africa,OWID_AFR,2022,MCV1,69.95921
 Africa,OWID_AFR,2023,MCV1,70.96246
 Africa,OWID_AFR,2024,MCV1,
+Africa,OWID_AFR,1985,Polio3,36.026085
+Africa,OWID_AFR,1986,Polio3,41.26465
+Africa,OWID_AFR,1987,Polio3,46.598835
+Africa,OWID_AFR,1988,Polio3,50.10822
+Africa,OWID_AFR,1989,Polio3,54.993004
+Africa,OWID_AFR,1990,Polio3,60.26462
+Africa,OWID_AFR,1991,Polio3,54.664852
+Africa,OWID_AFR,1992,Polio3,54.051056
+Africa,OWID_AFR,1993,Polio3,53.637333
+Africa,OWID_AFR,1994,Polio3,58.064297
+Africa,OWID_AFR,1995,Polio3,57.036182
+Africa,OWID_AFR,1996,Polio3,56.40393
+Africa,OWID_AFR,1997,Polio3,56.899475
+Africa,OWID_AFR,1998,Polio3,54.613285
+Africa,OWID_AFR,1999,Polio3,55.011646
 Africa,OWID_AFR,2000,Polio3,56.550716
 Africa,OWID_AFR,2001,Polio3,58.199753
 Africa,OWID_AFR,2002,Polio3,61.47698
@@ -199,6 +319,21 @@ Africa,OWID_AFR,2021,Polio3,72.9164
 Africa,OWID_AFR,2022,Polio3,72.956436
 Africa,OWID_AFR,2023,Polio3,76.03051
 Africa,OWID_AFR,2024,Polio3,
+Algeria,DZA,1985,DTP3,69.0
+Algeria,DZA,1986,DTP3,73.0
+Algeria,DZA,1987,DTP3,79.0
+Algeria,DZA,1988,DTP3,85.0
+Algeria,DZA,1989,DTP3,87.0
+Algeria,DZA,1990,DTP3,89.0
+Algeria,DZA,1991,DTP3,89.0
+Algeria,DZA,1992,DTP3,88.0
+Algeria,DZA,1993,DTP3,88.0
+Algeria,DZA,1994,DTP3,87.0
+Algeria,DZA,1995,DTP3,88.0
+Algeria,DZA,1996,DTP3,88.0
+Algeria,DZA,1997,DTP3,89.0
+Algeria,DZA,1998,DTP3,85.0
+Algeria,DZA,1999,DTP3,83.0
 Algeria,DZA,2000,DTP3,86.0
 Algeria,DZA,2001,DTP3,89.0
 Algeria,DZA,2002,DTP3,86.0
@@ -224,6 +359,21 @@ Algeria,DZA,2021,DTP3,81.0
 Algeria,DZA,2022,DTP3,77.0
 Algeria,DZA,2023,DTP3,92.0
 Algeria,DZA,2024,DTP3,92.0
+Algeria,DZA,1985,HepB3,
+Algeria,DZA,1986,HepB3,
+Algeria,DZA,1987,HepB3,
+Algeria,DZA,1988,HepB3,
+Algeria,DZA,1989,HepB3,
+Algeria,DZA,1990,HepB3,
+Algeria,DZA,1991,HepB3,
+Algeria,DZA,1992,HepB3,
+Algeria,DZA,1993,HepB3,
+Algeria,DZA,1994,HepB3,
+Algeria,DZA,1995,HepB3,
+Algeria,DZA,1996,HepB3,
+Algeria,DZA,1997,HepB3,
+Algeria,DZA,1998,HepB3,
+Algeria,DZA,1999,HepB3,
 Algeria,DZA,2000,HepB3,
 Algeria,DZA,2001,HepB3,
 Algeria,DZA,2002,HepB3,
@@ -249,6 +399,21 @@ Algeria,DZA,2021,HepB3,81.0
 Algeria,DZA,2022,HepB3,77.0
 Algeria,DZA,2023,HepB3,94.0
 Algeria,DZA,2024,HepB3,92.0
+Algeria,DZA,1985,MCV1,68.0
+Algeria,DZA,1986,MCV1,67.0
+Algeria,DZA,1987,MCV1,73.0
+Algeria,DZA,1988,MCV1,81.0
+Algeria,DZA,1989,MCV1,82.0
+Algeria,DZA,1990,MCV1,83.0
+Algeria,DZA,1991,MCV1,85.0
+Algeria,DZA,1992,MCV1,86.0
+Algeria,DZA,1993,MCV1,87.0
+Algeria,DZA,1994,MCV1,88.0
+Algeria,DZA,1995,MCV1,89.0
+Algeria,DZA,1996,MCV1,90.0
+Algeria,DZA,1997,MCV1,92.0
+Algeria,DZA,1998,MCV1,84.0
+Algeria,DZA,1999,MCV1,83.0
 Algeria,DZA,2000,MCV1,80.0
 Algeria,DZA,2001,MCV1,83.0
 Algeria,DZA,2002,MCV1,81.0
@@ -274,6 +439,21 @@ Algeria,DZA,2021,MCV1,79.0
 Algeria,DZA,2022,MCV1,79.0
 Algeria,DZA,2023,MCV1,99.0
 Algeria,DZA,2024,MCV1,94.0
+Algeria,DZA,1985,Polio3,69.0
+Algeria,DZA,1986,Polio3,72.0
+Algeria,DZA,1987,Polio3,79.0
+Algeria,DZA,1988,Polio3,85.0
+Algeria,DZA,1989,Polio3,87.0
+Algeria,DZA,1990,Polio3,89.0
+Algeria,DZA,1991,Polio3,89.0
+Algeria,DZA,1992,Polio3,88.0
+Algeria,DZA,1993,Polio3,88.0
+Algeria,DZA,1994,Polio3,87.0
+Algeria,DZA,1995,Polio3,88.0
+Algeria,DZA,1996,Polio3,88.0
+Algeria,DZA,1997,Polio3,89.0
+Algeria,DZA,1998,Polio3,85.0
+Algeria,DZA,1999,Polio3,83.0
 Algeria,DZA,2000,Polio3,86.0
 Algeria,DZA,2001,Polio3,89.0
 Algeria,DZA,2002,Polio3,86.0
@@ -299,6 +479,21 @@ Algeria,DZA,2021,Polio3,81.0
 Algeria,DZA,2022,Polio3,77.0
 Algeria,DZA,2023,Polio3,88.0
 Algeria,DZA,2024,Polio3,89.0
+Asia,OWID_ASI,1985,DTP3,42.249195
+Asia,OWID_ASI,1986,DTP3,45.579643
+Asia,OWID_ASI,1987,DTP3,49.939198
+Asia,OWID_ASI,1988,DTP3,62.144104
+Asia,OWID_ASI,1989,DTP3,68.289375
+Asia,OWID_ASI,1990,DTP3,77.56191
+Asia,OWID_ASI,1991,DTP3,72.16295
+Asia,OWID_ASI,1992,DTP3,71.37619
+Asia,OWID_ASI,1993,DTP3,71.14129
+Asia,OWID_ASI,1994,DTP3,72.938576
+Asia,OWID_ASI,1995,DTP3,73.544426
+Asia,OWID_ASI,1996,DTP3,73.013084
+Asia,OWID_ASI,1997,DTP3,72.021835
+Asia,OWID_ASI,1998,DTP3,71.876305
+Asia,OWID_ASI,1999,DTP3,71.643616
 Asia,OWID_ASI,2000,DTP3,71.955734
 Asia,OWID_ASI,2001,DTP3,73.00984
 Asia,OWID_ASI,2002,DTP3,72.07619
@@ -324,6 +519,21 @@ Asia,OWID_ASI,2021,DTP3,85.43384
 Asia,OWID_ASI,2022,DTP3,91.16684
 Asia,OWID_ASI,2023,DTP3,88.782524
 Asia,OWID_ASI,2024,DTP3,
+Asia,OWID_ASI,1985,HepB3,
+Asia,OWID_ASI,1986,HepB3,
+Asia,OWID_ASI,1987,HepB3,
+Asia,OWID_ASI,1988,HepB3,
+Asia,OWID_ASI,1989,HepB3,0.40005925
+Asia,OWID_ASI,1990,HepB3,0.8564828
+Asia,OWID_ASI,1991,HepB3,1.056044
+Asia,OWID_ASI,1992,HepB3,3.0192964
+Asia,OWID_ASI,1993,HepB3,4.816912
+Asia,OWID_ASI,1994,HepB3,6.890441
+Asia,OWID_ASI,1995,HepB3,10.108417
+Asia,OWID_ASI,1996,HepB3,10.800704
+Asia,OWID_ASI,1997,HepB3,11.447562
+Asia,OWID_ASI,1998,HepB3,11.64144
+Asia,OWID_ASI,1999,HepB3,12.673061
 Asia,OWID_ASI,2000,HepB3,26.24336
 Asia,OWID_ASI,2001,HepB3,28.308256
 Asia,OWID_ASI,2002,HepB3,30.043104
@@ -349,6 +559,21 @@ Asia,OWID_ASI,2021,HepB3,85.32624
 Asia,OWID_ASI,2022,HepB3,91.05626
 Asia,OWID_ASI,2023,HepB3,88.67597
 Asia,OWID_ASI,2024,HepB3,
+Asia,OWID_ASI,1985,MCV1,38.087414
+Asia,OWID_ASI,1986,MCV1,36.875126
+Asia,OWID_ASI,1987,MCV1,47.19247
+Asia,OWID_ASI,1988,MCV1,58.71453
+Asia,OWID_ASI,1989,MCV1,64.98115
+Asia,OWID_ASI,1990,MCV1,71.98526
+Asia,OWID_ASI,1991,MCV1,66.407585
+Asia,OWID_ASI,1992,MCV1,68.91477
+Asia,OWID_ASI,1993,MCV1,69.66521
+Asia,OWID_ASI,1994,MCV1,71.13605
+Asia,OWID_ASI,1995,MCV1,73.70645
+Asia,OWID_ASI,1996,MCV1,73.67052
+Asia,OWID_ASI,1997,MCV1,69.70627
+Asia,OWID_ASI,1998,MCV1,69.295364
+Asia,OWID_ASI,1999,MCV1,70.85432
 Asia,OWID_ASI,2000,MCV1,70.86882
 Asia,OWID_ASI,2001,MCV1,71.857834
 Asia,OWID_ASI,2002,MCV1,70.892525
@@ -374,6 +599,21 @@ Asia,OWID_ASI,2021,MCV1,87.02089
 Asia,OWID_ASI,2022,MCV1,91.1721
 Asia,OWID_ASI,2023,MCV1,89.16954
 Asia,OWID_ASI,2024,MCV1,
+Asia,OWID_ASI,1985,Polio3,43.484604
+Asia,OWID_ASI,1986,Polio3,41.398907
+Asia,OWID_ASI,1987,Polio3,49.96647
+Asia,OWID_ASI,1988,Polio3,61.330334
+Asia,OWID_ASI,1989,Polio3,69.60968
+Asia,OWID_ASI,1990,Polio3,76.6369
+Asia,OWID_ASI,1991,Polio3,72.8155
+Asia,OWID_ASI,1992,Polio3,72.16261
+Asia,OWID_ASI,1993,Polio3,71.8902
+Asia,OWID_ASI,1994,Polio3,73.922844
+Asia,OWID_ASI,1995,Polio3,74.61246
+Asia,OWID_ASI,1996,Polio3,74.46391
+Asia,OWID_ASI,1997,Polio3,73.700294
+Asia,OWID_ASI,1998,Polio3,73.56679
+Asia,OWID_ASI,1999,Polio3,72.970726
 Asia,OWID_ASI,2000,Polio3,72.27705
 Asia,OWID_ASI,2001,Polio3,72.83504
 Asia,OWID_ASI,2002,Polio3,72.77976
@@ -399,6 +639,21 @@ Asia,OWID_ASI,2021,Polio3,85.02861
 Asia,OWID_ASI,2022,Polio3,90.21514
 Asia,OWID_ASI,2023,Polio3,87.96001
 Asia,OWID_ASI,2024,Polio3,
+Bangladesh,BGD,1985,DTP3,2.0
+Bangladesh,BGD,1986,DTP3,4.0
+Bangladesh,BGD,1987,DTP3,9.0
+Bangladesh,BGD,1988,DTP3,16.0
+Bangladesh,BGD,1989,DTP3,49.0
+Bangladesh,BGD,1990,DTP3,69.0
+Bangladesh,BGD,1991,DTP3,74.0
+Bangladesh,BGD,1992,DTP3,66.0
+Bangladesh,BGD,1993,DTP3,74.0
+Bangladesh,BGD,1994,DTP3,84.0
+Bangladesh,BGD,1995,DTP3,69.0
+Bangladesh,BGD,1996,DTP3,77.0
+Bangladesh,BGD,1997,DTP3,78.0
+Bangladesh,BGD,1998,DTP3,77.0
+Bangladesh,BGD,1999,DTP3,80.0
 Bangladesh,BGD,2000,DTP3,82.0
 Bangladesh,BGD,2001,DTP3,85.0
 Bangladesh,BGD,2002,DTP3,83.0
@@ -424,6 +679,21 @@ Bangladesh,BGD,2021,DTP3,97.0
 Bangladesh,BGD,2022,DTP3,97.0
 Bangladesh,BGD,2023,DTP3,97.0
 Bangladesh,BGD,2024,DTP3,97.0
+Bangladesh,BGD,1985,HepB3,
+Bangladesh,BGD,1986,HepB3,
+Bangladesh,BGD,1987,HepB3,
+Bangladesh,BGD,1988,HepB3,
+Bangladesh,BGD,1989,HepB3,
+Bangladesh,BGD,1990,HepB3,
+Bangladesh,BGD,1991,HepB3,
+Bangladesh,BGD,1992,HepB3,
+Bangladesh,BGD,1993,HepB3,
+Bangladesh,BGD,1994,HepB3,
+Bangladesh,BGD,1995,HepB3,
+Bangladesh,BGD,1996,HepB3,
+Bangladesh,BGD,1997,HepB3,
+Bangladesh,BGD,1998,HepB3,
+Bangladesh,BGD,1999,HepB3,
 Bangladesh,BGD,2000,HepB3,
 Bangladesh,BGD,2001,HepB3,
 Bangladesh,BGD,2002,HepB3,
@@ -449,6 +719,21 @@ Bangladesh,BGD,2021,HepB3,97.0
 Bangladesh,BGD,2022,HepB3,97.0
 Bangladesh,BGD,2023,HepB3,97.0
 Bangladesh,BGD,2024,HepB3,97.0
+Bangladesh,BGD,1985,MCV1,1.0
+Bangladesh,BGD,1986,MCV1,3.0
+Bangladesh,BGD,1987,MCV1,6.0
+Bangladesh,BGD,1988,MCV1,13.0
+Bangladesh,BGD,1989,MCV1,53.0
+Bangladesh,BGD,1990,MCV1,65.0
+Bangladesh,BGD,1991,MCV1,68.0
+Bangladesh,BGD,1992,MCV1,69.0
+Bangladesh,BGD,1993,MCV1,74.0
+Bangladesh,BGD,1994,MCV1,78.0
+Bangladesh,BGD,1995,MCV1,79.0
+Bangladesh,BGD,1996,MCV1,69.0
+Bangladesh,BGD,1997,MCV1,72.0
+Bangladesh,BGD,1998,MCV1,71.0
+Bangladesh,BGD,1999,MCV1,71.0
 Bangladesh,BGD,2000,MCV1,74.0
 Bangladesh,BGD,2001,MCV1,77.0
 Bangladesh,BGD,2002,MCV1,75.0
@@ -474,6 +759,21 @@ Bangladesh,BGD,2021,MCV1,97.0
 Bangladesh,BGD,2022,MCV1,96.0
 Bangladesh,BGD,2023,MCV1,96.0
 Bangladesh,BGD,2024,MCV1,96.0
+Bangladesh,BGD,1985,Polio3,2.0
+Bangladesh,BGD,1986,Polio3,4.0
+Bangladesh,BGD,1987,Polio3,8.0
+Bangladesh,BGD,1988,Polio3,16.0
+Bangladesh,BGD,1989,Polio3,49.0
+Bangladesh,BGD,1990,Polio3,69.0
+Bangladesh,BGD,1991,Polio3,74.0
+Bangladesh,BGD,1992,Polio3,67.0
+Bangladesh,BGD,1993,Polio3,74.0
+Bangladesh,BGD,1994,Polio3,84.0
+Bangladesh,BGD,1995,Polio3,69.0
+Bangladesh,BGD,1996,Polio3,77.0
+Bangladesh,BGD,1997,Polio3,78.0
+Bangladesh,BGD,1998,Polio3,79.0
+Bangladesh,BGD,1999,Polio3,81.0
 Bangladesh,BGD,2000,Polio3,83.0
 Bangladesh,BGD,2001,Polio3,85.0
 Bangladesh,BGD,2002,Polio3,83.0
@@ -499,6 +799,21 @@ Bangladesh,BGD,2021,Polio3,97.0
 Bangladesh,BGD,2022,Polio3,97.0
 Bangladesh,BGD,2023,Polio3,97.0
 Bangladesh,BGD,2024,Polio3,97.0
+Benin,BEN,1985,DTP3,17.0
+Benin,BEN,1986,DTP3,17.0
+Benin,BEN,1987,DTP3,25.0
+Benin,BEN,1988,DTP3,30.0
+Benin,BEN,1989,DTP3,48.0
+Benin,BEN,1990,DTP3,74.0
+Benin,BEN,1991,DTP3,69.0
+Benin,BEN,1992,DTP3,73.0
+Benin,BEN,1993,DTP3,75.0
+Benin,BEN,1994,DTP3,81.0
+Benin,BEN,1995,DTP3,67.0
+Benin,BEN,1996,DTP3,66.0
+Benin,BEN,1997,DTP3,66.0
+Benin,BEN,1998,DTP3,70.0
+Benin,BEN,1999,DTP3,74.0
 Benin,BEN,2000,DTP3,78.0
 Benin,BEN,2001,DTP3,76.0
 Benin,BEN,2002,DTP3,75.0
@@ -524,6 +839,21 @@ Benin,BEN,2021,DTP3,70.0
 Benin,BEN,2022,DTP3,69.0
 Benin,BEN,2023,DTP3,69.0
 Benin,BEN,2024,DTP3,63.0
+Benin,BEN,1985,HepB3,
+Benin,BEN,1986,HepB3,
+Benin,BEN,1987,HepB3,
+Benin,BEN,1988,HepB3,
+Benin,BEN,1989,HepB3,
+Benin,BEN,1990,HepB3,
+Benin,BEN,1991,HepB3,
+Benin,BEN,1992,HepB3,
+Benin,BEN,1993,HepB3,
+Benin,BEN,1994,HepB3,
+Benin,BEN,1995,HepB3,
+Benin,BEN,1996,HepB3,
+Benin,BEN,1997,HepB3,
+Benin,BEN,1998,HepB3,
+Benin,BEN,1999,HepB3,
 Benin,BEN,2000,HepB3,
 Benin,BEN,2001,HepB3,
 Benin,BEN,2002,HepB3,15.0
@@ -549,6 +879,21 @@ Benin,BEN,2021,HepB3,70.0
 Benin,BEN,2022,HepB3,69.0
 Benin,BEN,2023,HepB3,69.0
 Benin,BEN,2024,HepB3,63.0
+Benin,BEN,1985,MCV1,23.0
+Benin,BEN,1986,MCV1,20.0
+Benin,BEN,1987,MCV1,26.0
+Benin,BEN,1988,MCV1,30.0
+Benin,BEN,1989,MCV1,48.0
+Benin,BEN,1990,MCV1,79.0
+Benin,BEN,1991,MCV1,60.0
+Benin,BEN,1992,MCV1,70.0
+Benin,BEN,1993,MCV1,67.0
+Benin,BEN,1994,MCV1,78.0
+Benin,BEN,1995,MCV1,65.0
+Benin,BEN,1996,MCV1,60.0
+Benin,BEN,1997,MCV1,66.0
+Benin,BEN,1998,MCV1,67.0
+Benin,BEN,1999,MCV1,69.0
 Benin,BEN,2000,MCV1,70.0
 Benin,BEN,2001,MCV1,68.0
 Benin,BEN,2002,MCV1,66.0
@@ -574,6 +919,21 @@ Benin,BEN,2021,MCV1,53.0
 Benin,BEN,2022,MCV1,52.0
 Benin,BEN,2023,MCV1,52.0
 Benin,BEN,2024,MCV1,44.0
+Benin,BEN,1985,Polio3,16.0
+Benin,BEN,1986,Polio3,17.0
+Benin,BEN,1987,Polio3,25.0
+Benin,BEN,1988,Polio3,30.0
+Benin,BEN,1989,Polio3,48.0
+Benin,BEN,1990,Polio3,74.0
+Benin,BEN,1991,Polio3,68.0
+Benin,BEN,1992,Polio3,73.0
+Benin,BEN,1993,Polio3,75.0
+Benin,BEN,1994,Polio3,82.0
+Benin,BEN,1995,Polio3,68.0
+Benin,BEN,1996,Polio3,67.0
+Benin,BEN,1997,Polio3,66.0
+Benin,BEN,1998,Polio3,70.0
+Benin,BEN,1999,Polio3,74.0
 Benin,BEN,2000,Polio3,78.0
 Benin,BEN,2001,Polio3,77.0
 Benin,BEN,2002,Polio3,76.0
@@ -599,6 +959,21 @@ Benin,BEN,2021,Polio3,68.0
 Benin,BEN,2022,Polio3,69.0
 Benin,BEN,2023,Polio3,69.0
 Benin,BEN,2024,Polio3,63.0
+Botswana,BWA,1985,DTP3,84.0
+Botswana,BWA,1986,DTP3,86.0
+Botswana,BWA,1987,DTP3,88.0
+Botswana,BWA,1988,DTP3,88.0
+Botswana,BWA,1989,DTP3,92.0
+Botswana,BWA,1990,DTP3,92.0
+Botswana,BWA,1991,DTP3,93.0
+Botswana,BWA,1992,DTP3,94.0
+Botswana,BWA,1993,DTP3,94.0
+Botswana,BWA,1994,DTP3,94.0
+Botswana,BWA,1995,DTP3,95.0
+Botswana,BWA,1996,DTP3,96.0
+Botswana,BWA,1997,DTP3,96.0
+Botswana,BWA,1998,DTP3,98.0
+Botswana,BWA,1999,DTP3,97.0
 Botswana,BWA,2000,DTP3,97.0
 Botswana,BWA,2001,DTP3,97.0
 Botswana,BWA,2002,DTP3,97.0
@@ -624,6 +999,21 @@ Botswana,BWA,2021,DTP3,95.0
 Botswana,BWA,2022,DTP3,86.0
 Botswana,BWA,2023,DTP3,95.0
 Botswana,BWA,2024,DTP3,95.0
+Botswana,BWA,1985,HepB3,
+Botswana,BWA,1986,HepB3,
+Botswana,BWA,1987,HepB3,
+Botswana,BWA,1988,HepB3,
+Botswana,BWA,1989,HepB3,
+Botswana,BWA,1990,HepB3,
+Botswana,BWA,1991,HepB3,
+Botswana,BWA,1992,HepB3,
+Botswana,BWA,1993,HepB3,
+Botswana,BWA,1994,HepB3,
+Botswana,BWA,1995,HepB3,73.0
+Botswana,BWA,1996,HepB3,62.0
+Botswana,BWA,1997,HepB3,60.0
+Botswana,BWA,1998,HepB3,77.0
+Botswana,BWA,1999,HepB3,85.0
 Botswana,BWA,2000,HepB3,86.0
 Botswana,BWA,2001,HepB3,87.0
 Botswana,BWA,2002,HepB3,88.0
@@ -649,6 +1039,21 @@ Botswana,BWA,2021,HepB3,95.0
 Botswana,BWA,2022,HepB3,86.0
 Botswana,BWA,2023,HepB3,95.0
 Botswana,BWA,2024,HepB3,95.0
+Botswana,BWA,1985,MCV1,85.0
+Botswana,BWA,1986,MCV1,91.0
+Botswana,BWA,1987,MCV1,87.0
+Botswana,BWA,1988,MCV1,87.0
+Botswana,BWA,1989,MCV1,87.0
+Botswana,BWA,1990,MCV1,87.0
+Botswana,BWA,1991,MCV1,88.0
+Botswana,BWA,1992,MCV1,88.0
+Botswana,BWA,1993,MCV1,88.0
+Botswana,BWA,1994,MCV1,88.0
+Botswana,BWA,1995,MCV1,89.0
+Botswana,BWA,1996,MCV1,89.0
+Botswana,BWA,1997,MCV1,89.0
+Botswana,BWA,1998,MCV1,89.0
+Botswana,BWA,1999,MCV1,90.0
 Botswana,BWA,2000,MCV1,91.0
 Botswana,BWA,2001,MCV1,91.0
 Botswana,BWA,2002,MCV1,92.0
@@ -674,6 +1079,21 @@ Botswana,BWA,2021,MCV1,97.0
 Botswana,BWA,2022,MCV1,90.0
 Botswana,BWA,2023,MCV1,97.0
 Botswana,BWA,2024,MCV1,97.0
+Botswana,BWA,1985,Polio3,85.0
+Botswana,BWA,1986,Polio3,88.0
+Botswana,BWA,1987,Polio3,86.0
+Botswana,BWA,1988,Polio3,89.0
+Botswana,BWA,1989,Polio3,89.0
+Botswana,BWA,1990,Polio3,90.0
+Botswana,BWA,1991,Polio3,91.0
+Botswana,BWA,1992,Polio3,91.0
+Botswana,BWA,1993,Polio3,92.0
+Botswana,BWA,1994,Polio3,93.0
+Botswana,BWA,1995,Polio3,94.0
+Botswana,BWA,1996,Polio3,95.0
+Botswana,BWA,1997,Polio3,95.0
+Botswana,BWA,1998,Polio3,93.0
+Botswana,BWA,1999,Polio3,97.0
 Botswana,BWA,2000,Polio3,97.0
 Botswana,BWA,2001,Polio3,97.0
 Botswana,BWA,2002,Polio3,97.0
@@ -699,6 +1119,21 @@ Botswana,BWA,2021,Polio3,96.0
 Botswana,BWA,2022,Polio3,86.0
 Botswana,BWA,2023,Polio3,96.0
 Botswana,BWA,2024,Polio3,96.0
+Brazil,BRA,1985,DTP3,66.0
+Brazil,BRA,1986,DTP3,58.0
+Brazil,BRA,1987,DTP3,58.0
+Brazil,BRA,1988,DTP3,58.0
+Brazil,BRA,1989,DTP3,56.0
+Brazil,BRA,1990,DTP3,66.0
+Brazil,BRA,1991,DTP3,78.0
+Brazil,BRA,1992,DTP3,71.0
+Brazil,BRA,1993,DTP3,75.0
+Brazil,BRA,1994,DTP3,74.0
+Brazil,BRA,1995,DTP3,81.0
+Brazil,BRA,1996,DTP3,77.0
+Brazil,BRA,1997,DTP3,79.0
+Brazil,BRA,1998,DTP3,93.0
+Brazil,BRA,1999,DTP3,94.0
 Brazil,BRA,2000,DTP3,98.0
 Brazil,BRA,2001,DTP3,98.0
 Brazil,BRA,2002,DTP3,99.0
@@ -724,6 +1159,21 @@ Brazil,BRA,2021,DTP3,68.0
 Brazil,BRA,2022,DTP3,77.0
 Brazil,BRA,2023,DTP3,90.0
 Brazil,BRA,2024,DTP3,91.0
+Brazil,BRA,1985,HepB3,
+Brazil,BRA,1986,HepB3,
+Brazil,BRA,1987,HepB3,
+Brazil,BRA,1988,HepB3,
+Brazil,BRA,1989,HepB3,
+Brazil,BRA,1990,HepB3,
+Brazil,BRA,1991,HepB3,
+Brazil,BRA,1992,HepB3,
+Brazil,BRA,1993,HepB3,
+Brazil,BRA,1994,HepB3,4.0
+Brazil,BRA,1995,HepB3,10.0
+Brazil,BRA,1996,HepB3,15.0
+Brazil,BRA,1997,HepB3,6.0
+Brazil,BRA,1998,HepB3,13.0
+Brazil,BRA,1999,HepB3,84.0
 Brazil,BRA,2000,HepB3,94.0
 Brazil,BRA,2001,HepB3,91.0
 Brazil,BRA,2002,HepB3,92.0
@@ -749,6 +1199,21 @@ Brazil,BRA,2021,HepB3,68.0
 Brazil,BRA,2022,HepB3,77.0
 Brazil,BRA,2023,HepB3,90.0
 Brazil,BRA,2024,HepB3,90.0
+Brazil,BRA,1985,MCV1,67.0
+Brazil,BRA,1986,MCV1,67.0
+Brazil,BRA,1987,MCV1,64.0
+Brazil,BRA,1988,MCV1,62.0
+Brazil,BRA,1989,MCV1,60.0
+Brazil,BRA,1990,MCV1,78.0
+Brazil,BRA,1991,MCV1,85.0
+Brazil,BRA,1992,MCV1,91.0
+Brazil,BRA,1993,MCV1,85.0
+Brazil,BRA,1994,MCV1,77.0
+Brazil,BRA,1995,MCV1,87.0
+Brazil,BRA,1996,MCV1,80.0
+Brazil,BRA,1997,MCV1,99.0
+Brazil,BRA,1998,MCV1,95.0
+Brazil,BRA,1999,MCV1,99.0
 Brazil,BRA,2000,MCV1,99.0
 Brazil,BRA,2001,MCV1,99.0
 Brazil,BRA,2002,MCV1,96.0
@@ -774,6 +1239,21 @@ Brazil,BRA,2021,MCV1,73.0
 Brazil,BRA,2022,MCV1,81.0
 Brazil,BRA,2023,MCV1,87.0
 Brazil,BRA,2024,MCV1,93.0
+Brazil,BRA,1985,Polio3,52.0
+Brazil,BRA,1986,Polio3,51.0
+Brazil,BRA,1987,Polio3,53.0
+Brazil,BRA,1988,Polio3,57.0
+Brazil,BRA,1989,Polio3,54.0
+Brazil,BRA,1990,Polio3,58.0
+Brazil,BRA,1991,Polio3,67.0
+Brazil,BRA,1992,Polio3,65.0
+Brazil,BRA,1993,Polio3,64.0
+Brazil,BRA,1994,Polio3,70.0
+Brazil,BRA,1995,Polio3,79.0
+Brazil,BRA,1996,Polio3,80.0
+Brazil,BRA,1997,Polio3,89.0
+Brazil,BRA,1998,Polio3,95.0
+Brazil,BRA,1999,Polio3,99.0
 Brazil,BRA,2000,Polio3,99.0
 Brazil,BRA,2001,Polio3,99.0
 Brazil,BRA,2002,Polio3,99.0
@@ -799,6 +1279,21 @@ Brazil,BRA,2021,Polio3,68.0
 Brazil,BRA,2022,Polio3,75.0
 Brazil,BRA,2023,Polio3,85.0
 Brazil,BRA,2024,Polio3,82.0
+Burkina Faso,BFA,1985,DTP3,9.0
+Burkina Faso,BFA,1986,DTP3,19.0
+Burkina Faso,BFA,1987,DTP3,23.0
+Burkina Faso,BFA,1988,DTP3,34.0
+Burkina Faso,BFA,1989,DTP3,44.0
+Burkina Faso,BFA,1990,DTP3,66.0
+Burkina Faso,BFA,1991,DTP3,53.0
+Burkina Faso,BFA,1992,DTP3,39.0
+Burkina Faso,BFA,1993,DTP3,39.0
+Burkina Faso,BFA,1994,DTP3,36.0
+Burkina Faso,BFA,1995,DTP3,34.0
+Burkina Faso,BFA,1996,DTP3,37.0
+Burkina Faso,BFA,1997,DTP3,39.0
+Burkina Faso,BFA,1998,DTP3,15.0
+Burkina Faso,BFA,1999,DTP3,15.0
 Burkina Faso,BFA,2000,DTP3,45.0
 Burkina Faso,BFA,2001,DTP3,62.0
 Burkina Faso,BFA,2002,DTP3,69.0
@@ -824,6 +1319,21 @@ Burkina Faso,BFA,2021,DTP3,91.0
 Burkina Faso,BFA,2022,DTP3,91.0
 Burkina Faso,BFA,2023,DTP3,91.0
 Burkina Faso,BFA,2024,DTP3,91.0
+Burkina Faso,BFA,1985,HepB3,
+Burkina Faso,BFA,1986,HepB3,
+Burkina Faso,BFA,1987,HepB3,
+Burkina Faso,BFA,1988,HepB3,
+Burkina Faso,BFA,1989,HepB3,
+Burkina Faso,BFA,1990,HepB3,
+Burkina Faso,BFA,1991,HepB3,
+Burkina Faso,BFA,1992,HepB3,
+Burkina Faso,BFA,1993,HepB3,
+Burkina Faso,BFA,1994,HepB3,
+Burkina Faso,BFA,1995,HepB3,
+Burkina Faso,BFA,1996,HepB3,
+Burkina Faso,BFA,1997,HepB3,
+Burkina Faso,BFA,1998,HepB3,
+Burkina Faso,BFA,1999,HepB3,
 Burkina Faso,BFA,2000,HepB3,
 Burkina Faso,BFA,2001,HepB3,
 Burkina Faso,BFA,2002,HepB3,
@@ -849,6 +1359,21 @@ Burkina Faso,BFA,2021,HepB3,91.0
 Burkina Faso,BFA,2022,HepB3,91.0
 Burkina Faso,BFA,2023,HepB3,91.0
 Burkina Faso,BFA,2024,HepB3,91.0
+Burkina Faso,BFA,1985,MCV1,38.0
+Burkina Faso,BFA,1986,MCV1,40.0
+Burkina Faso,BFA,1987,MCV1,37.0
+Burkina Faso,BFA,1988,MCV1,52.0
+Burkina Faso,BFA,1989,MCV1,66.0
+Burkina Faso,BFA,1990,MCV1,79.0
+Burkina Faso,BFA,1991,MCV1,69.0
+Burkina Faso,BFA,1992,MCV1,60.0
+Burkina Faso,BFA,1993,MCV1,50.0
+Burkina Faso,BFA,1994,MCV1,45.0
+Burkina Faso,BFA,1995,MCV1,43.0
+Burkina Faso,BFA,1996,MCV1,40.0
+Burkina Faso,BFA,1997,MCV1,41.0
+Burkina Faso,BFA,1998,MCV1,24.0
+Burkina Faso,BFA,1999,MCV1,36.0
 Burkina Faso,BFA,2000,MCV1,48.0
 Burkina Faso,BFA,2001,MCV1,63.0
 Burkina Faso,BFA,2002,MCV1,64.0
@@ -874,6 +1399,21 @@ Burkina Faso,BFA,2021,MCV1,88.0
 Burkina Faso,BFA,2022,MCV1,88.0
 Burkina Faso,BFA,2023,MCV1,88.0
 Burkina Faso,BFA,2024,MCV1,88.0
+Burkina Faso,BFA,1985,Polio3,10.0
+Burkina Faso,BFA,1986,Polio3,21.0
+Burkina Faso,BFA,1987,Polio3,23.0
+Burkina Faso,BFA,1988,Polio3,34.0
+Burkina Faso,BFA,1989,Polio3,44.0
+Burkina Faso,BFA,1990,Polio3,66.0
+Burkina Faso,BFA,1991,Polio3,53.0
+Burkina Faso,BFA,1992,Polio3,41.0
+Burkina Faso,BFA,1993,Polio3,39.0
+Burkina Faso,BFA,1994,Polio3,36.0
+Burkina Faso,BFA,1995,Polio3,35.0
+Burkina Faso,BFA,1996,Polio3,37.0
+Burkina Faso,BFA,1997,Polio3,39.0
+Burkina Faso,BFA,1998,Polio3,15.0
+Burkina Faso,BFA,1999,Polio3,15.0
 Burkina Faso,BFA,2000,Polio3,45.0
 Burkina Faso,BFA,2001,Polio3,62.0
 Burkina Faso,BFA,2002,Polio3,69.0
@@ -899,6 +1439,21 @@ Burkina Faso,BFA,2021,Polio3,91.0
 Burkina Faso,BFA,2022,Polio3,91.0
 Burkina Faso,BFA,2023,Polio3,91.0
 Burkina Faso,BFA,2024,Polio3,91.0
+Cambodia,KHM,1985,DTP3,23.0
+Cambodia,KHM,1986,DTP3,37.0
+Cambodia,KHM,1987,DTP3,37.0
+Cambodia,KHM,1988,DTP3,45.0
+Cambodia,KHM,1989,DTP3,47.0
+Cambodia,KHM,1990,DTP3,38.0
+Cambodia,KHM,1991,DTP3,38.0
+Cambodia,KHM,1992,DTP3,32.0
+Cambodia,KHM,1993,DTP3,35.0
+Cambodia,KHM,1994,DTP3,37.0
+Cambodia,KHM,1995,DTP3,39.0
+Cambodia,KHM,1996,DTP3,43.0
+Cambodia,KHM,1997,DTP3,46.0
+Cambodia,KHM,1998,DTP3,47.0
+Cambodia,KHM,1999,DTP3,53.0
 Cambodia,KHM,2000,DTP3,59.0
 Cambodia,KHM,2001,DTP3,60.0
 Cambodia,KHM,2002,DTP3,54.0
@@ -924,6 +1479,21 @@ Cambodia,KHM,2021,DTP3,86.0
 Cambodia,KHM,2022,DTP3,84.0
 Cambodia,KHM,2023,DTP3,84.0
 Cambodia,KHM,2024,DTP3,83.0
+Cambodia,KHM,1985,HepB3,
+Cambodia,KHM,1986,HepB3,
+Cambodia,KHM,1987,HepB3,
+Cambodia,KHM,1988,HepB3,
+Cambodia,KHM,1989,HepB3,
+Cambodia,KHM,1990,HepB3,
+Cambodia,KHM,1991,HepB3,
+Cambodia,KHM,1992,HepB3,
+Cambodia,KHM,1993,HepB3,
+Cambodia,KHM,1994,HepB3,
+Cambodia,KHM,1995,HepB3,
+Cambodia,KHM,1996,HepB3,
+Cambodia,KHM,1997,HepB3,
+Cambodia,KHM,1998,HepB3,
+Cambodia,KHM,1999,HepB3,
 Cambodia,KHM,2000,HepB3,
 Cambodia,KHM,2001,HepB3,
 Cambodia,KHM,2002,HepB3,
@@ -949,6 +1519,21 @@ Cambodia,KHM,2021,HepB3,86.0
 Cambodia,KHM,2022,HepB3,84.0
 Cambodia,KHM,2023,HepB3,84.0
 Cambodia,KHM,2024,HepB3,83.0
+Cambodia,KHM,1985,MCV1,29.0
+Cambodia,KHM,1986,MCV1,54.0
+Cambodia,KHM,1987,MCV1,53.0
+Cambodia,KHM,1988,MCV1,39.0
+Cambodia,KHM,1989,MCV1,39.0
+Cambodia,KHM,1990,MCV1,34.0
+Cambodia,KHM,1991,MCV1,39.0
+Cambodia,KHM,1992,MCV1,33.0
+Cambodia,KHM,1993,MCV1,36.0
+Cambodia,KHM,1994,MCV1,50.0
+Cambodia,KHM,1995,MCV1,62.0
+Cambodia,KHM,1996,MCV1,56.0
+Cambodia,KHM,1997,MCV1,50.0
+Cambodia,KHM,1998,MCV1,54.0
+Cambodia,KHM,1999,MCV1,63.0
 Cambodia,KHM,2000,MCV1,65.0
 Cambodia,KHM,2001,MCV1,59.0
 Cambodia,KHM,2002,MCV1,52.0
@@ -974,6 +1559,21 @@ Cambodia,KHM,2021,MCV1,83.0
 Cambodia,KHM,2022,MCV1,83.0
 Cambodia,KHM,2023,MCV1,79.0
 Cambodia,KHM,2024,MCV1,83.0
+Cambodia,KHM,1985,Polio3,26.0
+Cambodia,KHM,1986,Polio3,35.0
+Cambodia,KHM,1987,Polio3,57.0
+Cambodia,KHM,1988,Polio3,45.0
+Cambodia,KHM,1989,Polio3,48.0
+Cambodia,KHM,1990,Polio3,38.0
+Cambodia,KHM,1991,Polio3,39.0
+Cambodia,KHM,1992,Polio3,32.0
+Cambodia,KHM,1993,Polio3,36.0
+Cambodia,KHM,1994,Polio3,38.0
+Cambodia,KHM,1995,Polio3,39.0
+Cambodia,KHM,1996,Polio3,48.0
+Cambodia,KHM,1997,Polio3,56.0
+Cambodia,KHM,1998,Polio3,57.0
+Cambodia,KHM,1999,Polio3,65.0
 Cambodia,KHM,2000,Polio3,62.0
 Cambodia,KHM,2001,Polio3,59.0
 Cambodia,KHM,2002,Polio3,54.0
@@ -999,6 +1599,21 @@ Cambodia,KHM,2021,Polio3,88.0
 Cambodia,KHM,2022,Polio3,84.0
 Cambodia,KHM,2023,Polio3,85.0
 Cambodia,KHM,2024,Polio3,84.0
+Cameroon,CMR,1985,DTP3,33.0
+Cameroon,CMR,1986,DTP3,39.0
+Cameroon,CMR,1987,DTP3,44.0
+Cameroon,CMR,1988,DTP3,50.0
+Cameroon,CMR,1989,DTP3,56.0
+Cameroon,CMR,1990,DTP3,48.0
+Cameroon,CMR,1991,DTP3,42.0
+Cameroon,CMR,1992,DTP3,37.0
+Cameroon,CMR,1993,DTP3,37.0
+Cameroon,CMR,1994,DTP3,38.0
+Cameroon,CMR,1995,DTP3,46.0
+Cameroon,CMR,1996,DTP3,46.0
+Cameroon,CMR,1997,DTP3,48.0
+Cameroon,CMR,1998,DTP3,56.0
+Cameroon,CMR,1999,DTP3,59.0
 Cameroon,CMR,2000,DTP3,62.0
 Cameroon,CMR,2001,DTP3,63.0
 Cameroon,CMR,2002,DTP3,66.0
@@ -1024,6 +1639,21 @@ Cameroon,CMR,2021,DTP3,71.0
 Cameroon,CMR,2022,DTP3,71.0
 Cameroon,CMR,2023,DTP3,75.0
 Cameroon,CMR,2024,DTP3,77.0
+Cameroon,CMR,1985,HepB3,
+Cameroon,CMR,1986,HepB3,
+Cameroon,CMR,1987,HepB3,
+Cameroon,CMR,1988,HepB3,
+Cameroon,CMR,1989,HepB3,
+Cameroon,CMR,1990,HepB3,
+Cameroon,CMR,1991,HepB3,
+Cameroon,CMR,1992,HepB3,
+Cameroon,CMR,1993,HepB3,
+Cameroon,CMR,1994,HepB3,
+Cameroon,CMR,1995,HepB3,
+Cameroon,CMR,1996,HepB3,
+Cameroon,CMR,1997,HepB3,
+Cameroon,CMR,1998,HepB3,
+Cameroon,CMR,1999,HepB3,
 Cameroon,CMR,2000,HepB3,
 Cameroon,CMR,2001,HepB3,
 Cameroon,CMR,2002,HepB3,
@@ -1049,6 +1679,21 @@ Cameroon,CMR,2021,HepB3,71.0
 Cameroon,CMR,2022,HepB3,71.0
 Cameroon,CMR,2023,HepB3,75.0
 Cameroon,CMR,2024,HepB3,77.0
+Cameroon,CMR,1985,MCV1,39.0
+Cameroon,CMR,1986,MCV1,44.0
+Cameroon,CMR,1987,MCV1,44.0
+Cameroon,CMR,1988,MCV1,48.0
+Cameroon,CMR,1989,MCV1,56.0
+Cameroon,CMR,1990,MCV1,56.0
+Cameroon,CMR,1991,MCV1,48.0
+Cameroon,CMR,1992,MCV1,37.0
+Cameroon,CMR,1993,MCV1,32.0
+Cameroon,CMR,1994,MCV1,38.0
+Cameroon,CMR,1995,MCV1,46.0
+Cameroon,CMR,1996,MCV1,39.0
+Cameroon,CMR,1997,MCV1,43.0
+Cameroon,CMR,1998,MCV1,47.0
+Cameroon,CMR,1999,MCV1,46.0
 Cameroon,CMR,2000,MCV1,49.0
 Cameroon,CMR,2001,MCV1,51.0
 Cameroon,CMR,2002,MCV1,53.0
@@ -1074,6 +1719,21 @@ Cameroon,CMR,2021,MCV1,65.0
 Cameroon,CMR,2022,MCV1,68.0
 Cameroon,CMR,2023,MCV1,71.0
 Cameroon,CMR,2024,MCV1,71.0
+Cameroon,CMR,1985,Polio3,35.0
+Cameroon,CMR,1986,Polio3,42.0
+Cameroon,CMR,1987,Polio3,44.0
+Cameroon,CMR,1988,Polio3,51.0
+Cameroon,CMR,1989,Polio3,54.0
+Cameroon,CMR,1990,Polio3,54.0
+Cameroon,CMR,1991,Polio3,46.0
+Cameroon,CMR,1992,Polio3,37.0
+Cameroon,CMR,1993,Polio3,34.0
+Cameroon,CMR,1994,Polio3,42.0
+Cameroon,CMR,1995,Polio3,46.0
+Cameroon,CMR,1996,Polio3,43.0
+Cameroon,CMR,1997,Polio3,47.0
+Cameroon,CMR,1998,Polio3,53.0
+Cameroon,CMR,1999,Polio3,58.0
 Cameroon,CMR,2000,Polio3,57.0
 Cameroon,CMR,2001,Polio3,61.0
 Cameroon,CMR,2002,Polio3,66.0
@@ -1099,6 +1759,21 @@ Cameroon,CMR,2021,Polio3,71.0
 Cameroon,CMR,2022,Polio3,62.0
 Cameroon,CMR,2023,Polio3,74.0
 Cameroon,CMR,2024,Polio3,76.0
+Central African Republic,CAF,1985,DTP3,20.0
+Central African Republic,CAF,1986,DTP3,19.0
+Central African Republic,CAF,1987,DTP3,22.0
+Central African Republic,CAF,1988,DTP3,42.0
+Central African Republic,CAF,1989,DTP3,64.0
+Central African Republic,CAF,1990,DTP3,82.0
+Central African Republic,CAF,1991,DTP3,64.0
+Central African Republic,CAF,1992,DTP3,45.0
+Central African Republic,CAF,1993,DTP3,47.0
+Central African Republic,CAF,1994,DTP3,48.0
+Central African Republic,CAF,1995,DTP3,53.0
+Central African Republic,CAF,1996,DTP3,48.0
+Central African Republic,CAF,1997,DTP3,43.0
+Central African Republic,CAF,1998,DTP3,43.0
+Central African Republic,CAF,1999,DTP3,33.0
 Central African Republic,CAF,2000,DTP3,37.0
 Central African Republic,CAF,2001,DTP3,40.0
 Central African Republic,CAF,2002,DTP3,44.0
@@ -1124,6 +1799,21 @@ Central African Republic,CAF,2021,DTP3,35.0
 Central African Republic,CAF,2022,DTP3,33.0
 Central African Republic,CAF,2023,DTP3,40.0
 Central African Republic,CAF,2024,DTP3,42.0
+Central African Republic,CAF,1985,HepB3,
+Central African Republic,CAF,1986,HepB3,
+Central African Republic,CAF,1987,HepB3,
+Central African Republic,CAF,1988,HepB3,
+Central African Republic,CAF,1989,HepB3,
+Central African Republic,CAF,1990,HepB3,
+Central African Republic,CAF,1991,HepB3,
+Central African Republic,CAF,1992,HepB3,
+Central African Republic,CAF,1993,HepB3,
+Central African Republic,CAF,1994,HepB3,
+Central African Republic,CAF,1995,HepB3,
+Central African Republic,CAF,1996,HepB3,
+Central African Republic,CAF,1997,HepB3,
+Central African Republic,CAF,1998,HepB3,
+Central African Republic,CAF,1999,HepB3,
 Central African Republic,CAF,2000,HepB3,
 Central African Republic,CAF,2001,HepB3,
 Central African Republic,CAF,2002,HepB3,
@@ -1149,6 +1839,21 @@ Central African Republic,CAF,2021,HepB3,35.0
 Central African Republic,CAF,2022,HepB3,33.0
 Central African Republic,CAF,2023,HepB3,40.0
 Central African Republic,CAF,2024,HepB3,42.0
+Central African Republic,CAF,1985,MCV1,23.0
+Central African Republic,CAF,1986,MCV1,24.0
+Central African Republic,CAF,1987,MCV1,17.0
+Central African Republic,CAF,1988,MCV1,40.0
+Central African Republic,CAF,1989,MCV1,69.0
+Central African Republic,CAF,1990,MCV1,82.0
+Central African Republic,CAF,1991,MCV1,57.0
+Central African Republic,CAF,1992,MCV1,32.0
+Central African Republic,CAF,1993,MCV1,42.0
+Central African Republic,CAF,1994,MCV1,52.0
+Central African Republic,CAF,1995,MCV1,46.0
+Central African Republic,CAF,1996,MCV1,44.0
+Central African Republic,CAF,1997,MCV1,42.0
+Central African Republic,CAF,1998,MCV1,37.0
+Central African Republic,CAF,1999,MCV1,37.0
 Central African Republic,CAF,2000,MCV1,36.0
 Central African Republic,CAF,2001,MCV1,35.0
 Central African Republic,CAF,2002,MCV1,42.0
@@ -1174,6 +1879,21 @@ Central African Republic,CAF,2021,MCV1,34.0
 Central African Republic,CAF,2022,MCV1,32.0
 Central African Republic,CAF,2023,MCV1,39.0
 Central African Republic,CAF,2024,MCV1,41.0
+Central African Republic,CAF,1985,Polio3,20.0
+Central African Republic,CAF,1986,Polio3,19.0
+Central African Republic,CAF,1987,Polio3,22.0
+Central African Republic,CAF,1988,Polio3,42.0
+Central African Republic,CAF,1989,Polio3,61.0
+Central African Republic,CAF,1990,Polio3,82.0
+Central African Republic,CAF,1991,Polio3,64.0
+Central African Republic,CAF,1992,Polio3,45.0
+Central African Republic,CAF,1993,Polio3,46.0
+Central African Republic,CAF,1994,Polio3,46.0
+Central African Republic,CAF,1995,Polio3,51.0
+Central African Republic,CAF,1996,Polio3,47.0
+Central African Republic,CAF,1997,Polio3,44.0
+Central African Republic,CAF,1998,Polio3,45.0
+Central African Republic,CAF,1999,Polio3,36.0
 Central African Republic,CAF,2000,Polio3,38.0
 Central African Republic,CAF,2001,Polio3,40.0
 Central African Republic,CAF,2002,Polio3,42.0
@@ -1199,6 +1919,21 @@ Central African Republic,CAF,2021,Polio3,38.0
 Central African Republic,CAF,2022,Polio3,35.0
 Central African Republic,CAF,2023,Polio3,42.0
 Central African Republic,CAF,2024,Polio3,48.0
+Chad,TCD,1985,DTP3,3.0
+Chad,TCD,1986,DTP3,10.0
+Chad,TCD,1987,DTP3,14.0
+Chad,TCD,1988,DTP3,14.0
+Chad,TCD,1989,DTP3,20.0
+Chad,TCD,1990,DTP3,20.0
+Chad,TCD,1991,DTP3,18.0
+Chad,TCD,1992,DTP3,10.0
+Chad,TCD,1993,DTP3,13.0
+Chad,TCD,1994,DTP3,18.0
+Chad,TCD,1995,DTP3,18.0
+Chad,TCD,1996,DTP3,20.0
+Chad,TCD,1997,DTP3,24.0
+Chad,TCD,1998,DTP3,37.0
+Chad,TCD,1999,DTP3,45.0
 Chad,TCD,2000,DTP3,38.0
 Chad,TCD,2001,DTP3,26.0
 Chad,TCD,2002,DTP3,25.0
@@ -1224,6 +1959,21 @@ Chad,TCD,2021,DTP3,62.0
 Chad,TCD,2022,DTP3,66.0
 Chad,TCD,2023,DTP3,67.0
 Chad,TCD,2024,DTP3,68.0
+Chad,TCD,1985,HepB3,
+Chad,TCD,1986,HepB3,
+Chad,TCD,1987,HepB3,
+Chad,TCD,1988,HepB3,
+Chad,TCD,1989,HepB3,
+Chad,TCD,1990,HepB3,
+Chad,TCD,1991,HepB3,
+Chad,TCD,1992,HepB3,
+Chad,TCD,1993,HepB3,
+Chad,TCD,1994,HepB3,
+Chad,TCD,1995,HepB3,
+Chad,TCD,1996,HepB3,
+Chad,TCD,1997,HepB3,
+Chad,TCD,1998,HepB3,
+Chad,TCD,1999,HepB3,
 Chad,TCD,2000,HepB3,
 Chad,TCD,2001,HepB3,
 Chad,TCD,2002,HepB3,
@@ -1249,6 +1999,21 @@ Chad,TCD,2021,HepB3,62.0
 Chad,TCD,2022,HepB3,66.0
 Chad,TCD,2023,HepB3,67.0
 Chad,TCD,2024,HepB3,68.0
+Chad,TCD,1985,MCV1,7.0
+Chad,TCD,1986,MCV1,12.0
+Chad,TCD,1987,MCV1,16.0
+Chad,TCD,1988,MCV1,17.0
+Chad,TCD,1989,MCV1,32.0
+Chad,TCD,1990,MCV1,32.0
+Chad,TCD,1991,MCV1,28.0
+Chad,TCD,1992,MCV1,25.0
+Chad,TCD,1993,MCV1,19.0
+Chad,TCD,1994,MCV1,24.0
+Chad,TCD,1995,MCV1,26.0
+Chad,TCD,1996,MCV1,22.0
+Chad,TCD,1997,MCV1,30.0
+Chad,TCD,1998,MCV1,20.0
+Chad,TCD,1999,MCV1,30.0
 Chad,TCD,2000,MCV1,28.0
 Chad,TCD,2001,MCV1,26.0
 Chad,TCD,2002,MCV1,25.0
@@ -1274,6 +2039,21 @@ Chad,TCD,2021,MCV1,53.0
 Chad,TCD,2022,MCV1,54.0
 Chad,TCD,2023,MCV1,63.0
 Chad,TCD,2024,MCV1,66.0
+Chad,TCD,1985,Polio3,3.0
+Chad,TCD,1986,Polio3,8.0
+Chad,TCD,1987,Polio3,13.0
+Chad,TCD,1988,Polio3,14.0
+Chad,TCD,1989,Polio3,20.0
+Chad,TCD,1990,Polio3,20.0
+Chad,TCD,1991,Polio3,18.0
+Chad,TCD,1992,Polio3,10.0
+Chad,TCD,1993,Polio3,12.0
+Chad,TCD,1994,Polio3,18.0
+Chad,TCD,1995,Polio3,18.0
+Chad,TCD,1996,Polio3,20.0
+Chad,TCD,1997,Polio3,24.0
+Chad,TCD,1998,Polio3,29.0
+Chad,TCD,1999,Polio3,34.0
 Chad,TCD,2000,Polio3,30.0
 Chad,TCD,2001,Polio3,26.0
 Chad,TCD,2002,Polio3,31.0
@@ -1299,6 +2079,21 @@ Chad,TCD,2021,Polio3,57.0
 Chad,TCD,2022,Polio3,58.0
 Chad,TCD,2023,Polio3,67.0
 Chad,TCD,2024,Polio3,67.0
+China,CHN,1985,DTP3,78.0
+China,CHN,1986,DTP3,78.0
+China,CHN,1987,DTP3,75.0
+China,CHN,1988,DTP3,95.0
+China,CHN,1989,DTP3,95.0
+China,CHN,1990,DTP3,97.0
+China,CHN,1991,DTP3,94.0
+China,CHN,1992,DTP3,91.0
+China,CHN,1993,DTP3,88.0
+China,CHN,1994,DTP3,85.0
+China,CHN,1995,DTP3,80.0
+China,CHN,1996,DTP3,83.0
+China,CHN,1997,DTP3,84.0
+China,CHN,1998,DTP3,84.0
+China,CHN,1999,DTP3,85.0
 China,CHN,2000,DTP3,85.0
 China,CHN,2001,DTP3,86.0
 China,CHN,2002,DTP3,86.0
@@ -1324,6 +2119,21 @@ China,CHN,2021,DTP3,99.0
 China,CHN,2022,DTP3,99.0
 China,CHN,2023,DTP3,96.0
 China,CHN,2024,DTP3,97.0
+China,CHN,1985,HepB3,
+China,CHN,1986,HepB3,
+China,CHN,1987,HepB3,
+China,CHN,1988,HepB3,
+China,CHN,1989,HepB3,
+China,CHN,1990,HepB3,
+China,CHN,1991,HepB3,
+China,CHN,1992,HepB3,
+China,CHN,1993,HepB3,
+China,CHN,1994,HepB3,
+China,CHN,1995,HepB3,
+China,CHN,1996,HepB3,
+China,CHN,1997,HepB3,
+China,CHN,1998,HepB3,
+China,CHN,1999,HepB3,
 China,CHN,2000,HepB3,60.0
 China,CHN,2001,HepB3,65.0
 China,CHN,2002,HepB3,70.0
@@ -1349,6 +2159,21 @@ China,CHN,2021,HepB3,99.0
 China,CHN,2022,HepB3,99.0
 China,CHN,2023,HepB3,96.0
 China,CHN,2024,HepB3,96.0
+China,CHN,1985,MCV1,88.0
+China,CHN,1986,MCV1,63.0
+China,CHN,1987,MCV1,77.0
+China,CHN,1988,MCV1,95.0
+China,CHN,1989,MCV1,95.0
+China,CHN,1990,MCV1,98.0
+China,CHN,1991,MCV1,92.0
+China,CHN,1992,MCV1,87.0
+China,CHN,1993,MCV1,81.0
+China,CHN,1994,MCV1,75.0
+China,CHN,1995,MCV1,80.0
+China,CHN,1996,MCV1,84.0
+China,CHN,1997,MCV1,83.0
+China,CHN,1998,MCV1,83.0
+China,CHN,1999,MCV1,84.0
 China,CHN,2000,MCV1,84.0
 China,CHN,2001,MCV1,85.0
 China,CHN,2002,MCV1,85.0
@@ -1374,6 +2199,21 @@ China,CHN,2021,MCV1,99.0
 China,CHN,2022,MCV1,99.0
 China,CHN,2023,MCV1,95.0
 China,CHN,2024,MCV1,95.0
+China,CHN,1985,Polio3,87.0
+China,CHN,1986,Polio3,68.0
+China,CHN,1987,Polio3,78.0
+China,CHN,1988,Polio3,96.0
+China,CHN,1989,Polio3,96.0
+China,CHN,1990,Polio3,98.0
+China,CHN,1991,Polio3,95.0
+China,CHN,1992,Polio3,93.0
+China,CHN,1993,Polio3,90.0
+China,CHN,1994,Polio3,87.0
+China,CHN,1995,Polio3,82.0
+China,CHN,1996,Polio3,84.0
+China,CHN,1997,Polio3,85.0
+China,CHN,1998,Polio3,85.0
+China,CHN,1999,Polio3,86.0
 China,CHN,2000,Polio3,86.0
 China,CHN,2001,Polio3,86.0
 China,CHN,2002,Polio3,86.0
@@ -1399,6 +2239,21 @@ China,CHN,2021,Polio3,99.0
 China,CHN,2022,Polio3,99.0
 China,CHN,2023,Polio3,97.0
 China,CHN,2024,Polio3,97.0
+Colombia,COL,1985,DTP3,61.0
+Colombia,COL,1986,DTP3,48.0
+Colombia,COL,1987,DTP3,58.0
+Colombia,COL,1988,DTP3,74.0
+Colombia,COL,1989,DTP3,78.0
+Colombia,COL,1990,DTP3,88.0
+Colombia,COL,1991,DTP3,84.0
+Colombia,COL,1992,DTP3,78.0
+Colombia,COL,1993,DTP3,88.0
+Colombia,COL,1994,DTP3,85.0
+Colombia,COL,1995,DTP3,85.0
+Colombia,COL,1996,DTP3,85.0
+Colombia,COL,1997,DTP3,84.0
+Colombia,COL,1998,DTP3,73.0
+Colombia,COL,1999,DTP3,74.0
 Colombia,COL,2000,DTP3,79.0
 Colombia,COL,2001,DTP3,80.0
 Colombia,COL,2002,DTP3,81.0
@@ -1424,6 +2279,21 @@ Colombia,COL,2021,DTP3,87.0
 Colombia,COL,2022,DTP3,87.0
 Colombia,COL,2023,DTP3,90.0
 Colombia,COL,2024,DTP3,89.0
+Colombia,COL,1985,HepB3,
+Colombia,COL,1986,HepB3,
+Colombia,COL,1987,HepB3,
+Colombia,COL,1988,HepB3,
+Colombia,COL,1989,HepB3,
+Colombia,COL,1990,HepB3,
+Colombia,COL,1991,HepB3,
+Colombia,COL,1992,HepB3,
+Colombia,COL,1993,HepB3,
+Colombia,COL,1994,HepB3,
+Colombia,COL,1995,HepB3,71.0
+Colombia,COL,1996,HepB3,95.0
+Colombia,COL,1997,HepB3,85.0
+Colombia,COL,1998,HepB3,75.0
+Colombia,COL,1999,HepB3,77.0
 Colombia,COL,2000,HepB3,78.0
 Colombia,COL,2001,HepB3,80.0
 Colombia,COL,2002,HepB3,78.0
@@ -1449,6 +2319,21 @@ Colombia,COL,2021,HepB3,87.0
 Colombia,COL,2022,HepB3,87.0
 Colombia,COL,2023,HepB3,90.0
 Colombia,COL,2024,HepB3,89.0
+Colombia,COL,1985,MCV1,51.0
+Colombia,COL,1986,MCV1,45.0
+Colombia,COL,1987,MCV1,59.0
+Colombia,COL,1988,MCV1,74.0
+Colombia,COL,1989,MCV1,81.0
+Colombia,COL,1990,MCV1,82.0
+Colombia,COL,1991,MCV1,78.0
+Colombia,COL,1992,MCV1,74.0
+Colombia,COL,1993,MCV1,94.0
+Colombia,COL,1994,MCV1,84.0
+Colombia,COL,1995,MCV1,95.0
+Colombia,COL,1996,MCV1,90.0
+Colombia,COL,1997,MCV1,80.0
+Colombia,COL,1998,MCV1,78.0
+Colombia,COL,1999,MCV1,79.0
 Colombia,COL,2000,MCV1,88.0
 Colombia,COL,2001,MCV1,93.0
 Colombia,COL,2002,MCV1,93.0
@@ -1474,6 +2359,21 @@ Colombia,COL,2021,MCV1,86.0
 Colombia,COL,2022,MCV1,88.0
 Colombia,COL,2023,MCV1,93.0
 Colombia,COL,2024,MCV1,93.0
+Colombia,COL,1985,Polio3,62.0
+Colombia,COL,1986,Polio3,53.0
+Colombia,COL,1987,Polio3,82.0
+Colombia,COL,1988,Polio3,94.0
+Colombia,COL,1989,Polio3,90.0
+Colombia,COL,1990,Polio3,93.0
+Colombia,COL,1991,Polio3,91.0
+Colombia,COL,1992,Polio3,84.0
+Colombia,COL,1993,Polio3,92.0
+Colombia,COL,1994,Polio3,87.0
+Colombia,COL,1995,Polio3,87.0
+Colombia,COL,1996,Polio3,87.0
+Colombia,COL,1997,Polio3,85.0
+Colombia,COL,1998,Polio3,75.0
+Colombia,COL,1999,Polio3,77.0
 Colombia,COL,2000,Polio3,82.0
 Colombia,COL,2001,Polio3,83.0
 Colombia,COL,2002,Polio3,83.0
@@ -1499,6 +2399,21 @@ Colombia,COL,2021,Polio3,86.0
 Colombia,COL,2022,Polio3,86.0
 Colombia,COL,2023,Polio3,90.0
 Colombia,COL,2024,Polio3,89.0
+Congo,COG,1985,DTP3,54.0
+Congo,COG,1986,DTP3,71.0
+Congo,COG,1987,DTP3,72.0
+Congo,COG,1988,DTP3,72.0
+Congo,COG,1989,DTP3,79.0
+Congo,COG,1990,DTP3,79.0
+Congo,COG,1991,DTP3,74.0
+Congo,COG,1992,DTP3,67.0
+Congo,COG,1993,DTP3,60.0
+Congo,COG,1994,DTP3,55.0
+Congo,COG,1995,DTP3,50.0
+Congo,COG,1996,DTP3,37.0
+Congo,COG,1997,DTP3,23.0
+Congo,COG,1998,DTP3,26.0
+Congo,COG,1999,DTP3,29.0
 Congo,COG,2000,DTP3,33.0
 Congo,COG,2001,DTP3,31.0
 Congo,COG,2002,DTP3,41.0
@@ -1524,6 +2439,21 @@ Congo,COG,2021,DTP3,77.0
 Congo,COG,2022,DTP3,78.0
 Congo,COG,2023,DTP3,78.0
 Congo,COG,2024,DTP3,78.0
+Congo,COG,1985,HepB3,
+Congo,COG,1986,HepB3,
+Congo,COG,1987,HepB3,
+Congo,COG,1988,HepB3,
+Congo,COG,1989,HepB3,
+Congo,COG,1990,HepB3,
+Congo,COG,1991,HepB3,
+Congo,COG,1992,HepB3,
+Congo,COG,1993,HepB3,
+Congo,COG,1994,HepB3,
+Congo,COG,1995,HepB3,
+Congo,COG,1996,HepB3,
+Congo,COG,1997,HepB3,
+Congo,COG,1998,HepB3,
+Congo,COG,1999,HepB3,
 Congo,COG,2000,HepB3,
 Congo,COG,2001,HepB3,
 Congo,COG,2002,HepB3,
@@ -1549,6 +2479,21 @@ Congo,COG,2021,HepB3,74.0
 Congo,COG,2022,HepB3,78.0
 Congo,COG,2023,HepB3,78.0
 Congo,COG,2024,HepB3,78.0
+Congo,COG,1985,MCV1,67.0
+Congo,COG,1986,MCV1,69.0
+Congo,COG,1987,MCV1,69.0
+Congo,COG,1988,MCV1,73.0
+Congo,COG,1989,MCV1,75.0
+Congo,COG,1990,MCV1,75.0
+Congo,COG,1991,MCV1,64.0
+Congo,COG,1992,MCV1,60.0
+Congo,COG,1993,MCV1,55.0
+Congo,COG,1994,MCV1,47.0
+Congo,COG,1995,MCV1,38.0
+Congo,COG,1996,MCV1,42.0
+Congo,COG,1997,MCV1,18.0
+Congo,COG,1998,MCV1,21.0
+Congo,COG,1999,MCV1,23.0
 Congo,COG,2000,MCV1,34.0
 Congo,COG,2001,MCV1,35.0
 Congo,COG,2002,MCV1,37.0
@@ -1574,6 +2519,21 @@ Congo,COG,2021,MCV1,68.0
 Congo,COG,2022,MCV1,65.0
 Congo,COG,2023,MCV1,65.0
 Congo,COG,2024,MCV1,72.0
+Congo,COG,1985,Polio3,73.0
+Congo,COG,1986,Polio3,71.0
+Congo,COG,1987,Polio3,71.0
+Congo,COG,1988,Polio3,71.0
+Congo,COG,1989,Polio3,79.0
+Congo,COG,1990,Polio3,80.0
+Congo,COG,1991,Polio3,74.0
+Congo,COG,1992,Polio3,67.0
+Congo,COG,1993,Polio3,60.0
+Congo,COG,1994,Polio3,55.0
+Congo,COG,1995,Polio3,50.0
+Congo,COG,1996,Polio3,47.0
+Congo,COG,1997,Polio3,21.0
+Congo,COG,1998,Polio3,25.0
+Congo,COG,1999,Polio3,29.0
 Congo,COG,2000,Polio3,31.0
 Congo,COG,2001,Polio3,32.0
 Congo,COG,2002,Polio3,41.0
@@ -1599,6 +2559,21 @@ Congo,COG,2021,Polio3,74.0
 Congo,COG,2022,Polio3,52.0
 Congo,COG,2023,Polio3,52.0
 Congo,COG,2024,Polio3,76.0
+Cote d'Ivoire,CIV,1985,DTP3,25.0
+Cote d'Ivoire,CIV,1986,DTP3,30.0
+Cote d'Ivoire,CIV,1987,DTP3,31.0
+Cote d'Ivoire,CIV,1988,DTP3,31.0
+Cote d'Ivoire,CIV,1989,DTP3,42.0
+Cote d'Ivoire,CIV,1990,DTP3,54.0
+Cote d'Ivoire,CIV,1991,DTP3,39.0
+Cote d'Ivoire,CIV,1992,DTP3,49.0
+Cote d'Ivoire,CIV,1993,DTP3,50.0
+Cote d'Ivoire,CIV,1994,DTP3,50.0
+Cote d'Ivoire,CIV,1995,DTP3,52.0
+Cote d'Ivoire,CIV,1996,DTP3,55.0
+Cote d'Ivoire,CIV,1997,DTP3,58.0
+Cote d'Ivoire,CIV,1998,DTP3,58.0
+Cote d'Ivoire,CIV,1999,DTP3,58.0
 Cote d'Ivoire,CIV,2000,DTP3,65.0
 Cote d'Ivoire,CIV,2001,DTP3,66.0
 Cote d'Ivoire,CIV,2002,DTP3,65.0
@@ -1624,6 +2599,21 @@ Cote d'Ivoire,CIV,2021,DTP3,73.0
 Cote d'Ivoire,CIV,2022,DTP3,73.0
 Cote d'Ivoire,CIV,2023,DTP3,79.0
 Cote d'Ivoire,CIV,2024,DTP3,77.0
+Cote d'Ivoire,CIV,1985,HepB3,
+Cote d'Ivoire,CIV,1986,HepB3,
+Cote d'Ivoire,CIV,1987,HepB3,
+Cote d'Ivoire,CIV,1988,HepB3,
+Cote d'Ivoire,CIV,1989,HepB3,
+Cote d'Ivoire,CIV,1990,HepB3,
+Cote d'Ivoire,CIV,1991,HepB3,
+Cote d'Ivoire,CIV,1992,HepB3,
+Cote d'Ivoire,CIV,1993,HepB3,
+Cote d'Ivoire,CIV,1994,HepB3,
+Cote d'Ivoire,CIV,1995,HepB3,
+Cote d'Ivoire,CIV,1996,HepB3,
+Cote d'Ivoire,CIV,1997,HepB3,
+Cote d'Ivoire,CIV,1998,HepB3,
+Cote d'Ivoire,CIV,1999,HepB3,
 Cote d'Ivoire,CIV,2000,HepB3,
 Cote d'Ivoire,CIV,2001,HepB3,10.0
 Cote d'Ivoire,CIV,2002,HepB3,48.0
@@ -1649,6 +2639,21 @@ Cote d'Ivoire,CIV,2021,HepB3,73.0
 Cote d'Ivoire,CIV,2022,HepB3,73.0
 Cote d'Ivoire,CIV,2023,HepB3,79.0
 Cote d'Ivoire,CIV,2024,HepB3,77.0
+Cote d'Ivoire,CIV,1985,MCV1,31.0
+Cote d'Ivoire,CIV,1986,MCV1,31.0
+Cote d'Ivoire,CIV,1987,MCV1,30.0
+Cote d'Ivoire,CIV,1988,MCV1,31.0
+Cote d'Ivoire,CIV,1989,MCV1,41.0
+Cote d'Ivoire,CIV,1990,MCV1,56.0
+Cote d'Ivoire,CIV,1991,MCV1,57.0
+Cote d'Ivoire,CIV,1992,MCV1,54.0
+Cote d'Ivoire,CIV,1993,MCV1,52.0
+Cote d'Ivoire,CIV,1994,MCV1,55.0
+Cote d'Ivoire,CIV,1995,MCV1,57.0
+Cote d'Ivoire,CIV,1996,MCV1,65.0
+Cote d'Ivoire,CIV,1997,MCV1,68.0
+Cote d'Ivoire,CIV,1998,MCV1,66.0
+Cote d'Ivoire,CIV,1999,MCV1,57.0
 Cote d'Ivoire,CIV,2000,MCV1,68.0
 Cote d'Ivoire,CIV,2001,MCV1,71.0
 Cote d'Ivoire,CIV,2002,MCV1,71.0
@@ -1674,6 +2679,21 @@ Cote d'Ivoire,CIV,2021,MCV1,65.0
 Cote d'Ivoire,CIV,2022,MCV1,62.0
 Cote d'Ivoire,CIV,2023,MCV1,70.0
 Cote d'Ivoire,CIV,2024,MCV1,75.0
+Cote d'Ivoire,CIV,1985,Polio3,16.0
+Cote d'Ivoire,CIV,1986,Polio3,22.0
+Cote d'Ivoire,CIV,1987,Polio3,27.0
+Cote d'Ivoire,CIV,1988,Polio3,32.0
+Cote d'Ivoire,CIV,1989,Polio3,42.0
+Cote d'Ivoire,CIV,1990,Polio3,56.0
+Cote d'Ivoire,CIV,1991,Polio3,51.0
+Cote d'Ivoire,CIV,1992,Polio3,49.0
+Cote d'Ivoire,CIV,1993,Polio3,51.0
+Cote d'Ivoire,CIV,1994,Polio3,49.0
+Cote d'Ivoire,CIV,1995,Polio3,46.0
+Cote d'Ivoire,CIV,1996,Polio3,54.0
+Cote d'Ivoire,CIV,1997,Polio3,59.0
+Cote d'Ivoire,CIV,1998,Polio3,59.0
+Cote d'Ivoire,CIV,1999,Polio3,58.0
 Cote d'Ivoire,CIV,2000,Polio3,66.0
 Cote d'Ivoire,CIV,2001,Polio3,70.0
 Cote d'Ivoire,CIV,2002,Polio3,70.0
@@ -1699,6 +2719,21 @@ Cote d'Ivoire,CIV,2021,Polio3,71.0
 Cote d'Ivoire,CIV,2022,Polio3,71.0
 Cote d'Ivoire,CIV,2023,Polio3,77.0
 Cote d'Ivoire,CIV,2024,Polio3,74.0
+Democratic Republic of Congo,COD,1985,DTP3,37.0
+Democratic Republic of Congo,COD,1986,DTP3,32.0
+Democratic Republic of Congo,COD,1987,DTP3,38.0
+Democratic Republic of Congo,COD,1988,DTP3,41.0
+Democratic Republic of Congo,COD,1989,DTP3,38.0
+Democratic Republic of Congo,COD,1990,DTP3,35.0
+Democratic Republic of Congo,COD,1991,DTP3,16.0
+Democratic Republic of Congo,COD,1992,DTP3,23.0
+Democratic Republic of Congo,COD,1993,DTP3,29.0
+Democratic Republic of Congo,COD,1994,DTP3,26.0
+Democratic Republic of Congo,COD,1995,DTP3,23.0
+Democratic Republic of Congo,COD,1996,DTP3,18.0
+Democratic Republic of Congo,COD,1997,DTP3,18.0
+Democratic Republic of Congo,COD,1998,DTP3,18.0
+Democratic Republic of Congo,COD,1999,DTP3,25.0
 Democratic Republic of Congo,COD,2000,DTP3,30.0
 Democratic Republic of Congo,COD,2001,DTP3,30.0
 Democratic Republic of Congo,COD,2002,DTP3,38.0
@@ -1724,6 +2759,21 @@ Democratic Republic of Congo,COD,2021,DTP3,65.0
 Democratic Republic of Congo,COD,2022,DTP3,65.0
 Democratic Republic of Congo,COD,2023,DTP3,60.0
 Democratic Republic of Congo,COD,2024,DTP3,65.0
+Democratic Republic of Congo,COD,1985,HepB3,
+Democratic Republic of Congo,COD,1986,HepB3,
+Democratic Republic of Congo,COD,1987,HepB3,
+Democratic Republic of Congo,COD,1988,HepB3,
+Democratic Republic of Congo,COD,1989,HepB3,
+Democratic Republic of Congo,COD,1990,HepB3,
+Democratic Republic of Congo,COD,1991,HepB3,
+Democratic Republic of Congo,COD,1992,HepB3,
+Democratic Republic of Congo,COD,1993,HepB3,
+Democratic Republic of Congo,COD,1994,HepB3,
+Democratic Republic of Congo,COD,1995,HepB3,
+Democratic Republic of Congo,COD,1996,HepB3,
+Democratic Republic of Congo,COD,1997,HepB3,
+Democratic Republic of Congo,COD,1998,HepB3,
+Democratic Republic of Congo,COD,1999,HepB3,
 Democratic Republic of Congo,COD,2000,HepB3,
 Democratic Republic of Congo,COD,2001,HepB3,
 Democratic Republic of Congo,COD,2002,HepB3,
@@ -1749,6 +2799,21 @@ Democratic Republic of Congo,COD,2021,HepB3,65.0
 Democratic Republic of Congo,COD,2022,HepB3,65.0
 Democratic Republic of Congo,COD,2023,HepB3,60.0
 Democratic Republic of Congo,COD,2024,HepB3,65.0
+Democratic Republic of Congo,COD,1985,MCV1,40.0
+Democratic Republic of Congo,COD,1986,MCV1,39.0
+Democratic Republic of Congo,COD,1987,MCV1,41.0
+Democratic Republic of Congo,COD,1988,MCV1,44.0
+Democratic Republic of Congo,COD,1989,MCV1,41.0
+Democratic Republic of Congo,COD,1990,MCV1,38.0
+Democratic Republic of Congo,COD,1991,MCV1,17.0
+Democratic Republic of Congo,COD,1992,MCV1,25.0
+Democratic Republic of Congo,COD,1993,MCV1,33.0
+Democratic Republic of Congo,COD,1994,MCV1,39.0
+Democratic Republic of Congo,COD,1995,MCV1,27.0
+Democratic Republic of Congo,COD,1996,MCV1,21.0
+Democratic Republic of Congo,COD,1997,MCV1,20.0
+Democratic Republic of Congo,COD,1998,MCV1,20.0
+Democratic Republic of Congo,COD,1999,MCV1,15.0
 Democratic Republic of Congo,COD,2000,MCV1,26.0
 Democratic Republic of Congo,COD,2001,MCV1,34.0
 Democratic Republic of Congo,COD,2002,MCV1,41.0
@@ -1774,6 +2839,21 @@ Democratic Republic of Congo,COD,2021,MCV1,55.0
 Democratic Republic of Congo,COD,2022,MCV1,56.0
 Democratic Republic of Congo,COD,2023,MCV1,52.0
 Democratic Republic of Congo,COD,2024,MCV1,55.0
+Democratic Republic of Congo,COD,1985,Polio3,34.0
+Democratic Republic of Congo,COD,1986,Polio3,39.0
+Democratic Republic of Congo,COD,1987,Polio3,38.0
+Democratic Republic of Congo,COD,1988,Polio3,41.0
+Democratic Republic of Congo,COD,1989,Polio3,38.0
+Democratic Republic of Congo,COD,1990,Polio3,34.0
+Democratic Republic of Congo,COD,1991,Polio3,16.0
+Democratic Republic of Congo,COD,1992,Polio3,31.0
+Democratic Republic of Congo,COD,1993,Polio3,29.0
+Democratic Republic of Congo,COD,1994,Polio3,27.0
+Democratic Republic of Congo,COD,1995,Polio3,24.0
+Democratic Republic of Congo,COD,1996,Polio3,18.0
+Democratic Republic of Congo,COD,1997,Polio3,18.0
+Democratic Republic of Congo,COD,1998,Polio3,18.0
+Democratic Republic of Congo,COD,1999,Polio3,21.0
 Democratic Republic of Congo,COD,2000,Polio3,30.0
 Democratic Republic of Congo,COD,2001,Polio3,29.0
 Democratic Republic of Congo,COD,2002,Polio3,39.0
@@ -1799,6 +2879,21 @@ Democratic Republic of Congo,COD,2021,Polio3,65.0
 Democratic Republic of Congo,COD,2022,Polio3,66.0
 Democratic Republic of Congo,COD,2023,Polio3,61.0
 Democratic Republic of Congo,COD,2024,Polio3,65.0
+Egypt,EGY,1985,DTP3,84.0
+Egypt,EGY,1986,DTP3,80.0
+Egypt,EGY,1987,DTP3,81.0
+Egypt,EGY,1988,DTP3,87.0
+Egypt,EGY,1989,DTP3,90.0
+Egypt,EGY,1990,DTP3,87.0
+Egypt,EGY,1991,DTP3,76.0
+Egypt,EGY,1992,DTP3,79.0
+Egypt,EGY,1993,DTP3,81.0
+Egypt,EGY,1994,DTP3,83.0
+Egypt,EGY,1995,DTP3,88.0
+Egypt,EGY,1996,DTP3,90.0
+Egypt,EGY,1997,DTP3,88.0
+Egypt,EGY,1998,DTP3,92.0
+Egypt,EGY,1999,DTP3,97.0
 Egypt,EGY,2000,DTP3,98.0
 Egypt,EGY,2001,DTP3,99.0
 Egypt,EGY,2002,DTP3,97.0
@@ -1824,6 +2919,21 @@ Egypt,EGY,2021,DTP3,96.0
 Egypt,EGY,2022,DTP3,97.0
 Egypt,EGY,2023,DTP3,96.0
 Egypt,EGY,2024,DTP3,97.0
+Egypt,EGY,1985,HepB3,
+Egypt,EGY,1986,HepB3,
+Egypt,EGY,1987,HepB3,
+Egypt,EGY,1988,HepB3,
+Egypt,EGY,1989,HepB3,
+Egypt,EGY,1990,HepB3,
+Egypt,EGY,1991,HepB3,
+Egypt,EGY,1992,HepB3,
+Egypt,EGY,1993,HepB3,
+Egypt,EGY,1994,HepB3,57.0
+Egypt,EGY,1995,HepB3,74.0
+Egypt,EGY,1996,HepB3,77.0
+Egypt,EGY,1997,HepB3,81.0
+Egypt,EGY,1998,HepB3,88.0
+Egypt,EGY,1999,HepB3,97.0
 Egypt,EGY,2000,HepB3,98.0
 Egypt,EGY,2001,HepB3,99.0
 Egypt,EGY,2002,HepB3,97.0
@@ -1849,6 +2959,21 @@ Egypt,EGY,2021,HepB3,96.0
 Egypt,EGY,2022,HepB3,97.0
 Egypt,EGY,2023,HepB3,96.0
 Egypt,EGY,2024,HepB3,97.0
+Egypt,EGY,1985,MCV1,74.0
+Egypt,EGY,1986,MCV1,78.0
+Egypt,EGY,1987,MCV1,76.0
+Egypt,EGY,1988,MCV1,85.0
+Egypt,EGY,1989,MCV1,86.0
+Egypt,EGY,1990,MCV1,86.0
+Egypt,EGY,1991,MCV1,89.0
+Egypt,EGY,1992,MCV1,89.0
+Egypt,EGY,1993,MCV1,89.0
+Egypt,EGY,1994,MCV1,89.0
+Egypt,EGY,1995,MCV1,89.0
+Egypt,EGY,1996,MCV1,92.0
+Egypt,EGY,1997,MCV1,92.0
+Egypt,EGY,1998,MCV1,98.0
+Egypt,EGY,1999,MCV1,96.0
 Egypt,EGY,2000,MCV1,98.0
 Egypt,EGY,2001,MCV1,97.0
 Egypt,EGY,2002,MCV1,97.0
@@ -1874,6 +2999,21 @@ Egypt,EGY,2021,MCV1,96.0
 Egypt,EGY,2022,MCV1,96.0
 Egypt,EGY,2023,MCV1,96.0
 Egypt,EGY,2024,MCV1,97.0
+Egypt,EGY,1985,Polio3,84.0
+Egypt,EGY,1986,Polio3,89.0
+Egypt,EGY,1987,Polio3,82.0
+Egypt,EGY,1988,Polio3,89.0
+Egypt,EGY,1989,Polio3,90.0
+Egypt,EGY,1990,Polio3,87.0
+Egypt,EGY,1991,Polio3,86.0
+Egypt,EGY,1992,Polio3,89.0
+Egypt,EGY,1993,Polio3,89.0
+Egypt,EGY,1994,Polio3,91.0
+Egypt,EGY,1995,Polio3,90.0
+Egypt,EGY,1996,Polio3,91.0
+Egypt,EGY,1997,Polio3,94.0
+Egypt,EGY,1998,Polio3,95.0
+Egypt,EGY,1999,Polio3,97.0
 Egypt,EGY,2000,Polio3,98.0
 Egypt,EGY,2001,Polio3,99.0
 Egypt,EGY,2002,Polio3,97.0
@@ -1899,6 +3039,21 @@ Egypt,EGY,2021,Polio3,96.0
 Egypt,EGY,2022,Polio3,97.0
 Egypt,EGY,2023,Polio3,96.0
 Egypt,EGY,2024,Polio3,97.0
+Eritrea,ERI,1985,DTP3,
+Eritrea,ERI,1986,DTP3,
+Eritrea,ERI,1987,DTP3,
+Eritrea,ERI,1988,DTP3,
+Eritrea,ERI,1989,DTP3,
+Eritrea,ERI,1990,DTP3,
+Eritrea,ERI,1991,DTP3,
+Eritrea,ERI,1992,DTP3,
+Eritrea,ERI,1993,DTP3,32.0
+Eritrea,ERI,1994,DTP3,49.0
+Eritrea,ERI,1995,DTP3,58.0
+Eritrea,ERI,1996,DTP3,66.0
+Eritrea,ERI,1997,DTP3,75.0
+Eritrea,ERI,1998,DTP3,86.0
+Eritrea,ERI,1999,DTP3,93.0
 Eritrea,ERI,2000,DTP3,81.0
 Eritrea,ERI,2001,DTP3,86.0
 Eritrea,ERI,2002,DTP3,90.0
@@ -1924,6 +3079,21 @@ Eritrea,ERI,2021,DTP3,95.0
 Eritrea,ERI,2022,DTP3,95.0
 Eritrea,ERI,2023,DTP3,95.0
 Eritrea,ERI,2024,DTP3,95.0
+Eritrea,ERI,1985,HepB3,
+Eritrea,ERI,1986,HepB3,
+Eritrea,ERI,1987,HepB3,
+Eritrea,ERI,1988,HepB3,
+Eritrea,ERI,1989,HepB3,
+Eritrea,ERI,1990,HepB3,
+Eritrea,ERI,1991,HepB3,
+Eritrea,ERI,1992,HepB3,
+Eritrea,ERI,1993,HepB3,
+Eritrea,ERI,1994,HepB3,
+Eritrea,ERI,1995,HepB3,
+Eritrea,ERI,1996,HepB3,
+Eritrea,ERI,1997,HepB3,
+Eritrea,ERI,1998,HepB3,
+Eritrea,ERI,1999,HepB3,
 Eritrea,ERI,2000,HepB3,
 Eritrea,ERI,2001,HepB3,
 Eritrea,ERI,2002,HepB3,86.0
@@ -1949,6 +3119,21 @@ Eritrea,ERI,2021,HepB3,95.0
 Eritrea,ERI,2022,HepB3,95.0
 Eritrea,ERI,2023,HepB3,95.0
 Eritrea,ERI,2024,HepB3,95.0
+Eritrea,ERI,1985,MCV1,
+Eritrea,ERI,1986,MCV1,
+Eritrea,ERI,1987,MCV1,
+Eritrea,ERI,1988,MCV1,
+Eritrea,ERI,1989,MCV1,
+Eritrea,ERI,1990,MCV1,
+Eritrea,ERI,1991,MCV1,
+Eritrea,ERI,1992,MCV1,
+Eritrea,ERI,1993,MCV1,34.0
+Eritrea,ERI,1994,MCV1,51.0
+Eritrea,ERI,1995,MCV1,58.0
+Eritrea,ERI,1996,MCV1,66.0
+Eritrea,ERI,1997,MCV1,73.0
+Eritrea,ERI,1998,MCV1,79.0
+Eritrea,ERI,1999,MCV1,88.0
 Eritrea,ERI,2000,MCV1,76.0
 Eritrea,ERI,2001,MCV1,84.0
 Eritrea,ERI,2002,MCV1,83.0
@@ -1974,6 +3159,21 @@ Eritrea,ERI,2021,MCV1,93.0
 Eritrea,ERI,2022,MCV1,93.0
 Eritrea,ERI,2023,MCV1,93.0
 Eritrea,ERI,2024,MCV1,93.0
+Eritrea,ERI,1985,Polio3,
+Eritrea,ERI,1986,Polio3,
+Eritrea,ERI,1987,Polio3,
+Eritrea,ERI,1988,Polio3,
+Eritrea,ERI,1989,Polio3,
+Eritrea,ERI,1990,Polio3,
+Eritrea,ERI,1991,Polio3,
+Eritrea,ERI,1992,Polio3,
+Eritrea,ERI,1993,Polio3,32.0
+Eritrea,ERI,1994,Polio3,49.0
+Eritrea,ERI,1995,Polio3,58.0
+Eritrea,ERI,1996,Polio3,66.0
+Eritrea,ERI,1997,Polio3,75.0
+Eritrea,ERI,1998,Polio3,86.0
+Eritrea,ERI,1999,Polio3,93.0
 Eritrea,ERI,2000,Polio3,83.0
 Eritrea,ERI,2001,Polio3,90.0
 Eritrea,ERI,2002,Polio3,93.0
@@ -1999,6 +3199,21 @@ Eritrea,ERI,2021,Polio3,95.0
 Eritrea,ERI,2022,Polio3,95.0
 Eritrea,ERI,2023,Polio3,95.0
 Eritrea,ERI,2024,Polio3,95.0
+Ethiopia,ETH,1985,DTP3,6.0
+Ethiopia,ETH,1986,DTP3,7.0
+Ethiopia,ETH,1987,DTP3,16.0
+Ethiopia,ETH,1988,DTP3,16.0
+Ethiopia,ETH,1989,DTP3,26.0
+Ethiopia,ETH,1990,DTP3,49.0
+Ethiopia,ETH,1991,DTP3,21.0
+Ethiopia,ETH,1992,DTP3,13.0
+Ethiopia,ETH,1993,DTP3,28.0
+Ethiopia,ETH,1994,DTP3,57.0
+Ethiopia,ETH,1995,DTP3,57.0
+Ethiopia,ETH,1996,DTP3,55.0
+Ethiopia,ETH,1997,DTP3,55.0
+Ethiopia,ETH,1998,DTP3,42.0
+Ethiopia,ETH,1999,DTP3,28.0
 Ethiopia,ETH,2000,DTP3,30.0
 Ethiopia,ETH,2001,DTP3,32.0
 Ethiopia,ETH,2002,DTP3,35.0
@@ -2024,6 +3239,21 @@ Ethiopia,ETH,2021,DTP3,63.0
 Ethiopia,ETH,2022,DTP3,63.0
 Ethiopia,ETH,2023,DTP3,70.0
 Ethiopia,ETH,2024,DTP3,73.0
+Ethiopia,ETH,1985,HepB3,
+Ethiopia,ETH,1986,HepB3,
+Ethiopia,ETH,1987,HepB3,
+Ethiopia,ETH,1988,HepB3,
+Ethiopia,ETH,1989,HepB3,
+Ethiopia,ETH,1990,HepB3,
+Ethiopia,ETH,1991,HepB3,
+Ethiopia,ETH,1992,HepB3,
+Ethiopia,ETH,1993,HepB3,
+Ethiopia,ETH,1994,HepB3,
+Ethiopia,ETH,1995,HepB3,
+Ethiopia,ETH,1996,HepB3,
+Ethiopia,ETH,1997,HepB3,
+Ethiopia,ETH,1998,HepB3,
+Ethiopia,ETH,1999,HepB3,
 Ethiopia,ETH,2000,HepB3,
 Ethiopia,ETH,2001,HepB3,
 Ethiopia,ETH,2002,HepB3,
@@ -2049,6 +3279,21 @@ Ethiopia,ETH,2021,HepB3,63.0
 Ethiopia,ETH,2022,HepB3,63.0
 Ethiopia,ETH,2023,HepB3,70.0
 Ethiopia,ETH,2024,HepB3,73.0
+Ethiopia,ETH,1985,MCV1,12.0
+Ethiopia,ETH,1986,MCV1,10.0
+Ethiopia,ETH,1987,MCV1,13.0
+Ethiopia,ETH,1988,MCV1,15.0
+Ethiopia,ETH,1989,MCV1,23.0
+Ethiopia,ETH,1990,MCV1,38.0
+Ethiopia,ETH,1991,MCV1,17.0
+Ethiopia,ETH,1992,MCV1,12.0
+Ethiopia,ETH,1993,MCV1,22.0
+Ethiopia,ETH,1994,MCV1,54.0
+Ethiopia,ETH,1995,MCV1,38.0
+Ethiopia,ETH,1996,MCV1,54.0
+Ethiopia,ETH,1997,MCV1,51.0
+Ethiopia,ETH,1998,MCV1,39.0
+Ethiopia,ETH,1999,MCV1,27.0
 Ethiopia,ETH,2000,MCV1,28.0
 Ethiopia,ETH,2001,MCV1,29.0
 Ethiopia,ETH,2002,MCV1,32.0
@@ -2074,6 +3319,21 @@ Ethiopia,ETH,2021,MCV1,60.0
 Ethiopia,ETH,2022,MCV1,62.0
 Ethiopia,ETH,2023,MCV1,68.0
 Ethiopia,ETH,2024,MCV1,72.0
+Ethiopia,ETH,1985,Polio3,6.0
+Ethiopia,ETH,1986,Polio3,7.0
+Ethiopia,ETH,1987,Polio3,16.0
+Ethiopia,ETH,1988,Polio3,16.0
+Ethiopia,ETH,1989,Polio3,26.0
+Ethiopia,ETH,1990,Polio3,49.0
+Ethiopia,ETH,1991,Polio3,21.0
+Ethiopia,ETH,1992,Polio3,13.0
+Ethiopia,ETH,1993,Polio3,28.0
+Ethiopia,ETH,1994,Polio3,57.0
+Ethiopia,ETH,1995,Polio3,65.0
+Ethiopia,ETH,1996,Polio3,73.0
+Ethiopia,ETH,1997,Polio3,83.0
+Ethiopia,ETH,1998,Polio3,64.0
+Ethiopia,ETH,1999,Polio3,46.0
 Ethiopia,ETH,2000,Polio3,48.0
 Ethiopia,ETH,2001,Polio3,51.0
 Ethiopia,ETH,2002,Polio3,53.0
@@ -2099,6 +3359,21 @@ Ethiopia,ETH,2021,Polio3,63.0
 Ethiopia,ETH,2022,Polio3,59.0
 Ethiopia,ETH,2023,Polio3,69.0
 Ethiopia,ETH,2024,Polio3,73.0
+Europe,OWID_EUR,1985,DTP3,43.012753
+Europe,OWID_EUR,1986,DTP3,45.895065
+Europe,OWID_EUR,1987,DTP3,44.483658
+Europe,OWID_EUR,1988,DTP3,44.292477
+Europe,OWID_EUR,1989,DTP3,45.82926
+Europe,OWID_EUR,1990,DTP3,52.011955
+Europe,OWID_EUR,1991,DTP3,54.914513
+Europe,OWID_EUR,1992,DTP3,83.80669
+Europe,OWID_EUR,1993,DTP3,85.174706
+Europe,OWID_EUR,1994,DTP3,90.22687
+Europe,OWID_EUR,1995,DTP3,89.27698
+Europe,OWID_EUR,1996,DTP3,91.217
+Europe,OWID_EUR,1997,DTP3,92.25377
+Europe,OWID_EUR,1998,DTP3,92.7365
+Europe,OWID_EUR,1999,DTP3,94.70049
 Europe,OWID_EUR,2000,DTP3,93.65355
 Europe,OWID_EUR,2001,DTP3,94.59116
 Europe,OWID_EUR,2002,DTP3,94.93218
@@ -2124,6 +3399,21 @@ Europe,OWID_EUR,2021,DTP3,93.228325
 Europe,OWID_EUR,2022,DTP3,92.673325
 Europe,OWID_EUR,2023,DTP3,92.87597
 Europe,OWID_EUR,2024,DTP3,
+Europe,OWID_EUR,1985,HepB3,
+Europe,OWID_EUR,1986,HepB3,
+Europe,OWID_EUR,1987,HepB3,
+Europe,OWID_EUR,1988,HepB3,
+Europe,OWID_EUR,1989,HepB3,
+Europe,OWID_EUR,1990,HepB3,
+Europe,OWID_EUR,1991,HepB3,5.7786894
+Europe,OWID_EUR,1992,HepB3,6.603186
+Europe,OWID_EUR,1993,HepB3,8.666495
+Europe,OWID_EUR,1994,HepB3,11.816314
+Europe,OWID_EUR,1995,HepB3,14.590416
+Europe,OWID_EUR,1996,HepB3,25.689693
+Europe,OWID_EUR,1997,HepB3,30.49131
+Europe,OWID_EUR,1998,HepB3,36.008797
+Europe,OWID_EUR,1999,HepB3,36.593487
 Europe,OWID_EUR,2000,HepB3,39.311478
 Europe,OWID_EUR,2001,HepB3,48.30869
 Europe,OWID_EUR,2002,HepB3,59.161324
@@ -2149,6 +3439,21 @@ Europe,OWID_EUR,2021,HepB3,89.08935
 Europe,OWID_EUR,2022,HepB3,88.14549
 Europe,OWID_EUR,2023,HepB3,88.64505
 Europe,OWID_EUR,2024,HepB3,
+Europe,OWID_EUR,1985,MCV1,35.113594
+Europe,OWID_EUR,1986,MCV1,37.919262
+Europe,OWID_EUR,1987,MCV1,40.15254
+Europe,OWID_EUR,1988,MCV1,40.489323
+Europe,OWID_EUR,1989,MCV1,42.654606
+Europe,OWID_EUR,1990,MCV1,47.64567
+Europe,OWID_EUR,1991,MCV1,49.12358
+Europe,OWID_EUR,1992,MCV1,79.8209
+Europe,OWID_EUR,1993,MCV1,84.20063
+Europe,OWID_EUR,1994,MCV1,84.47416
+Europe,OWID_EUR,1995,MCV1,86.08088
+Europe,OWID_EUR,1996,MCV1,87.3319
+Europe,OWID_EUR,1997,MCV1,88.42396
+Europe,OWID_EUR,1998,MCV1,88.1178
+Europe,OWID_EUR,1999,MCV1,89.915085
 Europe,OWID_EUR,2000,MCV1,90.37543
 Europe,OWID_EUR,2001,MCV1,90.93833
 Europe,OWID_EUR,2002,MCV1,91.739044
@@ -2174,6 +3479,21 @@ Europe,OWID_EUR,2021,MCV1,93.608864
 Europe,OWID_EUR,2022,MCV1,92.62937
 Europe,OWID_EUR,2023,MCV1,93.03078
 Europe,OWID_EUR,2024,MCV1,
+Europe,OWID_EUR,1985,Polio3,51.136093
+Europe,OWID_EUR,1986,Polio3,52.811993
+Europe,OWID_EUR,1987,Polio3,50.832256
+Europe,OWID_EUR,1988,Polio3,50.547077
+Europe,OWID_EUR,1989,Polio3,50.796394
+Europe,OWID_EUR,1990,Polio3,54.449226
+Europe,OWID_EUR,1991,Polio3,55.24093
+Europe,OWID_EUR,1992,Polio3,83.29884
+Europe,OWID_EUR,1993,Polio3,89.71993
+Europe,OWID_EUR,1994,Polio3,89.23385
+Europe,OWID_EUR,1995,Polio3,91.31405
+Europe,OWID_EUR,1996,Polio3,93.58396
+Europe,OWID_EUR,1997,Polio3,94.148766
+Europe,OWID_EUR,1998,Polio3,94.236725
+Europe,OWID_EUR,1999,Polio3,95.06233
 Europe,OWID_EUR,2000,Polio3,95.05624
 Europe,OWID_EUR,2001,Polio3,95.339584
 Europe,OWID_EUR,2002,Polio3,95.529564
@@ -2199,6 +3519,21 @@ Europe,OWID_EUR,2021,Polio3,92.698975
 Europe,OWID_EUR,2022,Polio3,91.9435
 Europe,OWID_EUR,2023,Polio3,92.46777
 Europe,OWID_EUR,2024,Polio3,
+Gabon,GAB,1985,DTP3,48.0
+Gabon,GAB,1986,DTP3,59.0
+Gabon,GAB,1987,DTP3,65.0
+Gabon,GAB,1988,DTP3,72.0
+Gabon,GAB,1989,DTP3,78.0
+Gabon,GAB,1990,DTP3,78.0
+Gabon,GAB,1991,DTP3,72.0
+Gabon,GAB,1992,DTP3,66.0
+Gabon,GAB,1993,DTP3,67.0
+Gabon,GAB,1994,DTP3,69.0
+Gabon,GAB,1995,DTP3,70.0
+Gabon,GAB,1996,DTP3,62.0
+Gabon,GAB,1997,DTP3,54.0
+Gabon,GAB,1998,DTP3,50.0
+Gabon,GAB,1999,DTP3,45.0
 Gabon,GAB,2000,DTP3,45.0
 Gabon,GAB,2001,DTP3,45.0
 Gabon,GAB,2002,DTP3,45.0
@@ -2224,6 +3559,21 @@ Gabon,GAB,2021,DTP3,75.0
 Gabon,GAB,2022,DTP3,60.0
 Gabon,GAB,2023,DTP3,70.0
 Gabon,GAB,2024,DTP3,61.0
+Gabon,GAB,1985,HepB3,
+Gabon,GAB,1986,HepB3,
+Gabon,GAB,1987,HepB3,
+Gabon,GAB,1988,HepB3,
+Gabon,GAB,1989,HepB3,
+Gabon,GAB,1990,HepB3,
+Gabon,GAB,1991,HepB3,
+Gabon,GAB,1992,HepB3,
+Gabon,GAB,1993,HepB3,
+Gabon,GAB,1994,HepB3,
+Gabon,GAB,1995,HepB3,
+Gabon,GAB,1996,HepB3,
+Gabon,GAB,1997,HepB3,
+Gabon,GAB,1998,HepB3,
+Gabon,GAB,1999,HepB3,
 Gabon,GAB,2000,HepB3,
 Gabon,GAB,2001,HepB3,
 Gabon,GAB,2002,HepB3,
@@ -2249,6 +3599,21 @@ Gabon,GAB,2021,HepB3,75.0
 Gabon,GAB,2022,HepB3,60.0
 Gabon,GAB,2023,HepB3,70.0
 Gabon,GAB,2024,HepB3,61.0
+Gabon,GAB,1985,MCV1,58.0
+Gabon,GAB,1986,MCV1,66.0
+Gabon,GAB,1987,MCV1,67.0
+Gabon,GAB,1988,MCV1,68.0
+Gabon,GAB,1989,MCV1,76.0
+Gabon,GAB,1990,MCV1,76.0
+Gabon,GAB,1991,MCV1,71.0
+Gabon,GAB,1992,MCV1,66.0
+Gabon,GAB,1993,MCV1,63.0
+Gabon,GAB,1994,MCV1,60.0
+Gabon,GAB,1995,MCV1,57.0
+Gabon,GAB,1996,MCV1,57.0
+Gabon,GAB,1997,MCV1,56.0
+Gabon,GAB,1998,MCV1,56.0
+Gabon,GAB,1999,MCV1,55.0
 Gabon,GAB,2000,MCV1,55.0
 Gabon,GAB,2001,MCV1,55.0
 Gabon,GAB,2002,MCV1,55.0
@@ -2274,6 +3639,21 @@ Gabon,GAB,2021,MCV1,64.0
 Gabon,GAB,2022,MCV1,52.0
 Gabon,GAB,2023,MCV1,66.0
 Gabon,GAB,2024,MCV1,57.0
+Gabon,GAB,1985,Polio3,48.0
+Gabon,GAB,1986,Polio3,59.0
+Gabon,GAB,1987,Polio3,65.0
+Gabon,GAB,1988,Polio3,72.0
+Gabon,GAB,1989,Polio3,78.0
+Gabon,GAB,1990,Polio3,78.0
+Gabon,GAB,1991,Polio3,72.0
+Gabon,GAB,1992,Polio3,66.0
+Gabon,GAB,1993,Polio3,67.0
+Gabon,GAB,1994,Polio3,69.0
+Gabon,GAB,1995,Polio3,70.0
+Gabon,GAB,1996,Polio3,60.0
+Gabon,GAB,1997,Polio3,50.0
+Gabon,GAB,1998,Polio3,47.0
+Gabon,GAB,1999,Polio3,44.0
 Gabon,GAB,2000,Polio3,44.0
 Gabon,GAB,2001,Polio3,44.0
 Gabon,GAB,2002,Polio3,44.0
@@ -2299,6 +3679,21 @@ Gabon,GAB,2021,Polio3,69.0
 Gabon,GAB,2022,Polio3,59.0
 Gabon,GAB,2023,Polio3,69.0
 Gabon,GAB,2024,Polio3,60.0
+Ghana,GHA,1985,DTP3,22.0
+Ghana,GHA,1986,DTP3,35.0
+Ghana,GHA,1987,DTP3,42.0
+Ghana,GHA,1988,DTP3,47.0
+Ghana,GHA,1989,DTP3,51.0
+Ghana,GHA,1990,DTP3,58.0
+Ghana,GHA,1991,DTP3,60.0
+Ghana,GHA,1992,DTP3,62.0
+Ghana,GHA,1993,DTP3,66.0
+Ghana,GHA,1994,DTP3,70.0
+Ghana,GHA,1995,DTP3,70.0
+Ghana,GHA,1996,DTP3,71.0
+Ghana,GHA,1997,DTP3,71.0
+Ghana,GHA,1998,DTP3,76.0
+Ghana,GHA,1999,DTP3,79.0
 Ghana,GHA,2000,DTP3,88.0
 Ghana,GHA,2001,DTP3,79.0
 Ghana,GHA,2002,DTP3,78.0
@@ -2324,6 +3719,21 @@ Ghana,GHA,2021,DTP3,98.0
 Ghana,GHA,2022,DTP3,99.0
 Ghana,GHA,2023,DTP3,95.0
 Ghana,GHA,2024,DTP3,95.0
+Ghana,GHA,1985,HepB3,
+Ghana,GHA,1986,HepB3,
+Ghana,GHA,1987,HepB3,
+Ghana,GHA,1988,HepB3,
+Ghana,GHA,1989,HepB3,
+Ghana,GHA,1990,HepB3,
+Ghana,GHA,1991,HepB3,
+Ghana,GHA,1992,HepB3,
+Ghana,GHA,1993,HepB3,
+Ghana,GHA,1994,HepB3,
+Ghana,GHA,1995,HepB3,
+Ghana,GHA,1996,HepB3,
+Ghana,GHA,1997,HepB3,
+Ghana,GHA,1998,HepB3,
+Ghana,GHA,1999,HepB3,
 Ghana,GHA,2000,HepB3,
 Ghana,GHA,2001,HepB3,
 Ghana,GHA,2002,HepB3,80.0
@@ -2349,6 +3759,21 @@ Ghana,GHA,2021,HepB3,98.0
 Ghana,GHA,2022,HepB3,99.0
 Ghana,GHA,2023,HepB3,95.0
 Ghana,GHA,2024,HepB3,95.0
+Ghana,GHA,1985,MCV1,21.0
+Ghana,GHA,1986,MCV1,31.0
+Ghana,GHA,1987,MCV1,51.0
+Ghana,GHA,1988,MCV1,59.0
+Ghana,GHA,1989,MCV1,65.0
+Ghana,GHA,1990,MCV1,61.0
+Ghana,GHA,1991,MCV1,63.0
+Ghana,GHA,1992,MCV1,64.0
+Ghana,GHA,1993,MCV1,66.0
+Ghana,GHA,1994,MCV1,68.0
+Ghana,GHA,1995,MCV1,70.0
+Ghana,GHA,1996,MCV1,71.0
+Ghana,GHA,1997,MCV1,73.0
+Ghana,GHA,1998,MCV1,78.0
+Ghana,GHA,1999,MCV1,81.0
 Ghana,GHA,2000,MCV1,90.0
 Ghana,GHA,2001,MCV1,78.0
 Ghana,GHA,2002,MCV1,78.0
@@ -2374,6 +3799,21 @@ Ghana,GHA,2021,MCV1,94.0
 Ghana,GHA,2022,MCV1,95.0
 Ghana,GHA,2023,MCV1,90.0
 Ghana,GHA,2024,MCV1,90.0
+Ghana,GHA,1985,Polio3,18.0
+Ghana,GHA,1986,Polio3,29.0
+Ghana,GHA,1987,Polio3,40.0
+Ghana,GHA,1988,Polio3,45.0
+Ghana,GHA,1989,Polio3,50.0
+Ghana,GHA,1990,Polio3,57.0
+Ghana,GHA,1991,Polio3,60.0
+Ghana,GHA,1992,Polio3,62.0
+Ghana,GHA,1993,Polio3,67.0
+Ghana,GHA,1994,Polio3,71.0
+Ghana,GHA,1995,Polio3,71.0
+Ghana,GHA,1996,Polio3,72.0
+Ghana,GHA,1997,Polio3,72.0
+Ghana,GHA,1998,Polio3,78.0
+Ghana,GHA,1999,Polio3,78.0
 Ghana,GHA,2000,Polio3,88.0
 Ghana,GHA,2001,Polio3,81.0
 Ghana,GHA,2002,Polio3,80.0
@@ -2399,6 +3839,21 @@ Ghana,GHA,2021,Polio3,98.0
 Ghana,GHA,2022,Polio3,90.0
 Ghana,GHA,2023,Polio3,91.0
 Ghana,GHA,2024,Polio3,91.0
+Guinea,GIN,1985,DTP3,15.0
+Guinea,GIN,1986,DTP3,15.0
+Guinea,GIN,1987,DTP3,15.0
+Guinea,GIN,1988,DTP3,16.0
+Guinea,GIN,1989,DTP3,17.0
+Guinea,GIN,1990,DTP3,17.0
+Guinea,GIN,1991,DTP3,36.0
+Guinea,GIN,1992,DTP3,52.0
+Guinea,GIN,1993,DTP3,53.0
+Guinea,GIN,1994,DTP3,53.0
+Guinea,GIN,1995,DTP3,54.0
+Guinea,GIN,1996,DTP3,48.0
+Guinea,GIN,1997,DTP3,47.0
+Guinea,GIN,1998,DTP3,56.0
+Guinea,GIN,1999,DTP3,43.0
 Guinea,GIN,2000,DTP3,46.0
 Guinea,GIN,2001,DTP3,50.0
 Guinea,GIN,2002,DTP3,53.0
@@ -2424,6 +3879,21 @@ Guinea,GIN,2021,DTP3,56.0
 Guinea,GIN,2022,DTP3,58.0
 Guinea,GIN,2023,DTP3,60.0
 Guinea,GIN,2024,DTP3,63.0
+Guinea,GIN,1985,HepB3,
+Guinea,GIN,1986,HepB3,
+Guinea,GIN,1987,HepB3,
+Guinea,GIN,1988,HepB3,
+Guinea,GIN,1989,HepB3,
+Guinea,GIN,1990,HepB3,
+Guinea,GIN,1991,HepB3,
+Guinea,GIN,1992,HepB3,
+Guinea,GIN,1993,HepB3,
+Guinea,GIN,1994,HepB3,
+Guinea,GIN,1995,HepB3,
+Guinea,GIN,1996,HepB3,
+Guinea,GIN,1997,HepB3,
+Guinea,GIN,1998,HepB3,
+Guinea,GIN,1999,HepB3,
 Guinea,GIN,2000,HepB3,
 Guinea,GIN,2001,HepB3,
 Guinea,GIN,2002,HepB3,
@@ -2449,6 +3919,21 @@ Guinea,GIN,2021,HepB3,56.0
 Guinea,GIN,2022,HepB3,58.0
 Guinea,GIN,2023,HepB3,60.0
 Guinea,GIN,2024,HepB3,63.0
+Guinea,GIN,1985,MCV1,29.0
+Guinea,GIN,1986,MCV1,28.0
+Guinea,GIN,1987,MCV1,28.0
+Guinea,GIN,1988,MCV1,27.0
+Guinea,GIN,1989,MCV1,27.0
+Guinea,GIN,1990,MCV1,35.0
+Guinea,GIN,1991,MCV1,42.0
+Guinea,GIN,1992,MCV1,52.0
+Guinea,GIN,1993,MCV1,55.0
+Guinea,GIN,1994,MCV1,58.0
+Guinea,GIN,1995,MCV1,61.0
+Guinea,GIN,1996,MCV1,61.0
+Guinea,GIN,1997,MCV1,56.0
+Guinea,GIN,1998,MCV1,52.0
+Guinea,GIN,1999,MCV1,40.0
 Guinea,GIN,2000,MCV1,42.0
 Guinea,GIN,2001,MCV1,44.0
 Guinea,GIN,2002,MCV1,46.0
@@ -2474,6 +3959,21 @@ Guinea,GIN,2021,MCV1,51.0
 Guinea,GIN,2022,MCV1,51.0
 Guinea,GIN,2023,MCV1,52.0
 Guinea,GIN,2024,MCV1,60.0
+Guinea,GIN,1985,Polio3,16.0
+Guinea,GIN,1986,Polio3,16.0
+Guinea,GIN,1987,Polio3,16.0
+Guinea,GIN,1988,Polio3,16.0
+Guinea,GIN,1989,Polio3,16.0
+Guinea,GIN,1990,Polio3,18.0
+Guinea,GIN,1991,Polio3,37.0
+Guinea,GIN,1992,Polio3,52.0
+Guinea,GIN,1993,Polio3,53.0
+Guinea,GIN,1994,Polio3,53.0
+Guinea,GIN,1995,Polio3,54.0
+Guinea,GIN,1996,Polio3,48.0
+Guinea,GIN,1997,Polio3,46.0
+Guinea,GIN,1998,Polio3,59.0
+Guinea,GIN,1999,Polio3,43.0
 Guinea,GIN,2000,Polio3,47.0
 Guinea,GIN,2001,Polio3,52.0
 Guinea,GIN,2002,Polio3,56.0
@@ -2499,6 +3999,21 @@ Guinea,GIN,2021,Polio3,53.0
 Guinea,GIN,2022,Polio3,54.0
 Guinea,GIN,2023,Polio3,55.0
 Guinea,GIN,2024,Polio3,55.0
+India,IND,1985,DTP3,18.0
+India,IND,1986,DTP3,20.0
+India,IND,1987,DTP3,30.0
+India,IND,1988,DTP3,40.0
+India,IND,1989,DTP3,50.0
+India,IND,1990,DTP3,70.0
+India,IND,1991,DTP3,57.0
+India,IND,1992,DTP3,56.0
+India,IND,1993,DTP3,61.0
+India,IND,1994,DTP3,67.0
+India,IND,1995,DTP3,71.0
+India,IND,1996,DTP3,66.0
+India,IND,1997,DTP3,62.0
+India,IND,1998,DTP3,61.0
+India,IND,1999,DTP3,59.0
 India,IND,2000,DTP3,58.0
 India,IND,2001,DTP3,59.0
 India,IND,2002,DTP3,59.0
@@ -2524,6 +4039,21 @@ India,IND,2021,DTP3,85.0
 India,IND,2022,DTP3,93.0
 India,IND,2023,DTP3,91.0
 India,IND,2024,DTP3,94.0
+India,IND,1985,HepB3,
+India,IND,1986,HepB3,
+India,IND,1987,HepB3,
+India,IND,1988,HepB3,
+India,IND,1989,HepB3,
+India,IND,1990,HepB3,
+India,IND,1991,HepB3,
+India,IND,1992,HepB3,
+India,IND,1993,HepB3,
+India,IND,1994,HepB3,
+India,IND,1995,HepB3,
+India,IND,1996,HepB3,
+India,IND,1997,HepB3,
+India,IND,1998,HepB3,
+India,IND,1999,HepB3,
 India,IND,2000,HepB3,
 India,IND,2001,HepB3,
 India,IND,2002,HepB3,
@@ -2549,6 +4079,21 @@ India,IND,2021,HepB3,85.0
 India,IND,2022,HepB3,93.0
 India,IND,2023,HepB3,91.0
 India,IND,2024,HepB3,94.0
+India,IND,1985,MCV1,1.0
+India,IND,1986,MCV1,10.0
+India,IND,1987,MCV1,24.0
+India,IND,1988,MCV1,32.0
+India,IND,1989,MCV1,42.0
+India,IND,1990,MCV1,56.0
+India,IND,1991,MCV1,43.0
+India,IND,1992,MCV1,51.0
+India,IND,1993,MCV1,59.0
+India,IND,1994,MCV1,67.0
+India,IND,1995,MCV1,72.0
+India,IND,1996,MCV1,66.0
+India,IND,1997,MCV1,55.0
+India,IND,1998,MCV1,53.0
+India,IND,1999,MCV1,56.0
 India,IND,2000,MCV1,56.0
 India,IND,2001,MCV1,57.0
 India,IND,2002,MCV1,56.0
@@ -2574,6 +4119,21 @@ India,IND,2021,MCV1,89.0
 India,IND,2022,MCV1,95.0
 India,IND,2023,MCV1,93.0
 India,IND,2024,MCV1,97.0
+India,IND,1985,Polio3,14.0
+India,IND,1986,Polio3,16.0
+India,IND,1987,Polio3,27.0
+India,IND,1988,Polio3,37.0
+India,IND,1989,Polio3,55.0
+India,IND,1990,Polio3,66.0
+India,IND,1991,Polio3,58.0
+India,IND,1992,Polio3,56.0
+India,IND,1993,Polio3,61.0
+India,IND,1994,Polio3,67.0
+India,IND,1995,Polio3,71.0
+India,IND,1996,Polio3,67.0
+India,IND,1997,Polio3,63.0
+India,IND,1998,Polio3,60.0
+India,IND,1999,Polio3,57.0
 India,IND,2000,Polio3,57.0
 India,IND,2001,Polio3,58.0
 India,IND,2002,Polio3,58.0
@@ -2599,6 +4159,21 @@ India,IND,2021,Polio3,85.0
 India,IND,2022,Polio3,93.0
 India,IND,2023,Polio3,91.0
 India,IND,2024,Polio3,93.0
+Indonesia,IDN,1985,DTP3,27.0
+Indonesia,IDN,1986,DTP3,47.0
+Indonesia,IDN,1987,DTP3,50.0
+Indonesia,IDN,1988,DTP3,54.0
+Indonesia,IDN,1989,DTP3,57.0
+Indonesia,IDN,1990,DTP3,60.0
+Indonesia,IDN,1991,DTP3,62.0
+Indonesia,IDN,1992,DTP3,64.0
+Indonesia,IDN,1993,DTP3,66.0
+Indonesia,IDN,1994,DTP3,68.0
+Indonesia,IDN,1995,DTP3,69.0
+Indonesia,IDN,1996,DTP3,72.0
+Indonesia,IDN,1997,DTP3,73.0
+Indonesia,IDN,1998,DTP3,74.0
+Indonesia,IDN,1999,DTP3,75.0
 Indonesia,IDN,2000,DTP3,75.0
 Indonesia,IDN,2001,DTP3,76.0
 Indonesia,IDN,2002,DTP3,70.0
@@ -2624,6 +4199,21 @@ Indonesia,IDN,2021,DTP3,67.0
 Indonesia,IDN,2022,DTP3,91.0
 Indonesia,IDN,2023,DTP3,83.0
 Indonesia,IDN,2024,DTP3,78.0
+Indonesia,IDN,1985,HepB3,
+Indonesia,IDN,1986,HepB3,
+Indonesia,IDN,1987,HepB3,
+Indonesia,IDN,1988,HepB3,
+Indonesia,IDN,1989,HepB3,
+Indonesia,IDN,1990,HepB3,
+Indonesia,IDN,1991,HepB3,
+Indonesia,IDN,1992,HepB3,28.0
+Indonesia,IDN,1993,HepB3,43.0
+Indonesia,IDN,1994,HepB3,42.0
+Indonesia,IDN,1995,HepB3,50.0
+Indonesia,IDN,1996,HepB3,62.0
+Indonesia,IDN,1997,HepB3,65.0
+Indonesia,IDN,1998,HepB3,76.0
+Indonesia,IDN,1999,HepB3,77.0
 Indonesia,IDN,2000,HepB3,65.0
 Indonesia,IDN,2001,HepB3,62.0
 Indonesia,IDN,2002,HepB3,63.0
@@ -2649,6 +4239,21 @@ Indonesia,IDN,2021,HepB3,67.0
 Indonesia,IDN,2022,HepB3,91.0
 Indonesia,IDN,2023,HepB3,83.0
 Indonesia,IDN,2024,HepB3,78.0
+Indonesia,IDN,1985,MCV1,26.0
+Indonesia,IDN,1986,MCV1,45.0
+Indonesia,IDN,1987,MCV1,48.0
+Indonesia,IDN,1988,MCV1,51.0
+Indonesia,IDN,1989,MCV1,54.0
+Indonesia,IDN,1990,MCV1,58.0
+Indonesia,IDN,1991,MCV1,61.0
+Indonesia,IDN,1992,MCV1,65.0
+Indonesia,IDN,1993,MCV1,68.0
+Indonesia,IDN,1994,MCV1,66.0
+Indonesia,IDN,1995,MCV1,63.0
+Indonesia,IDN,1996,MCV1,79.0
+Indonesia,IDN,1997,MCV1,77.0
+Indonesia,IDN,1998,MCV1,77.0
+Indonesia,IDN,1999,MCV1,77.0
 Indonesia,IDN,2000,MCV1,76.0
 Indonesia,IDN,2001,MCV1,76.0
 Indonesia,IDN,2002,MCV1,72.0
@@ -2674,6 +4279,21 @@ Indonesia,IDN,2021,MCV1,72.0
 Indonesia,IDN,2022,MCV1,92.0
 Indonesia,IDN,2023,MCV1,82.0
 Indonesia,IDN,2024,MCV1,85.0
+Indonesia,IDN,1985,Polio3,13.0
+Indonesia,IDN,1986,Polio3,46.0
+Indonesia,IDN,1987,Polio3,49.0
+Indonesia,IDN,1988,Polio3,53.0
+Indonesia,IDN,1989,Polio3,56.0
+Indonesia,IDN,1990,Polio3,60.0
+Indonesia,IDN,1991,Polio3,62.0
+Indonesia,IDN,1992,Polio3,65.0
+Indonesia,IDN,1993,Polio3,67.0
+Indonesia,IDN,1994,Polio3,69.0
+Indonesia,IDN,1995,Polio3,71.0
+Indonesia,IDN,1996,Polio3,83.0
+Indonesia,IDN,1997,Polio3,79.0
+Indonesia,IDN,1998,Polio3,87.0
+Indonesia,IDN,1999,Polio3,86.0
 Indonesia,IDN,2000,Polio3,72.0
 Indonesia,IDN,2001,Polio3,77.0
 Indonesia,IDN,2002,Polio3,80.0
@@ -2699,6 +4319,21 @@ Indonesia,IDN,2021,Polio3,68.0
 Indonesia,IDN,2022,Polio3,91.0
 Indonesia,IDN,2023,Polio3,82.0
 Indonesia,IDN,2024,Polio3,87.0
+Iraq,IRQ,1985,DTP3,86.0
+Iraq,IRQ,1986,DTP3,91.0
+Iraq,IRQ,1987,DTP3,94.0
+Iraq,IRQ,1988,DTP3,87.0
+Iraq,IRQ,1989,DTP3,87.0
+Iraq,IRQ,1990,DTP3,83.0
+Iraq,IRQ,1991,DTP3,78.0
+Iraq,IRQ,1992,DTP3,74.0
+Iraq,IRQ,1993,DTP3,70.0
+Iraq,IRQ,1994,DTP3,72.0
+Iraq,IRQ,1995,DTP3,74.0
+Iraq,IRQ,1996,DTP3,76.0
+Iraq,IRQ,1997,DTP3,78.0
+Iraq,IRQ,1998,DTP3,76.0
+Iraq,IRQ,1999,DTP3,81.0
 Iraq,IRQ,2000,DTP3,80.0
 Iraq,IRQ,2001,DTP3,78.0
 Iraq,IRQ,2002,DTP3,77.0
@@ -2724,6 +4359,21 @@ Iraq,IRQ,2021,DTP3,78.0
 Iraq,IRQ,2022,DTP3,93.0
 Iraq,IRQ,2023,DTP3,91.0
 Iraq,IRQ,2024,DTP3,90.0
+Iraq,IRQ,1985,HepB3,
+Iraq,IRQ,1986,HepB3,
+Iraq,IRQ,1987,HepB3,
+Iraq,IRQ,1988,HepB3,
+Iraq,IRQ,1989,HepB3,
+Iraq,IRQ,1990,HepB3,
+Iraq,IRQ,1991,HepB3,
+Iraq,IRQ,1992,HepB3,
+Iraq,IRQ,1993,HepB3,
+Iraq,IRQ,1994,HepB3,40.0
+Iraq,IRQ,1995,HepB3,57.0
+Iraq,IRQ,1996,HepB3,22.0
+Iraq,IRQ,1997,HepB3,65.0
+Iraq,IRQ,1998,HepB3,3.0
+Iraq,IRQ,1999,HepB3,52.0
 Iraq,IRQ,2000,HepB3,67.0
 Iraq,IRQ,2001,HepB3,66.0
 Iraq,IRQ,2002,HepB3,65.0
@@ -2749,6 +4399,21 @@ Iraq,IRQ,2021,HepB3,78.0
 Iraq,IRQ,2022,HepB3,93.0
 Iraq,IRQ,2023,HepB3,91.0
 Iraq,IRQ,2024,HepB3,90.0
+Iraq,IRQ,1985,MCV1,70.0
+Iraq,IRQ,1986,MCV1,75.0
+Iraq,IRQ,1987,MCV1,91.0
+Iraq,IRQ,1988,MCV1,85.0
+Iraq,IRQ,1989,MCV1,79.0
+Iraq,IRQ,1990,MCV1,75.0
+Iraq,IRQ,1991,MCV1,71.0
+Iraq,IRQ,1992,MCV1,67.0
+Iraq,IRQ,1993,MCV1,63.0
+Iraq,IRQ,1994,MCV1,72.0
+Iraq,IRQ,1995,MCV1,80.0
+Iraq,IRQ,1996,MCV1,82.0
+Iraq,IRQ,1997,MCV1,85.0
+Iraq,IRQ,1998,MCV1,88.0
+Iraq,IRQ,1999,MCV1,90.0
 Iraq,IRQ,2000,MCV1,86.0
 Iraq,IRQ,2001,MCV1,82.0
 Iraq,IRQ,2002,MCV1,77.0
@@ -2774,6 +4439,21 @@ Iraq,IRQ,2021,MCV1,84.0
 Iraq,IRQ,2022,MCV1,97.0
 Iraq,IRQ,2023,MCV1,97.0
 Iraq,IRQ,2024,MCV1,91.0
+Iraq,IRQ,1985,Polio3,86.0
+Iraq,IRQ,1986,Polio3,91.0
+Iraq,IRQ,1987,Polio3,95.0
+Iraq,IRQ,1988,Polio3,91.0
+Iraq,IRQ,1989,Polio3,87.0
+Iraq,IRQ,1990,Polio3,83.0
+Iraq,IRQ,1991,Polio3,79.0
+Iraq,IRQ,1992,Polio3,74.0
+Iraq,IRQ,1993,Polio3,70.0
+Iraq,IRQ,1994,Polio3,72.0
+Iraq,IRQ,1995,Polio3,73.0
+Iraq,IRQ,1996,Polio3,77.0
+Iraq,IRQ,1997,Polio3,80.0
+Iraq,IRQ,1998,Polio3,79.0
+Iraq,IRQ,1999,Polio3,87.0
 Iraq,IRQ,2000,Polio3,83.0
 Iraq,IRQ,2001,Polio3,80.0
 Iraq,IRQ,2002,Polio3,76.0
@@ -2799,6 +4479,21 @@ Iraq,IRQ,2021,Polio3,78.0
 Iraq,IRQ,2022,Polio3,92.0
 Iraq,IRQ,2023,Polio3,91.0
 Iraq,IRQ,2024,Polio3,91.0
+Jordan,JOR,1985,DTP3,85.0
+Jordan,JOR,1986,DTP3,88.0
+Jordan,JOR,1987,DTP3,90.0
+Jordan,JOR,1988,DTP3,93.0
+Jordan,JOR,1989,DTP3,94.0
+Jordan,JOR,1990,DTP3,92.0
+Jordan,JOR,1991,DTP3,92.0
+Jordan,JOR,1992,DTP3,92.0
+Jordan,JOR,1993,DTP3,91.0
+Jordan,JOR,1994,DTP3,94.0
+Jordan,JOR,1995,DTP3,95.0
+Jordan,JOR,1996,DTP3,96.0
+Jordan,JOR,1997,DTP3,99.0
+Jordan,JOR,1998,DTP3,99.0
+Jordan,JOR,1999,DTP3,85.0
 Jordan,JOR,2000,DTP3,91.0
 Jordan,JOR,2001,DTP3,99.0
 Jordan,JOR,2002,DTP3,95.0
@@ -2824,6 +4519,21 @@ Jordan,JOR,2021,DTP3,85.0
 Jordan,JOR,2022,DTP3,92.0
 Jordan,JOR,2023,DTP3,96.0
 Jordan,JOR,2024,DTP3,96.0
+Jordan,JOR,1985,HepB3,
+Jordan,JOR,1986,HepB3,
+Jordan,JOR,1987,HepB3,
+Jordan,JOR,1988,HepB3,
+Jordan,JOR,1989,HepB3,
+Jordan,JOR,1990,HepB3,
+Jordan,JOR,1991,HepB3,
+Jordan,JOR,1992,HepB3,
+Jordan,JOR,1993,HepB3,
+Jordan,JOR,1994,HepB3,
+Jordan,JOR,1995,HepB3,54.0
+Jordan,JOR,1996,HepB3,85.0
+Jordan,JOR,1997,HepB3,90.0
+Jordan,JOR,1998,HepB3,91.0
+Jordan,JOR,1999,HepB3,92.0
 Jordan,JOR,2000,HepB3,93.0
 Jordan,JOR,2001,HepB3,97.0
 Jordan,JOR,2002,HepB3,95.0
@@ -2849,6 +4559,21 @@ Jordan,JOR,2021,HepB3,85.0
 Jordan,JOR,2022,HepB3,92.0
 Jordan,JOR,2023,HepB3,96.0
 Jordan,JOR,2024,HepB3,96.0
+Jordan,JOR,1985,MCV1,73.0
+Jordan,JOR,1986,MCV1,81.0
+Jordan,JOR,1987,MCV1,87.0
+Jordan,JOR,1988,MCV1,87.0
+Jordan,JOR,1989,MCV1,84.0
+Jordan,JOR,1990,MCV1,87.0
+Jordan,JOR,1991,MCV1,85.0
+Jordan,JOR,1992,MCV1,91.0
+Jordan,JOR,1993,MCV1,88.0
+Jordan,JOR,1994,MCV1,91.0
+Jordan,JOR,1995,MCV1,92.0
+Jordan,JOR,1996,MCV1,94.0
+Jordan,JOR,1997,MCV1,95.0
+Jordan,JOR,1998,MCV1,93.0
+Jordan,JOR,1999,MCV1,83.0
 Jordan,JOR,2000,MCV1,94.0
 Jordan,JOR,2001,MCV1,99.0
 Jordan,JOR,2002,MCV1,95.0
@@ -2874,6 +4599,21 @@ Jordan,JOR,2021,MCV1,81.0
 Jordan,JOR,2022,MCV1,86.0
 Jordan,JOR,2023,MCV1,95.0
 Jordan,JOR,2024,MCV1,99.0
+Jordan,JOR,1985,Polio3,84.0
+Jordan,JOR,1986,Polio3,88.0
+Jordan,JOR,1987,Polio3,89.0
+Jordan,JOR,1988,Polio3,92.0
+Jordan,JOR,1989,Polio3,94.0
+Jordan,JOR,1990,Polio3,92.0
+Jordan,JOR,1991,Polio3,92.0
+Jordan,JOR,1992,Polio3,92.0
+Jordan,JOR,1993,Polio3,91.0
+Jordan,JOR,1994,Polio3,94.0
+Jordan,JOR,1995,Polio3,95.0
+Jordan,JOR,1996,Polio3,96.0
+Jordan,JOR,1997,Polio3,99.0
+Jordan,JOR,1998,Polio3,99.0
+Jordan,JOR,1999,Polio3,85.0
 Jordan,JOR,2000,Polio3,94.0
 Jordan,JOR,2001,Polio3,97.0
 Jordan,JOR,2002,Polio3,95.0
@@ -2899,6 +4639,21 @@ Jordan,JOR,2021,Polio3,84.0
 Jordan,JOR,2022,Polio3,92.0
 Jordan,JOR,2023,Polio3,95.0
 Jordan,JOR,2024,Polio3,94.0
+Kenya,KEN,1985,DTP3,70.0
+Kenya,KEN,1986,DTP3,72.0
+Kenya,KEN,1987,DTP3,77.0
+Kenya,KEN,1988,DTP3,82.0
+Kenya,KEN,1989,DTP3,83.0
+Kenya,KEN,1990,DTP3,84.0
+Kenya,KEN,1991,DTP3,86.0
+Kenya,KEN,1992,DTP3,87.0
+Kenya,KEN,1993,DTP3,89.0
+Kenya,KEN,1994,DTP3,92.0
+Kenya,KEN,1995,DTP3,94.0
+Kenya,KEN,1996,DTP3,87.0
+Kenya,KEN,1997,DTP3,79.0
+Kenya,KEN,1998,DTP3,81.0
+Kenya,KEN,1999,DTP3,82.0
 Kenya,KEN,2000,DTP3,82.0
 Kenya,KEN,2001,DTP3,80.0
 Kenya,KEN,2002,DTP3,84.0
@@ -2924,6 +4679,21 @@ Kenya,KEN,2021,DTP3,95.0
 Kenya,KEN,2022,DTP3,94.0
 Kenya,KEN,2023,DTP3,93.0
 Kenya,KEN,2024,DTP3,91.0
+Kenya,KEN,1985,HepB3,
+Kenya,KEN,1986,HepB3,
+Kenya,KEN,1987,HepB3,
+Kenya,KEN,1988,HepB3,
+Kenya,KEN,1989,HepB3,
+Kenya,KEN,1990,HepB3,
+Kenya,KEN,1991,HepB3,
+Kenya,KEN,1992,HepB3,
+Kenya,KEN,1993,HepB3,
+Kenya,KEN,1994,HepB3,
+Kenya,KEN,1995,HepB3,
+Kenya,KEN,1996,HepB3,
+Kenya,KEN,1997,HepB3,
+Kenya,KEN,1998,HepB3,
+Kenya,KEN,1999,HepB3,
 Kenya,KEN,2000,HepB3,
 Kenya,KEN,2001,HepB3,
 Kenya,KEN,2002,HepB3,84.0
@@ -2949,6 +4719,21 @@ Kenya,KEN,2021,HepB3,95.0
 Kenya,KEN,2022,HepB3,94.0
 Kenya,KEN,2023,HepB3,93.0
 Kenya,KEN,2024,HepB3,91.0
+Kenya,KEN,1985,MCV1,63.0
+Kenya,KEN,1986,MCV1,65.0
+Kenya,KEN,1987,MCV1,69.0
+Kenya,KEN,1988,MCV1,72.0
+Kenya,KEN,1989,MCV1,75.0
+Kenya,KEN,1990,MCV1,78.0
+Kenya,KEN,1991,MCV1,81.0
+Kenya,KEN,1992,MCV1,84.0
+Kenya,KEN,1993,MCV1,84.0
+Kenya,KEN,1994,MCV1,84.0
+Kenya,KEN,1995,MCV1,83.0
+Kenya,KEN,1996,MCV1,81.0
+Kenya,KEN,1997,MCV1,79.0
+Kenya,KEN,1998,MCV1,78.0
+Kenya,KEN,1999,MCV1,76.0
 Kenya,KEN,2000,MCV1,78.0
 Kenya,KEN,2001,MCV1,77.0
 Kenya,KEN,2002,MCV1,78.0
@@ -2974,6 +4759,21 @@ Kenya,KEN,2021,MCV1,90.0
 Kenya,KEN,2022,MCV1,89.0
 Kenya,KEN,2023,MCV1,91.0
 Kenya,KEN,2024,MCV1,88.0
+Kenya,KEN,1985,Polio3,70.0
+Kenya,KEN,1986,Polio3,72.0
+Kenya,KEN,1987,Polio3,77.0
+Kenya,KEN,1988,Polio3,82.0
+Kenya,KEN,1989,Polio3,83.0
+Kenya,KEN,1990,Polio3,84.0
+Kenya,KEN,1991,Polio3,86.0
+Kenya,KEN,1992,Polio3,87.0
+Kenya,KEN,1993,Polio3,89.0
+Kenya,KEN,1994,Polio3,92.0
+Kenya,KEN,1995,Polio3,94.0
+Kenya,KEN,1996,Polio3,87.0
+Kenya,KEN,1997,Polio3,81.0
+Kenya,KEN,1998,Polio3,81.0
+Kenya,KEN,1999,Polio3,80.0
 Kenya,KEN,2000,Polio3,79.0
 Kenya,KEN,2001,Polio3,77.0
 Kenya,KEN,2002,Polio3,83.0
@@ -2999,6 +4799,21 @@ Kenya,KEN,2021,Polio3,95.0
 Kenya,KEN,2022,Polio3,91.0
 Kenya,KEN,2023,Polio3,92.0
 Kenya,KEN,2024,Polio3,85.0
+Kyrgyzstan,KGZ,1985,DTP3,
+Kyrgyzstan,KGZ,1986,DTP3,
+Kyrgyzstan,KGZ,1987,DTP3,
+Kyrgyzstan,KGZ,1988,DTP3,
+Kyrgyzstan,KGZ,1989,DTP3,
+Kyrgyzstan,KGZ,1990,DTP3,
+Kyrgyzstan,KGZ,1991,DTP3,
+Kyrgyzstan,KGZ,1992,DTP3,84.0
+Kyrgyzstan,KGZ,1993,DTP3,64.0
+Kyrgyzstan,KGZ,1994,DTP3,82.0
+Kyrgyzstan,KGZ,1995,DTP3,93.0
+Kyrgyzstan,KGZ,1996,DTP3,98.0
+Kyrgyzstan,KGZ,1997,DTP3,98.0
+Kyrgyzstan,KGZ,1998,DTP3,97.0
+Kyrgyzstan,KGZ,1999,DTP3,99.0
 Kyrgyzstan,KGZ,2000,DTP3,99.0
 Kyrgyzstan,KGZ,2001,DTP3,99.0
 Kyrgyzstan,KGZ,2002,DTP3,98.0
@@ -3024,6 +4839,21 @@ Kyrgyzstan,KGZ,2021,DTP3,89.0
 Kyrgyzstan,KGZ,2022,DTP3,90.0
 Kyrgyzstan,KGZ,2023,DTP3,86.0
 Kyrgyzstan,KGZ,2024,DTP3,85.0
+Kyrgyzstan,KGZ,1985,HepB3,
+Kyrgyzstan,KGZ,1986,HepB3,
+Kyrgyzstan,KGZ,1987,HepB3,
+Kyrgyzstan,KGZ,1988,HepB3,
+Kyrgyzstan,KGZ,1989,HepB3,
+Kyrgyzstan,KGZ,1990,HepB3,
+Kyrgyzstan,KGZ,1991,HepB3,
+Kyrgyzstan,KGZ,1992,HepB3,
+Kyrgyzstan,KGZ,1993,HepB3,
+Kyrgyzstan,KGZ,1994,HepB3,
+Kyrgyzstan,KGZ,1995,HepB3,
+Kyrgyzstan,KGZ,1996,HepB3,
+Kyrgyzstan,KGZ,1997,HepB3,
+Kyrgyzstan,KGZ,1998,HepB3,
+Kyrgyzstan,KGZ,1999,HepB3,10.0
 Kyrgyzstan,KGZ,2000,HepB3,44.0
 Kyrgyzstan,KGZ,2001,HepB3,57.0
 Kyrgyzstan,KGZ,2002,HepB3,99.0
@@ -3049,6 +4879,21 @@ Kyrgyzstan,KGZ,2021,HepB3,89.0
 Kyrgyzstan,KGZ,2022,HepB3,90.0
 Kyrgyzstan,KGZ,2023,HepB3,87.0
 Kyrgyzstan,KGZ,2024,HepB3,84.0
+Kyrgyzstan,KGZ,1985,MCV1,
+Kyrgyzstan,KGZ,1986,MCV1,
+Kyrgyzstan,KGZ,1987,MCV1,
+Kyrgyzstan,KGZ,1988,MCV1,
+Kyrgyzstan,KGZ,1989,MCV1,
+Kyrgyzstan,KGZ,1990,MCV1,
+Kyrgyzstan,KGZ,1991,MCV1,
+Kyrgyzstan,KGZ,1992,MCV1,94.0
+Kyrgyzstan,KGZ,1993,MCV1,93.0
+Kyrgyzstan,KGZ,1994,MCV1,88.0
+Kyrgyzstan,KGZ,1995,MCV1,97.0
+Kyrgyzstan,KGZ,1996,MCV1,98.0
+Kyrgyzstan,KGZ,1997,MCV1,98.0
+Kyrgyzstan,KGZ,1998,MCV1,98.0
+Kyrgyzstan,KGZ,1999,MCV1,99.0
 Kyrgyzstan,KGZ,2000,MCV1,98.0
 Kyrgyzstan,KGZ,2001,MCV1,99.0
 Kyrgyzstan,KGZ,2002,MCV1,98.0
@@ -3074,6 +4919,21 @@ Kyrgyzstan,KGZ,2021,MCV1,93.0
 Kyrgyzstan,KGZ,2022,MCV1,94.0
 Kyrgyzstan,KGZ,2023,MCV1,96.0
 Kyrgyzstan,KGZ,2024,MCV1,96.0
+Kyrgyzstan,KGZ,1985,Polio3,
+Kyrgyzstan,KGZ,1986,Polio3,
+Kyrgyzstan,KGZ,1987,Polio3,
+Kyrgyzstan,KGZ,1988,Polio3,
+Kyrgyzstan,KGZ,1989,Polio3,
+Kyrgyzstan,KGZ,1990,Polio3,
+Kyrgyzstan,KGZ,1991,Polio3,
+Kyrgyzstan,KGZ,1992,Polio3,91.0
+Kyrgyzstan,KGZ,1993,Polio3,69.0
+Kyrgyzstan,KGZ,1994,Polio3,84.0
+Kyrgyzstan,KGZ,1995,Polio3,96.0
+Kyrgyzstan,KGZ,1996,Polio3,94.0
+Kyrgyzstan,KGZ,1997,Polio3,99.0
+Kyrgyzstan,KGZ,1998,Polio3,97.0
+Kyrgyzstan,KGZ,1999,Polio3,99.0
 Kyrgyzstan,KGZ,2000,Polio3,99.0
 Kyrgyzstan,KGZ,2001,Polio3,99.0
 Kyrgyzstan,KGZ,2002,Polio3,99.0
@@ -3099,6 +4959,21 @@ Kyrgyzstan,KGZ,2021,Polio3,90.0
 Kyrgyzstan,KGZ,2022,Polio3,92.0
 Kyrgyzstan,KGZ,2023,Polio3,92.0
 Kyrgyzstan,KGZ,2024,Polio3,92.0
+Laos,LAO,1985,DTP3,4.0
+Laos,LAO,1986,DTP3,5.0
+Laos,LAO,1987,DTP3,10.0
+Laos,LAO,1988,DTP3,17.0
+Laos,LAO,1989,DTP3,21.0
+Laos,LAO,1990,DTP3,18.0
+Laos,LAO,1991,DTP3,22.0
+Laos,LAO,1992,DTP3,23.0
+Laos,LAO,1993,DTP3,25.0
+Laos,LAO,1994,DTP3,48.0
+Laos,LAO,1995,DTP3,54.0
+Laos,LAO,1996,DTP3,58.0
+Laos,LAO,1997,DTP3,60.0
+Laos,LAO,1998,DTP3,54.0
+Laos,LAO,1999,DTP3,55.0
 Laos,LAO,2000,DTP3,51.0
 Laos,LAO,2001,DTP3,52.0
 Laos,LAO,2002,DTP3,53.0
@@ -3124,6 +4999,21 @@ Laos,LAO,2021,DTP3,65.0
 Laos,LAO,2022,DTP3,70.0
 Laos,LAO,2023,DTP3,74.0
 Laos,LAO,2024,DTP3,67.0
+Laos,LAO,1985,HepB3,
+Laos,LAO,1986,HepB3,
+Laos,LAO,1987,HepB3,
+Laos,LAO,1988,HepB3,
+Laos,LAO,1989,HepB3,
+Laos,LAO,1990,HepB3,
+Laos,LAO,1991,HepB3,
+Laos,LAO,1992,HepB3,
+Laos,LAO,1993,HepB3,
+Laos,LAO,1994,HepB3,
+Laos,LAO,1995,HepB3,
+Laos,LAO,1996,HepB3,
+Laos,LAO,1997,HepB3,
+Laos,LAO,1998,HepB3,
+Laos,LAO,1999,HepB3,
 Laos,LAO,2000,HepB3,
 Laos,LAO,2001,HepB3,
 Laos,LAO,2002,HepB3,
@@ -3149,6 +5039,21 @@ Laos,LAO,2021,HepB3,65.0
 Laos,LAO,2022,HepB3,70.0
 Laos,LAO,2023,HepB3,74.0
 Laos,LAO,2024,HepB3,67.0
+Laos,LAO,1985,MCV1,6.0
+Laos,LAO,1986,MCV1,10.0
+Laos,LAO,1987,MCV1,11.0
+Laos,LAO,1988,MCV1,23.0
+Laos,LAO,1989,MCV1,20.0
+Laos,LAO,1990,MCV1,32.0
+Laos,LAO,1991,MCV1,47.0
+Laos,LAO,1992,MCV1,46.0
+Laos,LAO,1993,MCV1,46.0
+Laos,LAO,1994,MCV1,73.0
+Laos,LAO,1995,MCV1,68.0
+Laos,LAO,1996,MCV1,73.0
+Laos,LAO,1997,MCV1,67.0
+Laos,LAO,1998,MCV1,71.0
+Laos,LAO,1999,MCV1,71.0
 Laos,LAO,2000,MCV1,42.0
 Laos,LAO,2001,MCV1,50.0
 Laos,LAO,2002,MCV1,55.0
@@ -3174,6 +5079,21 @@ Laos,LAO,2021,MCV1,62.0
 Laos,LAO,2022,MCV1,65.0
 Laos,LAO,2023,MCV1,69.0
 Laos,LAO,2024,MCV1,69.0
+Laos,LAO,1985,Polio3,4.0
+Laos,LAO,1986,Polio3,6.0
+Laos,LAO,1987,Polio3,10.0
+Laos,LAO,1988,Polio3,17.0
+Laos,LAO,1989,Polio3,22.0
+Laos,LAO,1990,Polio3,26.0
+Laos,LAO,1991,Polio3,22.0
+Laos,LAO,1992,Polio3,27.0
+Laos,LAO,1993,Polio3,26.0
+Laos,LAO,1994,Polio3,58.0
+Laos,LAO,1995,Polio3,64.0
+Laos,LAO,1996,Polio3,68.0
+Laos,LAO,1997,Polio3,69.0
+Laos,LAO,1998,Polio3,67.0
+Laos,LAO,1999,Polio3,64.0
 Laos,LAO,2000,Polio3,57.0
 Laos,LAO,2001,Polio3,55.0
 Laos,LAO,2002,Polio3,55.0
@@ -3199,6 +5119,21 @@ Laos,LAO,2021,Polio3,67.0
 Laos,LAO,2022,Polio3,62.0
 Laos,LAO,2023,Polio3,76.0
 Laos,LAO,2024,Polio3,70.0
+Lebanon,LBN,1985,DTP3,17.0
+Lebanon,LBN,1986,DTP3,30.0
+Lebanon,LBN,1987,DTP3,46.0
+Lebanon,LBN,1988,DTP3,63.0
+Lebanon,LBN,1989,DTP3,79.0
+Lebanon,LBN,1990,DTP3,82.0
+Lebanon,LBN,1991,DTP3,86.0
+Lebanon,LBN,1992,DTP3,90.0
+Lebanon,LBN,1993,DTP3,91.0
+Lebanon,LBN,1994,DTP3,92.0
+Lebanon,LBN,1995,DTP3,93.0
+Lebanon,LBN,1996,DTP3,93.0
+Lebanon,LBN,1997,DTP3,92.0
+Lebanon,LBN,1998,DTP3,89.0
+Lebanon,LBN,1999,DTP3,86.0
 Lebanon,LBN,2000,DTP3,83.0
 Lebanon,LBN,2001,DTP3,80.0
 Lebanon,LBN,2002,DTP3,77.0
@@ -3224,6 +5159,21 @@ Lebanon,LBN,2021,DTP3,67.0
 Lebanon,LBN,2022,DTP3,67.0
 Lebanon,LBN,2023,DTP3,53.0
 Lebanon,LBN,2024,DTP3,49.0
+Lebanon,LBN,1985,HepB3,
+Lebanon,LBN,1986,HepB3,
+Lebanon,LBN,1987,HepB3,
+Lebanon,LBN,1988,HepB3,
+Lebanon,LBN,1989,HepB3,
+Lebanon,LBN,1990,HepB3,
+Lebanon,LBN,1991,HepB3,
+Lebanon,LBN,1992,HepB3,
+Lebanon,LBN,1993,HepB3,
+Lebanon,LBN,1994,HepB3,
+Lebanon,LBN,1995,HepB3,
+Lebanon,LBN,1996,HepB3,
+Lebanon,LBN,1997,HepB3,
+Lebanon,LBN,1998,HepB3,
+Lebanon,LBN,1999,HepB3,86.0
 Lebanon,LBN,2000,HepB3,83.0
 Lebanon,LBN,2001,HepB3,80.0
 Lebanon,LBN,2002,HepB3,77.0
@@ -3249,6 +5199,21 @@ Lebanon,LBN,2021,HepB3,64.0
 Lebanon,LBN,2022,HepB3,64.0
 Lebanon,LBN,2023,HepB3,50.0
 Lebanon,LBN,2024,HepB3,46.0
+Lebanon,LBN,1985,MCV1,23.0
+Lebanon,LBN,1986,MCV1,30.0
+Lebanon,LBN,1987,MCV1,39.0
+Lebanon,LBN,1988,MCV1,48.0
+Lebanon,LBN,1989,MCV1,58.0
+Lebanon,LBN,1990,MCV1,61.0
+Lebanon,LBN,1991,MCV1,65.0
+Lebanon,LBN,1992,MCV1,76.0
+Lebanon,LBN,1993,MCV1,88.0
+Lebanon,LBN,1994,MCV1,88.0
+Lebanon,LBN,1995,MCV1,85.0
+Lebanon,LBN,1996,MCV1,85.0
+Lebanon,LBN,1997,MCV1,89.0
+Lebanon,LBN,1998,MCV1,83.0
+Lebanon,LBN,1999,MCV1,77.0
 Lebanon,LBN,2000,MCV1,71.0
 Lebanon,LBN,2001,MCV1,65.0
 Lebanon,LBN,2002,MCV1,59.0
@@ -3274,6 +5239,21 @@ Lebanon,LBN,2021,MCV1,67.0
 Lebanon,LBN,2022,MCV1,67.0
 Lebanon,LBN,2023,MCV1,67.0
 Lebanon,LBN,2024,MCV1,67.0
+Lebanon,LBN,1985,Polio3,17.0
+Lebanon,LBN,1986,Polio3,30.0
+Lebanon,LBN,1987,Polio3,46.0
+Lebanon,LBN,1988,Polio3,62.0
+Lebanon,LBN,1989,Polio3,78.0
+Lebanon,LBN,1990,Polio3,82.0
+Lebanon,LBN,1991,Polio3,86.0
+Lebanon,LBN,1992,Polio3,88.0
+Lebanon,LBN,1993,Polio3,91.0
+Lebanon,LBN,1994,Polio3,93.0
+Lebanon,LBN,1995,Polio3,93.0
+Lebanon,LBN,1996,Polio3,94.0
+Lebanon,LBN,1997,Polio3,92.0
+Lebanon,LBN,1998,Polio3,89.0
+Lebanon,LBN,1999,Polio3,86.0
 Lebanon,LBN,2000,Polio3,83.0
 Lebanon,LBN,2001,Polio3,80.0
 Lebanon,LBN,2002,Polio3,77.0
@@ -3299,6 +5279,21 @@ Lebanon,LBN,2021,Polio3,64.0
 Lebanon,LBN,2022,Polio3,52.0
 Lebanon,LBN,2023,Polio3,48.0
 Lebanon,LBN,2024,Polio3,47.0
+Libya,LBY,1985,DTP3,81.0
+Libya,LBY,1986,DTP3,82.0
+Libya,LBY,1987,DTP3,82.0
+Libya,LBY,1988,DTP3,84.0
+Libya,LBY,1989,DTP3,87.0
+Libya,LBY,1990,DTP3,84.0
+Libya,LBY,1991,DTP3,87.0
+Libya,LBY,1992,DTP3,90.0
+Libya,LBY,1993,DTP3,96.0
+Libya,LBY,1994,DTP3,95.0
+Libya,LBY,1995,DTP3,95.0
+Libya,LBY,1996,DTP3,96.0
+Libya,LBY,1997,DTP3,96.0
+Libya,LBY,1998,DTP3,95.0
+Libya,LBY,1999,DTP3,94.0
 Libya,LBY,2000,DTP3,94.0
 Libya,LBY,2001,DTP3,94.0
 Libya,LBY,2002,DTP3,93.0
@@ -3324,6 +5319,21 @@ Libya,LBY,2021,DTP3,73.0
 Libya,LBY,2022,DTP3,73.0
 Libya,LBY,2023,DTP3,73.0
 Libya,LBY,2024,DTP3,86.0
+Libya,LBY,1985,HepB3,
+Libya,LBY,1986,HepB3,
+Libya,LBY,1987,HepB3,
+Libya,LBY,1988,HepB3,
+Libya,LBY,1989,HepB3,
+Libya,LBY,1990,HepB3,
+Libya,LBY,1991,HepB3,
+Libya,LBY,1992,HepB3,88.0
+Libya,LBY,1993,HepB3,91.0
+Libya,LBY,1994,HepB3,92.0
+Libya,LBY,1995,HepB3,92.0
+Libya,LBY,1996,HepB3,93.0
+Libya,LBY,1997,HepB3,91.0
+Libya,LBY,1998,HepB3,92.0
+Libya,LBY,1999,HepB3,92.0
 Libya,LBY,2000,HepB3,92.0
 Libya,LBY,2001,HepB3,93.0
 Libya,LBY,2002,HepB3,91.0
@@ -3349,6 +5359,21 @@ Libya,LBY,2021,HepB3,73.0
 Libya,LBY,2022,HepB3,73.0
 Libya,LBY,2023,HepB3,73.0
 Libya,LBY,2024,HepB3,86.0
+Libya,LBY,1985,MCV1,75.0
+Libya,LBY,1986,MCV1,78.0
+Libya,LBY,1987,MCV1,75.0
+Libya,LBY,1988,MCV1,76.0
+Libya,LBY,1989,MCV1,79.0
+Libya,LBY,1990,MCV1,89.0
+Libya,LBY,1991,MCV1,87.0
+Libya,LBY,1992,MCV1,88.0
+Libya,LBY,1993,MCV1,91.0
+Libya,LBY,1994,MCV1,92.0
+Libya,LBY,1995,MCV1,92.0
+Libya,LBY,1996,MCV1,93.0
+Libya,LBY,1997,MCV1,91.0
+Libya,LBY,1998,MCV1,92.0
+Libya,LBY,1999,MCV1,92.0
 Libya,LBY,2000,MCV1,93.0
 Libya,LBY,2001,MCV1,93.0
 Libya,LBY,2002,MCV1,91.0
@@ -3374,6 +5399,21 @@ Libya,LBY,2021,MCV1,73.0
 Libya,LBY,2022,MCV1,73.0
 Libya,LBY,2023,MCV1,73.0
 Libya,LBY,2024,MCV1,89.0
+Libya,LBY,1985,Polio3,81.0
+Libya,LBY,1986,Polio3,82.0
+Libya,LBY,1987,Polio3,82.0
+Libya,LBY,1988,Polio3,84.0
+Libya,LBY,1989,Polio3,87.0
+Libya,LBY,1990,Polio3,84.0
+Libya,LBY,1991,Polio3,87.0
+Libya,LBY,1992,Polio3,90.0
+Libya,LBY,1993,Polio3,96.0
+Libya,LBY,1994,Polio3,95.0
+Libya,LBY,1995,Polio3,95.0
+Libya,LBY,1996,Polio3,96.0
+Libya,LBY,1997,Polio3,96.0
+Libya,LBY,1998,Polio3,95.0
+Libya,LBY,1999,Polio3,94.0
 Libya,LBY,2000,Polio3,94.0
 Libya,LBY,2001,Polio3,94.0
 Libya,LBY,2002,Polio3,93.0
@@ -3399,6 +5439,21 @@ Libya,LBY,2021,Polio3,73.0
 Libya,LBY,2022,Polio3,73.0
 Libya,LBY,2023,Polio3,73.0
 Libya,LBY,2024,Polio3,86.0
+Madagascar,MDG,1985,DTP3,23.0
+Madagascar,MDG,1986,DTP3,30.0
+Madagascar,MDG,1987,DTP3,35.0
+Madagascar,MDG,1988,DTP3,42.0
+Madagascar,MDG,1989,DTP3,45.0
+Madagascar,MDG,1990,DTP3,46.0
+Madagascar,MDG,1991,DTP3,53.0
+Madagascar,MDG,1992,DTP3,65.0
+Madagascar,MDG,1993,DTP3,66.0
+Madagascar,MDG,1994,DTP3,66.0
+Madagascar,MDG,1995,DTP3,57.0
+Madagascar,MDG,1996,DTP3,49.0
+Madagascar,MDG,1997,DTP3,49.0
+Madagascar,MDG,1998,DTP3,52.0
+Madagascar,MDG,1999,DTP3,55.0
 Madagascar,MDG,2000,DTP3,57.0
 Madagascar,MDG,2001,DTP3,60.0
 Madagascar,MDG,2002,DTP3,62.0
@@ -3424,6 +5479,21 @@ Madagascar,MDG,2021,DTP3,55.0
 Madagascar,MDG,2022,DTP3,57.0
 Madagascar,MDG,2023,DTP3,65.0
 Madagascar,MDG,2024,DTP3,60.0
+Madagascar,MDG,1985,HepB3,
+Madagascar,MDG,1986,HepB3,
+Madagascar,MDG,1987,HepB3,
+Madagascar,MDG,1988,HepB3,
+Madagascar,MDG,1989,HepB3,
+Madagascar,MDG,1990,HepB3,
+Madagascar,MDG,1991,HepB3,
+Madagascar,MDG,1992,HepB3,
+Madagascar,MDG,1993,HepB3,
+Madagascar,MDG,1994,HepB3,
+Madagascar,MDG,1995,HepB3,
+Madagascar,MDG,1996,HepB3,
+Madagascar,MDG,1997,HepB3,
+Madagascar,MDG,1998,HepB3,
+Madagascar,MDG,1999,HepB3,
 Madagascar,MDG,2000,HepB3,
 Madagascar,MDG,2001,HepB3,
 Madagascar,MDG,2002,HepB3,51.0
@@ -3449,6 +5519,21 @@ Madagascar,MDG,2021,HepB3,55.0
 Madagascar,MDG,2022,HepB3,57.0
 Madagascar,MDG,2023,HepB3,65.0
 Madagascar,MDG,2024,HepB3,60.0
+Madagascar,MDG,1985,MCV1,6.0
+Madagascar,MDG,1986,MCV1,18.0
+Madagascar,MDG,1987,MCV1,28.0
+Madagascar,MDG,1988,MCV1,36.0
+Madagascar,MDG,1989,MCV1,44.0
+Madagascar,MDG,1990,MCV1,47.0
+Madagascar,MDG,1991,MCV1,54.0
+Madagascar,MDG,1992,MCV1,54.0
+Madagascar,MDG,1993,MCV1,54.0
+Madagascar,MDG,1994,MCV1,63.0
+Madagascar,MDG,1995,MCV1,55.0
+Madagascar,MDG,1996,MCV1,46.0
+Madagascar,MDG,1997,MCV1,46.0
+Madagascar,MDG,1998,MCV1,51.0
+Madagascar,MDG,1999,MCV1,55.0
 Madagascar,MDG,2000,MCV1,57.0
 Madagascar,MDG,2001,MCV1,59.0
 Madagascar,MDG,2002,MCV1,61.0
@@ -3474,6 +5559,21 @@ Madagascar,MDG,2021,MCV1,43.0
 Madagascar,MDG,2022,MCV1,44.0
 Madagascar,MDG,2023,MCV1,51.0
 Madagascar,MDG,2024,MCV1,46.0
+Madagascar,MDG,1985,Polio3,21.0
+Madagascar,MDG,1986,Polio3,28.0
+Madagascar,MDG,1987,Polio3,34.0
+Madagascar,MDG,1988,Polio3,41.0
+Madagascar,MDG,1989,Polio3,42.0
+Madagascar,MDG,1990,Polio3,46.0
+Madagascar,MDG,1991,Polio3,54.0
+Madagascar,MDG,1992,Polio3,64.0
+Madagascar,MDG,1993,Polio3,64.0
+Madagascar,MDG,1994,Polio3,64.0
+Madagascar,MDG,1995,Polio3,56.0
+Madagascar,MDG,1996,Polio3,48.0
+Madagascar,MDG,1997,Polio3,48.0
+Madagascar,MDG,1998,Polio3,53.0
+Madagascar,MDG,1999,Polio3,57.0
 Madagascar,MDG,2000,Polio3,58.0
 Madagascar,MDG,2001,Polio3,60.0
 Madagascar,MDG,2002,Polio3,61.0
@@ -3499,6 +5599,21 @@ Madagascar,MDG,2021,Polio3,55.0
 Madagascar,MDG,2022,Polio3,55.0
 Madagascar,MDG,2023,Polio3,63.0
 Madagascar,MDG,2024,Polio3,62.0
+Malawi,MWI,1985,DTP3,55.0
+Malawi,MWI,1986,DTP3,57.0
+Malawi,MWI,1987,DTP3,78.0
+Malawi,MWI,1988,DTP3,82.0
+Malawi,MWI,1989,DTP3,87.0
+Malawi,MWI,1990,DTP3,87.0
+Malawi,MWI,1991,DTP3,87.0
+Malawi,MWI,1992,DTP3,87.0
+Malawi,MWI,1993,DTP3,91.0
+Malawi,MWI,1994,DTP3,82.0
+Malawi,MWI,1995,DTP3,89.0
+Malawi,MWI,1996,DTP3,90.0
+Malawi,MWI,1997,DTP3,95.0
+Malawi,MWI,1998,DTP3,96.0
+Malawi,MWI,1999,DTP3,85.0
 Malawi,MWI,2000,DTP3,75.0
 Malawi,MWI,2001,DTP3,90.0
 Malawi,MWI,2002,DTP3,64.0
@@ -3524,6 +5639,21 @@ Malawi,MWI,2021,DTP3,93.0
 Malawi,MWI,2022,DTP3,86.0
 Malawi,MWI,2023,DTP3,91.0
 Malawi,MWI,2024,DTP3,91.0
+Malawi,MWI,1985,HepB3,
+Malawi,MWI,1986,HepB3,
+Malawi,MWI,1987,HepB3,
+Malawi,MWI,1988,HepB3,
+Malawi,MWI,1989,HepB3,
+Malawi,MWI,1990,HepB3,
+Malawi,MWI,1991,HepB3,
+Malawi,MWI,1992,HepB3,
+Malawi,MWI,1993,HepB3,
+Malawi,MWI,1994,HepB3,
+Malawi,MWI,1995,HepB3,
+Malawi,MWI,1996,HepB3,
+Malawi,MWI,1997,HepB3,
+Malawi,MWI,1998,HepB3,
+Malawi,MWI,1999,HepB3,
 Malawi,MWI,2000,HepB3,
 Malawi,MWI,2001,HepB3,
 Malawi,MWI,2002,HepB3,64.0
@@ -3549,6 +5679,21 @@ Malawi,MWI,2021,HepB3,93.0
 Malawi,MWI,2022,HepB3,86.0
 Malawi,MWI,2023,HepB3,91.0
 Malawi,MWI,2024,HepB3,91.0
+Malawi,MWI,1985,MCV1,49.0
+Malawi,MWI,1986,MCV1,60.0
+Malawi,MWI,1987,MCV1,79.0
+Malawi,MWI,1988,MCV1,82.0
+Malawi,MWI,1989,MCV1,84.0
+Malawi,MWI,1990,MCV1,81.0
+Malawi,MWI,1991,MCV1,85.0
+Malawi,MWI,1992,MCV1,91.0
+Malawi,MWI,1993,MCV1,87.0
+Malawi,MWI,1994,MCV1,83.0
+Malawi,MWI,1995,MCV1,90.0
+Malawi,MWI,1996,MCV1,90.0
+Malawi,MWI,1997,MCV1,87.0
+Malawi,MWI,1998,MCV1,90.0
+Malawi,MWI,1999,MCV1,82.0
 Malawi,MWI,2000,MCV1,73.0
 Malawi,MWI,2001,MCV1,81.0
 Malawi,MWI,2002,MCV1,69.0
@@ -3574,6 +5719,21 @@ Malawi,MWI,2021,MCV1,90.0
 Malawi,MWI,2022,MCV1,82.0
 Malawi,MWI,2023,MCV1,87.0
 Malawi,MWI,2024,MCV1,89.0
+Malawi,MWI,1985,Polio3,55.0
+Malawi,MWI,1986,Polio3,53.0
+Malawi,MWI,1987,Polio3,78.0
+Malawi,MWI,1988,Polio3,72.0
+Malawi,MWI,1989,Polio3,90.0
+Malawi,MWI,1990,Polio3,93.0
+Malawi,MWI,1991,Polio3,96.0
+Malawi,MWI,1992,Polio3,98.0
+Malawi,MWI,1993,Polio3,91.0
+Malawi,MWI,1994,Polio3,84.0
+Malawi,MWI,1995,Polio3,90.0
+Malawi,MWI,1996,Polio3,82.0
+Malawi,MWI,1997,Polio3,94.0
+Malawi,MWI,1998,Polio3,93.0
+Malawi,MWI,1999,Polio3,77.0
 Malawi,MWI,2000,Polio3,73.0
 Malawi,MWI,2001,Polio3,86.0
 Malawi,MWI,2002,Polio3,79.0
@@ -3599,6 +5759,21 @@ Malawi,MWI,2021,Polio3,89.0
 Malawi,MWI,2022,Polio3,87.0
 Malawi,MWI,2023,Polio3,91.0
 Malawi,MWI,2024,Polio3,90.0
+Mali,MLI,1985,DTP3,8.0
+Mali,MLI,1986,DTP3,8.0
+Mali,MLI,1987,DTP3,8.0
+Mali,MLI,1988,DTP3,18.0
+Mali,MLI,1989,DTP3,26.0
+Mali,MLI,1990,DTP3,42.0
+Mali,MLI,1991,DTP3,34.0
+Mali,MLI,1992,DTP3,38.0
+Mali,MLI,1993,DTP3,46.0
+Mali,MLI,1994,DTP3,39.0
+Mali,MLI,1995,DTP3,49.0
+Mali,MLI,1996,DTP3,53.0
+Mali,MLI,1997,DTP3,52.0
+Mali,MLI,1998,DTP3,52.0
+Mali,MLI,1999,DTP3,40.0
 Mali,MLI,2000,DTP3,43.0
 Mali,MLI,2001,DTP3,49.0
 Mali,MLI,2002,DTP3,61.0
@@ -3624,6 +5799,21 @@ Mali,MLI,2021,DTP3,77.0
 Mali,MLI,2022,DTP3,75.0
 Mali,MLI,2023,DTP3,75.0
 Mali,MLI,2024,DTP3,82.0
+Mali,MLI,1985,HepB3,
+Mali,MLI,1986,HepB3,
+Mali,MLI,1987,HepB3,
+Mali,MLI,1988,HepB3,
+Mali,MLI,1989,HepB3,
+Mali,MLI,1990,HepB3,
+Mali,MLI,1991,HepB3,
+Mali,MLI,1992,HepB3,
+Mali,MLI,1993,HepB3,
+Mali,MLI,1994,HepB3,
+Mali,MLI,1995,HepB3,
+Mali,MLI,1996,HepB3,
+Mali,MLI,1997,HepB3,
+Mali,MLI,1998,HepB3,
+Mali,MLI,1999,HepB3,
 Mali,MLI,2000,HepB3,
 Mali,MLI,2001,HepB3,
 Mali,MLI,2002,HepB3,
@@ -3649,6 +5839,21 @@ Mali,MLI,2021,HepB3,77.0
 Mali,MLI,2022,HepB3,75.0
 Mali,MLI,2023,HepB3,75.0
 Mali,MLI,2024,HepB3,82.0
+Mali,MLI,1985,MCV1,19.0
+Mali,MLI,1986,MCV1,27.0
+Mali,MLI,1987,MCV1,11.0
+Mali,MLI,1988,MCV1,23.0
+Mali,MLI,1989,MCV1,40.0
+Mali,MLI,1990,MCV1,43.0
+Mali,MLI,1991,MCV1,42.0
+Mali,MLI,1992,MCV1,35.0
+Mali,MLI,1993,MCV1,51.0
+Mali,MLI,1994,MCV1,46.0
+Mali,MLI,1995,MCV1,52.0
+Mali,MLI,1996,MCV1,57.0
+Mali,MLI,1997,MCV1,56.0
+Mali,MLI,1998,MCV1,54.0
+Mali,MLI,1999,MCV1,51.0
 Mali,MLI,2000,MCV1,49.0
 Mali,MLI,2001,MCV1,54.0
 Mali,MLI,2002,MCV1,56.0
@@ -3674,6 +5879,21 @@ Mali,MLI,2021,MCV1,72.0
 Mali,MLI,2022,MCV1,69.0
 Mali,MLI,2023,MCV1,68.0
 Mali,MLI,2024,MCV1,72.0
+Mali,MLI,1985,Polio3,8.0
+Mali,MLI,1986,Polio3,6.0
+Mali,MLI,1987,Polio3,8.0
+Mali,MLI,1988,Polio3,18.0
+Mali,MLI,1989,Polio3,26.0
+Mali,MLI,1990,Polio3,42.0
+Mali,MLI,1991,Polio3,34.0
+Mali,MLI,1992,Polio3,38.0
+Mali,MLI,1993,Polio3,46.0
+Mali,MLI,1994,Polio3,39.0
+Mali,MLI,1995,Polio3,49.0
+Mali,MLI,1996,Polio3,53.0
+Mali,MLI,1997,Polio3,52.0
+Mali,MLI,1998,Polio3,52.0
+Mali,MLI,1999,Polio3,53.0
 Mali,MLI,2000,Polio3,53.0
 Mali,MLI,2001,Polio3,56.0
 Mali,MLI,2002,Polio3,65.0
@@ -3699,6 +5919,21 @@ Mali,MLI,2021,Polio3,69.0
 Mali,MLI,2022,Polio3,75.0
 Mali,MLI,2023,Polio3,72.0
 Mali,MLI,2024,Polio3,72.0
+Mauritania,MRT,1985,DTP3,27.0
+Mauritania,MRT,1986,DTP3,32.0
+Mauritania,MRT,1987,DTP3,30.0
+Mauritania,MRT,1988,DTP3,28.0
+Mauritania,MRT,1989,DTP3,28.0
+Mauritania,MRT,1990,DTP3,33.0
+Mauritania,MRT,1991,DTP3,29.0
+Mauritania,MRT,1992,DTP3,39.0
+Mauritania,MRT,1993,DTP3,44.0
+Mauritania,MRT,1994,DTP3,50.0
+Mauritania,MRT,1995,DTP3,55.0
+Mauritania,MRT,1996,DTP3,50.0
+Mauritania,MRT,1997,DTP3,28.0
+Mauritania,MRT,1998,DTP3,16.0
+Mauritania,MRT,1999,DTP3,53.0
 Mauritania,MRT,2000,DTP3,51.0
 Mauritania,MRT,2001,DTP3,75.0
 Mauritania,MRT,2002,DTP3,89.0
@@ -3724,6 +5959,21 @@ Mauritania,MRT,2021,DTP3,77.0
 Mauritania,MRT,2022,DTP3,85.0
 Mauritania,MRT,2023,DTP3,90.0
 Mauritania,MRT,2024,DTP3,86.0
+Mauritania,MRT,1985,HepB3,
+Mauritania,MRT,1986,HepB3,
+Mauritania,MRT,1987,HepB3,
+Mauritania,MRT,1988,HepB3,
+Mauritania,MRT,1989,HepB3,
+Mauritania,MRT,1990,HepB3,
+Mauritania,MRT,1991,HepB3,
+Mauritania,MRT,1992,HepB3,
+Mauritania,MRT,1993,HepB3,
+Mauritania,MRT,1994,HepB3,
+Mauritania,MRT,1995,HepB3,
+Mauritania,MRT,1996,HepB3,
+Mauritania,MRT,1997,HepB3,
+Mauritania,MRT,1998,HepB3,
+Mauritania,MRT,1999,HepB3,
 Mauritania,MRT,2000,HepB3,
 Mauritania,MRT,2001,HepB3,
 Mauritania,MRT,2002,HepB3,
@@ -3749,6 +5999,21 @@ Mauritania,MRT,2021,HepB3,77.0
 Mauritania,MRT,2022,HepB3,85.0
 Mauritania,MRT,2023,HepB3,90.0
 Mauritania,MRT,2024,HepB3,86.0
+Mauritania,MRT,1985,MCV1,41.0
+Mauritania,MRT,1986,MCV1,40.0
+Mauritania,MRT,1987,MCV1,27.0
+Mauritania,MRT,1988,MCV1,45.0
+Mauritania,MRT,1989,MCV1,42.0
+Mauritania,MRT,1990,MCV1,38.0
+Mauritania,MRT,1991,MCV1,32.0
+Mauritania,MRT,1992,MCV1,43.0
+Mauritania,MRT,1993,MCV1,49.0
+Mauritania,MRT,1994,MCV1,53.0
+Mauritania,MRT,1995,MCV1,67.0
+Mauritania,MRT,1996,MCV1,66.0
+Mauritania,MRT,1997,MCV1,64.0
+Mauritania,MRT,1998,MCV1,63.0
+Mauritania,MRT,1999,MCV1,62.0
 Mauritania,MRT,2000,MCV1,46.0
 Mauritania,MRT,2001,MCV1,58.0
 Mauritania,MRT,2002,MCV1,87.0
@@ -3774,6 +6039,21 @@ Mauritania,MRT,2021,MCV1,75.0
 Mauritania,MRT,2022,MCV1,84.0
 Mauritania,MRT,2023,MCV1,92.0
 Mauritania,MRT,2024,MCV1,93.0
+Mauritania,MRT,1985,Polio3,16.0
+Mauritania,MRT,1986,Polio3,11.0
+Mauritania,MRT,1987,Polio3,10.0
+Mauritania,MRT,1988,Polio3,29.0
+Mauritania,MRT,1989,Polio3,28.0
+Mauritania,MRT,1990,Polio3,33.0
+Mauritania,MRT,1991,Polio3,28.0
+Mauritania,MRT,1992,Polio3,39.0
+Mauritania,MRT,1993,Polio3,44.0
+Mauritania,MRT,1994,Polio3,50.0
+Mauritania,MRT,1995,Polio3,56.0
+Mauritania,MRT,1996,Polio3,50.0
+Mauritania,MRT,1997,Polio3,28.0
+Mauritania,MRT,1998,Polio3,16.0
+Mauritania,MRT,1999,Polio3,61.0
 Mauritania,MRT,2000,Polio3,58.0
 Mauritania,MRT,2001,Polio3,75.0
 Mauritania,MRT,2002,Polio3,91.0
@@ -3799,6 +6079,21 @@ Mauritania,MRT,2021,Polio3,76.0
 Mauritania,MRT,2022,Polio3,81.0
 Mauritania,MRT,2023,Polio3,90.0
 Mauritania,MRT,2024,Polio3,85.0
+Morocco,MAR,1985,DTP3,51.0
+Morocco,MAR,1986,DTP3,63.0
+Morocco,MAR,1987,DTP3,85.0
+Morocco,MAR,1988,DTP3,82.0
+Morocco,MAR,1989,DTP3,80.0
+Morocco,MAR,1990,DTP3,81.0
+Morocco,MAR,1991,DTP3,81.0
+Morocco,MAR,1992,DTP3,87.0
+Morocco,MAR,1993,DTP3,86.0
+Morocco,MAR,1994,DTP3,87.0
+Morocco,MAR,1995,DTP3,90.0
+Morocco,MAR,1996,DTP3,95.0
+Morocco,MAR,1997,DTP3,94.0
+Morocco,MAR,1998,DTP3,93.0
+Morocco,MAR,1999,DTP3,91.0
 Morocco,MAR,2000,DTP3,95.0
 Morocco,MAR,2001,DTP3,96.0
 Morocco,MAR,2002,DTP3,94.0
@@ -3824,6 +6119,21 @@ Morocco,MAR,2021,DTP3,98.0
 Morocco,MAR,2022,DTP3,98.0
 Morocco,MAR,2023,DTP3,97.0
 Morocco,MAR,2024,DTP3,96.0
+Morocco,MAR,1985,HepB3,
+Morocco,MAR,1986,HepB3,
+Morocco,MAR,1987,HepB3,
+Morocco,MAR,1988,HepB3,
+Morocco,MAR,1989,HepB3,
+Morocco,MAR,1990,HepB3,
+Morocco,MAR,1991,HepB3,
+Morocco,MAR,1992,HepB3,
+Morocco,MAR,1993,HepB3,
+Morocco,MAR,1994,HepB3,
+Morocco,MAR,1995,HepB3,
+Morocco,MAR,1996,HepB3,
+Morocco,MAR,1997,HepB3,
+Morocco,MAR,1998,HepB3,
+Morocco,MAR,1999,HepB3,10.0
 Morocco,MAR,2000,HepB3,43.0
 Morocco,MAR,2001,HepB3,84.0
 Morocco,MAR,2002,HepB3,92.0
@@ -3849,6 +6159,21 @@ Morocco,MAR,2021,HepB3,98.0
 Morocco,MAR,2022,HepB3,98.0
 Morocco,MAR,2023,HepB3,97.0
 Morocco,MAR,2024,HepB3,96.0
+Morocco,MAR,1985,MCV1,45.0
+Morocco,MAR,1986,MCV1,58.0
+Morocco,MAR,1987,MCV1,73.0
+Morocco,MAR,1988,MCV1,81.0
+Morocco,MAR,1989,MCV1,82.0
+Morocco,MAR,1990,MCV1,79.0
+Morocco,MAR,1991,MCV1,80.0
+Morocco,MAR,1992,MCV1,81.0
+Morocco,MAR,1993,MCV1,83.0
+Morocco,MAR,1994,MCV1,87.0
+Morocco,MAR,1995,MCV1,88.0
+Morocco,MAR,1996,MCV1,93.0
+Morocco,MAR,1997,MCV1,92.0
+Morocco,MAR,1998,MCV1,91.0
+Morocco,MAR,1999,MCV1,90.0
 Morocco,MAR,2000,MCV1,93.0
 Morocco,MAR,2001,MCV1,96.0
 Morocco,MAR,2002,MCV1,94.0
@@ -3874,6 +6199,21 @@ Morocco,MAR,2021,MCV1,99.0
 Morocco,MAR,2022,MCV1,99.0
 Morocco,MAR,2023,MCV1,98.0
 Morocco,MAR,2024,MCV1,98.0
+Morocco,MAR,1985,Polio3,51.0
+Morocco,MAR,1986,Polio3,63.0
+Morocco,MAR,1987,Polio3,82.0
+Morocco,MAR,1988,Polio3,82.0
+Morocco,MAR,1989,Polio3,80.0
+Morocco,MAR,1990,Polio3,81.0
+Morocco,MAR,1991,Polio3,82.0
+Morocco,MAR,1992,Polio3,87.0
+Morocco,MAR,1993,Polio3,86.0
+Morocco,MAR,1994,Polio3,87.0
+Morocco,MAR,1995,Polio3,90.0
+Morocco,MAR,1996,Polio3,95.0
+Morocco,MAR,1997,Polio3,95.0
+Morocco,MAR,1998,Polio3,93.0
+Morocco,MAR,1999,Polio3,91.0
 Morocco,MAR,2000,Polio3,95.0
 Morocco,MAR,2001,Polio3,93.0
 Morocco,MAR,2002,Polio3,94.0
@@ -3899,6 +6239,21 @@ Morocco,MAR,2021,Polio3,98.0
 Morocco,MAR,2022,Polio3,98.0
 Morocco,MAR,2023,Polio3,97.0
 Morocco,MAR,2024,Polio3,96.0
+Mozambique,MOZ,1985,DTP3,29.0
+Mozambique,MOZ,1986,DTP3,32.0
+Mozambique,MOZ,1987,DTP3,39.0
+Mozambique,MOZ,1988,DTP3,38.0
+Mozambique,MOZ,1989,DTP3,47.0
+Mozambique,MOZ,1990,DTP3,46.0
+Mozambique,MOZ,1991,DTP3,46.0
+Mozambique,MOZ,1992,DTP3,50.0
+Mozambique,MOZ,1993,DTP3,49.0
+Mozambique,MOZ,1994,DTP3,55.0
+Mozambique,MOZ,1995,DTP3,57.0
+Mozambique,MOZ,1996,DTP3,60.0
+Mozambique,MOZ,1997,DTP3,62.0
+Mozambique,MOZ,1998,DTP3,65.0
+Mozambique,MOZ,1999,DTP3,68.0
 Mozambique,MOZ,2000,DTP3,70.0
 Mozambique,MOZ,2001,DTP3,73.0
 Mozambique,MOZ,2002,DTP3,76.0
@@ -3924,6 +6279,21 @@ Mozambique,MOZ,2021,DTP3,56.0
 Mozambique,MOZ,2022,DTP3,55.0
 Mozambique,MOZ,2023,DTP3,70.0
 Mozambique,MOZ,2024,DTP3,70.0
+Mozambique,MOZ,1985,HepB3,
+Mozambique,MOZ,1986,HepB3,
+Mozambique,MOZ,1987,HepB3,
+Mozambique,MOZ,1988,HepB3,
+Mozambique,MOZ,1989,HepB3,
+Mozambique,MOZ,1990,HepB3,
+Mozambique,MOZ,1991,HepB3,
+Mozambique,MOZ,1992,HepB3,
+Mozambique,MOZ,1993,HepB3,
+Mozambique,MOZ,1994,HepB3,
+Mozambique,MOZ,1995,HepB3,
+Mozambique,MOZ,1996,HepB3,
+Mozambique,MOZ,1997,HepB3,
+Mozambique,MOZ,1998,HepB3,
+Mozambique,MOZ,1999,HepB3,
 Mozambique,MOZ,2000,HepB3,
 Mozambique,MOZ,2001,HepB3,25.0
 Mozambique,MOZ,2002,HepB3,76.0
@@ -3949,6 +6319,21 @@ Mozambique,MOZ,2021,HepB3,56.0
 Mozambique,MOZ,2022,HepB3,55.0
 Mozambique,MOZ,2023,HepB3,70.0
 Mozambique,MOZ,2024,HepB3,70.0
+Mozambique,MOZ,1985,MCV1,39.0
+Mozambique,MOZ,1986,MCV1,39.0
+Mozambique,MOZ,1987,MCV1,37.0
+Mozambique,MOZ,1988,MCV1,44.0
+Mozambique,MOZ,1989,MCV1,48.0
+Mozambique,MOZ,1990,MCV1,59.0
+Mozambique,MOZ,1991,MCV1,55.0
+Mozambique,MOZ,1992,MCV1,56.0
+Mozambique,MOZ,1993,MCV1,62.0
+Mozambique,MOZ,1994,MCV1,65.0
+Mozambique,MOZ,1995,MCV1,71.0
+Mozambique,MOZ,1996,MCV1,58.0
+Mozambique,MOZ,1997,MCV1,61.0
+Mozambique,MOZ,1998,MCV1,64.0
+Mozambique,MOZ,1999,MCV1,67.0
 Mozambique,MOZ,2000,MCV1,71.0
 Mozambique,MOZ,2001,MCV1,74.0
 Mozambique,MOZ,2002,MCV1,77.0
@@ -3974,6 +6359,21 @@ Mozambique,MOZ,2021,MCV1,62.0
 Mozambique,MOZ,2022,MCV1,63.0
 Mozambique,MOZ,2023,MCV1,65.0
 Mozambique,MOZ,2024,MCV1,65.0
+Mozambique,MOZ,1985,Polio3,25.0
+Mozambique,MOZ,1986,Polio3,32.0
+Mozambique,MOZ,1987,Polio3,38.0
+Mozambique,MOZ,1988,Polio3,38.0
+Mozambique,MOZ,1989,Polio3,47.0
+Mozambique,MOZ,1990,Polio3,46.0
+Mozambique,MOZ,1991,Polio3,46.0
+Mozambique,MOZ,1992,Polio3,50.0
+Mozambique,MOZ,1993,Polio3,49.0
+Mozambique,MOZ,1994,Polio3,55.0
+Mozambique,MOZ,1995,Polio3,57.0
+Mozambique,MOZ,1996,Polio3,55.0
+Mozambique,MOZ,1997,Polio3,58.0
+Mozambique,MOZ,1998,Polio3,62.0
+Mozambique,MOZ,1999,Polio3,65.0
 Mozambique,MOZ,2000,Polio3,69.0
 Mozambique,MOZ,2001,Polio3,72.0
 Mozambique,MOZ,2002,Polio3,76.0
@@ -3999,6 +6399,21 @@ Mozambique,MOZ,2021,Polio3,64.0
 Mozambique,MOZ,2022,Polio3,74.0
 Mozambique,MOZ,2023,Polio3,78.0
 Mozambique,MOZ,2024,Polio3,78.0
+Myanmar,MMR,1985,DTP3,16.0
+Myanmar,MMR,1986,DTP3,20.0
+Myanmar,MMR,1987,DTP3,23.0
+Myanmar,MMR,1988,DTP3,28.0
+Myanmar,MMR,1989,DTP3,50.0
+Myanmar,MMR,1990,DTP3,88.0
+Myanmar,MMR,1991,DTP3,66.0
+Myanmar,MMR,1992,DTP3,71.0
+Myanmar,MMR,1993,DTP3,73.0
+Myanmar,MMR,1994,DTP3,77.0
+Myanmar,MMR,1995,DTP3,84.0
+Myanmar,MMR,1996,DTP3,88.0
+Myanmar,MMR,1997,DTP3,90.0
+Myanmar,MMR,1998,DTP3,90.0
+Myanmar,MMR,1999,DTP3,75.0
 Myanmar,MMR,2000,DTP3,82.0
 Myanmar,MMR,2001,DTP3,73.0
 Myanmar,MMR,2002,DTP3,79.0
@@ -4024,6 +6439,21 @@ Myanmar,MMR,2021,DTP3,37.0
 Myanmar,MMR,2022,DTP3,71.0
 Myanmar,MMR,2023,DTP3,71.0
 Myanmar,MMR,2024,DTP3,71.0
+Myanmar,MMR,1985,HepB3,
+Myanmar,MMR,1986,HepB3,
+Myanmar,MMR,1987,HepB3,
+Myanmar,MMR,1988,HepB3,
+Myanmar,MMR,1989,HepB3,
+Myanmar,MMR,1990,HepB3,
+Myanmar,MMR,1991,HepB3,
+Myanmar,MMR,1992,HepB3,
+Myanmar,MMR,1993,HepB3,
+Myanmar,MMR,1994,HepB3,
+Myanmar,MMR,1995,HepB3,
+Myanmar,MMR,1996,HepB3,
+Myanmar,MMR,1997,HepB3,
+Myanmar,MMR,1998,HepB3,
+Myanmar,MMR,1999,HepB3,
 Myanmar,MMR,2000,HepB3,
 Myanmar,MMR,2001,HepB3,
 Myanmar,MMR,2002,HepB3,
@@ -4049,6 +6479,21 @@ Myanmar,MMR,2021,HepB3,37.0
 Myanmar,MMR,2022,HepB3,71.0
 Myanmar,MMR,2023,HepB3,71.0
 Myanmar,MMR,2024,HepB3,71.0
+Myanmar,MMR,1985,MCV1,
+Myanmar,MMR,1986,MCV1,5.0
+Myanmar,MMR,1987,MCV1,17.0
+Myanmar,MMR,1988,MCV1,32.0
+Myanmar,MMR,1989,MCV1,50.0
+Myanmar,MMR,1990,MCV1,68.0
+Myanmar,MMR,1991,MCV1,67.0
+Myanmar,MMR,1992,MCV1,68.0
+Myanmar,MMR,1993,MCV1,71.0
+Myanmar,MMR,1994,MCV1,77.0
+Myanmar,MMR,1995,MCV1,82.0
+Myanmar,MMR,1996,MCV1,86.0
+Myanmar,MMR,1997,MCV1,88.0
+Myanmar,MMR,1998,MCV1,89.0
+Myanmar,MMR,1999,MCV1,86.0
 Myanmar,MMR,2000,MCV1,84.0
 Myanmar,MMR,2001,MCV1,73.0
 Myanmar,MMR,2002,MCV1,77.0
@@ -4074,6 +6519,21 @@ Myanmar,MMR,2021,MCV1,44.0
 Myanmar,MMR,2022,MCV1,75.0
 Myanmar,MMR,2023,MCV1,73.0
 Myanmar,MMR,2024,MCV1,71.0
+Myanmar,MMR,1985,Polio3,3.0
+Myanmar,MMR,1986,Polio3,4.0
+Myanmar,MMR,1987,Polio3,10.0
+Myanmar,MMR,1988,Polio3,22.0
+Myanmar,MMR,1989,Polio3,45.0
+Myanmar,MMR,1990,Polio3,88.0
+Myanmar,MMR,1991,Polio3,66.0
+Myanmar,MMR,1992,Polio3,71.0
+Myanmar,MMR,1993,Polio3,73.0
+Myanmar,MMR,1994,Polio3,77.0
+Myanmar,MMR,1995,Polio3,84.0
+Myanmar,MMR,1996,Polio3,87.0
+Myanmar,MMR,1997,Polio3,90.0
+Myanmar,MMR,1998,Polio3,90.0
+Myanmar,MMR,1999,Polio3,88.0
 Myanmar,MMR,2000,Polio3,88.0
 Myanmar,MMR,2001,Polio3,77.0
 Myanmar,MMR,2002,Polio3,84.0
@@ -4099,6 +6559,21 @@ Myanmar,MMR,2021,Polio3,43.0
 Myanmar,MMR,2022,Polio3,75.0
 Myanmar,MMR,2023,Polio3,73.0
 Myanmar,MMR,2024,Polio3,71.0
+Namibia,NAM,1985,DTP3,
+Namibia,NAM,1986,DTP3,
+Namibia,NAM,1987,DTP3,
+Namibia,NAM,1988,DTP3,
+Namibia,NAM,1989,DTP3,
+Namibia,NAM,1990,DTP3,
+Namibia,NAM,1991,DTP3,69.0
+Namibia,NAM,1992,DTP3,70.0
+Namibia,NAM,1993,DTP3,73.0
+Namibia,NAM,1994,DTP3,79.0
+Namibia,NAM,1995,DTP3,74.0
+Namibia,NAM,1996,DTP3,70.0
+Namibia,NAM,1997,DTP3,66.0
+Namibia,NAM,1998,DTP3,74.0
+Namibia,NAM,1999,DTP3,72.0
 Namibia,NAM,2000,DTP3,79.0
 Namibia,NAM,2001,DTP3,78.0
 Namibia,NAM,2002,DTP3,77.0
@@ -4124,6 +6599,21 @@ Namibia,NAM,2021,DTP3,94.0
 Namibia,NAM,2022,DTP3,84.0
 Namibia,NAM,2023,DTP3,83.0
 Namibia,NAM,2024,DTP3,74.0
+Namibia,NAM,1985,HepB3,
+Namibia,NAM,1986,HepB3,
+Namibia,NAM,1987,HepB3,
+Namibia,NAM,1988,HepB3,
+Namibia,NAM,1989,HepB3,
+Namibia,NAM,1990,HepB3,
+Namibia,NAM,1991,HepB3,
+Namibia,NAM,1992,HepB3,
+Namibia,NAM,1993,HepB3,
+Namibia,NAM,1994,HepB3,
+Namibia,NAM,1995,HepB3,
+Namibia,NAM,1996,HepB3,
+Namibia,NAM,1997,HepB3,
+Namibia,NAM,1998,HepB3,
+Namibia,NAM,1999,HepB3,
 Namibia,NAM,2000,HepB3,
 Namibia,NAM,2001,HepB3,
 Namibia,NAM,2002,HepB3,
@@ -4149,6 +6639,21 @@ Namibia,NAM,2021,HepB3,94.0
 Namibia,NAM,2022,HepB3,84.0
 Namibia,NAM,2023,HepB3,83.0
 Namibia,NAM,2024,HepB3,74.0
+Namibia,NAM,1985,MCV1,
+Namibia,NAM,1986,MCV1,
+Namibia,NAM,1987,MCV1,
+Namibia,NAM,1988,MCV1,
+Namibia,NAM,1989,MCV1,
+Namibia,NAM,1990,MCV1,
+Namibia,NAM,1991,MCV1,76.0
+Namibia,NAM,1992,MCV1,76.0
+Namibia,NAM,1993,MCV1,71.0
+Namibia,NAM,1994,MCV1,70.0
+Namibia,NAM,1995,MCV1,68.0
+Namibia,NAM,1996,MCV1,61.0
+Namibia,NAM,1997,MCV1,59.0
+Namibia,NAM,1998,MCV1,64.0
+Namibia,NAM,1999,MCV1,65.0
 Namibia,NAM,2000,MCV1,69.0
 Namibia,NAM,2001,MCV1,58.0
 Namibia,NAM,2002,MCV1,68.0
@@ -4174,6 +6679,21 @@ Namibia,NAM,2021,MCV1,91.0
 Namibia,NAM,2022,MCV1,89.0
 Namibia,NAM,2023,MCV1,86.0
 Namibia,NAM,2024,MCV1,79.0
+Namibia,NAM,1985,Polio3,
+Namibia,NAM,1986,Polio3,
+Namibia,NAM,1987,Polio3,
+Namibia,NAM,1988,Polio3,
+Namibia,NAM,1989,Polio3,
+Namibia,NAM,1990,Polio3,
+Namibia,NAM,1991,Polio3,70.0
+Namibia,NAM,1992,Polio3,70.0
+Namibia,NAM,1993,Polio3,79.0
+Namibia,NAM,1994,Polio3,80.0
+Namibia,NAM,1995,Polio3,73.0
+Namibia,NAM,1996,Polio3,71.0
+Namibia,NAM,1997,Polio3,69.0
+Namibia,NAM,1998,Polio3,74.0
+Namibia,NAM,1999,Polio3,72.0
 Namibia,NAM,2000,Polio3,80.0
 Namibia,NAM,2001,Polio3,79.0
 Namibia,NAM,2002,Polio3,78.0
@@ -4199,6 +6719,21 @@ Namibia,NAM,2021,Polio3,73.0
 Namibia,NAM,2022,Polio3,86.0
 Namibia,NAM,2023,Polio3,77.0
 Namibia,NAM,2024,Polio3,75.0
+Nepal,NPL,1985,DTP3,32.0
+Nepal,NPL,1986,DTP3,38.0
+Nepal,NPL,1987,DTP3,46.0
+Nepal,NPL,1988,DTP3,45.0
+Nepal,NPL,1989,DTP3,44.0
+Nepal,NPL,1990,DTP3,43.0
+Nepal,NPL,1991,DTP3,46.0
+Nepal,NPL,1992,DTP3,49.0
+Nepal,NPL,1993,DTP3,51.0
+Nepal,NPL,1994,DTP3,54.0
+Nepal,NPL,1995,DTP3,54.0
+Nepal,NPL,1996,DTP3,65.0
+Nepal,NPL,1997,DTP3,78.0
+Nepal,NPL,1998,DTP3,71.0
+Nepal,NPL,1999,DTP3,65.0
 Nepal,NPL,2000,DTP3,74.0
 Nepal,NPL,2001,DTP3,72.0
 Nepal,NPL,2002,DTP3,72.0
@@ -4224,6 +6759,21 @@ Nepal,NPL,2021,DTP3,91.0
 Nepal,NPL,2022,DTP3,90.0
 Nepal,NPL,2023,DTP3,94.0
 Nepal,NPL,2024,DTP3,97.0
+Nepal,NPL,1985,HepB3,
+Nepal,NPL,1986,HepB3,
+Nepal,NPL,1987,HepB3,
+Nepal,NPL,1988,HepB3,
+Nepal,NPL,1989,HepB3,
+Nepal,NPL,1990,HepB3,
+Nepal,NPL,1991,HepB3,
+Nepal,NPL,1992,HepB3,
+Nepal,NPL,1993,HepB3,
+Nepal,NPL,1994,HepB3,
+Nepal,NPL,1995,HepB3,
+Nepal,NPL,1996,HepB3,
+Nepal,NPL,1997,HepB3,
+Nepal,NPL,1998,HepB3,
+Nepal,NPL,1999,HepB3,
 Nepal,NPL,2000,HepB3,
 Nepal,NPL,2001,HepB3,
 Nepal,NPL,2002,HepB3,
@@ -4249,6 +6799,21 @@ Nepal,NPL,2021,HepB3,91.0
 Nepal,NPL,2022,HepB3,90.0
 Nepal,NPL,2023,HepB3,94.0
 Nepal,NPL,2024,HepB3,97.0
+Nepal,NPL,1985,MCV1,34.0
+Nepal,NPL,1986,MCV1,37.0
+Nepal,NPL,1987,MCV1,37.0
+Nepal,NPL,1988,MCV1,58.0
+Nepal,NPL,1989,MCV1,57.0
+Nepal,NPL,1990,MCV1,57.0
+Nepal,NPL,1991,MCV1,57.0
+Nepal,NPL,1992,MCV1,58.0
+Nepal,NPL,1993,MCV1,58.0
+Nepal,NPL,1994,MCV1,58.0
+Nepal,NPL,1995,MCV1,56.0
+Nepal,NPL,1996,MCV1,65.0
+Nepal,NPL,1997,MCV1,73.0
+Nepal,NPL,1998,MCV1,67.0
+Nepal,NPL,1999,MCV1,81.0
 Nepal,NPL,2000,MCV1,71.0
 Nepal,NPL,2001,MCV1,71.0
 Nepal,NPL,2002,MCV1,71.0
@@ -4274,6 +6839,21 @@ Nepal,NPL,2021,MCV1,90.0
 Nepal,NPL,2022,MCV1,90.0
 Nepal,NPL,2023,MCV1,93.0
 Nepal,NPL,2024,MCV1,97.0
+Nepal,NPL,1985,Polio3,20.0
+Nepal,NPL,1986,Polio3,34.0
+Nepal,NPL,1987,Polio3,43.0
+Nepal,NPL,1988,Polio3,43.0
+Nepal,NPL,1989,Polio3,42.0
+Nepal,NPL,1990,Polio3,42.0
+Nepal,NPL,1991,Polio3,45.0
+Nepal,NPL,1992,Polio3,48.0
+Nepal,NPL,1993,Polio3,51.0
+Nepal,NPL,1994,Polio3,54.0
+Nepal,NPL,1995,Polio3,50.0
+Nepal,NPL,1996,Polio3,60.0
+Nepal,NPL,1997,Polio3,70.0
+Nepal,NPL,1998,Polio3,66.0
+Nepal,NPL,1999,Polio3,76.0
 Nepal,NPL,2000,Polio3,74.0
 Nepal,NPL,2001,Polio3,73.0
 Nepal,NPL,2002,Polio3,72.0
@@ -4299,6 +6879,21 @@ Nepal,NPL,2021,Polio3,91.0
 Nepal,NPL,2022,Polio3,87.0
 Nepal,NPL,2023,Polio3,93.0
 Nepal,NPL,2024,Polio3,97.0
+Niger,NER,1985,DTP3,4.0
+Niger,NER,1986,DTP3,5.0
+Niger,NER,1987,DTP3,7.0
+Niger,NER,1988,DTP3,9.0
+Niger,NER,1989,DTP3,13.0
+Niger,NER,1990,DTP3,22.0
+Niger,NER,1991,DTP3,19.0
+Niger,NER,1992,DTP3,20.0
+Niger,NER,1993,DTP3,20.0
+Niger,NER,1994,DTP3,20.0
+Niger,NER,1995,DTP3,23.0
+Niger,NER,1996,DTP3,23.0
+Niger,NER,1997,DTP3,25.0
+Niger,NER,1998,DTP3,29.0
+Niger,NER,1999,DTP3,32.0
 Niger,NER,2000,DTP3,34.0
 Niger,NER,2001,DTP3,36.0
 Niger,NER,2002,DTP3,39.0
@@ -4324,6 +6919,21 @@ Niger,NER,2021,DTP3,82.0
 Niger,NER,2022,DTP3,84.0
 Niger,NER,2023,DTP3,85.0
 Niger,NER,2024,DTP3,86.0
+Niger,NER,1985,HepB3,
+Niger,NER,1986,HepB3,
+Niger,NER,1987,HepB3,
+Niger,NER,1988,HepB3,
+Niger,NER,1989,HepB3,
+Niger,NER,1990,HepB3,
+Niger,NER,1991,HepB3,
+Niger,NER,1992,HepB3,
+Niger,NER,1993,HepB3,
+Niger,NER,1994,HepB3,
+Niger,NER,1995,HepB3,
+Niger,NER,1996,HepB3,
+Niger,NER,1997,HepB3,
+Niger,NER,1998,HepB3,
+Niger,NER,1999,HepB3,
 Niger,NER,2000,HepB3,
 Niger,NER,2001,HepB3,
 Niger,NER,2002,HepB3,
@@ -4349,6 +6959,21 @@ Niger,NER,2021,HepB3,82.0
 Niger,NER,2022,HepB3,84.0
 Niger,NER,2023,HepB3,85.0
 Niger,NER,2024,HepB3,86.0
+Niger,NER,1985,MCV1,27.0
+Niger,NER,1986,MCV1,27.0
+Niger,NER,1987,MCV1,27.0
+Niger,NER,1988,MCV1,24.0
+Niger,NER,1989,MCV1,14.0
+Niger,NER,1990,MCV1,25.0
+Niger,NER,1991,MCV1,28.0
+Niger,NER,1992,MCV1,21.0
+Niger,NER,1993,MCV1,19.0
+Niger,NER,1994,MCV1,19.0
+Niger,NER,1995,MCV1,40.0
+Niger,NER,1996,MCV1,38.0
+Niger,NER,1997,MCV1,35.0
+Niger,NER,1998,MCV1,35.0
+Niger,NER,1999,MCV1,35.0
 Niger,NER,2000,MCV1,37.0
 Niger,NER,2001,MCV1,39.0
 Niger,NER,2002,MCV1,41.0
@@ -4374,6 +6999,21 @@ Niger,NER,2021,MCV1,80.0
 Niger,NER,2022,MCV1,65.0
 Niger,NER,2023,MCV1,80.0
 Niger,NER,2024,MCV1,81.0
+Niger,NER,1985,Polio3,4.0
+Niger,NER,1986,Polio3,5.0
+Niger,NER,1987,Polio3,7.0
+Niger,NER,1988,Polio3,9.0
+Niger,NER,1989,Polio3,13.0
+Niger,NER,1990,Polio3,22.0
+Niger,NER,1991,Polio3,19.0
+Niger,NER,1992,Polio3,20.0
+Niger,NER,1993,Polio3,20.0
+Niger,NER,1994,Polio3,20.0
+Niger,NER,1995,Polio3,23.0
+Niger,NER,1996,Polio3,23.0
+Niger,NER,1997,Polio3,25.0
+Niger,NER,1998,Polio3,33.0
+Niger,NER,1999,Polio3,40.0
 Niger,NER,2000,Polio3,41.0
 Niger,NER,2001,Polio3,42.0
 Niger,NER,2002,Polio3,43.0
@@ -4399,6 +7039,21 @@ Niger,NER,2021,Polio3,82.0
 Niger,NER,2022,Polio3,84.0
 Niger,NER,2023,Polio3,85.0
 Niger,NER,2024,Polio3,86.0
+Nigeria,NGA,1985,DTP3,16.0
+Nigeria,NGA,1986,DTP3,22.0
+Nigeria,NGA,1987,DTP3,29.0
+Nigeria,NGA,1988,DTP3,36.0
+Nigeria,NGA,1989,DTP3,47.0
+Nigeria,NGA,1990,DTP3,56.0
+Nigeria,NGA,1991,DTP3,39.0
+Nigeria,NGA,1992,DTP3,43.0
+Nigeria,NGA,1993,DTP3,29.0
+Nigeria,NGA,1994,DTP3,44.0
+Nigeria,NGA,1995,DTP3,34.0
+Nigeria,NGA,1996,DTP3,26.0
+Nigeria,NGA,1997,DTP3,21.0
+Nigeria,NGA,1998,DTP3,21.0
+Nigeria,NGA,1999,DTP3,31.0
 Nigeria,NGA,2000,DTP3,29.0
 Nigeria,NGA,2001,DTP3,27.0
 Nigeria,NGA,2002,DTP3,25.0
@@ -4424,6 +7079,21 @@ Nigeria,NGA,2021,DTP3,61.0
 Nigeria,NGA,2022,DTP3,59.0
 Nigeria,NGA,2023,DTP3,67.0
 Nigeria,NGA,2024,DTP3,67.0
+Nigeria,NGA,1985,HepB3,
+Nigeria,NGA,1986,HepB3,
+Nigeria,NGA,1987,HepB3,
+Nigeria,NGA,1988,HepB3,
+Nigeria,NGA,1989,HepB3,
+Nigeria,NGA,1990,HepB3,
+Nigeria,NGA,1991,HepB3,
+Nigeria,NGA,1992,HepB3,
+Nigeria,NGA,1993,HepB3,
+Nigeria,NGA,1994,HepB3,
+Nigeria,NGA,1995,HepB3,
+Nigeria,NGA,1996,HepB3,
+Nigeria,NGA,1997,HepB3,
+Nigeria,NGA,1998,HepB3,
+Nigeria,NGA,1999,HepB3,
 Nigeria,NGA,2000,HepB3,
 Nigeria,NGA,2001,HepB3,
 Nigeria,NGA,2002,HepB3,
@@ -4449,6 +7119,21 @@ Nigeria,NGA,2021,HepB3,61.0
 Nigeria,NGA,2022,HepB3,59.0
 Nigeria,NGA,2023,HepB3,67.0
 Nigeria,NGA,2024,HepB3,67.0
+Nigeria,NGA,1985,MCV1,17.0
+Nigeria,NGA,1986,MCV1,28.0
+Nigeria,NGA,1987,MCV1,36.0
+Nigeria,NGA,1988,MCV1,46.0
+Nigeria,NGA,1989,MCV1,59.0
+Nigeria,NGA,1990,MCV1,54.0
+Nigeria,NGA,1991,MCV1,57.0
+Nigeria,NGA,1992,MCV1,43.0
+Nigeria,NGA,1993,MCV1,40.0
+Nigeria,NGA,1994,MCV1,41.0
+Nigeria,NGA,1995,MCV1,44.0
+Nigeria,NGA,1996,MCV1,38.0
+Nigeria,NGA,1997,MCV1,38.0
+Nigeria,NGA,1998,MCV1,38.0
+Nigeria,NGA,1999,MCV1,35.0
 Nigeria,NGA,2000,MCV1,33.0
 Nigeria,NGA,2001,MCV1,32.0
 Nigeria,NGA,2002,MCV1,30.0
@@ -4474,6 +7159,21 @@ Nigeria,NGA,2021,MCV1,56.0
 Nigeria,NGA,2022,MCV1,51.0
 Nigeria,NGA,2023,MCV1,54.0
 Nigeria,NGA,2024,MCV1,57.0
+Nigeria,NGA,1985,Polio3,16.0
+Nigeria,NGA,1986,Polio3,21.0
+Nigeria,NGA,1987,Polio3,28.0
+Nigeria,NGA,1988,Polio3,36.0
+Nigeria,NGA,1989,Polio3,47.0
+Nigeria,NGA,1990,Polio3,55.0
+Nigeria,NGA,1991,Polio3,42.0
+Nigeria,NGA,1992,Polio3,38.0
+Nigeria,NGA,1993,Polio3,28.0
+Nigeria,NGA,1994,Polio3,45.0
+Nigeria,NGA,1995,Polio3,31.0
+Nigeria,NGA,1996,Polio3,26.0
+Nigeria,NGA,1997,Polio3,25.0
+Nigeria,NGA,1998,Polio3,22.0
+Nigeria,NGA,1999,Polio3,27.0
 Nigeria,NGA,2000,Polio3,31.0
 Nigeria,NGA,2001,Polio3,36.0
 Nigeria,NGA,2002,Polio3,40.0
@@ -4499,6 +7199,21 @@ Nigeria,NGA,2021,Polio3,59.0
 Nigeria,NGA,2022,Polio3,55.0
 Nigeria,NGA,2023,Polio3,70.0
 Nigeria,NGA,2024,Polio3,69.0
+North America,OWID_NAM,1985,DTP3,64.7468
+North America,OWID_NAM,1986,DTP3,70.28656
+North America,OWID_NAM,1987,DTP3,76.47003
+North America,OWID_NAM,1988,DTP3,78.04501
+North America,OWID_NAM,1989,DTP3,78.223854
+North America,OWID_NAM,1990,DTP3,74.343544
+North America,OWID_NAM,1991,DTP3,81.63436
+North America,OWID_NAM,1992,DTP3,80.83972
+North America,OWID_NAM,1993,DTP3,82.035706
+North America,OWID_NAM,1994,DTP3,87.48879
+North America,OWID_NAM,1995,DTP3,87.996216
+North America,OWID_NAM,1996,DTP3,88.54651
+North America,OWID_NAM,1997,DTP3,89.43951
+North America,OWID_NAM,1998,DTP3,90.15993
+North America,OWID_NAM,1999,DTP3,90.067535
 North America,OWID_NAM,2000,DTP3,89.74069
 North America,OWID_NAM,2001,DTP3,89.60701
 North America,OWID_NAM,2002,DTP3,90.04401
@@ -4524,6 +7239,21 @@ North America,OWID_NAM,2021,DTP3,84.68911
 North America,OWID_NAM,2022,DTP3,86.16952
 North America,OWID_NAM,2023,DTP3,87.15087
 North America,OWID_NAM,2024,DTP3,
+North America,OWID_NAM,1985,HepB3,
+North America,OWID_NAM,1986,HepB3,
+North America,OWID_NAM,1987,HepB3,
+North America,OWID_NAM,1988,HepB3,
+North America,OWID_NAM,1989,HepB3,
+North America,OWID_NAM,1990,HepB3,
+North America,OWID_NAM,1991,HepB3,
+North America,OWID_NAM,1992,HepB3,
+North America,OWID_NAM,1993,HepB3,9.145805
+North America,OWID_NAM,1994,HepB3,21.41403
+North America,OWID_NAM,1995,HepB3,33.247395
+North America,OWID_NAM,1996,HepB3,39.40391
+North America,OWID_NAM,1997,HepB3,42.084435
+North America,OWID_NAM,1998,HepB3,44.045868
+North America,OWID_NAM,1999,HepB3,45.033157
 North America,OWID_NAM,2000,HepB3,77.004036
 North America,OWID_NAM,2001,HepB3,77.099945
 North America,OWID_NAM,2002,HepB3,77.010376
@@ -4549,6 +7279,21 @@ North America,OWID_NAM,2021,HepB3,83.81664
 North America,OWID_NAM,2022,HepB3,85.22557
 North America,OWID_NAM,2023,HepB3,86.23088
 North America,OWID_NAM,2024,HepB3,
+North America,OWID_NAM,1985,MCV1,72.268364
+North America,OWID_NAM,1986,MCV1,72.50382
+North America,OWID_NAM,1987,MCV1,66.45855
+North America,OWID_NAM,1988,MCV1,80.65344
+North America,OWID_NAM,1989,MCV1,83.92271
+North America,OWID_NAM,1990,MCV1,80.420204
+North America,OWID_NAM,1991,MCV1,81.73388
+North America,OWID_NAM,1992,MCV1,80.04716
+North America,OWID_NAM,1993,MCV1,79.626015
+North America,OWID_NAM,1994,MCV1,84.79908
+North America,OWID_NAM,1995,MCV1,85.29437
+North America,OWID_NAM,1996,MCV1,87.0832
+North America,OWID_NAM,1997,MCV1,86.80293
+North America,OWID_NAM,1998,MCV1,89.08587
+North America,OWID_NAM,1999,MCV1,88.62804
 North America,OWID_NAM,2000,MCV1,89.02308
 North America,OWID_NAM,2001,MCV1,89.04304
 North America,OWID_NAM,2002,MCV1,89.39124
@@ -4574,6 +7319,21 @@ North America,OWID_NAM,2021,MCV1,90.18744
 North America,OWID_NAM,2022,MCV1,86.51519
 North America,OWID_NAM,2023,MCV1,84.62012
 North America,OWID_NAM,2024,MCV1,
+North America,OWID_NAM,1985,Polio3,72.88255
+North America,OWID_NAM,1986,Polio3,82.74277
+North America,OWID_NAM,1987,Polio3,86.345184
+North America,OWID_NAM,1988,Polio3,87.97435
+North America,OWID_NAM,1989,Polio3,85.92938
+North America,OWID_NAM,1990,Polio3,76.413376
+North America,OWID_NAM,1991,Polio3,77.788704
+North America,OWID_NAM,1992,Polio3,76.116516
+North America,OWID_NAM,1993,Polio3,78.17177
+North America,OWID_NAM,1994,Polio3,83.52505
+North America,OWID_NAM,1995,Polio3,85.04807
+North America,OWID_NAM,1996,Polio3,87.03155
+North America,OWID_NAM,1997,Polio3,87.17045
+North America,OWID_NAM,1998,Polio3,87.61196
+North America,OWID_NAM,1999,Polio3,87.043755
 North America,OWID_NAM,2000,Polio3,87.64893
 North America,OWID_NAM,2001,Polio3,87.54802
 North America,OWID_NAM,2002,Polio3,88.36562
@@ -4599,6 +7359,21 @@ North America,OWID_NAM,2021,Polio3,83.75319
 North America,OWID_NAM,2022,Polio3,85.39704
 North America,OWID_NAM,2023,Polio3,86.33284
 North America,OWID_NAM,2024,Polio3,
+Oceania,OWID_OCE,1985,DTP3,58.08621
+Oceania,OWID_OCE,1986,DTP3,62.48587
+Oceania,OWID_OCE,1987,DTP3,67.18308
+Oceania,OWID_OCE,1988,DTP3,72.81791
+Oceania,OWID_OCE,1989,DTP3,77.494804
+Oceania,OWID_OCE,1990,DTP3,83.93909
+Oceania,OWID_OCE,1991,DTP3,81.66538
+Oceania,OWID_OCE,1992,DTP3,78.19631
+Oceania,OWID_OCE,1993,DTP3,77.6028
+Oceania,OWID_OCE,1994,DTP3,77.18382
+Oceania,OWID_OCE,1995,DTP3,76.98967
+Oceania,OWID_OCE,1996,DTP3,75.21412
+Oceania,OWID_OCE,1997,DTP3,67.07195
+Oceania,OWID_OCE,1998,DTP3,73.08862
+Oceania,OWID_OCE,1999,DTP3,76.78083
 Oceania,OWID_OCE,2000,DTP3,77.43844
 Oceania,OWID_OCE,2001,DTP3,76.77371
 Oceania,OWID_OCE,2002,DTP3,78.50176
@@ -4624,6 +7399,21 @@ Oceania,OWID_OCE,2021,DTP3,69.39455
 Oceania,OWID_OCE,2022,DTP3,70.696075
 Oceania,OWID_OCE,2023,DTP3,69.93255
 Oceania,OWID_OCE,2024,DTP3,
+Oceania,OWID_OCE,1985,HepB3,
+Oceania,OWID_OCE,1986,HepB3,
+Oceania,OWID_OCE,1987,HepB3,
+Oceania,OWID_OCE,1988,HepB3,
+Oceania,OWID_OCE,1989,HepB3,0.32774976
+Oceania,OWID_OCE,1990,HepB3,6.414567
+Oceania,OWID_OCE,1991,HepB3,6.465532
+Oceania,OWID_OCE,1992,HepB3,12.926598
+Oceania,OWID_OCE,1993,HepB3,17.153236
+Oceania,OWID_OCE,1994,HepB3,21.336294
+Oceania,OWID_OCE,1995,HepB3,23.766808
+Oceania,OWID_OCE,1996,HepB3,31.289404
+Oceania,OWID_OCE,1997,HepB3,32.249046
+Oceania,OWID_OCE,1998,HepB3,32.05237
+Oceania,OWID_OCE,1999,HepB3,34.561356
 Oceania,OWID_OCE,2000,HepB3,35.699917
 Oceania,OWID_OCE,2001,HepB3,79.3014
 Oceania,OWID_OCE,2002,HepB3,79.55722
@@ -4649,6 +7439,21 @@ Oceania,OWID_OCE,2021,HepB3,69.424065
 Oceania,OWID_OCE,2022,HepB3,70.76679
 Oceania,OWID_OCE,2023,HepB3,69.95819
 Oceania,OWID_OCE,2024,HepB3,
+Oceania,OWID_OCE,1985,MCV1,53.774868
+Oceania,OWID_OCE,1986,MCV1,55.406876
+Oceania,OWID_OCE,1987,MCV1,57.18108
+Oceania,OWID_OCE,1988,MCV1,65.51193
+Oceania,OWID_OCE,1989,MCV1,72.449486
+Oceania,OWID_OCE,1990,MCV1,78.010735
+Oceania,OWID_OCE,1991,MCV1,78.01308
+Oceania,OWID_OCE,1992,MCV1,78.270485
+Oceania,OWID_OCE,1993,MCV1,67.73319
+Oceania,OWID_OCE,1994,MCV1,69.39329
+Oceania,OWID_OCE,1995,MCV1,71.15461
+Oceania,OWID_OCE,1996,MCV1,67.40231
+Oceania,OWID_OCE,1997,MCV1,73.015495
+Oceania,OWID_OCE,1998,MCV1,73.382324
+Oceania,OWID_OCE,1999,MCV1,78.17193
 Oceania,OWID_OCE,2000,MCV1,80.21718
 Oceania,OWID_OCE,2001,MCV1,79.0698
 Oceania,OWID_OCE,2002,MCV1,82.361336
@@ -4674,6 +7479,21 @@ Oceania,OWID_OCE,2021,MCV1,68.6455
 Oceania,OWID_OCE,2022,MCV1,73.257454
 Oceania,OWID_OCE,2023,MCV1,74.32879
 Oceania,OWID_OCE,2024,MCV1,
+Oceania,OWID_OCE,1985,Polio3,70.85352
+Oceania,OWID_OCE,1986,Polio3,73.40228
+Oceania,OWID_OCE,1987,Polio3,74.82309
+Oceania,OWID_OCE,1988,Polio3,76.56147
+Oceania,OWID_OCE,1989,Polio3,78.49628
+Oceania,OWID_OCE,1990,Polio3,72.43354
+Oceania,OWID_OCE,1991,Polio3,71.283226
+Oceania,OWID_OCE,1992,Polio3,70.040016
+Oceania,OWID_OCE,1993,Polio3,71.55563
+Oceania,OWID_OCE,1994,Polio3,74.4255
+Oceania,OWID_OCE,1995,Polio3,78.43757
+Oceania,OWID_OCE,1996,Polio3,77.15735
+Oceania,OWID_OCE,1997,Polio3,65.5886
+Oceania,OWID_OCE,1998,Polio3,70.45002
+Oceania,OWID_OCE,1999,Polio3,73.80244
 Oceania,OWID_OCE,2000,Polio3,74.189095
 Oceania,OWID_OCE,2001,Polio3,74.73572
 Oceania,OWID_OCE,2002,Polio3,75.74107
@@ -4699,6 +7519,21 @@ Oceania,OWID_OCE,2021,Polio3,69.935905
 Oceania,OWID_OCE,2022,Polio3,71.07476
 Oceania,OWID_OCE,2023,Polio3,73.78756
 Oceania,OWID_OCE,2024,Polio3,
+Oman,OMN,1985,DTP3,60.0
+Oman,OMN,1986,DTP3,82.0
+Oman,OMN,1987,DTP3,89.0
+Oman,OMN,1988,DTP3,90.0
+Oman,OMN,1989,DTP3,98.0
+Oman,OMN,1990,DTP3,98.0
+Oman,OMN,1991,DTP3,95.0
+Oman,OMN,1992,DTP3,99.0
+Oman,OMN,1993,DTP3,97.0
+Oman,OMN,1994,DTP3,97.0
+Oman,OMN,1995,DTP3,99.0
+Oman,OMN,1996,DTP3,99.0
+Oman,OMN,1997,DTP3,99.0
+Oman,OMN,1998,DTP3,99.0
+Oman,OMN,1999,DTP3,99.0
 Oman,OMN,2000,DTP3,99.0
 Oman,OMN,2001,DTP3,99.0
 Oman,OMN,2002,DTP3,99.0
@@ -4724,6 +7559,21 @@ Oman,OMN,2021,DTP3,99.0
 Oman,OMN,2022,DTP3,99.0
 Oman,OMN,2023,DTP3,99.0
 Oman,OMN,2024,DTP3,99.0
+Oman,OMN,1985,HepB3,
+Oman,OMN,1986,HepB3,
+Oman,OMN,1987,HepB3,
+Oman,OMN,1988,HepB3,
+Oman,OMN,1989,HepB3,
+Oman,OMN,1990,HepB3,
+Oman,OMN,1991,HepB3,94.0
+Oman,OMN,1992,HepB3,99.0
+Oman,OMN,1993,HepB3,96.0
+Oman,OMN,1994,HepB3,99.0
+Oman,OMN,1995,HepB3,99.0
+Oman,OMN,1996,HepB3,99.0
+Oman,OMN,1997,HepB3,99.0
+Oman,OMN,1998,HepB3,99.0
+Oman,OMN,1999,HepB3,99.0
 Oman,OMN,2000,HepB3,99.0
 Oman,OMN,2001,HepB3,99.0
 Oman,OMN,2002,HepB3,99.0
@@ -4749,6 +7599,21 @@ Oman,OMN,2021,HepB3,99.0
 Oman,OMN,2022,HepB3,99.0
 Oman,OMN,2023,HepB3,99.0
 Oman,OMN,2024,HepB3,99.0
+Oman,OMN,1985,MCV1,65.0
+Oman,OMN,1986,MCV1,79.0
+Oman,OMN,1987,MCV1,86.0
+Oman,OMN,1988,MCV1,87.0
+Oman,OMN,1989,MCV1,94.0
+Oman,OMN,1990,MCV1,98.0
+Oman,OMN,1991,MCV1,96.0
+Oman,OMN,1992,MCV1,96.0
+Oman,OMN,1993,MCV1,95.0
+Oman,OMN,1994,MCV1,97.0
+Oman,OMN,1995,MCV1,98.0
+Oman,OMN,1996,MCV1,98.0
+Oman,OMN,1997,MCV1,98.0
+Oman,OMN,1998,MCV1,98.0
+Oman,OMN,1999,MCV1,99.0
 Oman,OMN,2000,MCV1,99.0
 Oman,OMN,2001,MCV1,99.0
 Oman,OMN,2002,MCV1,99.0
@@ -4774,6 +7639,21 @@ Oman,OMN,2021,MCV1,99.0
 Oman,OMN,2022,MCV1,97.0
 Oman,OMN,2023,MCV1,99.0
 Oman,OMN,2024,MCV1,99.0
+Oman,OMN,1985,Polio3,60.0
+Oman,OMN,1986,Polio3,82.0
+Oman,OMN,1987,Polio3,89.0
+Oman,OMN,1988,Polio3,90.0
+Oman,OMN,1989,Polio3,98.0
+Oman,OMN,1990,Polio3,98.0
+Oman,OMN,1991,Polio3,95.0
+Oman,OMN,1992,Polio3,99.0
+Oman,OMN,1993,Polio3,97.0
+Oman,OMN,1994,Polio3,97.0
+Oman,OMN,1995,Polio3,99.0
+Oman,OMN,1996,Polio3,99.0
+Oman,OMN,1997,Polio3,99.0
+Oman,OMN,1998,Polio3,99.0
+Oman,OMN,1999,Polio3,99.0
 Oman,OMN,2000,Polio3,99.0
 Oman,OMN,2001,Polio3,99.0
 Oman,OMN,2002,Polio3,99.0
@@ -4799,6 +7679,21 @@ Oman,OMN,2021,Polio3,99.0
 Oman,OMN,2022,Polio3,97.0
 Oman,OMN,2023,Polio3,99.0
 Oman,OMN,2024,Polio3,99.0
+Pakistan,PAK,1985,DTP3,30.0
+Pakistan,PAK,1986,DTP3,34.0
+Pakistan,PAK,1987,DTP3,36.0
+Pakistan,PAK,1988,DTP3,38.0
+Pakistan,PAK,1989,DTP3,40.0
+Pakistan,PAK,1990,DTP3,54.0
+Pakistan,PAK,1991,DTP3,50.0
+Pakistan,PAK,1992,DTP3,42.0
+Pakistan,PAK,1993,DTP3,37.0
+Pakistan,PAK,1994,DTP3,39.0
+Pakistan,PAK,1995,DTP3,58.0
+Pakistan,PAK,1996,DTP3,46.0
+Pakistan,PAK,1997,DTP3,52.0
+Pakistan,PAK,1998,DTP3,54.0
+Pakistan,PAK,1999,DTP3,57.0
 Pakistan,PAK,2000,DTP3,59.0
 Pakistan,PAK,2001,DTP3,61.0
 Pakistan,PAK,2002,DTP3,63.0
@@ -4824,6 +7719,21 @@ Pakistan,PAK,2021,DTP3,83.0
 Pakistan,PAK,2022,DTP3,85.0
 Pakistan,PAK,2023,DTP3,86.0
 Pakistan,PAK,2024,DTP3,87.0
+Pakistan,PAK,1985,HepB3,
+Pakistan,PAK,1986,HepB3,
+Pakistan,PAK,1987,HepB3,
+Pakistan,PAK,1988,HepB3,
+Pakistan,PAK,1989,HepB3,
+Pakistan,PAK,1990,HepB3,
+Pakistan,PAK,1991,HepB3,
+Pakistan,PAK,1992,HepB3,
+Pakistan,PAK,1993,HepB3,
+Pakistan,PAK,1994,HepB3,
+Pakistan,PAK,1995,HepB3,
+Pakistan,PAK,1996,HepB3,
+Pakistan,PAK,1997,HepB3,
+Pakistan,PAK,1998,HepB3,
+Pakistan,PAK,1999,HepB3,
 Pakistan,PAK,2000,HepB3,
 Pakistan,PAK,2001,HepB3,
 Pakistan,PAK,2002,HepB3,
@@ -4849,6 +7759,21 @@ Pakistan,PAK,2021,HepB3,83.0
 Pakistan,PAK,2022,HepB3,85.0
 Pakistan,PAK,2023,HepB3,86.0
 Pakistan,PAK,2024,HepB3,87.0
+Pakistan,PAK,1985,MCV1,38.0
+Pakistan,PAK,1986,MCV1,41.0
+Pakistan,PAK,1987,MCV1,43.0
+Pakistan,PAK,1988,MCV1,46.0
+Pakistan,PAK,1989,MCV1,48.0
+Pakistan,PAK,1990,MCV1,50.0
+Pakistan,PAK,1991,MCV1,51.0
+Pakistan,PAK,1992,MCV1,52.0
+Pakistan,PAK,1993,MCV1,52.0
+Pakistan,PAK,1994,MCV1,53.0
+Pakistan,PAK,1995,MCV1,47.0
+Pakistan,PAK,1996,MCV1,50.0
+Pakistan,PAK,1997,MCV1,52.0
+Pakistan,PAK,1998,MCV1,54.0
+Pakistan,PAK,1999,MCV1,56.0
 Pakistan,PAK,2000,MCV1,57.0
 Pakistan,PAK,2001,MCV1,59.0
 Pakistan,PAK,2002,MCV1,60.0
@@ -4874,6 +7799,21 @@ Pakistan,PAK,2021,MCV1,81.0
 Pakistan,PAK,2022,MCV1,82.0
 Pakistan,PAK,2023,MCV1,84.0
 Pakistan,PAK,2024,MCV1,86.0
+Pakistan,PAK,1985,Polio3,30.0
+Pakistan,PAK,1986,Polio3,34.0
+Pakistan,PAK,1987,Polio3,36.0
+Pakistan,PAK,1988,Polio3,38.0
+Pakistan,PAK,1989,Polio3,40.0
+Pakistan,PAK,1990,Polio3,54.0
+Pakistan,PAK,1991,Polio3,50.0
+Pakistan,PAK,1992,Polio3,42.0
+Pakistan,PAK,1993,Polio3,37.0
+Pakistan,PAK,1994,Polio3,39.0
+Pakistan,PAK,1995,Polio3,58.0
+Pakistan,PAK,1996,Polio3,46.0
+Pakistan,PAK,1997,Polio3,52.0
+Pakistan,PAK,1998,Polio3,58.0
+Pakistan,PAK,1999,Polio3,60.0
 Pakistan,PAK,2000,Polio3,61.0
 Pakistan,PAK,2001,Polio3,63.0
 Pakistan,PAK,2002,Polio3,64.0
@@ -4899,6 +7839,21 @@ Pakistan,PAK,2021,Polio3,83.0
 Pakistan,PAK,2022,Polio3,85.0
 Pakistan,PAK,2023,Polio3,86.0
 Pakistan,PAK,2024,Polio3,87.0
+Philippines,PHL,1985,DTP3,59.0
+Philippines,PHL,1986,DTP3,66.0
+Philippines,PHL,1987,DTP3,72.0
+Philippines,PHL,1988,DTP3,79.0
+Philippines,PHL,1989,DTP3,86.0
+Philippines,PHL,1990,DTP3,88.0
+Philippines,PHL,1991,DTP3,90.0
+Philippines,PHL,1992,DTP3,80.0
+Philippines,PHL,1993,DTP3,76.0
+Philippines,PHL,1994,DTP3,73.0
+Philippines,PHL,1995,DTP3,70.0
+Philippines,PHL,1996,DTP3,75.0
+Philippines,PHL,1997,DTP3,81.0
+Philippines,PHL,1998,DTP3,81.0
+Philippines,PHL,1999,DTP3,80.0
 Philippines,PHL,2000,DTP3,78.0
 Philippines,PHL,2001,DTP3,79.0
 Philippines,PHL,2002,DTP3,79.0
@@ -4924,6 +7879,21 @@ Philippines,PHL,2021,DTP3,69.0
 Philippines,PHL,2022,DTP3,84.0
 Philippines,PHL,2023,DTP3,89.0
 Philippines,PHL,2024,DTP3,71.0
+Philippines,PHL,1985,HepB3,
+Philippines,PHL,1986,HepB3,
+Philippines,PHL,1987,HepB3,
+Philippines,PHL,1988,HepB3,
+Philippines,PHL,1989,HepB3,
+Philippines,PHL,1990,HepB3,
+Philippines,PHL,1991,HepB3,
+Philippines,PHL,1992,HepB3,
+Philippines,PHL,1993,HepB3,
+Philippines,PHL,1994,HepB3,
+Philippines,PHL,1995,HepB3,38.0
+Philippines,PHL,1996,HepB3,35.0
+Philippines,PHL,1997,HepB3,31.0
+Philippines,PHL,1998,HepB3,30.0
+Philippines,PHL,1999,HepB3,32.0
 Philippines,PHL,2000,HepB3,7.0
 Philippines,PHL,2001,HepB3,45.0
 Philippines,PHL,2002,HepB3,42.0
@@ -4949,6 +7919,21 @@ Philippines,PHL,2021,HepB3,67.0
 Philippines,PHL,2022,HepB3,82.0
 Philippines,PHL,2023,HepB3,87.0
 Philippines,PHL,2024,HepB3,71.0
+Philippines,PHL,1985,MCV1,49.0
+Philippines,PHL,1986,MCV1,51.0
+Philippines,PHL,1987,MCV1,67.0
+Philippines,PHL,1988,MCV1,77.0
+Philippines,PHL,1989,MCV1,83.0
+Philippines,PHL,1990,MCV1,85.0
+Philippines,PHL,1991,MCV1,83.0
+Philippines,PHL,1992,MCV1,81.0
+Philippines,PHL,1993,MCV1,78.0
+Philippines,PHL,1994,MCV1,75.0
+Philippines,PHL,1995,MCV1,72.0
+Philippines,PHL,1996,MCV1,76.0
+Philippines,PHL,1997,MCV1,79.0
+Philippines,PHL,1998,MCV1,80.0
+Philippines,PHL,1999,MCV1,80.0
 Philippines,PHL,2000,MCV1,78.0
 Philippines,PHL,2001,MCV1,81.0
 Philippines,PHL,2002,MCV1,82.0
@@ -4974,6 +7959,21 @@ Philippines,PHL,2021,MCV1,64.0
 Philippines,PHL,2022,MCV1,76.0
 Philippines,PHL,2023,MCV1,81.0
 Philippines,PHL,2024,MCV1,80.0
+Philippines,PHL,1985,Polio3,58.0
+Philippines,PHL,1986,Polio3,65.0
+Philippines,PHL,1987,Polio3,72.0
+Philippines,PHL,1988,Polio3,78.0
+Philippines,PHL,1989,Polio3,85.0
+Philippines,PHL,1990,Polio3,88.0
+Philippines,PHL,1991,Polio3,90.0
+Philippines,PHL,1992,Polio3,78.0
+Philippines,PHL,1993,Polio3,74.0
+Philippines,PHL,1994,Polio3,71.0
+Philippines,PHL,1995,Polio3,67.0
+Philippines,PHL,1996,Polio3,74.0
+Philippines,PHL,1997,Polio3,82.0
+Philippines,PHL,1998,Polio3,82.0
+Philippines,PHL,1999,Polio3,79.0
 Philippines,PHL,2000,Polio3,74.0
 Philippines,PHL,2001,Polio3,76.0
 Philippines,PHL,2002,Polio3,77.0
@@ -4999,6 +7999,21 @@ Philippines,PHL,2021,Polio3,66.0
 Philippines,PHL,2022,Polio3,83.0
 Philippines,PHL,2023,Polio3,77.0
 Philippines,PHL,2024,Polio3,88.0
+Senegal,SEN,1985,DTP3,
+Senegal,SEN,1986,DTP3,54.0
+Senegal,SEN,1987,DTP3,57.0
+Senegal,SEN,1988,DTP3,59.0
+Senegal,SEN,1989,DTP3,47.0
+Senegal,SEN,1990,DTP3,51.0
+Senegal,SEN,1991,DTP3,51.0
+Senegal,SEN,1992,DTP3,59.0
+Senegal,SEN,1993,DTP3,58.0
+Senegal,SEN,1994,DTP3,57.0
+Senegal,SEN,1995,DTP3,80.0
+Senegal,SEN,1996,DTP3,70.0
+Senegal,SEN,1997,DTP3,59.0
+Senegal,SEN,1998,DTP3,59.0
+Senegal,SEN,1999,DTP3,60.0
 Senegal,SEN,2000,DTP3,52.0
 Senegal,SEN,2001,DTP3,52.0
 Senegal,SEN,2002,DTP3,60.0
@@ -5024,6 +8039,21 @@ Senegal,SEN,2021,DTP3,85.0
 Senegal,SEN,2022,DTP3,93.0
 Senegal,SEN,2023,DTP3,92.0
 Senegal,SEN,2024,DTP3,91.0
+Senegal,SEN,1985,HepB3,
+Senegal,SEN,1986,HepB3,
+Senegal,SEN,1987,HepB3,
+Senegal,SEN,1988,HepB3,
+Senegal,SEN,1989,HepB3,
+Senegal,SEN,1990,HepB3,
+Senegal,SEN,1991,HepB3,
+Senegal,SEN,1992,HepB3,
+Senegal,SEN,1993,HepB3,
+Senegal,SEN,1994,HepB3,
+Senegal,SEN,1995,HepB3,
+Senegal,SEN,1996,HepB3,
+Senegal,SEN,1997,HepB3,
+Senegal,SEN,1998,HepB3,
+Senegal,SEN,1999,HepB3,
 Senegal,SEN,2000,HepB3,
 Senegal,SEN,2001,HepB3,
 Senegal,SEN,2002,HepB3,
@@ -5049,6 +8079,21 @@ Senegal,SEN,2021,HepB3,85.0
 Senegal,SEN,2022,HepB3,93.0
 Senegal,SEN,2023,HepB3,92.0
 Senegal,SEN,2024,HepB3,91.0
+Senegal,SEN,1985,MCV1,
+Senegal,SEN,1986,MCV1,71.0
+Senegal,SEN,1987,MCV1,66.0
+Senegal,SEN,1988,MCV1,60.0
+Senegal,SEN,1989,MCV1,48.0
+Senegal,SEN,1990,MCV1,51.0
+Senegal,SEN,1991,MCV1,54.0
+Senegal,SEN,1992,MCV1,57.0
+Senegal,SEN,1993,MCV1,58.0
+Senegal,SEN,1994,MCV1,59.0
+Senegal,SEN,1995,MCV1,80.0
+Senegal,SEN,1996,MCV1,70.0
+Senegal,SEN,1997,MCV1,65.0
+Senegal,SEN,1998,MCV1,62.0
+Senegal,SEN,1999,MCV1,60.0
 Senegal,SEN,2000,MCV1,48.0
 Senegal,SEN,2001,MCV1,48.0
 Senegal,SEN,2002,MCV1,54.0
@@ -5074,6 +8119,21 @@ Senegal,SEN,2021,MCV1,88.0
 Senegal,SEN,2022,MCV1,87.0
 Senegal,SEN,2023,MCV1,87.0
 Senegal,SEN,2024,MCV1,87.0
+Senegal,SEN,1985,Polio3,
+Senegal,SEN,1986,Polio3,55.0
+Senegal,SEN,1987,Polio3,56.0
+Senegal,SEN,1988,Polio3,58.0
+Senegal,SEN,1989,Polio3,56.0
+Senegal,SEN,1990,Polio3,53.0
+Senegal,SEN,1991,Polio3,51.0
+Senegal,SEN,1992,Polio3,59.0
+Senegal,SEN,1993,Polio3,58.0
+Senegal,SEN,1994,Polio3,57.0
+Senegal,SEN,1995,Polio3,80.0
+Senegal,SEN,1996,Polio3,70.0
+Senegal,SEN,1997,Polio3,65.0
+Senegal,SEN,1998,Polio3,60.0
+Senegal,SEN,1999,Polio3,60.0
 Senegal,SEN,2000,Polio3,49.0
 Senegal,SEN,2001,Polio3,49.0
 Senegal,SEN,2002,Polio3,60.0
@@ -5099,6 +8159,21 @@ Senegal,SEN,2021,Polio3,89.0
 Senegal,SEN,2022,Polio3,92.0
 Senegal,SEN,2023,Polio3,92.0
 Senegal,SEN,2024,Polio3,91.0
+Somalia,SOM,1985,DTP3,22.0
+Somalia,SOM,1986,DTP3,17.0
+Somalia,SOM,1987,DTP3,25.0
+Somalia,SOM,1988,DTP3,26.0
+Somalia,SOM,1989,DTP3,18.0
+Somalia,SOM,1990,DTP3,19.0
+Somalia,SOM,1991,DTP3,20.0
+Somalia,SOM,1992,DTP3,21.0
+Somalia,SOM,1993,DTP3,22.0
+Somalia,SOM,1994,DTP3,23.0
+Somalia,SOM,1995,DTP3,22.0
+Somalia,SOM,1996,DTP3,21.0
+Somalia,SOM,1997,DTP3,19.0
+Somalia,SOM,1998,DTP3,33.0
+Somalia,SOM,1999,DTP3,36.0
 Somalia,SOM,2000,DTP3,33.0
 Somalia,SOM,2001,DTP3,33.0
 Somalia,SOM,2002,DTP3,40.0
@@ -5124,6 +8199,21 @@ Somalia,SOM,2021,DTP3,62.0
 Somalia,SOM,2022,DTP3,71.0
 Somalia,SOM,2023,DTP3,69.0
 Somalia,SOM,2024,DTP3,70.0
+Somalia,SOM,1985,HepB3,
+Somalia,SOM,1986,HepB3,
+Somalia,SOM,1987,HepB3,
+Somalia,SOM,1988,HepB3,
+Somalia,SOM,1989,HepB3,
+Somalia,SOM,1990,HepB3,
+Somalia,SOM,1991,HepB3,
+Somalia,SOM,1992,HepB3,
+Somalia,SOM,1993,HepB3,
+Somalia,SOM,1994,HepB3,
+Somalia,SOM,1995,HepB3,
+Somalia,SOM,1996,HepB3,
+Somalia,SOM,1997,HepB3,
+Somalia,SOM,1998,HepB3,
+Somalia,SOM,1999,HepB3,
 Somalia,SOM,2000,HepB3,
 Somalia,SOM,2001,HepB3,
 Somalia,SOM,2002,HepB3,
@@ -5149,6 +8239,21 @@ Somalia,SOM,2021,HepB3,62.0
 Somalia,SOM,2022,HepB3,71.0
 Somalia,SOM,2023,HepB3,69.0
 Somalia,SOM,2024,HepB3,70.0
+Somalia,SOM,1985,MCV1,35.0
+Somalia,SOM,1986,MCV1,25.0
+Somalia,SOM,1987,MCV1,28.0
+Somalia,SOM,1988,MCV1,33.0
+Somalia,SOM,1989,MCV1,30.0
+Somalia,SOM,1990,MCV1,30.0
+Somalia,SOM,1991,MCV1,30.0
+Somalia,SOM,1992,MCV1,32.0
+Somalia,SOM,1993,MCV1,33.0
+Somalia,SOM,1994,MCV1,35.0
+Somalia,SOM,1995,MCV1,34.0
+Somalia,SOM,1996,MCV1,33.0
+Somalia,SOM,1997,MCV1,25.0
+Somalia,SOM,1998,MCV1,32.0
+Somalia,SOM,1999,MCV1,38.0
 Somalia,SOM,2000,MCV1,24.0
 Somalia,SOM,2001,MCV1,20.0
 Somalia,SOM,2002,MCV1,45.0
@@ -5174,6 +8279,21 @@ Somalia,SOM,2021,MCV1,58.0
 Somalia,SOM,2022,MCV1,69.0
 Somalia,SOM,2023,MCV1,63.0
 Somalia,SOM,2024,MCV1,64.0
+Somalia,SOM,1985,Polio3,22.0
+Somalia,SOM,1986,Polio3,17.0
+Somalia,SOM,1987,Polio3,25.0
+Somalia,SOM,1988,Polio3,26.0
+Somalia,SOM,1989,Polio3,18.0
+Somalia,SOM,1990,Polio3,18.0
+Somalia,SOM,1991,Polio3,18.0
+Somalia,SOM,1992,Polio3,20.0
+Somalia,SOM,1993,Polio3,21.0
+Somalia,SOM,1994,Polio3,23.0
+Somalia,SOM,1995,Polio3,22.0
+Somalia,SOM,1996,Polio3,21.0
+Somalia,SOM,1997,Polio3,19.0
+Somalia,SOM,1998,Polio3,35.0
+Somalia,SOM,1999,Polio3,40.0
 Somalia,SOM,2000,Polio3,37.0
 Somalia,SOM,2001,Polio3,33.0
 Somalia,SOM,2002,Polio3,40.0
@@ -5199,6 +8319,21 @@ Somalia,SOM,2021,Polio3,63.0
 Somalia,SOM,2022,Polio3,72.0
 Somalia,SOM,2023,Polio3,71.0
 Somalia,SOM,2024,Polio3,71.0
+South Africa,ZAF,1985,DTP3,75.0
+South Africa,ZAF,1986,DTP3,70.0
+South Africa,ZAF,1987,DTP3,72.0
+South Africa,ZAF,1988,DTP3,70.0
+South Africa,ZAF,1989,DTP3,71.0
+South Africa,ZAF,1990,DTP3,72.0
+South Africa,ZAF,1991,DTP3,81.0
+South Africa,ZAF,1992,DTP3,79.0
+South Africa,ZAF,1993,DTP3,81.0
+South Africa,ZAF,1994,DTP3,73.0
+South Africa,ZAF,1995,DTP3,72.0
+South Africa,ZAF,1996,DTP3,73.0
+South Africa,ZAF,1997,DTP3,76.0
+South Africa,ZAF,1998,DTP3,75.0
+South Africa,ZAF,1999,DTP3,74.0
 South Africa,ZAF,2000,DTP3,73.0
 South Africa,ZAF,2001,DTP3,71.0
 South Africa,ZAF,2002,DTP3,70.0
@@ -5224,6 +8359,21 @@ South Africa,ZAF,2021,DTP3,86.0
 South Africa,ZAF,2022,DTP3,85.0
 South Africa,ZAF,2023,DTP3,79.0
 South Africa,ZAF,2024,DTP3,74.0
+South Africa,ZAF,1985,HepB3,
+South Africa,ZAF,1986,HepB3,
+South Africa,ZAF,1987,HepB3,
+South Africa,ZAF,1988,HepB3,
+South Africa,ZAF,1989,HepB3,
+South Africa,ZAF,1990,HepB3,
+South Africa,ZAF,1991,HepB3,
+South Africa,ZAF,1992,HepB3,
+South Africa,ZAF,1993,HepB3,
+South Africa,ZAF,1994,HepB3,
+South Africa,ZAF,1995,HepB3,
+South Africa,ZAF,1996,HepB3,
+South Africa,ZAF,1997,HepB3,74.0
+South Africa,ZAF,1998,HepB3,74.0
+South Africa,ZAF,1999,HepB3,73.0
 South Africa,ZAF,2000,HepB3,73.0
 South Africa,ZAF,2001,HepB3,72.0
 South Africa,ZAF,2002,HepB3,72.0
@@ -5249,6 +8399,21 @@ South Africa,ZAF,2021,HepB3,86.0
 South Africa,ZAF,2022,HepB3,85.0
 South Africa,ZAF,2023,HepB3,79.0
 South Africa,ZAF,2024,HepB3,74.0
+South Africa,ZAF,1985,MCV1,70.0
+South Africa,ZAF,1986,MCV1,64.0
+South Africa,ZAF,1987,MCV1,75.0
+South Africa,ZAF,1988,MCV1,68.0
+South Africa,ZAF,1989,MCV1,84.0
+South Africa,ZAF,1990,MCV1,79.0
+South Africa,ZAF,1991,MCV1,85.0
+South Africa,ZAF,1992,MCV1,85.0
+South Africa,ZAF,1993,MCV1,85.0
+South Africa,ZAF,1994,MCV1,76.0
+South Africa,ZAF,1995,MCV1,76.0
+South Africa,ZAF,1996,MCV1,76.0
+South Africa,ZAF,1997,MCV1,82.0
+South Africa,ZAF,1998,MCV1,79.0
+South Africa,ZAF,1999,MCV1,75.0
 South Africa,ZAF,2000,MCV1,72.0
 South Africa,ZAF,2001,MCV1,69.0
 South Africa,ZAF,2002,MCV1,65.0
@@ -5274,6 +8439,21 @@ South Africa,ZAF,2021,MCV1,87.0
 South Africa,ZAF,2022,MCV1,86.0
 South Africa,ZAF,2023,MCV1,80.0
 South Africa,ZAF,2024,MCV1,76.0
+South Africa,ZAF,1985,Polio3,77.0
+South Africa,ZAF,1986,Polio3,70.0
+South Africa,ZAF,1987,Polio3,75.0
+South Africa,ZAF,1988,Polio3,70.0
+South Africa,ZAF,1989,Polio3,73.0
+South Africa,ZAF,1990,Polio3,76.0
+South Africa,ZAF,1991,Polio3,82.0
+South Africa,ZAF,1992,Polio3,79.0
+South Africa,ZAF,1993,Polio3,81.0
+South Africa,ZAF,1994,Polio3,73.0
+South Africa,ZAF,1995,Polio3,72.0
+South Africa,ZAF,1996,Polio3,73.0
+South Africa,ZAF,1997,Polio3,72.0
+South Africa,ZAF,1998,Polio3,72.0
+South Africa,ZAF,1999,Polio3,71.0
 South Africa,ZAF,2000,Polio3,71.0
 South Africa,ZAF,2001,Polio3,71.0
 South Africa,ZAF,2002,Polio3,70.0
@@ -5299,6 +8479,21 @@ South Africa,ZAF,2021,Polio3,86.0
 South Africa,ZAF,2022,Polio3,85.0
 South Africa,ZAF,2023,Polio3,79.0
 South Africa,ZAF,2024,Polio3,74.0
+South America,OWID_SAM,1985,DTP3,61.919632
+South America,OWID_SAM,1986,DTP3,57.27675
+South America,OWID_SAM,1987,DTP3,58.808468
+South America,OWID_SAM,1988,DTP3,62.380806
+South America,OWID_SAM,1989,DTP3,62.69479
+South America,OWID_SAM,1990,DTP3,71.52581
+South America,OWID_SAM,1991,DTP3,75.858574
+South America,OWID_SAM,1992,DTP3,74.3386
+South America,OWID_SAM,1993,DTP3,77.837105
+South America,OWID_SAM,1994,DTP3,77.18845
+South America,OWID_SAM,1995,DTP3,81.5194
+South America,OWID_SAM,1996,DTP3,78.72925
+South America,OWID_SAM,1997,DTP3,79.78393
+South America,OWID_SAM,1998,DTP3,83.782616
+South America,OWID_SAM,1999,DTP3,88.35243
 South America,OWID_SAM,2000,DTP3,90.7119
 South America,OWID_SAM,2001,DTP3,89.77683
 South America,OWID_SAM,2002,DTP3,91.45592
@@ -5324,6 +8519,21 @@ South America,OWID_SAM,2021,DTP3,73.357574
 South America,OWID_SAM,2022,DTP3,76.6863
 South America,OWID_SAM,2023,DTP3,82.35732
 South America,OWID_SAM,2024,DTP3,
+South America,OWID_SAM,1985,HepB3,
+South America,OWID_SAM,1986,HepB3,
+South America,OWID_SAM,1987,HepB3,
+South America,OWID_SAM,1988,HepB3,
+South America,OWID_SAM,1989,HepB3,
+South America,OWID_SAM,1990,HepB3,
+South America,OWID_SAM,1991,HepB3,
+South America,OWID_SAM,1992,HepB3,
+South America,OWID_SAM,1993,HepB3,
+South America,OWID_SAM,1994,HepB3,1.8838834
+South America,OWID_SAM,1995,HepB3,13.3548565
+South America,OWID_SAM,1996,HepB3,18.571535
+South America,OWID_SAM,1997,HepB3,12.9998665
+South America,OWID_SAM,1998,HepB3,15.126672
+South America,OWID_SAM,1999,HepB3,49.979733
 South America,OWID_SAM,2000,HepB3,59.23197
 South America,OWID_SAM,2001,HepB3,63.339134
 South America,OWID_SAM,2002,HepB3,70.84509
@@ -5349,6 +8559,21 @@ South America,OWID_SAM,2021,HepB3,73.16361
 South America,OWID_SAM,2022,HepB3,76.6863
 South America,OWID_SAM,2023,HepB3,82.35732
 South America,OWID_SAM,2024,HepB3,
+South America,OWID_SAM,1985,MCV1,60.63737
+South America,OWID_SAM,1986,MCV1,62.436707
+South America,OWID_SAM,1987,MCV1,63.68812
+South America,OWID_SAM,1988,MCV1,64.83655
+South America,OWID_SAM,1989,MCV1,64.856415
+South America,OWID_SAM,1990,MCV1,76.53064
+South America,OWID_SAM,1991,MCV1,81.037964
+South America,OWID_SAM,1992,MCV1,83.83849
+South America,OWID_SAM,1993,MCV1,84.045296
+South America,OWID_SAM,1994,MCV1,81.48804
+South America,OWID_SAM,1995,MCV1,85.96658
+South America,OWID_SAM,1996,MCV1,82.39459
+South America,OWID_SAM,1997,MCV1,89.54103
+South America,OWID_SAM,1998,MCV1,90.92567
+South America,OWID_SAM,1999,MCV1,93.465996
 South America,OWID_SAM,2000,MCV1,94.66387
 South America,OWID_SAM,2001,MCV1,96.257835
 South America,OWID_SAM,2002,MCV1,94.023445
@@ -5374,6 +8599,21 @@ South America,OWID_SAM,2021,MCV1,76.226814
 South America,OWID_SAM,2022,MCV1,78.42446
 South America,OWID_SAM,2023,MCV1,84.08243
 South America,OWID_SAM,2024,MCV1,
+South America,OWID_SAM,1985,Polio3,56.62888
+South America,OWID_SAM,1986,Polio3,56.375145
+South America,OWID_SAM,1987,Polio3,60.88316
+South America,OWID_SAM,1988,Polio3,67.218
+South America,OWID_SAM,1989,Polio3,64.82646
+South America,OWID_SAM,1990,Polio3,69.40551
+South America,OWID_SAM,1991,Polio3,73.35679
+South America,OWID_SAM,1992,Polio3,73.461174
+South America,OWID_SAM,1993,Polio3,73.76149
+South America,OWID_SAM,1994,Polio3,76.61255
+South America,OWID_SAM,1995,Polio3,82.497185
+South America,OWID_SAM,1996,Polio3,82.1419
+South America,OWID_SAM,1997,Polio3,86.24622
+South America,OWID_SAM,1998,Polio3,87.110985
+South America,OWID_SAM,1999,Polio3,92.362755
 South America,OWID_SAM,2000,Polio3,92.09919
 South America,OWID_SAM,2001,Polio3,92.19754
 South America,OWID_SAM,2002,Polio3,93.05406
@@ -5399,6 +8639,21 @@ South America,OWID_SAM,2021,Polio3,71.74715
 South America,OWID_SAM,2022,Polio3,75.13877
 South America,OWID_SAM,2023,Polio3,80.65822
 South America,OWID_SAM,2024,Polio3,
+Sudan,SDN,1985,DTP3,8.0
+Sudan,SDN,1986,DTP3,14.0
+Sudan,SDN,1987,DTP3,27.0
+Sudan,SDN,1988,DTP3,40.0
+Sudan,SDN,1989,DTP3,60.0
+Sudan,SDN,1990,DTP3,62.0
+Sudan,SDN,1991,DTP3,62.0
+Sudan,SDN,1992,DTP3,53.0
+Sudan,SDN,1993,DTP3,51.0
+Sudan,SDN,1994,DTP3,46.0
+Sudan,SDN,1995,DTP3,48.0
+Sudan,SDN,1996,DTP3,56.0
+Sudan,SDN,1997,DTP3,55.0
+Sudan,SDN,1998,DTP3,46.0
+Sudan,SDN,1999,DTP3,55.0
 Sudan,SDN,2000,DTP3,62.0
 Sudan,SDN,2001,DTP3,66.0
 Sudan,SDN,2002,DTP3,60.0
@@ -5424,6 +8679,21 @@ Sudan,SDN,2021,DTP3,84.0
 Sudan,SDN,2022,DTP3,84.0
 Sudan,SDN,2023,DTP3,51.0
 Sudan,SDN,2024,DTP3,39.0
+Sudan,SDN,1985,HepB3,
+Sudan,SDN,1986,HepB3,
+Sudan,SDN,1987,HepB3,
+Sudan,SDN,1988,HepB3,
+Sudan,SDN,1989,HepB3,
+Sudan,SDN,1990,HepB3,
+Sudan,SDN,1991,HepB3,
+Sudan,SDN,1992,HepB3,
+Sudan,SDN,1993,HepB3,
+Sudan,SDN,1994,HepB3,
+Sudan,SDN,1995,HepB3,
+Sudan,SDN,1996,HepB3,
+Sudan,SDN,1997,HepB3,
+Sudan,SDN,1998,HepB3,
+Sudan,SDN,1999,HepB3,
 Sudan,SDN,2000,HepB3,
 Sudan,SDN,2001,HepB3,
 Sudan,SDN,2002,HepB3,
@@ -5449,6 +8719,21 @@ Sudan,SDN,2021,HepB3,84.0
 Sudan,SDN,2022,HepB3,84.0
 Sudan,SDN,2023,HepB3,51.0
 Sudan,SDN,2024,HepB3,39.0
+Sudan,SDN,1985,MCV1,6.0
+Sudan,SDN,1986,MCV1,11.0
+Sudan,SDN,1987,MCV1,22.0
+Sudan,SDN,1988,MCV1,44.0
+Sudan,SDN,1989,MCV1,61.0
+Sudan,SDN,1990,MCV1,57.0
+Sudan,SDN,1991,MCV1,57.0
+Sudan,SDN,1992,MCV1,52.0
+Sudan,SDN,1993,MCV1,49.0
+Sudan,SDN,1994,MCV1,48.0
+Sudan,SDN,1995,MCV1,51.0
+Sudan,SDN,1996,MCV1,59.0
+Sudan,SDN,1997,MCV1,58.0
+Sudan,SDN,1998,MCV1,49.0
+Sudan,SDN,1999,MCV1,51.0
 Sudan,SDN,2000,MCV1,58.0
 Sudan,SDN,2001,MCV1,58.0
 Sudan,SDN,2002,MCV1,58.0
@@ -5474,6 +8759,21 @@ Sudan,SDN,2021,MCV1,81.0
 Sudan,SDN,2022,MCV1,80.0
 Sudan,SDN,2023,MCV1,51.0
 Sudan,SDN,2024,MCV1,46.0
+Sudan,SDN,1985,Polio3,8.0
+Sudan,SDN,1986,Polio3,14.0
+Sudan,SDN,1987,Polio3,27.0
+Sudan,SDN,1988,Polio3,41.0
+Sudan,SDN,1989,Polio3,61.0
+Sudan,SDN,1990,Polio3,62.0
+Sudan,SDN,1991,Polio3,62.0
+Sudan,SDN,1992,Polio3,53.0
+Sudan,SDN,1993,Polio3,51.0
+Sudan,SDN,1994,Polio3,46.0
+Sudan,SDN,1995,Polio3,48.0
+Sudan,SDN,1996,Polio3,56.0
+Sudan,SDN,1997,Polio3,55.0
+Sudan,SDN,1998,Polio3,48.0
+Sudan,SDN,1999,Polio3,64.0
 Sudan,SDN,2000,Polio3,62.0
 Sudan,SDN,2001,Polio3,66.0
 Sudan,SDN,2002,Polio3,60.0
@@ -5499,6 +8799,21 @@ Sudan,SDN,2021,Polio3,85.0
 Sudan,SDN,2022,Polio3,85.0
 Sudan,SDN,2023,Polio3,53.0
 Sudan,SDN,2024,Polio3,40.0
+Syria,SYR,1985,DTP3,29.0
+Syria,SYR,1986,DTP3,86.0
+Syria,SYR,1987,DTP3,42.0
+Syria,SYR,1988,DTP3,59.0
+Syria,SYR,1989,DTP3,94.0
+Syria,SYR,1990,DTP3,91.0
+Syria,SYR,1991,DTP3,89.0
+Syria,SYR,1992,DTP3,89.0
+Syria,SYR,1993,DTP3,90.0
+Syria,SYR,1994,DTP3,89.0
+Syria,SYR,1995,DTP3,89.0
+Syria,SYR,1996,DTP3,88.0
+Syria,SYR,1997,DTP3,87.0
+Syria,SYR,1998,DTP3,88.0
+Syria,SYR,1999,DTP3,87.0
 Syria,SYR,2000,DTP3,86.0
 Syria,SYR,2001,DTP3,83.0
 Syria,SYR,2002,DTP3,86.0
@@ -5524,6 +8839,21 @@ Syria,SYR,2021,DTP3,61.0
 Syria,SYR,2022,DTP3,59.0
 Syria,SYR,2023,DTP3,66.0
 Syria,SYR,2024,DTP3,73.0
+Syria,SYR,1985,HepB3,
+Syria,SYR,1986,HepB3,
+Syria,SYR,1987,HepB3,
+Syria,SYR,1988,HepB3,
+Syria,SYR,1989,HepB3,
+Syria,SYR,1990,HepB3,
+Syria,SYR,1991,HepB3,
+Syria,SYR,1992,HepB3,5.0
+Syria,SYR,1993,HepB3,23.0
+Syria,SYR,1994,HepB3,64.0
+Syria,SYR,1995,HepB3,74.0
+Syria,SYR,1996,HepB3,75.0
+Syria,SYR,1997,HepB3,76.0
+Syria,SYR,1998,HepB3,77.0
+Syria,SYR,1999,HepB3,78.0
 Syria,SYR,2000,HepB3,79.0
 Syria,SYR,2001,HepB3,80.0
 Syria,SYR,2002,HepB3,80.0
@@ -5549,6 +8879,21 @@ Syria,SYR,2021,HepB3,59.0
 Syria,SYR,2022,HepB3,59.0
 Syria,SYR,2023,HepB3,66.0
 Syria,SYR,2024,HepB3,73.0
+Syria,SYR,1985,MCV1,27.0
+Syria,SYR,1986,MCV1,64.0
+Syria,SYR,1987,MCV1,37.0
+Syria,SYR,1988,MCV1,52.0
+Syria,SYR,1989,MCV1,86.0
+Syria,SYR,1990,MCV1,87.0
+Syria,SYR,1991,MCV1,84.0
+Syria,SYR,1992,MCV1,84.0
+Syria,SYR,1993,MCV1,86.0
+Syria,SYR,1994,MCV1,86.0
+Syria,SYR,1995,MCV1,85.0
+Syria,SYR,1996,MCV1,85.0
+Syria,SYR,1997,MCV1,84.0
+Syria,SYR,1998,MCV1,87.0
+Syria,SYR,1999,MCV1,86.0
 Syria,SYR,2000,MCV1,84.0
 Syria,SYR,2001,MCV1,80.0
 Syria,SYR,2002,MCV1,84.0
@@ -5574,6 +8919,21 @@ Syria,SYR,2021,MCV1,70.0
 Syria,SYR,2022,MCV1,52.0
 Syria,SYR,2023,MCV1,74.0
 Syria,SYR,2024,MCV1,81.0
+Syria,SYR,1985,Polio3,29.0
+Syria,SYR,1986,Polio3,86.0
+Syria,SYR,1987,Polio3,42.0
+Syria,SYR,1988,Polio3,59.0
+Syria,SYR,1989,Polio3,94.0
+Syria,SYR,1990,Polio3,91.0
+Syria,SYR,1991,Polio3,89.0
+Syria,SYR,1992,Polio3,89.0
+Syria,SYR,1993,Polio3,90.0
+Syria,SYR,1994,Polio3,89.0
+Syria,SYR,1995,Polio3,89.0
+Syria,SYR,1996,Polio3,88.0
+Syria,SYR,1997,Polio3,87.0
+Syria,SYR,1998,Polio3,88.0
+Syria,SYR,1999,Polio3,87.0
 Syria,SYR,2000,Polio3,86.0
 Syria,SYR,2001,Polio3,83.0
 Syria,SYR,2002,Polio3,86.0
@@ -5599,6 +8959,21 @@ Syria,SYR,2021,Polio3,62.0
 Syria,SYR,2022,Polio3,58.0
 Syria,SYR,2023,Polio3,66.0
 Syria,SYR,2024,Polio3,75.0
+Tanzania,TZA,1985,DTP3,67.0
+Tanzania,TZA,1986,DTP3,74.0
+Tanzania,TZA,1987,DTP3,79.0
+Tanzania,TZA,1988,DTP3,85.0
+Tanzania,TZA,1989,DTP3,77.0
+Tanzania,TZA,1990,DTP3,78.0
+Tanzania,TZA,1991,DTP3,81.0
+Tanzania,TZA,1992,DTP3,83.0
+Tanzania,TZA,1993,DTP3,83.0
+Tanzania,TZA,1994,DTP3,84.0
+Tanzania,TZA,1995,DTP3,81.0
+Tanzania,TZA,1996,DTP3,82.0
+Tanzania,TZA,1997,DTP3,79.0
+Tanzania,TZA,1998,DTP3,79.0
+Tanzania,TZA,1999,DTP3,76.0
 Tanzania,TZA,2000,DTP3,79.0
 Tanzania,TZA,2001,DTP3,87.0
 Tanzania,TZA,2002,DTP3,89.0
@@ -5624,6 +8999,21 @@ Tanzania,TZA,2021,DTP3,86.0
 Tanzania,TZA,2022,DTP3,87.0
 Tanzania,TZA,2023,DTP3,83.0
 Tanzania,TZA,2024,DTP3,83.0
+Tanzania,TZA,1985,HepB3,
+Tanzania,TZA,1986,HepB3,
+Tanzania,TZA,1987,HepB3,
+Tanzania,TZA,1988,HepB3,
+Tanzania,TZA,1989,HepB3,
+Tanzania,TZA,1990,HepB3,
+Tanzania,TZA,1991,HepB3,
+Tanzania,TZA,1992,HepB3,
+Tanzania,TZA,1993,HepB3,
+Tanzania,TZA,1994,HepB3,
+Tanzania,TZA,1995,HepB3,
+Tanzania,TZA,1996,HepB3,
+Tanzania,TZA,1997,HepB3,
+Tanzania,TZA,1998,HepB3,
+Tanzania,TZA,1999,HepB3,
 Tanzania,TZA,2000,HepB3,
 Tanzania,TZA,2001,HepB3,
 Tanzania,TZA,2002,HepB3,89.0
@@ -5649,6 +9039,21 @@ Tanzania,TZA,2021,HepB3,86.0
 Tanzania,TZA,2022,HepB3,87.0
 Tanzania,TZA,2023,HepB3,83.0
 Tanzania,TZA,2024,HepB3,83.0
+Tanzania,TZA,1985,MCV1,66.0
+Tanzania,TZA,1986,MCV1,97.0
+Tanzania,TZA,1987,MCV1,78.0
+Tanzania,TZA,1988,MCV1,83.0
+Tanzania,TZA,1989,MCV1,79.0
+Tanzania,TZA,1990,MCV1,80.0
+Tanzania,TZA,1991,MCV1,79.0
+Tanzania,TZA,1992,MCV1,81.0
+Tanzania,TZA,1993,MCV1,77.0
+Tanzania,TZA,1994,MCV1,79.0
+Tanzania,TZA,1995,MCV1,78.0
+Tanzania,TZA,1996,MCV1,78.0
+Tanzania,TZA,1997,MCV1,73.0
+Tanzania,TZA,1998,MCV1,72.0
+Tanzania,TZA,1999,MCV1,72.0
 Tanzania,TZA,2000,MCV1,78.0
 Tanzania,TZA,2001,MCV1,86.0
 Tanzania,TZA,2002,MCV1,89.0
@@ -5674,6 +9079,21 @@ Tanzania,TZA,2021,MCV1,80.0
 Tanzania,TZA,2022,MCV1,84.0
 Tanzania,TZA,2023,MCV1,84.0
 Tanzania,TZA,2024,MCV1,84.0
+Tanzania,TZA,1985,Polio3,64.0
+Tanzania,TZA,1986,Polio3,73.0
+Tanzania,TZA,1987,Polio3,80.0
+Tanzania,TZA,1988,Polio3,82.0
+Tanzania,TZA,1989,Polio3,66.0
+Tanzania,TZA,1990,Polio3,78.0
+Tanzania,TZA,1991,Polio3,81.0
+Tanzania,TZA,1992,Polio3,82.0
+Tanzania,TZA,1993,Polio3,78.0
+Tanzania,TZA,1994,Polio3,83.0
+Tanzania,TZA,1995,Polio3,79.0
+Tanzania,TZA,1996,Polio3,80.0
+Tanzania,TZA,1997,Polio3,79.0
+Tanzania,TZA,1998,Polio3,79.0
+Tanzania,TZA,1999,Polio3,74.0
 Tanzania,TZA,2000,Polio3,64.0
 Tanzania,TZA,2001,Polio3,65.0
 Tanzania,TZA,2002,Polio3,91.0
@@ -5699,6 +9119,21 @@ Tanzania,TZA,2021,Polio3,64.0
 Tanzania,TZA,2022,Polio3,82.0
 Tanzania,TZA,2023,Polio3,80.0
 Tanzania,TZA,2024,Polio3,80.0
+Thailand,THA,1985,DTP3,62.0
+Thailand,THA,1986,DTP3,66.0
+Thailand,THA,1987,DTP3,75.0
+Thailand,THA,1988,DTP3,80.0
+Thailand,THA,1989,DTP3,84.0
+Thailand,THA,1990,DTP3,92.0
+Thailand,THA,1991,DTP3,90.0
+Thailand,THA,1992,DTP3,85.0
+Thailand,THA,1993,DTP3,89.0
+Thailand,THA,1994,DTP3,93.0
+Thailand,THA,1995,DTP3,96.0
+Thailand,THA,1996,DTP3,94.0
+Thailand,THA,1997,DTP3,95.0
+Thailand,THA,1998,DTP3,96.0
+Thailand,THA,1999,DTP3,97.0
 Thailand,THA,2000,DTP3,97.0
 Thailand,THA,2001,DTP3,96.0
 Thailand,THA,2002,DTP3,96.0
@@ -5724,6 +9159,21 @@ Thailand,THA,2021,DTP3,92.0
 Thailand,THA,2022,DTP3,92.0
 Thailand,THA,2023,DTP3,92.0
 Thailand,THA,2024,DTP3,92.0
+Thailand,THA,1985,HepB3,
+Thailand,THA,1986,HepB3,
+Thailand,THA,1987,HepB3,
+Thailand,THA,1988,HepB3,
+Thailand,THA,1989,HepB3,
+Thailand,THA,1990,HepB3,
+Thailand,THA,1991,HepB3,
+Thailand,THA,1992,HepB3,15.0
+Thailand,THA,1993,HepB3,58.0
+Thailand,THA,1994,HepB3,66.0
+Thailand,THA,1995,HepB3,93.0
+Thailand,THA,1996,HepB3,93.0
+Thailand,THA,1997,HepB3,94.0
+Thailand,THA,1998,HepB3,95.0
+Thailand,THA,1999,HepB3,95.0
 Thailand,THA,2000,HepB3,95.0
 Thailand,THA,2001,HepB3,95.0
 Thailand,THA,2002,HepB3,95.0
@@ -5749,6 +9199,21 @@ Thailand,THA,2021,HepB3,92.0
 Thailand,THA,2022,HepB3,92.0
 Thailand,THA,2023,HepB3,92.0
 Thailand,THA,2024,HepB3,92.0
+Thailand,THA,1985,MCV1,26.0
+Thailand,THA,1986,MCV1,45.0
+Thailand,THA,1987,MCV1,52.0
+Thailand,THA,1988,MCV1,63.0
+Thailand,THA,1989,MCV1,66.0
+Thailand,THA,1990,MCV1,80.0
+Thailand,THA,1991,MCV1,79.0
+Thailand,THA,1992,MCV1,74.0
+Thailand,THA,1993,MCV1,80.0
+Thailand,THA,1994,MCV1,86.0
+Thailand,THA,1995,MCV1,91.0
+Thailand,THA,1996,MCV1,92.0
+Thailand,THA,1997,MCV1,93.0
+Thailand,THA,1998,MCV1,96.0
+Thailand,THA,1999,MCV1,96.0
 Thailand,THA,2000,MCV1,94.0
 Thailand,THA,2001,MCV1,94.0
 Thailand,THA,2002,MCV1,94.0
@@ -5774,6 +9239,21 @@ Thailand,THA,2021,MCV1,93.0
 Thailand,THA,2022,MCV1,93.0
 Thailand,THA,2023,MCV1,93.0
 Thailand,THA,2024,MCV1,93.0
+Thailand,THA,1985,Polio3,61.0
+Thailand,THA,1986,Polio3,66.0
+Thailand,THA,1987,Polio3,71.0
+Thailand,THA,1988,Polio3,80.0
+Thailand,THA,1989,Polio3,84.0
+Thailand,THA,1990,Polio3,92.0
+Thailand,THA,1991,Polio3,90.0
+Thailand,THA,1992,Polio3,84.0
+Thailand,THA,1993,Polio3,89.0
+Thailand,THA,1994,Polio3,93.0
+Thailand,THA,1995,Polio3,96.0
+Thailand,THA,1996,Polio3,94.0
+Thailand,THA,1997,Polio3,95.0
+Thailand,THA,1998,Polio3,96.0
+Thailand,THA,1999,Polio3,97.0
 Thailand,THA,2000,Polio3,97.0
 Thailand,THA,2001,Polio3,97.0
 Thailand,THA,2002,Polio3,97.0
@@ -5799,6 +9279,21 @@ Thailand,THA,2021,Polio3,93.0
 Thailand,THA,2022,Polio3,93.0
 Thailand,THA,2023,Polio3,93.0
 Thailand,THA,2024,Polio3,93.0
+Tunisia,TUN,1985,DTP3,70.0
+Tunisia,TUN,1986,DTP3,72.0
+Tunisia,TUN,1987,DTP3,84.0
+Tunisia,TUN,1988,DTP3,91.0
+Tunisia,TUN,1989,DTP3,93.0
+Tunisia,TUN,1990,DTP3,93.0
+Tunisia,TUN,1991,DTP3,93.0
+Tunisia,TUN,1992,DTP3,95.0
+Tunisia,TUN,1993,DTP3,94.0
+Tunisia,TUN,1994,DTP3,93.0
+Tunisia,TUN,1995,DTP3,94.0
+Tunisia,TUN,1996,DTP3,95.0
+Tunisia,TUN,1997,DTP3,96.0
+Tunisia,TUN,1998,DTP3,96.0
+Tunisia,TUN,1999,DTP3,99.0
 Tunisia,TUN,2000,DTP3,97.0
 Tunisia,TUN,2001,DTP3,98.0
 Tunisia,TUN,2002,DTP3,96.0
@@ -5824,6 +9319,21 @@ Tunisia,TUN,2021,DTP3,97.0
 Tunisia,TUN,2022,DTP3,97.0
 Tunisia,TUN,2023,DTP3,97.0
 Tunisia,TUN,2024,DTP3,97.0
+Tunisia,TUN,1985,HepB3,
+Tunisia,TUN,1986,HepB3,
+Tunisia,TUN,1987,HepB3,
+Tunisia,TUN,1988,HepB3,
+Tunisia,TUN,1989,HepB3,
+Tunisia,TUN,1990,HepB3,
+Tunisia,TUN,1991,HepB3,
+Tunisia,TUN,1992,HepB3,
+Tunisia,TUN,1993,HepB3,
+Tunisia,TUN,1994,HepB3,
+Tunisia,TUN,1995,HepB3,
+Tunisia,TUN,1996,HepB3,83.0
+Tunisia,TUN,1997,HepB3,88.0
+Tunisia,TUN,1998,HepB3,91.0
+Tunisia,TUN,1999,HepB3,94.0
 Tunisia,TUN,2000,HepB3,94.0
 Tunisia,TUN,2001,HepB3,94.0
 Tunisia,TUN,2002,HepB3,93.0
@@ -5849,6 +9359,21 @@ Tunisia,TUN,2021,HepB3,97.0
 Tunisia,TUN,2022,HepB3,97.0
 Tunisia,TUN,2023,HepB3,97.0
 Tunisia,TUN,2024,HepB3,97.0
+Tunisia,TUN,1985,MCV1,65.0
+Tunisia,TUN,1986,MCV1,67.0
+Tunisia,TUN,1987,MCV1,81.0
+Tunisia,TUN,1988,MCV1,87.0
+Tunisia,TUN,1989,MCV1,93.0
+Tunisia,TUN,1990,MCV1,93.0
+Tunisia,TUN,1991,MCV1,94.0
+Tunisia,TUN,1992,MCV1,94.0
+Tunisia,TUN,1993,MCV1,92.0
+Tunisia,TUN,1994,MCV1,91.0
+Tunisia,TUN,1995,MCV1,91.0
+Tunisia,TUN,1996,MCV1,92.0
+Tunisia,TUN,1997,MCV1,92.0
+Tunisia,TUN,1998,MCV1,94.0
+Tunisia,TUN,1999,MCV1,90.0
 Tunisia,TUN,2000,MCV1,95.0
 Tunisia,TUN,2001,MCV1,92.0
 Tunisia,TUN,2002,MCV1,94.0
@@ -5874,6 +9399,21 @@ Tunisia,TUN,2021,MCV1,95.0
 Tunisia,TUN,2022,MCV1,95.0
 Tunisia,TUN,2023,MCV1,96.0
 Tunisia,TUN,2024,MCV1,96.0
+Tunisia,TUN,1985,Polio3,70.0
+Tunisia,TUN,1986,Polio3,72.0
+Tunisia,TUN,1987,Polio3,84.0
+Tunisia,TUN,1988,Polio3,91.0
+Tunisia,TUN,1989,Polio3,93.0
+Tunisia,TUN,1990,Polio3,93.0
+Tunisia,TUN,1991,Polio3,93.0
+Tunisia,TUN,1992,Polio3,95.0
+Tunisia,TUN,1993,Polio3,94.0
+Tunisia,TUN,1994,Polio3,93.0
+Tunisia,TUN,1995,Polio3,94.0
+Tunisia,TUN,1996,Polio3,95.0
+Tunisia,TUN,1997,Polio3,96.0
+Tunisia,TUN,1998,Polio3,96.0
+Tunisia,TUN,1999,Polio3,99.0
 Tunisia,TUN,2000,Polio3,97.0
 Tunisia,TUN,2001,Polio3,98.0
 Tunisia,TUN,2002,Polio3,96.0
@@ -5899,6 +9439,21 @@ Tunisia,TUN,2021,Polio3,97.0
 Tunisia,TUN,2022,Polio3,97.0
 Tunisia,TUN,2023,Polio3,97.0
 Tunisia,TUN,2024,Polio3,96.0
+Uganda,UGA,1985,DTP3,14.0
+Uganda,UGA,1986,DTP3,21.0
+Uganda,UGA,1987,DTP3,30.0
+Uganda,UGA,1988,DTP3,38.0
+Uganda,UGA,1989,DTP3,42.0
+Uganda,UGA,1990,DTP3,45.0
+Uganda,UGA,1991,DTP3,49.0
+Uganda,UGA,1992,DTP3,53.0
+Uganda,UGA,1993,DTP3,56.0
+Uganda,UGA,1994,DTP3,60.0
+Uganda,UGA,1995,DTP3,59.0
+Uganda,UGA,1996,DTP3,57.0
+Uganda,UGA,1997,DTP3,56.0
+Uganda,UGA,1998,DTP3,48.0
+Uganda,UGA,1999,DTP3,50.0
 Uganda,UGA,2000,DTP3,52.0
 Uganda,UGA,2001,DTP3,55.0
 Uganda,UGA,2002,DTP3,57.0
@@ -5924,6 +9479,21 @@ Uganda,UGA,2021,DTP3,91.0
 Uganda,UGA,2022,DTP3,89.0
 Uganda,UGA,2023,DTP3,91.0
 Uganda,UGA,2024,DTP3,91.0
+Uganda,UGA,1985,HepB3,
+Uganda,UGA,1986,HepB3,
+Uganda,UGA,1987,HepB3,
+Uganda,UGA,1988,HepB3,
+Uganda,UGA,1989,HepB3,
+Uganda,UGA,1990,HepB3,
+Uganda,UGA,1991,HepB3,
+Uganda,UGA,1992,HepB3,
+Uganda,UGA,1993,HepB3,
+Uganda,UGA,1994,HepB3,
+Uganda,UGA,1995,HepB3,
+Uganda,UGA,1996,HepB3,
+Uganda,UGA,1997,HepB3,
+Uganda,UGA,1998,HepB3,
+Uganda,UGA,1999,HepB3,
 Uganda,UGA,2000,HepB3,
 Uganda,UGA,2001,HepB3,
 Uganda,UGA,2002,HepB3,29.0
@@ -5949,6 +9519,21 @@ Uganda,UGA,2021,HepB3,91.0
 Uganda,UGA,2022,HepB3,89.0
 Uganda,UGA,2023,HepB3,91.0
 Uganda,UGA,2024,HepB3,91.0
+Uganda,UGA,1985,MCV1,17.0
+Uganda,UGA,1986,MCV1,27.0
+Uganda,UGA,1987,MCV1,38.0
+Uganda,UGA,1988,MCV1,49.0
+Uganda,UGA,1989,MCV1,51.0
+Uganda,UGA,1990,MCV1,52.0
+Uganda,UGA,1991,MCV1,54.0
+Uganda,UGA,1992,MCV1,56.0
+Uganda,UGA,1993,MCV1,57.0
+Uganda,UGA,1994,MCV1,59.0
+Uganda,UGA,1995,MCV1,57.0
+Uganda,UGA,1996,MCV1,55.0
+Uganda,UGA,1997,MCV1,54.0
+Uganda,UGA,1998,MCV1,50.0
+Uganda,UGA,1999,MCV1,55.0
 Uganda,UGA,2000,MCV1,57.0
 Uganda,UGA,2001,MCV1,59.0
 Uganda,UGA,2002,MCV1,62.0
@@ -5974,6 +9559,21 @@ Uganda,UGA,2021,MCV1,90.0
 Uganda,UGA,2022,MCV1,90.0
 Uganda,UGA,2023,MCV1,90.0
 Uganda,UGA,2024,MCV1,90.0
+Uganda,UGA,1985,Polio3,13.0
+Uganda,UGA,1986,Polio3,21.0
+Uganda,UGA,1987,Polio3,30.0
+Uganda,UGA,1988,Polio3,38.0
+Uganda,UGA,1989,Polio3,42.0
+Uganda,UGA,1990,Polio3,45.0
+Uganda,UGA,1991,Polio3,49.0
+Uganda,UGA,1992,Polio3,52.0
+Uganda,UGA,1993,Polio3,56.0
+Uganda,UGA,1994,Polio3,59.0
+Uganda,UGA,1995,Polio3,58.0
+Uganda,UGA,1996,Polio3,57.0
+Uganda,UGA,1997,Polio3,55.0
+Uganda,UGA,1998,Polio3,50.0
+Uganda,UGA,1999,Polio3,54.0
 Uganda,UGA,2000,Polio3,55.0
 Uganda,UGA,2001,Polio3,56.0
 Uganda,UGA,2002,Polio3,57.0
@@ -5999,6 +9599,21 @@ Uganda,UGA,2021,Polio3,91.0
 Uganda,UGA,2022,Polio3,90.0
 Uganda,UGA,2023,Polio3,89.0
 Uganda,UGA,2024,Polio3,89.0
+Ukraine,UKR,1985,DTP3,
+Ukraine,UKR,1986,DTP3,
+Ukraine,UKR,1987,DTP3,
+Ukraine,UKR,1988,DTP3,
+Ukraine,UKR,1989,DTP3,
+Ukraine,UKR,1990,DTP3,
+Ukraine,UKR,1991,DTP3,
+Ukraine,UKR,1992,DTP3,88.0
+Ukraine,UKR,1993,DTP3,93.0
+Ukraine,UKR,1994,DTP3,97.0
+Ukraine,UKR,1995,DTP3,98.0
+Ukraine,UKR,1996,DTP3,99.0
+Ukraine,UKR,1997,DTP3,99.0
+Ukraine,UKR,1998,DTP3,98.0
+Ukraine,UKR,1999,DTP3,99.0
 Ukraine,UKR,2000,DTP3,99.0
 Ukraine,UKR,2001,DTP3,99.0
 Ukraine,UKR,2002,DTP3,99.0
@@ -6024,6 +9639,21 @@ Ukraine,UKR,2021,DTP3,78.0
 Ukraine,UKR,2022,DTP3,73.0
 Ukraine,UKR,2023,DTP3,83.0
 Ukraine,UKR,2024,DTP3,88.0
+Ukraine,UKR,1985,HepB3,
+Ukraine,UKR,1986,HepB3,
+Ukraine,UKR,1987,HepB3,
+Ukraine,UKR,1988,HepB3,
+Ukraine,UKR,1989,HepB3,
+Ukraine,UKR,1990,HepB3,
+Ukraine,UKR,1991,HepB3,
+Ukraine,UKR,1992,HepB3,
+Ukraine,UKR,1993,HepB3,
+Ukraine,UKR,1994,HepB3,
+Ukraine,UKR,1995,HepB3,
+Ukraine,UKR,1996,HepB3,
+Ukraine,UKR,1997,HepB3,
+Ukraine,UKR,1998,HepB3,
+Ukraine,UKR,1999,HepB3,
 Ukraine,UKR,2000,HepB3,4.0
 Ukraine,UKR,2001,HepB3,7.0
 Ukraine,UKR,2002,HepB3,48.0
@@ -6049,6 +9679,21 @@ Ukraine,UKR,2021,HepB3,77.0
 Ukraine,UKR,2022,HepB3,62.0
 Ukraine,UKR,2023,HepB3,79.0
 Ukraine,UKR,2024,HepB3,88.0
+Ukraine,UKR,1985,MCV1,
+Ukraine,UKR,1986,MCV1,
+Ukraine,UKR,1987,MCV1,
+Ukraine,UKR,1988,MCV1,
+Ukraine,UKR,1989,MCV1,
+Ukraine,UKR,1990,MCV1,
+Ukraine,UKR,1991,MCV1,
+Ukraine,UKR,1992,MCV1,90.0
+Ukraine,UKR,1993,MCV1,94.0
+Ukraine,UKR,1994,MCV1,96.0
+Ukraine,UKR,1995,MCV1,97.0
+Ukraine,UKR,1996,MCV1,92.0
+Ukraine,UKR,1997,MCV1,97.0
+Ukraine,UKR,1998,MCV1,96.0
+Ukraine,UKR,1999,MCV1,99.0
 Ukraine,UKR,2000,MCV1,99.0
 Ukraine,UKR,2001,MCV1,99.0
 Ukraine,UKR,2002,MCV1,99.0
@@ -6074,6 +9719,21 @@ Ukraine,UKR,2021,MCV1,89.0
 Ukraine,UKR,2022,MCV1,74.0
 Ukraine,UKR,2023,MCV1,92.0
 Ukraine,UKR,2024,MCV1,91.0
+Ukraine,UKR,1985,Polio3,
+Ukraine,UKR,1986,Polio3,
+Ukraine,UKR,1987,Polio3,
+Ukraine,UKR,1988,Polio3,
+Ukraine,UKR,1989,Polio3,
+Ukraine,UKR,1990,Polio3,
+Ukraine,UKR,1991,Polio3,
+Ukraine,UKR,1992,Polio3,89.0
+Ukraine,UKR,1993,Polio3,91.0
+Ukraine,UKR,1994,Polio3,96.0
+Ukraine,UKR,1995,Polio3,97.0
+Ukraine,UKR,1996,Polio3,99.0
+Ukraine,UKR,1997,Polio3,99.0
+Ukraine,UKR,1998,Polio3,98.0
+Ukraine,UKR,1999,Polio3,98.0
 Ukraine,UKR,2000,Polio3,99.0
 Ukraine,UKR,2001,Polio3,99.0
 Ukraine,UKR,2002,Polio3,99.0
@@ -6099,6 +9759,21 @@ Ukraine,UKR,2021,Polio3,78.0
 Ukraine,UKR,2022,Polio3,69.0
 Ukraine,UKR,2023,Polio3,85.0
 Ukraine,UKR,2024,Polio3,88.0
+United Kingdom,GBR,1985,DTP3,65.0
+United Kingdom,GBR,1986,DTP3,67.0
+United Kingdom,GBR,1987,DTP3,73.0
+United Kingdom,GBR,1988,DTP3,75.0
+United Kingdom,GBR,1989,DTP3,78.0
+United Kingdom,GBR,1990,DTP3,84.0
+United Kingdom,GBR,1991,DTP3,88.0
+United Kingdom,GBR,1992,DTP3,92.0
+United Kingdom,GBR,1993,DTP3,93.0
+United Kingdom,GBR,1994,DTP3,93.0
+United Kingdom,GBR,1995,DTP3,94.0
+United Kingdom,GBR,1996,DTP3,94.0
+United Kingdom,GBR,1997,DTP3,92.0
+United Kingdom,GBR,1998,DTP3,91.0
+United Kingdom,GBR,1999,DTP3,92.0
 United Kingdom,GBR,2000,DTP3,91.0
 United Kingdom,GBR,2001,DTP3,91.0
 United Kingdom,GBR,2002,DTP3,91.0
@@ -6124,6 +9799,21 @@ United Kingdom,GBR,2021,DTP3,93.0
 United Kingdom,GBR,2022,DTP3,92.0
 United Kingdom,GBR,2023,DTP3,92.0
 United Kingdom,GBR,2024,DTP3,92.0
+United Kingdom,GBR,1985,HepB3,
+United Kingdom,GBR,1986,HepB3,
+United Kingdom,GBR,1987,HepB3,
+United Kingdom,GBR,1988,HepB3,
+United Kingdom,GBR,1989,HepB3,
+United Kingdom,GBR,1990,HepB3,
+United Kingdom,GBR,1991,HepB3,
+United Kingdom,GBR,1992,HepB3,
+United Kingdom,GBR,1993,HepB3,
+United Kingdom,GBR,1994,HepB3,
+United Kingdom,GBR,1995,HepB3,
+United Kingdom,GBR,1996,HepB3,
+United Kingdom,GBR,1997,HepB3,
+United Kingdom,GBR,1998,HepB3,
+United Kingdom,GBR,1999,HepB3,
 United Kingdom,GBR,2000,HepB3,
 United Kingdom,GBR,2001,HepB3,
 United Kingdom,GBR,2002,HepB3,
@@ -6149,6 +9839,21 @@ United Kingdom,GBR,2021,HepB3,93.0
 United Kingdom,GBR,2022,HepB3,92.0
 United Kingdom,GBR,2023,HepB3,92.0
 United Kingdom,GBR,2024,HepB3,92.0
+United Kingdom,GBR,1985,MCV1,68.0
+United Kingdom,GBR,1986,MCV1,71.0
+United Kingdom,GBR,1987,MCV1,76.0
+United Kingdom,GBR,1988,MCV1,80.0
+United Kingdom,GBR,1989,MCV1,84.0
+United Kingdom,GBR,1990,MCV1,87.0
+United Kingdom,GBR,1991,MCV1,90.0
+United Kingdom,GBR,1992,MCV1,92.0
+United Kingdom,GBR,1993,MCV1,91.0
+United Kingdom,GBR,1994,MCV1,91.0
+United Kingdom,GBR,1995,MCV1,92.0
+United Kingdom,GBR,1996,MCV1,92.0
+United Kingdom,GBR,1997,MCV1,91.0
+United Kingdom,GBR,1998,MCV1,87.0
+United Kingdom,GBR,1999,MCV1,88.0
 United Kingdom,GBR,2000,MCV1,88.0
 United Kingdom,GBR,2001,MCV1,85.0
 United Kingdom,GBR,2002,MCV1,85.0
@@ -6174,6 +9879,21 @@ United Kingdom,GBR,2021,MCV1,91.0
 United Kingdom,GBR,2022,MCV1,90.0
 United Kingdom,GBR,2023,MCV1,90.0
 United Kingdom,GBR,2024,MCV1,89.0
+United Kingdom,GBR,1985,Polio3,95.0
+United Kingdom,GBR,1986,Polio3,85.0
+United Kingdom,GBR,1987,Polio3,87.0
+United Kingdom,GBR,1988,Polio3,87.0
+United Kingdom,GBR,1989,Polio3,89.0
+United Kingdom,GBR,1990,Polio3,92.0
+United Kingdom,GBR,1991,Polio3,93.0
+United Kingdom,GBR,1992,Polio3,95.0
+United Kingdom,GBR,1993,Polio3,95.0
+United Kingdom,GBR,1994,Polio3,95.0
+United Kingdom,GBR,1995,Polio3,96.0
+United Kingdom,GBR,1996,Polio3,96.0
+United Kingdom,GBR,1997,Polio3,92.0
+United Kingdom,GBR,1998,Polio3,91.0
+United Kingdom,GBR,1999,Polio3,92.0
 United Kingdom,GBR,2000,Polio3,91.0
 United Kingdom,GBR,2001,Polio3,91.0
 United Kingdom,GBR,2002,Polio3,91.0
@@ -6199,6 +9919,21 @@ United Kingdom,GBR,2021,Polio3,93.0
 United Kingdom,GBR,2022,Polio3,92.0
 United Kingdom,GBR,2023,Polio3,92.0
 United Kingdom,GBR,2024,Polio3,92.0
+United States,USA,1985,DTP3,96.0
+United States,USA,1986,DTP3,97.0
+United States,USA,1987,DTP3,97.0
+United States,USA,1988,DTP3,97.0
+United States,USA,1989,DTP3,94.0
+United States,USA,1990,DTP3,90.0
+United States,USA,1991,DTP3,86.0
+United States,USA,1992,DTP3,83.0
+United States,USA,1993,DTP3,88.0
+United States,USA,1994,DTP3,94.0
+United States,USA,1995,DTP3,95.0
+United States,USA,1996,DTP3,95.0
+United States,USA,1997,DTP3,96.0
+United States,USA,1998,DTP3,96.0
+United States,USA,1999,DTP3,96.0
 United States,USA,2000,DTP3,94.0
 United States,USA,2001,DTP3,94.0
 United States,USA,2002,DTP3,94.0
@@ -6224,6 +9959,21 @@ United States,USA,2021,DTP3,94.0
 United States,USA,2022,DTP3,94.0
 United States,USA,2023,DTP3,94.0
 United States,USA,2024,DTP3,94.0
+United States,USA,1985,HepB3,
+United States,USA,1986,HepB3,
+United States,USA,1987,HepB3,
+United States,USA,1988,HepB3,
+United States,USA,1989,HepB3,
+United States,USA,1990,HepB3,
+United States,USA,1991,HepB3,
+United States,USA,1992,HepB3,
+United States,USA,1993,HepB3,16.0
+United States,USA,1994,HepB3,42.0
+United States,USA,1995,HepB3,68.0
+United States,USA,1996,HepB3,82.0
+United States,USA,1997,HepB3,84.0
+United States,USA,1998,HepB3,87.0
+United States,USA,1999,HepB3,88.0
 United States,USA,2000,HepB3,90.0
 United States,USA,2001,HepB3,89.0
 United States,USA,2002,HepB3,88.0
@@ -6249,6 +9999,21 @@ United States,USA,2021,HepB3,92.0
 United States,USA,2022,HepB3,93.0
 United States,USA,2023,HepB3,93.0
 United States,USA,2024,HepB3,93.0
+United States,USA,1985,MCV1,97.0
+United States,USA,1986,MCV1,97.0
+United States,USA,1987,MCV1,82.0
+United States,USA,1988,MCV1,98.0
+United States,USA,1989,MCV1,94.0
+United States,USA,1990,MCV1,90.0
+United States,USA,1991,MCV1,87.0
+United States,USA,1992,MCV1,83.0
+United States,USA,1993,MCV1,84.0
+United States,USA,1994,MCV1,89.0
+United States,USA,1995,MCV1,88.0
+United States,USA,1996,MCV1,91.0
+United States,USA,1997,MCV1,91.0
+United States,USA,1998,MCV1,92.0
+United States,USA,1999,MCV1,92.0
 United States,USA,2000,MCV1,91.0
 United States,USA,2001,MCV1,91.0
 United States,USA,2002,MCV1,91.0
@@ -6274,6 +10039,21 @@ United States,USA,2021,MCV1,92.0
 United States,USA,2022,MCV1,92.0
 United States,USA,2023,MCV1,92.0
 United States,USA,2024,MCV1,92.0
+United States,USA,1985,Polio3,96.0
+United States,USA,1986,Polio3,97.0
+United States,USA,1987,Polio3,97.0
+United States,USA,1988,Polio3,97.0
+United States,USA,1989,Polio3,91.0
+United States,USA,1990,Polio3,85.0
+United States,USA,1991,Polio3,78.0
+United States,USA,1992,Polio3,72.0
+United States,USA,1993,Polio3,79.0
+United States,USA,1994,Polio3,84.0
+United States,USA,1995,Polio3,88.0
+United States,USA,1996,Polio3,91.0
+United States,USA,1997,Polio3,91.0
+United States,USA,1998,Polio3,91.0
+United States,USA,1999,Polio3,90.0
 United States,USA,2000,Polio3,90.0
 United States,USA,2001,Polio3,89.0
 United States,USA,2002,Polio3,90.0
@@ -6299,6 +10079,21 @@ United States,USA,2021,Polio3,93.0
 United States,USA,2022,Polio3,93.0
 United States,USA,2023,Polio3,93.0
 United States,USA,2024,Polio3,93.0
+Vietnam,VNM,1985,DTP3,42.0
+Vietnam,VNM,1986,DTP3,43.0
+Vietnam,VNM,1987,DTP3,50.0
+Vietnam,VNM,1988,DTP3,70.0
+Vietnam,VNM,1989,DTP3,88.0
+Vietnam,VNM,1990,DTP3,88.0
+Vietnam,VNM,1991,DTP3,88.0
+Vietnam,VNM,1992,DTP3,88.0
+Vietnam,VNM,1993,DTP3,91.0
+Vietnam,VNM,1994,DTP3,94.0
+Vietnam,VNM,1995,DTP3,93.0
+Vietnam,VNM,1996,DTP3,94.0
+Vietnam,VNM,1997,DTP3,95.0
+Vietnam,VNM,1998,DTP3,94.0
+Vietnam,VNM,1999,DTP3,93.0
 Vietnam,VNM,2000,DTP3,96.0
 Vietnam,VNM,2001,DTP3,96.0
 Vietnam,VNM,2002,DTP3,75.0
@@ -6324,6 +10119,21 @@ Vietnam,VNM,2021,DTP3,83.0
 Vietnam,VNM,2022,DTP3,91.0
 Vietnam,VNM,2023,DTP3,65.0
 Vietnam,VNM,2024,DTP3,97.0
+Vietnam,VNM,1985,HepB3,
+Vietnam,VNM,1986,HepB3,
+Vietnam,VNM,1987,HepB3,
+Vietnam,VNM,1988,HepB3,
+Vietnam,VNM,1989,HepB3,
+Vietnam,VNM,1990,HepB3,
+Vietnam,VNM,1991,HepB3,
+Vietnam,VNM,1992,HepB3,
+Vietnam,VNM,1993,HepB3,
+Vietnam,VNM,1994,HepB3,
+Vietnam,VNM,1995,HepB3,
+Vietnam,VNM,1996,HepB3,
+Vietnam,VNM,1997,HepB3,
+Vietnam,VNM,1998,HepB3,
+Vietnam,VNM,1999,HepB3,
 Vietnam,VNM,2000,HepB3,
 Vietnam,VNM,2001,HepB3,
 Vietnam,VNM,2002,HepB3,
@@ -6349,6 +10159,21 @@ Vietnam,VNM,2021,HepB3,83.0
 Vietnam,VNM,2022,HepB3,91.0
 Vietnam,VNM,2023,HepB3,65.0
 Vietnam,VNM,2024,HepB3,97.0
+Vietnam,VNM,1985,MCV1,19.0
+Vietnam,VNM,1986,MCV1,39.0
+Vietnam,VNM,1987,MCV1,36.0
+Vietnam,VNM,1988,MCV1,56.0
+Vietnam,VNM,1989,MCV1,76.0
+Vietnam,VNM,1990,MCV1,88.0
+Vietnam,VNM,1991,MCV1,88.0
+Vietnam,VNM,1992,MCV1,90.0
+Vietnam,VNM,1993,MCV1,93.0
+Vietnam,VNM,1994,MCV1,96.0
+Vietnam,VNM,1995,MCV1,95.0
+Vietnam,VNM,1996,MCV1,96.0
+Vietnam,VNM,1997,MCV1,96.0
+Vietnam,VNM,1998,MCV1,96.0
+Vietnam,VNM,1999,MCV1,94.0
 Vietnam,VNM,2000,MCV1,97.0
 Vietnam,VNM,2001,MCV1,98.0
 Vietnam,VNM,2002,MCV1,96.0
@@ -6374,6 +10199,21 @@ Vietnam,VNM,2021,MCV1,89.0
 Vietnam,VNM,2022,MCV1,88.0
 Vietnam,VNM,2023,MCV1,82.0
 Vietnam,VNM,2024,MCV1,98.0
+Vietnam,VNM,1985,Polio3,62.0
+Vietnam,VNM,1986,Polio3,45.0
+Vietnam,VNM,1987,Polio3,45.0
+Vietnam,VNM,1988,Polio3,54.0
+Vietnam,VNM,1989,Polio3,70.0
+Vietnam,VNM,1990,Polio3,88.0
+Vietnam,VNM,1991,Polio3,88.0
+Vietnam,VNM,1992,Polio3,89.0
+Vietnam,VNM,1993,Polio3,91.0
+Vietnam,VNM,1994,Polio3,94.0
+Vietnam,VNM,1995,Polio3,94.0
+Vietnam,VNM,1996,Polio3,94.0
+Vietnam,VNM,1997,Polio3,95.0
+Vietnam,VNM,1998,Polio3,94.0
+Vietnam,VNM,1999,Polio3,93.0
 Vietnam,VNM,2000,Polio3,96.0
 Vietnam,VNM,2001,Polio3,96.0
 Vietnam,VNM,2002,Polio3,92.0
@@ -6399,6 +10239,21 @@ Vietnam,VNM,2021,Polio3,81.0
 Vietnam,VNM,2022,Polio3,70.0
 Vietnam,VNM,2023,Polio3,60.0
 Vietnam,VNM,2024,Polio3,73.0
+World,OWID_WRL,1985,DTP3,48.0
+World,OWID_WRL,1986,DTP3,51.0
+World,OWID_WRL,1987,DTP3,55.0
+World,OWID_WRL,1988,DTP3,63.0
+World,OWID_WRL,1989,DTP3,68.0
+World,OWID_WRL,1990,DTP3,76.0
+World,OWID_WRL,1991,DTP3,71.0
+World,OWID_WRL,1992,DTP3,69.0
+World,OWID_WRL,1993,DTP3,69.0
+World,OWID_WRL,1994,DTP3,72.0
+World,OWID_WRL,1995,DTP3,72.0
+World,OWID_WRL,1996,DTP3,72.0
+World,OWID_WRL,1997,DTP3,71.0
+World,OWID_WRL,1998,DTP3,71.0
+World,OWID_WRL,1999,DTP3,71.0
 World,OWID_WRL,2000,DTP3,72.0
 World,OWID_WRL,2001,DTP3,72.0
 World,OWID_WRL,2002,DTP3,72.0
@@ -6424,6 +10279,21 @@ World,OWID_WRL,2021,DTP3,82.0
 World,OWID_WRL,2022,DTP3,85.0
 World,OWID_WRL,2023,DTP3,84.0
 World,OWID_WRL,2024,DTP3,85.0
+World,OWID_WRL,1985,HepB3,0.0
+World,OWID_WRL,1986,HepB3,0.0
+World,OWID_WRL,1987,HepB3,0.0
+World,OWID_WRL,1988,HepB3,0.0
+World,OWID_WRL,1989,HepB3,0.0
+World,OWID_WRL,1990,HepB3,1.0
+World,OWID_WRL,1991,HepB3,1.0
+World,OWID_WRL,1992,HepB3,3.0
+World,OWID_WRL,1993,HepB3,4.0
+World,OWID_WRL,1994,HepB3,7.0
+World,OWID_WRL,1995,HepB3,11.0
+World,OWID_WRL,1996,HepB3,13.0
+World,OWID_WRL,1997,HepB3,14.0
+World,OWID_WRL,1998,HepB3,15.0
+World,OWID_WRL,1999,HepB3,18.0
 World,OWID_WRL,2000,HepB3,29.0
 World,OWID_WRL,2001,HepB3,31.0
 World,OWID_WRL,2002,HepB3,37.0
@@ -6449,6 +10319,21 @@ World,OWID_WRL,2021,HepB3,81.0
 World,OWID_WRL,2022,HepB3,84.0
 World,OWID_WRL,2023,HepB3,84.0
 World,OWID_WRL,2024,HepB3,84.0
+World,OWID_WRL,1985,MCV1,46.0
+World,OWID_WRL,1986,MCV1,46.0
+World,OWID_WRL,1987,MCV1,53.0
+World,OWID_WRL,1988,MCV1,62.0
+World,OWID_WRL,1989,MCV1,67.0
+World,OWID_WRL,1990,MCV1,73.0
+World,OWID_WRL,1991,MCV1,68.0
+World,OWID_WRL,1992,MCV1,68.0
+World,OWID_WRL,1993,MCV1,69.0
+World,OWID_WRL,1994,MCV1,71.0
+World,OWID_WRL,1995,MCV1,73.0
+World,OWID_WRL,1996,MCV1,73.0
+World,OWID_WRL,1997,MCV1,71.0
+World,OWID_WRL,1998,MCV1,70.0
+World,OWID_WRL,1999,MCV1,71.0
 World,OWID_WRL,2000,MCV1,71.0
 World,OWID_WRL,2001,MCV1,72.0
 World,OWID_WRL,2002,MCV1,72.0
@@ -6474,6 +10359,21 @@ World,OWID_WRL,2021,MCV1,81.0
 World,OWID_WRL,2022,MCV1,83.0
 World,OWID_WRL,2023,MCV1,83.0
 World,OWID_WRL,2024,MCV1,84.0
+World,OWID_WRL,1985,Polio3,50.0
+World,OWID_WRL,1986,Polio3,50.0
+World,OWID_WRL,1987,Polio3,56.0
+World,OWID_WRL,1988,Polio3,64.0
+World,OWID_WRL,1989,Polio3,70.0
+World,OWID_WRL,1990,Polio3,75.0
+World,OWID_WRL,1991,Polio3,71.0
+World,OWID_WRL,1992,Polio3,69.0
+World,OWID_WRL,1993,Polio3,70.0
+World,OWID_WRL,1994,Polio3,72.0
+World,OWID_WRL,1995,Polio3,73.0
+World,OWID_WRL,1996,Polio3,73.0
+World,OWID_WRL,1997,Polio3,73.0
+World,OWID_WRL,1998,Polio3,72.0
+World,OWID_WRL,1999,Polio3,72.0
 World,OWID_WRL,2000,Polio3,72.0
 World,OWID_WRL,2001,Polio3,73.0
 World,OWID_WRL,2002,Polio3,74.0
@@ -6499,6 +10399,21 @@ World,OWID_WRL,2021,Polio3,81.0
 World,OWID_WRL,2022,Polio3,84.0
 World,OWID_WRL,2023,Polio3,84.0
 World,OWID_WRL,2024,Polio3,84.0
+Yemen,YEM,1985,DTP3,12.0
+Yemen,YEM,1986,DTP3,13.0
+Yemen,YEM,1987,DTP3,18.0
+Yemen,YEM,1988,DTP3,36.0
+Yemen,YEM,1989,DTP3,56.0
+Yemen,YEM,1990,DTP3,84.0
+Yemen,YEM,1991,DTP3,47.0
+Yemen,YEM,1992,DTP3,50.0
+Yemen,YEM,1993,DTP3,54.0
+Yemen,YEM,1994,DTP3,33.0
+Yemen,YEM,1995,DTP3,44.0
+Yemen,YEM,1996,DTP3,47.0
+Yemen,YEM,1997,DTP3,40.0
+Yemen,YEM,1998,DTP3,68.0
+Yemen,YEM,1999,DTP3,71.0
 Yemen,YEM,2000,DTP3,74.0
 Yemen,YEM,2001,DTP3,73.0
 Yemen,YEM,2002,DTP3,65.0
@@ -6524,6 +10439,21 @@ Yemen,YEM,2021,DTP3,56.0
 Yemen,YEM,2022,DTP3,58.0
 Yemen,YEM,2023,DTP3,46.0
 Yemen,YEM,2024,DTP3,42.0
+Yemen,YEM,1985,HepB3,
+Yemen,YEM,1986,HepB3,
+Yemen,YEM,1987,HepB3,
+Yemen,YEM,1988,HepB3,
+Yemen,YEM,1989,HepB3,
+Yemen,YEM,1990,HepB3,
+Yemen,YEM,1991,HepB3,
+Yemen,YEM,1992,HepB3,
+Yemen,YEM,1993,HepB3,
+Yemen,YEM,1994,HepB3,
+Yemen,YEM,1995,HepB3,
+Yemen,YEM,1996,HepB3,
+Yemen,YEM,1997,HepB3,
+Yemen,YEM,1998,HepB3,
+Yemen,YEM,1999,HepB3,9.0
 Yemen,YEM,2000,HepB3,14.0
 Yemen,YEM,2001,HepB3,19.0
 Yemen,YEM,2002,HepB3,31.0
@@ -6549,6 +10479,21 @@ Yemen,YEM,2021,HepB3,56.0
 Yemen,YEM,2022,HepB3,58.0
 Yemen,YEM,2023,HepB3,46.0
 Yemen,YEM,2024,HepB3,42.0
+Yemen,YEM,1985,MCV1,13.0
+Yemen,YEM,1986,MCV1,15.0
+Yemen,YEM,1987,MCV1,22.0
+Yemen,YEM,1988,MCV1,34.0
+Yemen,YEM,1989,MCV1,48.0
+Yemen,YEM,1990,MCV1,69.0
+Yemen,YEM,1991,MCV1,53.0
+Yemen,YEM,1992,MCV1,46.0
+Yemen,YEM,1993,MCV1,51.0
+Yemen,YEM,1994,MCV1,31.0
+Yemen,YEM,1995,MCV1,40.0
+Yemen,YEM,1996,MCV1,43.0
+Yemen,YEM,1997,MCV1,41.0
+Yemen,YEM,1998,MCV1,66.0
+Yemen,YEM,1999,MCV1,74.0
 Yemen,YEM,2000,MCV1,70.0
 Yemen,YEM,2001,MCV1,72.0
 Yemen,YEM,2002,MCV1,62.0
@@ -6574,6 +10519,21 @@ Yemen,YEM,2021,MCV1,51.0
 Yemen,YEM,2022,MCV1,53.0
 Yemen,YEM,2023,MCV1,45.0
 Yemen,YEM,2024,MCV1,41.0
+Yemen,YEM,1985,Polio3,12.0
+Yemen,YEM,1986,Polio3,13.0
+Yemen,YEM,1987,Polio3,18.0
+Yemen,YEM,1988,Polio3,36.0
+Yemen,YEM,1989,Polio3,56.0
+Yemen,YEM,1990,Polio3,84.0
+Yemen,YEM,1991,Polio3,47.0
+Yemen,YEM,1992,Polio3,50.0
+Yemen,YEM,1993,Polio3,54.0
+Yemen,YEM,1994,Polio3,33.0
+Yemen,YEM,1995,Polio3,44.0
+Yemen,YEM,1996,Polio3,47.0
+Yemen,YEM,1997,Polio3,40.0
+Yemen,YEM,1998,Polio3,68.0
+Yemen,YEM,1999,Polio3,71.0
 Yemen,YEM,2000,Polio3,74.0
 Yemen,YEM,2001,Polio3,73.0
 Yemen,YEM,2002,Polio3,64.0
@@ -6599,6 +10559,21 @@ Yemen,YEM,2021,Polio3,56.0
 Yemen,YEM,2022,Polio3,58.0
 Yemen,YEM,2023,Polio3,46.0
 Yemen,YEM,2024,Polio3,42.0
+Zambia,ZMB,1985,DTP3,66.0
+Zambia,ZMB,1986,DTP3,66.0
+Zambia,ZMB,1987,DTP3,83.0
+Zambia,ZMB,1988,DTP3,83.0
+Zambia,ZMB,1989,DTP3,83.0
+Zambia,ZMB,1990,DTP3,91.0
+Zambia,ZMB,1991,DTP3,79.0
+Zambia,ZMB,1992,DTP3,83.0
+Zambia,ZMB,1993,DTP3,86.0
+Zambia,ZMB,1994,DTP3,90.0
+Zambia,ZMB,1995,DTP3,86.0
+Zambia,ZMB,1996,DTP3,84.0
+Zambia,ZMB,1997,DTP3,83.0
+Zambia,ZMB,1998,DTP3,84.0
+Zambia,ZMB,1999,DTP3,84.0
 Zambia,ZMB,2000,DTP3,85.0
 Zambia,ZMB,2001,DTP3,85.0
 Zambia,ZMB,2002,DTP3,84.0
@@ -6624,6 +10599,21 @@ Zambia,ZMB,2021,DTP3,91.0
 Zambia,ZMB,2022,DTP3,92.0
 Zambia,ZMB,2023,DTP3,90.0
 Zambia,ZMB,2024,DTP3,91.0
+Zambia,ZMB,1985,HepB3,
+Zambia,ZMB,1986,HepB3,
+Zambia,ZMB,1987,HepB3,
+Zambia,ZMB,1988,HepB3,
+Zambia,ZMB,1989,HepB3,
+Zambia,ZMB,1990,HepB3,
+Zambia,ZMB,1991,HepB3,
+Zambia,ZMB,1992,HepB3,
+Zambia,ZMB,1993,HepB3,
+Zambia,ZMB,1994,HepB3,
+Zambia,ZMB,1995,HepB3,
+Zambia,ZMB,1996,HepB3,
+Zambia,ZMB,1997,HepB3,
+Zambia,ZMB,1998,HepB3,
+Zambia,ZMB,1999,HepB3,
 Zambia,ZMB,2000,HepB3,
 Zambia,ZMB,2001,HepB3,
 Zambia,ZMB,2002,HepB3,
@@ -6649,6 +10639,21 @@ Zambia,ZMB,2021,HepB3,91.0
 Zambia,ZMB,2022,HepB3,92.0
 Zambia,ZMB,2023,HepB3,90.0
 Zambia,ZMB,2024,HepB3,91.0
+Zambia,ZMB,1985,MCV1,58.0
+Zambia,ZMB,1986,MCV1,58.0
+Zambia,ZMB,1987,MCV1,80.0
+Zambia,ZMB,1988,MCV1,80.0
+Zambia,ZMB,1989,MCV1,80.0
+Zambia,ZMB,1990,MCV1,90.0
+Zambia,ZMB,1991,MCV1,80.0
+Zambia,ZMB,1992,MCV1,85.0
+Zambia,ZMB,1993,MCV1,91.0
+Zambia,ZMB,1994,MCV1,96.0
+Zambia,ZMB,1995,MCV1,86.0
+Zambia,ZMB,1996,MCV1,86.0
+Zambia,ZMB,1997,MCV1,86.0
+Zambia,ZMB,1998,MCV1,86.0
+Zambia,ZMB,1999,MCV1,85.0
 Zambia,ZMB,2000,MCV1,85.0
 Zambia,ZMB,2001,MCV1,84.0
 Zambia,ZMB,2002,MCV1,84.0
@@ -6674,6 +10679,21 @@ Zambia,ZMB,2021,MCV1,90.0
 Zambia,ZMB,2022,MCV1,88.0
 Zambia,ZMB,2023,MCV1,83.0
 Zambia,ZMB,2024,MCV1,88.0
+Zambia,ZMB,1985,Polio3,61.0
+Zambia,ZMB,1986,Polio3,74.0
+Zambia,ZMB,1987,Polio3,81.0
+Zambia,ZMB,1988,Polio3,81.0
+Zambia,ZMB,1989,Polio3,81.0
+Zambia,ZMB,1990,Polio3,90.0
+Zambia,ZMB,1991,Polio3,80.0
+Zambia,ZMB,1992,Polio3,83.0
+Zambia,ZMB,1993,Polio3,87.0
+Zambia,ZMB,1994,Polio3,90.0
+Zambia,ZMB,1995,Polio3,84.0
+Zambia,ZMB,1996,Polio3,83.0
+Zambia,ZMB,1997,Polio3,82.0
+Zambia,ZMB,1998,Polio3,83.0
+Zambia,ZMB,1999,Polio3,84.0
 Zambia,ZMB,2000,Polio3,85.0
 Zambia,ZMB,2001,Polio3,86.0
 Zambia,ZMB,2002,Polio3,85.0
@@ -6699,6 +10719,21 @@ Zambia,ZMB,2021,Polio3,87.0
 Zambia,ZMB,2022,Polio3,94.0
 Zambia,ZMB,2023,Polio3,91.0
 Zambia,ZMB,2024,Polio3,90.0
+Zimbabwe,ZWE,1985,DTP3,63.0
+Zimbabwe,ZWE,1986,DTP3,75.0
+Zimbabwe,ZWE,1987,DTP3,84.0
+Zimbabwe,ZWE,1988,DTP3,85.0
+Zimbabwe,ZWE,1989,DTP3,87.0
+Zimbabwe,ZWE,1990,DTP3,88.0
+Zimbabwe,ZWE,1991,DTP3,87.0
+Zimbabwe,ZWE,1992,DTP3,86.0
+Zimbabwe,ZWE,1993,DTP3,85.0
+Zimbabwe,ZWE,1994,DTP3,87.0
+Zimbabwe,ZWE,1995,DTP3,88.0
+Zimbabwe,ZWE,1996,DTP3,90.0
+Zimbabwe,ZWE,1997,DTP3,86.0
+Zimbabwe,ZWE,1998,DTP3,84.0
+Zimbabwe,ZWE,1999,DTP3,81.0
 Zimbabwe,ZWE,2000,DTP3,78.0
 Zimbabwe,ZWE,2001,DTP3,75.0
 Zimbabwe,ZWE,2002,DTP3,71.0
@@ -6724,6 +10759,21 @@ Zimbabwe,ZWE,2021,DTP3,88.0
 Zimbabwe,ZWE,2022,DTP3,90.0
 Zimbabwe,ZWE,2023,DTP3,90.0
 Zimbabwe,ZWE,2024,DTP3,91.0
+Zimbabwe,ZWE,1985,HepB3,
+Zimbabwe,ZWE,1986,HepB3,
+Zimbabwe,ZWE,1987,HepB3,
+Zimbabwe,ZWE,1988,HepB3,
+Zimbabwe,ZWE,1989,HepB3,
+Zimbabwe,ZWE,1990,HepB3,
+Zimbabwe,ZWE,1991,HepB3,
+Zimbabwe,ZWE,1992,HepB3,
+Zimbabwe,ZWE,1993,HepB3,
+Zimbabwe,ZWE,1994,HepB3,
+Zimbabwe,ZWE,1995,HepB3,1.0
+Zimbabwe,ZWE,1996,HepB3,9.0
+Zimbabwe,ZWE,1997,HepB3,16.0
+Zimbabwe,ZWE,1998,HepB3,24.0
+Zimbabwe,ZWE,1999,HepB3,31.0
 Zimbabwe,ZWE,2000,HepB3,79.0
 Zimbabwe,ZWE,2001,HepB3,76.0
 Zimbabwe,ZWE,2002,HepB3,73.0
@@ -6749,6 +10799,21 @@ Zimbabwe,ZWE,2021,HepB3,88.0
 Zimbabwe,ZWE,2022,HepB3,90.0
 Zimbabwe,ZWE,2023,HepB3,90.0
 Zimbabwe,ZWE,2024,HepB3,91.0
+Zimbabwe,ZWE,1985,MCV1,78.0
+Zimbabwe,ZWE,1986,MCV1,83.0
+Zimbabwe,ZWE,1987,MCV1,88.0
+Zimbabwe,ZWE,1988,MCV1,88.0
+Zimbabwe,ZWE,1989,MCV1,87.0
+Zimbabwe,ZWE,1990,MCV1,87.0
+Zimbabwe,ZWE,1991,MCV1,87.0
+Zimbabwe,ZWE,1992,MCV1,86.0
+Zimbabwe,ZWE,1993,MCV1,86.0
+Zimbabwe,ZWE,1994,MCV1,87.0
+Zimbabwe,ZWE,1995,MCV1,87.0
+Zimbabwe,ZWE,1996,MCV1,88.0
+Zimbabwe,ZWE,1997,MCV1,84.0
+Zimbabwe,ZWE,1998,MCV1,79.0
+Zimbabwe,ZWE,1999,MCV1,77.0
 Zimbabwe,ZWE,2000,MCV1,75.0
 Zimbabwe,ZWE,2001,MCV1,73.0
 Zimbabwe,ZWE,2002,MCV1,70.0
@@ -6774,6 +10839,21 @@ Zimbabwe,ZWE,2021,MCV1,88.0
 Zimbabwe,ZWE,2022,MCV1,90.0
 Zimbabwe,ZWE,2023,MCV1,90.0
 Zimbabwe,ZWE,2024,MCV1,90.0
+Zimbabwe,ZWE,1985,Polio3,63.0
+Zimbabwe,ZWE,1986,Polio3,82.0
+Zimbabwe,ZWE,1987,Polio3,86.0
+Zimbabwe,ZWE,1988,Polio3,87.0
+Zimbabwe,ZWE,1989,Polio3,88.0
+Zimbabwe,ZWE,1990,Polio3,89.0
+Zimbabwe,ZWE,1991,Polio3,88.0
+Zimbabwe,ZWE,1992,Polio3,86.0
+Zimbabwe,ZWE,1993,Polio3,85.0
+Zimbabwe,ZWE,1994,Polio3,87.0
+Zimbabwe,ZWE,1995,Polio3,88.0
+Zimbabwe,ZWE,1996,Polio3,90.0
+Zimbabwe,ZWE,1997,Polio3,86.0
+Zimbabwe,ZWE,1998,Polio3,84.0
+Zimbabwe,ZWE,1999,Polio3,81.0
 Zimbabwe,ZWE,2000,Polio3,78.0
 Zimbabwe,ZWE,2001,Polio3,76.0
 Zimbabwe,ZWE,2002,Polio3,73.0

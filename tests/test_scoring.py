@@ -32,13 +32,17 @@ needs_data = pytest.mark.skipif(
     reason="deploy CSV absent; run scripts/export_deploy_data.py",
 )
 
+# The items' own parameters, kept before the `params` fixture empties keys.PARAMS for a test.
+_REAL_PARAMS = dict(keys.PARAMS)
 
-def _rows(series: dict[str, dict[int, float | None]]) -> tuple[Row, ...]:
-    """Synthetic DTP3 data: every listed entity over 2000-2024, None where a year is absent."""
+
+def _rows(series: dict[str, dict[int, float | None]], start: int = 2000) -> tuple[Row, ...]:
+    """Synthetic DTP3 data: every listed entity from `start` to 2024, None where a year is absent.
+    From 2000 unless a test is about the years the line charts draw before it (since 2026-10-12)."""
     return tuple(
         Row(entity, "XXX", year, "DTP3", values.get(year))
         for entity, values in series.items()
-        for year in range(2000, 2025)
+        for year in range(start, 2025)
     )
 
 
@@ -139,12 +143,13 @@ def test_the_margins_are_the_ones_study_design_records():
         "Nigeria": 7.43,
         "Somalia": 12.86,
     }
+    # Ghana and Guinea in place of Cameroon (16.5) and Madagascar (14.8) since 2026-10-12.
     assert table[("B", "T6")].evidence["other_lines_clearance_pp"] == {
         "Benin": 11.8,
-        "Cameroon": 16.5,
         "Gabon": 14.3,
+        "Ghana": 13.1,
+        "Guinea": 30.5,
         "Kenya": 9.4,
-        "Madagascar": 14.8,
         "Sudan": 9.1,
     }
     for form in ("A", "B"):
@@ -391,6 +396,33 @@ def test_describe_counts_closeness_to_the_faller_only_from_its_last_peak(params)
     beside_early = FAR_BELOW | {y: 95.0 for y in range(2000, 2007)}
     task, rows = _describe({"R": RISER, "F": FALLER, "X": beside_early})
     assert keys.derive(task, rows).evidence["clearance"]["X"]["F"][0] == 0
+
+
+def test_describe_judges_the_shapes_on_the_years_asked(params):
+    """Drawn from 1985, asked about 2000-2024 (2026-10-12): a dip in the riser before 2000, and a
+    faller not reported then, are outside the question."""
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    early = {1990: 80.0} | {y: 40.0 for y in range(1991, 2000)}
+    task = _task("describe", ("F", "R", "X"), ())
+    rows = _rows({"R": early | RISER, "F": FALLER, "X": FAR_BELOW}, start=1990)
+    key = keys.derive(task, rows)
+    assert key.evidence["rise_pp"] == 36.0 and key.evidence["riser_dip_pp"] == 0.0
+    assert key.evidence["faller_peak"] == (2007, 95.0)
+
+
+def test_describe_refuses_a_line_alongside_the_riser_before_2000(params):
+    """Traceability covers every year drawn: X runs 3 points above R for five years before the
+    question's window, and could be followed by mistake there."""
+    params[("Z", "T1")] = {"riser": "R", "faller": "F"}
+    early = {y: 30.0 for y in range(1990, 2000)}
+    shadow = {y: 10.0 for y in range(1990, 2025)} | {y: 33.0 for y in range(1993, 1998)}
+    task = _task("describe", ("F", "R", "X"), ())
+    rows = _rows({"R": early | RISER, "F": FALLER, "X": shadow}, start=1990)
+    with pytest.raises(
+        keys.KeyDerivationError,
+        match=r"X's line runs within 5 pts of R's for 5 years \(1993-1997\)",
+    ):
+        keys.derive(task, rows)
 
 
 def test_describe_refuses_a_gap_in_a_named_line(params):
@@ -758,6 +790,91 @@ def test_crossing_is_judged_only_on_years_both_lines_report(race):
     assert 2006 not in key.evidence["differences"]
     assert key.evidence["intersection"] == 2006.5
     assert key.correct == "2004-2008"
+
+
+def test_crossing_is_judged_from_the_year_the_question_asks(race):
+    """Drawn from 1985, asked "after 2000" (2026-10-12): A leads B through the 1990s, trails from
+    2000 and passes it in 2007. The earlier lead is not a second crossing."""
+    early = {y: 60.0 for y in range(1990, 2000)}
+    rows = _rows({"A": early | _rising(37.0, 2.0), "B": FLAT_50 | dict.fromkeys(early, 50.0)}, 1990)
+    key = keys.derive(_crossing_task(), rows)
+    assert key.correct == "2004-2008"
+    assert key.evidence["cross_year"] == 2007
+    assert min(key.evidence["differences"]) == tasks.ASKED_FROM
+
+
+def test_crossing_refuses_a_line_alongside_a_named_one_before_2000(race):
+    """Traceability covers every year drawn: C runs 3 points above B for five years before the
+    question's window."""
+    early = {y: 20.0 for y in range(1990, 2000)}
+    c = {y: 80.0 for y in range(1990, 2025)} | {y: 53.0 for y in range(1993, 1998)}
+    rows = _rows(
+        {"A": early | _rising(37.0, 2.0), "B": FLAT_50 | dict.fromkeys(early, 50.0), "C": c}, 1990
+    )
+    with pytest.raises(
+        keys.KeyDerivationError,
+        match=r"C's line runs within 5 pts of B's for 5 years \(1993-1997\)",
+    ):
+        keys.derive(_crossing_task(("A", "B", "C")), rows)
+
+
+@needs_data
+@pytest.mark.parametrize(
+    ("form", "task_id", "swap", "reason"),
+    [
+        (
+            "A",
+            "T1",
+            {"Gabon": "Nigeria"},
+            r"Nigeria's line runs within 5 pts of India's for 5 years "
+            r"\(1985-1989\)",
+        ),
+        (
+            "B",
+            "T6",
+            {"Ghana": "Madagascar"},
+            r"Madagascar's line runs within 5 pts of Pakistan's "
+            r"for 9 years \(1995-2003\)",
+        ),
+        (
+            "B",
+            "T6",
+            {"Guinea": "Cameroon"},
+            r"Cameroon's line runs within 5 pts of Pakistan's for "
+            r"7 years \(1996-2002\)",
+        ),
+    ],
+    ids=["A-T1 Nigeria", "B-T6 Madagascar", "B-T6 Cameroon"],
+)
+def test_the_lines_replaced_when_the_charts_began_at_1985_are_refused(
+    params, form, task_id, swap, reason
+):
+    """Drawn from 1985 (2026-10-12), each line the rule replaced runs beside a named one before
+    2000 (study-design.md section 4)."""
+    params[("Z", "T1")] = _REAL_PARAMS[(form, task_id)]
+    task = next(t for t in tasks.for_form(form) if t.task_id == task_id)
+    entities = sorted(swap.get(e, e) for e in task.entities)
+    with pytest.raises(keys.KeyDerivationError, match=reason):
+        keys.derive(_task(task.kind, entities, task.options))
+
+
+@needs_data
+def test_both_t6_pairs_cross_before_2000_and_the_keys_ignore_it():
+    """Why T6 says "after 2000" (study-design.md section 4): Ethiopia leads the Central African
+    Republic in 1994-1997, Pakistan leads Mozambique in 1990-1991 and 1995."""
+    rows = runtime_data.load_rows()
+
+    def dtp3(entity: str) -> dict[int, float | None]:
+        return {r.year: r.coverage_pct for r in runtime_data.series(entity, "DTP3", rows)}
+
+    early_leads = {}
+    for form in ("A", "B"):
+        params = keys.PARAMS[(form, "T6")]
+        ahead, behind = dtp3(params["overtaker"]), dtp3(params["overtaken"])
+        early_leads[form] = [y for y in range(1985, 2000) if ahead[y] > behind[y]]
+    assert early_leads == {"A": [1994, 1995, 1996, 1997], "B": [1985, 1986, 1990, 1991, 1995]}
+    table = keys.key_table()
+    assert (table[("A", "T6")].correct, table[("B", "T6")].correct) == ("2004-2008", "2017-2020")
 
 
 @needs_data

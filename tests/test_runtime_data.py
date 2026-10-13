@@ -175,7 +175,8 @@ def test_gaps_are_none_not_zero(rows):
     """A missing value must never arrive as 0.0 — that would read as zero coverage."""
     uk_hepb = runtime_data.series("United Kingdom", "HepB3", rows)
     missing = [r for r in uk_hepb if r.coverage_pct is None]
-    assert len(missing) == 19, f"expected 19 UK HepB3 gaps, got {len(missing)}"
+    # 1985-2018 since the scope began at 1985 (2026-10-12); 2000-2018, 19, until then.
+    assert len(missing) == 34, f"expected 34 UK HepB3 gaps, got {len(missing)}"
     assert all(r.coverage_pct != 0.0 for r in uk_hepb if r.coverage_pct is not None)
 
 

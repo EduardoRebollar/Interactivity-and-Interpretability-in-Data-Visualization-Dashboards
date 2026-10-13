@@ -752,7 +752,7 @@ def _chip_order(result) -> list[str]:
 
 
 def test_a_chip_hides_a_line_and_logs_it(tmp_path):
-    keep = [e for e in _countries() if e != "Nigeria"]
+    keep = [e for e in _countries() if e != "Gabon"]
     result, events = _interact("chips", tmp_path, chips=keep)
 
     assert [e["event"] for e in events] == ["filter_change"]
@@ -761,7 +761,7 @@ def test_a_chip_hides_a_line_and_logs_it(tmp_path):
     assert set(payload) == {"control", "action", "value", "previous"}
     assert payload["control"] == "chips"
     assert payload["action"] == "hide"
-    assert "Nigeria" not in payload["value"] and "Nigeria" in payload["previous"]
+    assert "Gabon" not in payload["value"] and "Gabon" in payload["previous"]
 
     assert result.control["selected"] == keep
     assert _drawn(result.figure) == set(keep)
@@ -893,17 +893,17 @@ def test_the_years_slider_zooms_the_line_chart_and_logs_it(tmp_path):
     assert events[0]["payload"] == {
         "control": "years",
         "value": [2005, 2015],
-        "previous": [2000, 2024],
+        "previous": [1985, 2024],
     }
-    assert result.control["xrange"] == [2004.75, 2015.25]
-    assert list(result.figure.layout.xaxis.range) == [2004.75, 2015.25]
+    assert result.control["xrange"] == [2004.6, 2015.4]
+    assert list(result.figure.layout.xaxis.range) == [2004.6, 2015.4]
     assert result.years is no_update, "the participant has already moved the slider"
     assert _drawn(result.figure) == set(_countries())
 
 
-def test_the_years_slider_back_at_2000_2024_is_the_chart_as_first_drawn(tmp_path):
-    zoomed = _view(xrange=[2004.75, 2015.25])
-    result, events = _interact("years", tmp_path, control_state=zoomed, years=[2000, 2024])
+def test_the_years_slider_back_at_1985_2024_is_the_chart_as_first_drawn(tmp_path):
+    zoomed = _view(xrange=[2004.6, 2015.4])
+    result, events = _interact("years", tmp_path, control_state=zoomed, years=[1985, 2024])
     assert events[0]["payload"]["previous"] == [2005, 2015]
     assert result.control["xrange"] is None
     assert list(result.figure.layout.xaxis.range) == list(
@@ -914,7 +914,7 @@ def test_the_years_slider_back_at_2000_2024_is_the_chart_as_first_drawn(tmp_path
 def test_the_years_slider_as_it_stands_logs_nothing(tmp_path):
     """Dash fires the slider's callback when the screen is built, with the value it was built
     with, and after a zoom it followed. Neither is a participant action."""
-    result, events = _interact("years", tmp_path, years=[2000, 2024])
+    result, events = _interact("years", tmp_path, years=[1985, 2024])
     assert result == app.UNCHANGED and events == []
     zoomed = _view(xrange=[2005.2, 2015.8])
     result, events = _interact("years", tmp_path, control_state=zoomed, years=[2006, 2015])
@@ -923,12 +923,12 @@ def test_the_years_slider_as_it_stands_logs_nothing(tmp_path):
 
 @pytest.mark.parametrize(
     "years",
-    [[2015, 2005], [2005, 2005], [1999, 2010], [2005, 2025], [2005.5, 2010], [True, 2010], "2005"],
+    [[2015, 2005], [2005, 2005], [1984, 2010], [2005, 2025], [2005.5, 2010], [True, 2010], "2005"],
 )
 def test_a_malformed_years_value_is_put_back_and_not_logged(tmp_path, years):
     result, events = _interact("years", tmp_path, years=years)
     assert events == []
-    assert result.years == [2000, 2024]
+    assert result.years == [1985, 2024]
     assert result.control["xrange"] is None
 
 
@@ -987,7 +987,7 @@ def test_a_chip_changed_during_a_focus_ends_it(tmp_path):
 
 def test_a_stored_focus_on_a_hidden_line_is_dropped(tmp_path):
     """A focused line is always one the chips show; otherwise every line left would be faded."""
-    hidden = _view(selected=["China", "India"], isolated="Nigeria")
+    hidden = _view(selected=["China", "India"], isolated="Gabon")
     result, _events = _interact("chips", tmp_path, control_state=hidden, chips=["China"])
     assert result.control["isolated"] is None
     assert _faded(result.figure) == set()
@@ -1006,7 +1006,7 @@ def test_clicking_the_world_reference_does_nothing(tmp_path):
 
 
 def test_show_all_brings_every_line_back_and_logs_it(tmp_path):
-    narrowed = _view(selected=["China", "Nigeria"], isolated="Nigeria")
+    narrowed = _view(selected=["China", "Gabon"], isolated="Gabon")
     result, events = _interact("show-all", tmp_path, control_state=narrowed)
 
     assert [e["event"] for e in events] == ["filter_change"]
@@ -1014,7 +1014,7 @@ def test_show_all_brings_every_line_back_and_logs_it(tmp_path):
         "control": "show-all",
         "action": "show",
         "value": _countries(),
-        "previous": ["China", "Nigeria"],
+        "previous": ["China", "Gabon"],
     }
     assert result.control["isolated"] is None
     assert result.control["selected"] == _countries()
@@ -1024,7 +1024,7 @@ def test_show_all_brings_every_line_back_and_logs_it(tmp_path):
 
 def test_show_all_with_every_line_showing_releases_a_focus(tmp_path):
     """Nothing to show, but a focus to release: logged with `value` equal to `previous`."""
-    focused = _view(selected=_countries(), isolated="Nigeria")
+    focused = _view(selected=_countries(), isolated="Gabon")
     result, events = _interact("show-all", tmp_path, control_state=focused)
     payload = events[0]["payload"]
     assert payload["control"] == "show-all" and payload["value"] == payload["previous"]
@@ -1059,7 +1059,7 @@ def test_reset_view_undoes_filtering_focusing_and_zooming_and_logs_what_it_undid
     assert result.control["selected"] == _countries()
     assert result.control["isolated"] is None and result.control["xrange"] is None
     assert result.sort is no_update, "the line chart has no sort to set back"
-    assert result.years == [2000, 2024], "the Years slider is set back too"
+    assert result.years == [1985, 2024], "the Years slider is set back too"
     assert _ticked(result) == _countries()
     assert _drawn(result.figure) == set(_countries()) and _faded(result.figure) == set()
     assert list(result.figure.layout.xaxis.range) == list(
@@ -1282,7 +1282,7 @@ def test_a_zoom_is_kept_in_the_view_and_every_redraw_keeps_it(tmp_path):
     assert list(chip.figure.layout.xaxis.range) == [2005.0, 2015.0]
     reset, _events = _interact("reset", tmp_path, control_state=chip.control)
     assert reset.control["xrange"] is None
-    assert reset.years == [2000, 2024]
+    assert reset.years == [1985, 2024]
 
     undone, _events = _interact(
         "chart.relayoutData",
@@ -1291,7 +1291,7 @@ def test_a_zoom_is_kept_in_the_view_and_every_redraw_keeps_it(tmp_path):
         relayout={"xaxis.autorange": True},
     )
     assert undone.control["xrange"] is None, "the modebar's reset undoes the zoom"
-    assert undone.years == [2000, 2024]
+    assert undone.years == [1985, 2024]
     chip, _events = _interact("chips", tmp_path, control_state=undone.control, chips=["India"])
     assert list(chip.figure.layout.xaxis.range) == list(
         figures.task_figure(_first_task()).layout.xaxis.range
@@ -1359,7 +1359,7 @@ def test_re_rendering_a_task_does_not_log_a_phantom_change(tmp_path):
     for triggered, kwargs in (
         ("chips", {"chips": _countries()}),
         ("sort", {"sort_key": "listed"}),
-        ("years", {"years": [2000, 2024]}),
+        ("years", {"years": [1985, 2024]}),
         ("show-all", {}),
         ("reset", {}),
         ("chart.restyleData", {"restyle": None}),
@@ -1486,21 +1486,21 @@ def _legend(indices, values):
 
 def test_a_legend_click_hides_a_line_the_chips_follow_and_it_is_logged(tmp_path):
     task = _first_task()
-    index = list(task.entities).index("Nigeria")
+    index = list(task.entities).index("Gabon")
     result, events = _interact(
         "chart.restyleData", tmp_path, restyle=_legend([index], ["legendonly"])
     )
     assert [e["event"] for e in events] == ["filter_change"]
     assert events[0]["payload"]["control"] == "legend"
     assert events[0]["payload"]["action"] == "hide"
-    assert "Nigeria" not in _ticked(result)
-    assert _drawn(result.figure) == set(_countries()) - {"Nigeria"}
+    assert "Gabon" not in _ticked(result)
+    assert _drawn(result.figure) == set(_countries()) - {"Gabon"}
 
 
 def test_a_legend_click_on_a_hidden_line_shows_it(tmp_path):
     task = _first_task()
-    index = list(task.entities).index("Nigeria")
-    hidden = _view(selected=[e for e in _countries() if e != "Nigeria"])
+    index = list(task.entities).index("Gabon")
+    hidden = _view(selected=[e for e in _countries() if e != "Gabon"])
     result, events = _interact(
         "chart.restyleData", tmp_path, control_state=hidden, restyle=_legend([index], [True])
     )
@@ -1906,7 +1906,7 @@ def test_every_pattern_output_is_a_list_one_entry_per_component(tmp_path):
             for output, count in zip(outputs[1:11], counts, strict=True):
                 assert isinstance(output, list) and len(output) == count
     t1 = app.view_outputs(reset, [1, 2, 0, 1, 0, 0, 1, 1, 1, 1])
-    assert t1[4] == [[2000, 2024]], "Years set back"
+    assert t1[4] == [[1985, 2024]], "Years set back"
     assert t1[7] == [[0, 100]] and t1[8] == ["alpha"] and t1[10] == [["points", "tags"]]
     assert t1[9] == [list(layout.REGIONS)], "every region ticked again"
     pressed = app.view_outputs(keyed, [1, 3, 0, 0, 7, 7, 0, 0, 0, 0])
@@ -2080,7 +2080,9 @@ def test_gap_note_names_the_series_with_unreported_years():
     assert note is not None
     text = note.children
     assert "United Kingdom" in text
-    assert "2000-2018" in text
+    # 1985-2018 are unreported, but a line chart's caption names only years from 2000 on, the years
+    # every line item asks about (2026-10-12).
+    assert "2000-2018" in text and "1985" not in text
     assert "not the same as zero coverage" in text
 
 
@@ -2092,6 +2094,25 @@ def test_the_practice_item_shows_no_gap_note():
     """The practice teaches the interface on complete lines; a gap caption would need explaining
     first."""
     assert layout.gap_note(list(tasks.PRACTICE.entities), tasks.PRACTICE.vaccine) is None
+
+
+def test_no_chart_in_the_bank_carries_a_gap_note():
+    """Drawn from 1985 (2026-10-12), Ukraine's line on A-T1 starts in 1992. A line chart's caption
+    names only years from 2000 on, so A-T1 is not captioned, and nor is any other chart (Eduardo,
+    visual-spec.md section 3)."""
+    for form in ("A", "B"):
+        for task in tasks.for_form(form):
+            note = layout.gap_note(list(task.entities), task.vaccine, task.years, task.chart)
+            assert note is None, (form, task.task_id, note.children)
+    reported = [r for r in runtime_data.series("Ukraine", "DTP3") if r.coverage_pct is not None]
+    assert reported[0].year == 1992, "the gap the caption leaves unnamed"
+
+
+def test_a_line_charts_gap_from_2000_on_is_still_captioned():
+    """Africa's DTP3 is unreported in 2024 (CLAUDE.md, known gaps): a year a question could ask
+    about, so it is still named."""
+    note = layout.gap_note(["Africa", "World"], "DTP3")
+    assert note is not None and "Africa (2024)" in note.children and "World" not in note.children
 
 
 @pytest.mark.parametrize(

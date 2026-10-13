@@ -102,9 +102,12 @@ boolean, one decision point — only the mechanism moved.
   Sudan, Iraq, Jordan, Kyrgyzstan, Laos, Lebanon, Oman, Philippines, Syria, Thailand, Yemen; and,
   added 2026-10-11 for B-T5's map only (61 in all): Algeria, Botswana, Congo, Côte d'Ivoire, Eritrea,
   Gabon, Ghana, Guinea, Malawi, Mauritania, Morocco, Namibia, Senegal, South Africa, Tunisia,
-  Zimbabwe.
+  Zimbabwe. (Since 2026-10-12 Gabon also draws a line on A-T1, and Ghana and Guinea on B-T6.)
 - **Aggregates (7):** World, Africa, Asia, Europe, North America, South America, Oceania.
-- **Years:** 2000–2024. 68 entities × 25 years × 4 vaccines = **6800 rows**.
+- **Years:** 1985–2024 (2000–2024 until 2026-10-12). 68 entities × 40 years × 4 vaccines =
+  **10,880 rows**. The line charts draw every year, so the Years slider has years to set aside;
+  every line item still asks about 2000 onward (`tasks.ASKED_FROM`), and no other chart shows a
+  year before 2000 (`docs/study-design.md` §4).
 - Do not expand scope, add vaccines, or add countries without asking.
 - Note: the data scope is not the *display* scope. Far fewer entities can be shown on one chart at
   once and still be legible — see `docs/visual-spec.md`.
@@ -119,7 +122,7 @@ boolean, one decision point — only the mechanism moved.
 
 **Named exemption (2026-09-15): `data/deploy/coverage.csv` is committed.** A Vercel deployment only
 has what is in git or in the database — a local download does not reach it. This file is a generated
-build artifact (~195 KB, 6800 rows), produced by `scripts/export_deploy_data.py` from the validated
+build artifact (~308 KB, 10,880 rows), produced by `scripts/export_deploy_data.py` from the validated
 parquet, never hand-edited. Regenerate it whenever the data is refreshed. Raw downloads and the
 parquet cache stay gitignored as before.
 
@@ -184,6 +187,16 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
   Oxy Drive and out of Neon.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v19 (2026-10-12).** Line charts drawn from 1985 (`study-design.md` §4).
+- A v18 T1, T6 or practice answer was given against a chart drawn from 2000.
+- T6 says "after 2000", so a v18 T6 answer was given to different words.
+- A-T1 draws Gabon for Nigeria; B-T6 Ghana and Guinea for Cameroon and Madagascar.
+- The Years slider's `value`/`previous` run from 1985, and `session_start.year_range` is
+  `[1985, 2024]`.
+
+Keys and options unchanged. No new event, key, table or column, so `init_db.py` needs no re-run.
+Nothing collected for the study, so no migration.
 
 **Schema v18 (2026-10-12).** The changes after the first pilot session (`study-design.md` §10).
 - The practice asks about 2019–2021, not 2015–2021.
@@ -379,10 +392,17 @@ committed, `.env*` gitignored.
 
 ### Known gaps (measured, affects task design)
 
-- **UK HepB3 reports only 2019–2024** (19 of 25 years missing). The UK added HepB to the routine
-  infant schedule in 2017. Any task comparing HepB3 across countries shows the UK as a near-empty
-  line, and participants may read absence as zero coverage rather than "not reported".
-- Ethiopia HepB3 missing 2000–2006; Nigeria and India 2000–2003; Pakistan 2000–2002.
+- **UK HepB3 reports only 2019–2024** (34 of 40 years missing; 19 of 25 before the scope began
+  at 1985). The UK added HepB to the routine infant schedule in 2017. Any task comparing HepB3
+  across countries shows the UK as a near-empty line, and participants may read absence as zero
+  coverage rather than "not reported".
+- Ethiopia HepB3 missing 1985–2006; Nigeria and India 1985–2003; Pakistan 1985–2002.
+- **Before 2000 (in scope since 2026-10-12), HepB3 is mostly unreported**: 850 of its 1020
+  country-and-aggregate years from 1985 to 1999, the aggregates included.
+- **Ukraine reports nothing before 1992** (it was part of the USSR) for DTP3, MCV1 and Polio3, and
+  no HepB3 before 2000. A-T1 draws its DTP3 line from 1992, uncaptioned: a line chart's gap caption
+  names only years from 2000 on (Eduardo, `visual-spec.md` §3). Eritrea,
+  Kyrgyzstan, Namibia and Senegal also have DTP3 gaps before 2000; no line chart draws them.
 - **Every continent aggregate is missing 2024** across all four vaccines, while World and the
   individual countries have it. Charts mixing countries and continents show continent lines stopping
   a year short — a trap for any task about the most recent year.
@@ -599,7 +619,7 @@ it covers. If none of them answers the question, ask.
 - Not a general-purpose vaccination-tracking tool. It's a study instrument.
 - Not trying to be impressive. The two conditions looking identical is the point; a feature that
   makes only one of them nicer is a defect, not an improvement.
-- Not optimizing for performance. ~5,200 rows in memory, single user at a time.
+- Not optimizing for performance. ~10,900 rows in memory, single user at a time.
 - Not building a public-facing site. It is deployed to one Vercel URL, but that URL is shared only
   with recruited participants during in-person sessions (IRB form item 5B).
 
@@ -933,7 +953,30 @@ context cheap and the reports as long as they need to be.
   Arabia. `vendor_map_geometry.py` now makes the coastline the land's own rings (Sinai's land
   border gains its line); nothing else in the file changes, and every figure is byte-identical, so
   no schema bump. `visual-spec.md` §1, §4. A test holds the land and coastline to Africa's outline.
+- 2026-10-13 — **Line charts drawn from 1985** (docs committed as e494955; code uncommitted at
+  time of writing).
+  - Scope 1985–2024, 10,880 rows; every row from 2000 on byte-identical. Every line item still
+    asks about 2000 onward (`tasks.ASKED_FROM`); T6 now says "after 2000".
+  - A-T1 draws Gabon for Nigeria; B-T6 Ghana and Guinea for Cameroon and Madagascar. Keys,
+    options and margins unchanged.
+  - `analysis/keys.py` judges the answer on 2000–2024 and the close-run clause on 1985–2024; the
+    old lines are refused by test.
+  - x axis 1984.6–2024.4 (`LINE_X_PAD` 0.4 year, still 8 px); Years slider marked every 13 years.
+  - Found and fixed: "Highest in 2000" read each country's first year, which would have become
+    1985, where Ukraine has no value.
+  - The gap caption names only years from 2000 on, on a line chart (Eduardo), so A-T1 carries
+    none for Ukraine's 1985–1991; its card is B-T1's height again.
+  - Schema v19. 1450 tests.
+  - Headless Chrome, `/preview`, every line chart in both forms and conditions: 102 checks, no
+    console errors. "after 2000" wraps A-T6's heading at 1440 wide (+29 px, both conditions).
+  - The controls strip stands 14 px below the chart, not 2 (Eduardo): the source line sits 17 px
+    above the strip's legend, not 5. Interactive only, since the strip is; every interactive
+    Submit 12 px lower (T1's split 944 px), static cards unchanged (`visual-spec.md` §10).
+  - `irb/questionnaire.pdf` re-exported (37 pages). No full session was run through the UI.
+  - Not to be deployed until HSRRC answers (`study-design.md` §10).
 - **Still to do before the pilot:**
+  - **Ask HSRRC about the 1985 start** (the approved form says "2000 to 2024"; `study-design.md`
+    §10), and deploy it only once they answer.
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
     can answer (each item × form × condition cell gets about a quarter of it), what result changes
@@ -1130,6 +1173,23 @@ context cheap and the reports as long as they need to be.
     - clicking a line fades the others instead of hiding them;
     - heatmap sort by lowest or highest cell;
     - chips at most six to a row.
+
+- 2026-10-12 — **Line charts drawn from 1985** (Eduardo), so the Years slider has years to set
+  aside; every line item still asks about 2000 onward (`study-design.md` §4).
+  - A start in 1980 and a question about all of 1985–2024 were weighed and not taken (§4, the
+    revision).
+  - T6 says "at some point after 2000" (Eduardo's wording of two offered), since both its pairs
+    cross before 2000.
+  - The close-run clause is kept over every drawn year (Eduardo), so A-T1's Nigeria and B-T6's
+    Cameroon and Madagascar were replaced.
+  - No caption for Ukraine's 1985–1991 on A-T1 (Eduardo): a line chart's gap caption names only
+    years from 2000 on.
+  - Taken without asking:
+    - Gabon, Ghana and Guinea, found by search;
+    - 2000 with no mark of its own on the chart or the slider;
+    - the axis padding at 0.4 year, the slider marked every 13 years;
+    - "Highest in 2000" kept;
+    - T1's rubric neither needs nor penalises 1985–1999.
 
 ## Open questions
 

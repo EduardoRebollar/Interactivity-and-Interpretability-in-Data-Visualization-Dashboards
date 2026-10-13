@@ -51,7 +51,10 @@ RAW_CSV = RAW_DIR / f"{OWID_SLUG}.csv"
 PROCESSED_PARQUET = PROCESSED_DIR / "coverage.parquet"
 
 # --- Locked scope -----------------------------------------------------------------------------
-YEAR_MIN = 2000
+# From 1985 since 2026-10-12 (2000 until then), so the line charts, which draw every year, give the
+# Years slider years to set aside. Every line item still asks about 2000 onward
+# (`tasks.ASKED_FROM`); no other chart shows a year before 2000. docs/study-design.md section 4.
+YEAR_MIN = 1985
 YEAR_MAX = 2024
 
 # Short code -> OWID column name in the grapher export.
@@ -181,7 +184,9 @@ SERIES_COLORS: list[str] = [
 # Colour by country (visual-spec.md section 4, the chart handoff, 2026-10-11). Each of Form A's
 # T1 countries owns one colour and keeps it on every line chart; any other country on a line chart
 # takes the first colour its chart does not already use (`figures.series_colors`). A hidden line
-# keeps its colour, and so does every other line.
+# keeps its colour, and so does every other line. Since 2026-10-12 Gabon stands on A-T1 where
+# Nigeria stood, and takes Nigeria's colour as the one A-T1 leaves unused; Nigeria keeps it on B-T1
+# and A-T6, so no other chart changes.
 COUNTRY_COLORS: dict[str, str] = {
     "Brazil": SERIES_COLORS[0],
     "China": SERIES_COLORS[1],
@@ -260,9 +265,11 @@ END_DOT_RING = 2
 CHART_HEIGHT = 520
 # Fixed, in the figure's own layout (visual-spec.md section 5, 2026-09-25).
 CHART_WIDTH = 1050
-# The line chart's x axis runs a quarter year past 2000 and 2024, so the first and last dots, the
-# ringed end dot included, are not cut by the plot's edge (visual-spec.md section 1).
-LINE_X_PAD = 0.25
+# The line chart's x axis runs 8 px past the first and last years, so the first and last dots, the
+# ringed end dot included (5.6 px to the ring's outer edge), are not cut by the plot's edge
+# (visual-spec.md section 1). Over 1985-2024 that is 0.4 year; over 2000-2024, until 2026-10-12,
+# it was a quarter year, which drawn from 1985 is 5 px and would cut the ring.
+LINE_X_PAD = 0.4
 # Name tags (visual-spec.md section 6): centres at least 23 px apart, between 10 px above the plot's
 # top and 4 px above its bottom; 20 px tall pills at x 860 in the card.
 TAG_GAP = 23
@@ -317,7 +324,8 @@ SCATTER_LABEL_SIDES: dict[str, str] = {
 #
 # When T2 moved to MCV1 (2026-10-11), Guinea's bar replaced Brazil's on A-T2 and Algeria's
 # Cambodia's on B-T2. Each takes the colour of the bar it replaced, so both charts keep the colour
-# sets measured above. Guinea draws no line, so it never meets Brazil on a chart.
+# sets measured above. Guinea's line on B-T6 (since 2026-10-12) takes a line colour as any country
+# outside COUNTRY_COLORS does, and Brazil is not on that chart.
 BAR_COLORS: dict[str, str] = {
     "Afghanistan": "#705000",  # 7.40:1   handoff #B07A00
     "Guinea": "#0072B2",  # 5.19:1   Brazil's series colour

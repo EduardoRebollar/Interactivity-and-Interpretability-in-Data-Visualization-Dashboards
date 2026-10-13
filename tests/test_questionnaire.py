@@ -90,7 +90,8 @@ def test_the_range_sliders_print_at_rest(page):
     assert markup.count('class="dash-slider-thumb dash-slider-thumb-') == 4
     assert markup.count('style="left: 0%; right: 0%"') == 2, "the full range is chosen"
     marks = re.findall(r'<div class="dash-slider-mark"[^>]*>([^<]*)</div>', markup)
-    assert marks == ["2000", "2006", "2012", "2018", "2024", "0%", "25%", "50%", "75%", "100%"]
+    # The Years slider runs from 1985 since 2026-10-12, marked every 13 years.
+    assert marks == ["1985", "1998", "2011", "2024", "0%", "25%", "50%", "75%", "100%"]
 
 
 def test_every_chart_is_drawn(page):

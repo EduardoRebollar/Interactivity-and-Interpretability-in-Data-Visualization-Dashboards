@@ -206,11 +206,16 @@ def _describe(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
     - the two cross once, counting only years they are at least 5 points apart, riser from below;
     - no other line runs within 5 points of a named one for 5 or more consecutive years; for the
       faller, counted from its last peak before the trough, where its story starts.
-    Both named lines must be reported in every year: a gap would be read as part of the trend.
+    Both named lines must be reported in every year asked: a gap would be read as part of the trend.
+
+    The chart draws from 1985 and the question asks about 2000 to 2024 (2026-10-12). The shapes and
+    the crossing are judged on the years asked; the riser's close runs on every year drawn, since a
+    line followed by mistake before 2000 is still followed by mistake (study-design.md section 4).
     """
     riser, faller = params["riser"], params["faller"]
     item = f"{task.form}-{task.task_id}"
-    years = list(range(config.YEAR_MIN, config.YEAR_MAX + 1))
+    years = list(range(tasks.ASKED_FROM, config.YEAR_MAX + 1))
+    drawn = list(range(config.YEAR_MIN, config.YEAR_MAX + 1))
     series: dict[str, dict[int, float]] = {}
     for entity in (riser, faller):
         if entity not in task.entities:
@@ -267,7 +272,7 @@ def _describe(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
             continue
         values = _reported(other, task.vaccine, rows)
         runs = {
-            riser: _longest_close_run(series[riser], values, years),
+            riser: _longest_close_run(series[riser], values, drawn),
             faller: _longest_close_run(series[faller], values, fall_years),
         }
         clearance[other] = runs
@@ -521,6 +526,10 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
       one of the two;
     - no other line runs within 5 points of either of the two for more than 4 years in a row, where
       it could be followed by mistake (T1's clause, added 2026-10-11 when T6 went to five lines).
+
+    The chart draws from 1985 and the question asks "after 2000" (2026-10-12): both pairs cross
+    before then. The crossing and its key are judged on the years asked, the two clauses about
+    other lines on every year drawn (study-design.md section 4).
     """
     overtaker, overtaken = params["overtaker"], params["overtaken"]
     for entity in (overtaker, overtaken):
@@ -529,7 +538,11 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
     ahead = _reported(overtaker, task.vaccine, rows)
     behind = _reported(overtaken, task.vaccine, rows)
     # Only years both lines report: elsewhere one of them is not drawn, so nothing crosses there.
-    differences = {year: ahead[year] - behind[year] for year in sorted(set(ahead) & set(behind))}
+    differences = {
+        year: ahead[year] - behind[year]
+        for year in sorted(set(ahead) & set(behind))
+        if year >= tasks.ASKED_FROM
+    }
     ordered = sorted(differences)
 
     def first(predicate) -> int:
@@ -587,7 +600,7 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
         )
 
     meeting = ahead[previous] + fraction * (ahead[strictly_above] - ahead[previous])
-    years = list(range(min(ordered), max(ordered) + 1))
+    drawn = list(range(config.YEAR_MIN, config.YEAR_MAX + 1))
     clearance: dict[str, float] = {}
     close_runs: dict[str, int] = {}
     for other in task.entities:
@@ -604,7 +617,7 @@ def _crossing(task: Task, params: dict[str, Any], rows: tuple[Row, ...]) -> Deri
                     "of them"
                 )
         for named, series in ((overtaker, ahead), (overtaken, behind)):
-            length, first_year, last_year = _longest_close_run(series, values, years)
+            length, first_year, last_year = _longest_close_run(series, values, drawn)
             close_runs[other] = max(close_runs.get(other, 0), length)
             if length > MAX_CLOSE_RUN_YEARS:
                 raise KeyDerivationError(
