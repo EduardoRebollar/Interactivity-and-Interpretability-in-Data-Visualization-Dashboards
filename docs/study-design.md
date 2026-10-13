@@ -11,7 +11,8 @@ crossing item added the same day; the largest-rise item dropped 2026-09-25 (§4)
 per item, controls on every chart, a new survey, and About you, which moves to the end; built and
 verified in headless Chrome 2026-09-26; restyled 2026-10-11 from the chart handoff
 (`docs/chart-handoff/`), with T5's maps redrawn, T6 given six more lines, and T2 and T4 moved to
-MCV1 (§4).** The consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
+MCV1 (§4); line charts drawn from 1985 on 2026-10-12, every line item still asking about 2000
+onward (§4).** The consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -160,7 +161,8 @@ are reported descriptively and never tested (§7).
 T2–T5 each read one set of values: a ranking, an extreme, a count. T6 was added the same day, at
 Eduardo's request, as a **relational** item: its answer is a relation between two series, when one
 overtakes the other. T1 (2026-09-27) is the one **interpretive** item: the participant describes two
-series over the whole period and how they compare, in their own words.
+series over 2000–2024 and how they compare, in their own words. (Until 2026-10-12, when the line
+charts began drawing from 1985, that was the whole period on the chart.)
 
 ### Item acceptance rule (2026-09-22, extended 2026-09-23)
 
@@ -195,6 +197,23 @@ heatmap's 0–20 band.
 | T5 count | Every coloured country is at least **10 points** from the threshold. The threshold, 50, is a band boundary, so the countries below it sit in the two darkest bands and those above in 60–70 or lighter: the 50–60 band stays empty. |
 | T6 crossing | The point where the two lines **meet on the chart** sits at least **1 year inside** its answer band, a band spanning start − 0.5 to end + 0.5. One crossing only: the overtaker trails in every year before it and leads in every year after, by at least **5 points** somewhere on each side. The first year strictly above and the first year no longer below fall in the same band. No other line drawn within **5 points** of where the two meet, and none runs within **5 points** of either named line for **5 or more consecutive years** (T1's clause, added 2026-10-11 with T6's extra lines). |
 
+**Drawn from 1985, asked from 2000 (2026-10-12).** Line charts show 1985–2024; T1 and T6 ask
+about 2000 onward. The rule splits on that line:
+- **What the answer turns on is judged on the years asked, 2000–2024:** T1's three shapes and its
+  one crossing, and T6's one crossing and its key band. Both T6 pairs also cross before 2000 (T6
+  below); the question's "after 2000" sets those aside, and so does the rule.
+- **What keeps a line traceable is judged on every year drawn, 1985–2024:** no other line within
+  5 points of a named one for 5 or more consecutive years (for T1's falling line, still from its
+  last peak before the trough), and none within 5 points of where T6's pair meet. A line followed
+  by mistake in 1995 is still followed by mistake.
+- **A named line must report every year asked.** Before 2000 it may start late: Ukraine, A-T1's
+  falling line, reports from 1992, which the chart's gap caption names (`docs/visual-spec.md` §3).
+
+Drawn from 1985, A-T1 failed the second clause (Nigeria within 5 points of India, 1985–1989) and
+so did B-T6 (Madagascar beside Pakistan for 9 years, 1995–2003, and beside Mozambique 1986–1990;
+Cameroon beside Pakistan for 7, 1996–2002). Eduardo kept the clause over every drawn year, and
+those lines were replaced (T1, T6 below).
+
 A bar, dot, cell or country with no reported value is refused outright: the chart would have nothing
 to show exactly where the question looks. A crossing is judged only on years both lines report. An
 item that fails any part is refused by `analysis/keys.py` with `KeyDerivationError`, so a fragile
@@ -218,9 +237,11 @@ reasoning (§5).
 | The line that falls and recovers | Ukraine: 99% → **19%** (2016) → 88%; drop 80, recovery 69 | Brazil: 99% → **68%** (2021) → 91%; drop 31, recovery 23 |
 | Crossing (5-point test) | once: India above from 2009, 5 points clear from 2010 | once: Uganda above from 2016, 5 points clear from 2017 |
 | Gap in 2024 | India 6 points above | level |
-| Longest run of another line within 5 points of a named one, as the rule counts it | 4 years: Indonesia and India, 2014–2017; Brazil and Ukraine, 2004–2007 | 4 years: Indonesia and Uganda, 2009–2012 |
-| Other lines | Brazil, China, Ethiopia, Indonesia, Nigeria, Pakistan (no World line) | China, Ethiopia, Indonesia, Nepal, Nigeria, Pakistan (no World line) |
-| Crossings of the two named lines with the other six | 30 | 26 |
+| Longest run of another line within 5 points of a named one, as the rule counts it, 1985–2024 | 4 years: Indonesia and India, 2014–2017; Brazil and Ukraine, 2004–2007; Pakistan and India, 1999–2002 | 4 years: Indonesia and Uganda, 2009–2012; and, beside Uganda before 2000, Nigeria (1985–1988), Nepal (1989–1992) and Ethiopia (1994–1997) |
+| Other lines | Brazil, China, Ethiopia, Gabon, Indonesia, Pakistan (no World line). Gabon replaced Nigeria on 2026-10-12 (below) | China, Ethiopia, Indonesia, Nepal, Nigeria, Pakistan (no World line) |
+| Crossings of the two named lines with the other six, 2000–2024 | 30 | 26 |
+| Crossings the years 1985–2000 add | 10 | 16 |
+| Years a line is not reported, 1985–2024 | Ukraine, 1985–1991 | none |
 
 Both forms tell one story: a country rising steadily from far below overtakes one that starts near
 the top, as that one falls, and the fallen country recovers to about where the riser ends. The
@@ -238,10 +259,31 @@ none of them:
 Years and values are neither required nor penalised unless they contradict a part: a static reader
 cannot read them exactly (§2). "Ukraine dropped to about 20% around 2015 and came back" states (b);
 "Ukraine's coverage declined" alone does not, and "Ukraine stayed high" contradicts it. Scoring is
-by two coders, blind to condition (§7).
+by two coders, blind to condition (§7). Since the chart starts in 1985 (2026-10-12), a description
+may also cover 1985–1999. The parts are about 2000–2024, so what it says about the earlier years is
+neither required nor penalised, unless it is plainly offered as the 2000–2024 trend and contradicts
+a part.
 
 The difficulty is finding and following two lines through the tangle, then describing them. A
-click on a line fades the rest, and the chips hide them; either cuts through it.
+click on a line fades the rest, and the chips hide them; either cuts through it. Since 2026-10-12
+the Years slider can also set aside the fifteen years before the question's.
+
+> **Drawn from 1985, 2026-10-12** (Eduardo). Every line chart now starts in 1985 (`docs/visual-
+> spec.md` §1), so the Years slider has years to set aside. The question still asks about 2000 to
+> 2024, and the rubric is unchanged. Before 2000:
+> - India rises from 18% (1985) to 70% (1990) and falls back to 56% (1992). That dip is 14 points,
+>   over the riser's 12, but it falls before the years asked, so the rule does not count it.
+> - Ukraine reports from 1992 only. The chart's caption says so, in both conditions; B-T1 has no
+>   caption, since every line on it reports every year.
+> - **Nigeria left A-T1** for running within 5 points of India for five years, 1985–1989. **Gabon
+>   took its place**, found by search. It is African, so A-T1's Regions control keeps two African
+>   countries. It crosses the named pair four times between 2000 and 2024, as Nigeria did: it
+>   passes India in 2007 and Ukraine in 2009, then India passes it in 2010 and Ukraine in 2019. It
+>   ends at 61%, 12 points from the nearest tag. It takes Nigeria's colour, by the rule that gives
+>   a country the first colour its chart does not use (`docs/visual-spec.md` §4). Other countries
+>   that passed: Guinea, Benin and Madagascar (Madagascar running beside India for exactly 4
+>   years).
+> - B-T1 passes as it stands.
 
 > **Overloaded with controls, 2026-10-12** (pilot session 1). The supervisor asked for at least one
 > case where interactivity might be too much: a chart carrying more controls than it needs.
@@ -506,14 +548,16 @@ country is named on the map (`docs/visual-spec.md` §1). The forms share one cou
 
 ### T6 — Crossing (line, hover)
 
-*{Country}'s coverage became higher than {other country}'s at some point. Roughly when did that
-first happen?* Options, in calendar order: 2000-2003, 2004-2008, 2009-2012, 2013-2016, 2017-2020,
-2021-2024. 2000-2003 was added 2026-09-25 so that every item offers six options. No key, margin or
-adjacent band moves.
+*{Country}'s coverage became higher than {other country}'s at some point after 2000. Roughly when
+did that first happen?* (Until 2026-10-12, "… at some point. Roughly when …": the chart then
+started in 2000.) Options, in calendar order: 2000-2003, 2004-2008, 2009-2012, 2013-2016,
+2017-2020, 2021-2024. 2000-2003 was added 2026-09-25 so that every item offers six options. No
+key, margin or adjacent band moves.
 
 | | Form A | Form B |
 |---|---|---|
-| Lines | Central African Republic, Ethiopia; and Afghanistan, Chad, Côte d'Ivoire, Democratic Republic of Congo, Nigeria, Somalia | Mozambique, Pakistan; and Benin, Cameroon, Gabon, Kenya, Madagascar, Sudan |
+| Lines | Central African Republic, Ethiopia; and Afghanistan, Chad, Côte d'Ivoire, Democratic Republic of Congo, Nigeria, Somalia | Mozambique, Pakistan; and Benin, Gabon, Ghana, Guinea, Kenya, Sudan (Ghana and Guinea since 2026-10-12, for Cameroon and Madagascar) |
+| Before 2000 (drawn since 2026-10-12, not asked) | Ethiopia passes the Central African Republic in 1994 and falls back below it in 1998 | the two change places five times: Mozambique passes Pakistan in 1987, Pakistan passes it in 1990, Mozambique in 1992, Pakistan in 1995, Mozambique in 1996 |
 | Before | Ethiopia trails from 2000, by up to 12 points (2004) | Pakistan trails from 2000, by up to 22 points (2008–2010) |
 | The crossing | Ethiopia rises (46, 50) as the Central African Republic falls (51, 48) | Pakistan climbs to 84 against Mozambique's 85; Mozambique then falls to 71 |
 | First year strictly above | **2007** | **2020** |
@@ -521,8 +565,8 @@ adjacent band moves.
 | Inside the band by | 1.79 years | 1.40 years |
 | After | Ethiopia leads every year to 2024, by up to 36 points | Pakistan leads every year to 2024, by up to 30 points |
 | Key | **2004-2008** | **2017-2020** |
-| Nearest other line where they meet | Nigeria, 7.4 points (Afghanistan 12.7, Somalia 12.9, DR Congo 15.3, Chad 16.4, Côte d'Ivoire 27.4) | Sudan, 9.1 points (Kenya 9.4, Benin 11.8, Gabon 14.3, Madagascar 14.8, Cameroon 16.5) |
-| Longest run of another line within 5 points of a named one | 4 years (Nigeria and Afghanistan, each beside Ethiopia) | 4 years (Madagascar) |
+| Nearest other line where they meet | Nigeria, 7.4 points (Afghanistan 12.7, Somalia 12.9, DR Congo 15.3, Chad 16.4, Côte d'Ivoire 27.4) | Sudan, 9.1 points (Kenya 9.4, Benin 11.8, Ghana 13.1, Gabon 14.3, Guinea 30.5) |
+| Longest run of another line within 5 points of a named one, 1985–2024 | 4 years (Nigeria and Afghanistan, each beside Ethiopia; before 2000, Chad and DR Congo beside Ethiopia and Côte d'Ivoire beside the Central African Republic) | 4 years (Guinea beside Mozambique, 1992–1995) |
 
 Bands, not years, because the static condition has no hover and an exact crossing year cannot be
 read from the chart. **The key is the band containing the first year the overtaker is strictly
@@ -539,10 +583,11 @@ static reader must first find the two named lines by their tags and colours and 
 through the others. The extra lines cross the named ones elsewhere: in A, DR Congo passes the
 Central African Republic in 2004, Nigeria passes it in 2008 and Ethiopia in 2009, and Chad passes
 it in 2013 and again in 2018, Afghanistan passes Ethiopia in 2001 and 2018 and Somalia in 2022,
-and Côte d'Ivoire passes Ethiopia in 2012; in B, Pakistan passes Gabon and Benin in 2018 and
-Madagascar in 2014, Cameroon passes Mozambique in 2021, Kenya passes it in 2006 and 2018, and Sudan
-passes Pakistan in 2003. Each form's extra lines cross the named pair 33 times in all. Not Congo in
-A: its tag would sit beside DR Congo's. The rule keeps the item readable without the controls: no extra line comes
+and Côte d'Ivoire passes Ethiopia in 2012; in B, Pakistan passes Gabon and Benin in 2018, Guinea
+passes Pakistan in 2007 and Mozambique in 2022, Ghana passes Mozambique in 2005, Kenya passes it in
+2006 and 2018, and Sudan passes Pakistan in 2003. Between 2000 and 2024, A's extra lines cross the
+named pair 33 times in all, and B's 29 (33 until 2026-10-12: Madagascar and Cameroon crossed it ten
+times, Ghana and Guinea cross it six). Not Congo in A: its tag would sit beside DR Congo's. The rule keeps the item readable without the controls: no extra line comes
 within 5 points of where the pair meet, and none runs alongside a named line for 5 years or more,
 the clause T1 already used for the same reason. Every extra line reports every year, and no colour
 is shared (`docs/visual-spec.md` §4).
@@ -558,6 +603,28 @@ everything but it, since 2026-10-12 (until then it hid them). Line charts use th
 tooltip, so hovering either line near the crossing gives its exact value, and the tooltip's change
 from the year before shows which line is rising. Zoom, and since 2026-10-12 the Years slider,
 works here as on every line chart.
+
+> **Drawn from 1985, asked from 2000 (2026-10-12, Eduardo).** Every line chart now starts in 1985
+> (`docs/visual-spec.md` §1), so the Years slider has years to set aside. Both pairs cross before
+> 2000 (the table's "Before 2000" row), so "first" would name 1994 in A and 1990 in B, where no
+> option is. The question now says "after 2000"; key, bands and options are unchanged. A reader
+> who takes the first crossing on the chart has no option for it. The nearest, 2000-2003, is wrong
+> in both forms and is not the adjacent band of either key, so the strict and adjacent-band scores
+> both count that reading wrong (§10).
+>
+> Drawn from 1985, B-T6 failed the rule's close-run clause, which is judged on every drawn year
+> (Acceptance rule, above):
+> - Madagascar ran within 5 points of Pakistan for 9 years (1995–2003) and of Mozambique for 5
+>   (1986–1990);
+> - Cameroon ran within 5 points of Pakistan for 7 years (1996–2002).
+>
+> **Ghana and Guinea replace them**, found by search as the six were. Both report every year from
+> 1985 and stay clear of where the pair meet (13.1 and 30.5 points). Both are African, as the
+> lines they replace are, and neither is on A-T6. Their 2024 ends (95%, 63%) keep away from
+> Pakistan's and Mozambique's name tags (87%, 70%). Of the other African countries that passed,
+> Malawi, Libya, Zimbabwe, Tanzania, Burkina Faso and Uganda each end within 4 points of Pakistan's
+> tag, and Congo passes 5.2 points from where the pair meet. A-T6 passes as it stands. The pair's own
+> lines, keys and margins are unchanged.
 
 > **Adjacent-band credit, pre-registered as a secondary for T6** (§7). A reader who puts the
 > crossing a year late or early lands in the key band in both forms, since the lines meet more than
@@ -576,7 +643,7 @@ works here as on every line chart.
 | Floor | drop 25, rise 25 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
-than quietly unbalancing the forms. Six known differences go to the pilot (§10):
+than quietly unbalancing the forms. Eight known differences go to the pilot (§10):
 - **T2 and T4 ask different questions in each form (2026-10-12).** A-T2 the third-highest bar, B-T2
   the sixth-highest, its key on the 5-point floor above; A-T4 the lowest cell, B-T4 the highest,
   which no row sort brought to the top until Highest cell first, the same day (T2, T4 above). The pairs are matched in chart and rule, not
@@ -590,12 +657,21 @@ than quietly unbalancing the forms. Six known differences go to the pilot (§10)
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
   cross. A's nearest extra line passes closer to where the pair meet (Nigeria, 7.4 points) than
-  B's (Sudan, 9.1), so A may be the harder form to read without isolation.
+  B's (Sudan, 9.1), so A may be the harder form to read without isolation. Since 2026-10-12 A's
+  extra lines also cross the pair more often between 2000 and 2024 (33 times against B's 29).
+- **The T6 pairs cross differently before 2000 (2026-10-12),** where the question does not ask. In
+  A, Ethiopia is above the Central African Republic for four years, 1994–1997. In B, Pakistan and
+  Mozambique change places five times, 1987–1996, mostly by a few points. B's earlier crossings are
+  more, and A's is plainer. Which one draws more readers who miss "after 2000" is for the pilot.
+- **Only A-T1 carries a gap caption (2026-10-12).** Ukraine reports from 1992, so A-T1's chart is
+  captioned "No data reported for: Ukraine (1985–1991)" in both conditions. It names the falling
+  line, and makes A-T1's card taller than B-T1's.
 
 ### Practice task (unscored)
 
 *Practice (not scored). Look at Myanmar's line. Did coverage rise, fall, or stay level between 2019
-and 2021?* Myanmar and World, DTP3, 2000–2024: a fall from 90% to 37%, unmissable. Shown in the
+and 2021?* Myanmar and World, DTP3, 1985–2024 (2000–2024 until 2026-10-12): a fall from 90% to
+37%, unmissable. Shown in the
 participant's first condition only, identical across forms, to teach the interface rather than the
 concept. It is a line chart, the type with the most controls. The other types' controls are
 described in the instructions and by the hint row under each chart in the interactive condition.
@@ -749,6 +825,33 @@ the controls, not the questions or the keys.
   above).
 - **Log schema v17:** a v16 answer to any of these prompts was given to different words, and a v16
   B-T2 or B-T4 answer to a different question (`src/logging.py`). Nothing had been collected.
+
+### Revision 2026-10-12: line charts drawn from 1985
+
+- **Why (Eduardo):** to give the Years slider years to set aside. Over 2000–2024 alone it could
+  only narrow a chart that already showed everything a question asked about.
+- **Drawn:** every line chart, 1985–2024: T1 and T6 in both forms, and the practice. The bar,
+  scatter, heatmap and map are unchanged. They show only the years they name.
+- **Asked:** unchanged. T1 still asks about 2000 to 2024, and the practice about 2019–2021. T6 now
+  says "after 2000", since both its pairs cross before then (T6 above).
+- **Rule:** the answer is judged on 2000–2024, and traceability on 1985–2024 (Acceptance rule,
+  above).
+- **Lines replaced:** on A-T1, Gabon for Nigeria. On B-T6, Ghana and Guinea for Cameroon and
+  Madagascar. B-T1 and A-T6 unchanged.
+- **Keys:** unchanged, with the same options and positions. T6's margins are unchanged. B-T6's
+  nearest other line and longest close run are re-measured (T6 above).
+- **Scope:** years 1985–2024 for every entity and vaccine, 68 × 40 × 4 = 10,880 rows. Every value
+  from 2000 on is unchanged. More values are unreported before 2000, HepB3's most of all. They
+  stay explicit gaps. The only one any chart draws is Ukraine's DTP3 before 1992, on A-T1.
+- **IRB:** the approved request form describes the data as coverage "from 2000 to 2024". Eduardo
+  asks HSRRC before the change goes live (§10).
+- **Log schema v19:** a v18 T1 or T6 answer, or a practice answer, was given against a chart drawn
+  from 2000, and a v18 T6 answer to different words. The Years slider's logged values now run from
+  1985. Nothing collected for the study.
+- **Not taken:** a start in 1980. Ukraine, Nigeria, Côte d'Ivoire, Kenya and Benin report only from
+  the mid-1980s or later, and each pair's earlier crossings would only grow. Also not taken: asking
+  about the whole of 1985–2024. A-T1 fails its rule over that period, India's 1990–1992 dip being
+  14 points, and Ukraine is unreported for seven of those years.
 
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
@@ -1379,6 +1482,12 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 
   `irb/questionnaire.pdf` was re-exported with all of them on 2026-10-12 (37 pages, consent text
   version `3bcd2413c9656ae8`).
+- **Line charts drawn from 1985 (2026-10-12): HSRRC not yet asked.** The approved request form
+  (item 9) describes "WHO/UNICEF childhood vaccination coverage from 2000 to 2024". The line
+  charts now draw 1985–2024, and T6's wording changed (§4). Every question still asks about 2000
+  onward, and no item, control or logged field was added. Eduardo puts it to HSRRC before the
+  change is deployed. If an amendment is needed, item 9 reads "from 1985 to 2024".
+  `irb/questionnaire.pdf` is re-exported with the new charts and T6's wording.
 - **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
   on form A, the interactive half on form B, 36 minutes in all. It is pilot data, kept out of the
   study: the participant knows the study's hypotheses, and the instrument changed after the
@@ -1432,6 +1541,14 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **T6 with eight lines (2026-10-11).** Static accuracy, and form equivalence, since A's extra
     lines sit nearer the crossing than B's (§4); and how often interactive participants hide the
     other lines, or focus one of the two, before answering, which the logs show.
+  - **Line charts drawn from 1985 (2026-10-12).**
+    - How many interactive participants set the Years slider to 2000 or later on T1 and T6, and
+      whether they score better than those who do not. The logs show it (`view_change`, `years`).
+    - How often T6 is answered 2000-2003, the band nearest each pair's crossing before 2000, by
+      condition. A cluster there means readers took the first crossing on the chart and missed
+      "after 2000".
+    - Whether T1 descriptions turn on 1985–1999, and how coders handle them (§4, T1).
+    - A-T1's gap caption naming Ukraine, which B-T1 does not carry (§4, Matching the forms).
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the key's colours and the bar sort, which the practice does not teach. The logs show
     all four (§7).

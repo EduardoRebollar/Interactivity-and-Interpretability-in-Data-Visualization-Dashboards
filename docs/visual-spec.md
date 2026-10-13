@@ -39,7 +39,7 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 | Type | Items | Encoding |
 |---|---|---|
-| Line | T1, T6, practice | Coverage over 2000–2024, one line per entity, a name tag at each line's end; World dashed where shown (only the practice draws it; T1 and T6 draw eight countries each) |
+| Line | T1, T6, practice | Coverage over 1985–2024 (2000–2024 until 2026-10-12), one line per entity, a name tag at each line's end; World dashed where shown (only the practice draws it; T1 and T6 draw eight countries each) |
 | Bar | T2 | One year's coverage, one bar per country in the listed order, each in its country's colour |
 | Scatter | T3 | Each country a named dot: coverage in 2000 across, in 2024 up, coloured by its change, with a dashed no-change diagonal |
 | Heatmap | T4 | Countries down, years across (2000, 2005, 2010, 2015, 2020, 2024), coverage as one of nine colour bands |
@@ -47,18 +47,28 @@ one figure builder per type, and none takes an `interactive` argument (§7).
 
 Every chart is one 1050 × 520 figure holding its own title and source line (§5).
 
-**Line.** Multi-series, x year 2000–2024 (linear, integer ticks), y coverage. Lines 2.5 px with round
-joins and caps, and a dot of radius 2.6 px in the line's colour at every observed year. Markers are
-not decoration: after a gap, a lone observation with no neighbours draws no line segment at all, and
-without a marker it would silently vanish. A line's last point is a 4.6 px dot with a 2 px white
-ring, joined to its name tag (§6). Vertical guides at 2005, 2010, 2015 and 2020, drawn as
-shapes on the axes so a zoom clips them to the plot. No legend (§6).
+**Line.** Multi-series, x year 1985–2024 (linear, integer ticks every five years from 1985, the
+last labelled 2020), y coverage. Lines 2.5 px with round joins and caps, and a dot of radius 2.6 px
+in the line's colour at every observed year. Markers are not decoration: after a gap, a lone
+observation with no neighbours draws no line segment at all, and without a marker it would silently
+vanish. A line's last point is a 4.6 px dot with a 2 px white ring, joined to its name tag (§6).
+Vertical guides every five years from 1990 to 2020, drawn as shapes on the axes so a zoom clips
+them to the plot; none stands at 1985, which the handoff leaves to the axis line. No legend (§6).
 
-**One departure from the handoff: the x axis runs from 1999.75 to 2024.25**, where the handoff puts
-2000 on the y axis and 2024 at the plot's right edge. Plotly clips markers at the plot's edge, so
-the first dot and the ringed end dot would be cut in half; a quarter year (8 px) holds them. A
-marker drawn unclipped would spill into the margins as soon as the participant zoomed. Reset axis
-restores 1999.75–2024.25 (§7.5).
+**Drawn from 1985 (2026-10-12, Eduardo; 2000–2024 until then),** so the Years slider (§7.6) has
+years to set aside. Every line item still asks about 2000 onward (`docs/study-design.md` §4). 2000
+is drawn like any other year, with a guide and a tick label like 1990's: a mark of its own would
+point at the questions' window in both conditions and do part of the slider's work. A year is 20 px
+wide where it was 32. The acceptance rule's floors are in years and points, so they still hold,
+but each year a static reader places is 38% narrower.
+
+**One departure from the handoff: the x axis runs from 1984.6 to 2024.4**, where the handoff puts
+the first year on the y axis and 2024 at the plot's right edge. Plotly clips markers at the plot's
+edge, so the first dot and the ringed end dot (5.6 px to the ring's outer edge) would be cut. The
+margin is 8 px. It was a quarter year from 2026-10-11 (1999.75–2024.25). Drawn from 1985 a
+quarter year is 5 px, which would cut the ring, so since 2026-10-12 it is 0.4 year
+(`config.LINE_X_PAD`). A marker drawn unclipped would spill into the margins as soon as the
+participant zoomed. Reset axis restores 1984.6–2024.4 (§7.5).
 
 **Bar.** Vertical bars, one per country, each in its country's colour (§4) and named under it. Tops
 rounded 6 px (`marker.cornerradius`), the base square; a bar is 62% of its slot, at most 64 px wide.
@@ -115,7 +125,7 @@ it alike.
 |---|---|---|
 | Coverage axis (line and bar y; both scatter axes) | **fixed 0–100, never auto-scaled** | An axis that rescales between tasks or conditions changes how steep a trend or how tall a bar looks. That would confound interpretation accuracy with axis framing. |
 | Colour bands (heatmap, map, scatter) | **fixed** (§4) | For the same reason: a scale fitted to the data would give the same colour to different values on different tasks. A value's band depends on the value alone. |
-| Line x range | 2000–2024 | Locked scope. |
+| Line x range | 1985–2024 (2000–2024 until 2026-10-12) | The scope's years. Drawn from 1985 so the Years slider has years to set aside; every line item asks about 2000 onward (§1). |
 | Coverage ticks | every 10 on the line and bar charts; every 25 on both scatter axes | Every 10 is fine enough to estimate against without hover, coarse enough to stay readable. The scatter's dots are named and coloured by change, so its grid only places them. |
 | Tick labels | "0%" … "100%", right-aligned 8 px left of the y axis; years and percentages 18 px below the x axis | As the handoff draws them. |
 | Axis titles | no unit, horizontal, left-aligned 24 px above the 100% label: "Coverage" (line, bar), "Coverage in 2024" (scatter y). "Year" and "Coverage in 2000" stand at the x axis's end, on the tick labels' baseline. | Read before the axis, not along it. |
@@ -144,9 +154,12 @@ It appears in **both** conditions, which is what makes it admissible: interactiv
 what information is available, only how it is reached. It sits directly under the chart, above the
 interactive condition's controls, so it is in the same place in both.
 
-No chart in the current task bank shows a gap: the acceptance rule refuses an item with a missing
-bar, dot, cell or country (`docs/study-design.md` §4), and every line in the line items is complete
-for 2000–2024. The caption stays for a data refresh that opens a gap.
+**One chart shows a gap, A-T1, since 2026-10-12.** The line charts are drawn from 1985, and
+Ukraine, A-T1's falling line, reports DTP3 only from 1992 (it was part of the USSR). Its line
+starts there, and A-T1 carries the caption *"No data reported for: Ukraine (1985–1991)"* in both
+conditions. Every other line on every line chart reports every year from 1985. The acceptance rule
+still refuses a missing bar, dot, cell or country, and a named line missing any year a question asks
+about (`docs/study-design.md` §4). Until 2026-10-12 no chart showed a gap.
 
 Enforced by `tests/test_app.py::test_gap_note_names_the_series_with_unreported_years`.
 
@@ -166,9 +179,12 @@ colour, in the table's order, and keeps it on every line chart and bar chart it 
 country on a line chart takes the first colour that chart does not already use: on B-T1, Nepal takes
 4 and Uganda 8; on the practice, Myanmar takes 1. T6 draws eight lines since 2026-10-11, so each
 chart uses every colour: on A-T6 Afghanistan takes 1, the Central African Republic 2, Chad 4, Côte
-d'Ivoire 5, DR Congo 7 and Somalia 8; on B-T6 Benin takes 1, Cameroon 2, Gabon 3, Kenya 4,
-Madagascar 5, Mozambique 6 and Sudan 8. A hidden line keeps its colour, so filtering never
-recolours (§7.3). The scatter
+d'Ivoire 5, DR Congo 7 and Somalia 8; on B-T6 Benin takes 1, Gabon 2, Ghana 3, Guinea 4, Kenya 5,
+Mozambique 6 and Sudan 8 (until 2026-10-12, Cameroon 2, Gabon 3, Kenya 4 and Madagascar 5; the
+named pair's colours did not move). Since 2026-10-12 Gabon stands on A-T1 where Nigeria stood
+(`docs/study-design.md` §4) and takes 6, Nigeria's colour, as the one A-T1 leaves unused. Nigeria
+keeps 6 on B-T1 and A-T6, so no other chart changes. A hidden line keeps its colour, so filtering
+never recolours (§7.3). The scatter
 no longer uses these colours: its dots are coloured by change (below).
 
 | Order | Country | Hex | Ratio | Luminance | Note |
@@ -406,8 +422,8 @@ pixels.
 **The card (2026-10-11, the chart handoff).** The figure holds three bands, all drawn in it so both
 conditions have them by construction:
 
-- **Title**, 0–30 px: padded 4 px at the top and 16 px at the left. "{vaccine} coverage, 2000–2024"
-  on line charts, "{vaccine} coverage, {year}" on the bar chart and the map, "{vaccine} coverage,
+- **Title**, 0–30 px: padded 4 px at the top and 16 px at the left. "{vaccine} coverage, 1985–2024"
+  on line charts (2000–2024 until 2026-10-12), "{vaccine} coverage, {year}" on the bar chart and the map, "{vaccine} coverage,
   2000 and 2024" on the scatter, "{vaccine} coverage, selected years" on the heatmap, where
   {vaccine} is the item's: MCV1 on T2 and T4 since 2026-10-11, DTP3 elsewhere. No subtitle.
 - **Chart**, 30–492 px.
@@ -664,7 +680,7 @@ Average answered neither form's question.
     how one line relates to the others. Every other chart already faded rather than hid what a
     control set aside. An isolated line hid the others, and its chip alone stayed ticked.
 - **Reset view**, on every chart, undoes filtering, sorting, focusing, a highlight from the key and,
-  since 2026-10-12, a zoom: the line chart returns to 2000–2024. Until then a zoom was left to the
+  since 2026-10-12, a zoom: the line chart returns to 1985–2024, as first drawn. Until then a zoom was left to the
   modebar's own reset. The zoom is kept by the app, not by Plotly: every control redraws the chart,
   and each redraw keeps the range the participant zoomed to.
 - All of it resets between tasks: no task inherits the previous task's view.
@@ -735,12 +751,12 @@ static condition shows no modebar at all.
   reading; the pilot should look for them. The Zoom and Pan mode buttons are gone.
 - **Zoomed in, a sideways swipe moves the line chart's x axis** (2026-09-27): a touchpad's
   two-finger swipe, a tilt wheel, or Shift with the wheel, in the direction the participant's
-  system scrolls (`assets/chart_pan.js`). It moves only within the chart's own view (1999.75–2024.25 since 2026-10-11)
+  system scrolls (`assets/chart_pan.js`). It moves only within the chart's own view (1984.6–2024.4 since 2026-10-12; 1999.75–2024.25 from 2026-10-11)
   and does nothing when not zoomed in; over the plot it never scrolls the page or triggers the
   browser's swipe back. Each swipe is one `view_change`, logged once it pauses, like a wheel zoom. Reset axis is Plotly's "Reset axes", retitled
-  in `graph_config` because only the x axis moves; it restores 1999.75–2024.25. Autoscale is removed:
-  after a zoom it fits the axis to everything drawn, end labels included, and lands on 1998.4–2027.0
-  (measured in Chrome), which is not the chart's own view.
+  in `graph_config` because only the x axis moves; it restores 1984.6–2024.4. Autoscale is removed:
+  after a zoom it fits the axis to everything drawn, end labels included, and on the chart drawn
+  from 2000 landed on 1998.4–2027.0 (measured in Chrome), which is not the chart's own view.
 - **Zoomed in, the name tags and leaders stay where they are** (2026-10-11): they are drawn in paper
   coordinates and name where each line ends, in 2024, which a zoom may move out of view.
 - **No chart has a legend** (2026-10-11, §6), so none has legend clicks.
@@ -754,17 +770,24 @@ study-design decision, recorded here because it follows directly from the visual
 ### 7.6 The Years slider (defined 2026-10-12)
 
 On every line chart, in the controls strip, where View stood. *Show all* sits under it.
-- **Control:** **Years**, a range slider from 2000 to 2024, in whole years, its two handles at
-  least a year apart. It starts at 2000–2024. It commits when a handle is let go, not while one is
-  dragged.
-- **What it does:** sets the x axis to the first year − 0.25 through the last + 0.25, the same
-  margin as the chart's own view (1999.75–2024.25). 2000–2024 is the chart as first drawn.
+- **Control:** **Years**, a range slider from 1985 to 2024 (2000 to 2024 until 2026-10-12), in
+  whole years, its two handles at least a year apart. It starts at 1985–2024. It commits when a
+  handle is let go, not while one is dragged. Marked every 13 years, 1985, 1998, 2011 and 2024, so
+  both ends are marked and the marks are evenly spaced (every six years, 2000–2024, until
+  2026-10-12). 2000 has no mark of its own, as it has none on the chart (§1).
+- **What it does:** sets the x axis to the first year − 0.4 through the last + 0.4, the same
+  margin as the chart's own view (1984.6–2024.4; ± 0.25 until 2026-10-12, §1). 1985–2024 is the
+  chart as first drawn.
 - **It follows every other zoom:** a drag across the plot, the wheel or touchpad, a sideways swipe
   (§7.5), and the modebar's Zoom in, Zoom out and Reset axis. It then shows the whole years inside
   the range (an axis zoomed to 2005.2–2015.8 reads 2006–2015).
 - **Logged:** each change is one `view_change` with `control` `years`, `value` and `previous` as
   `[first, last]`. A zoom it follows is the chart's own `view_change`, as before.
-- **Reset view** puts it back to 2000–2024 (§7.3).
+- **Reset view** puts it back to 1985–2024 (§7.3).
+- **Drawn from 1985 (2026-10-12, Eduardo).** Over 2000–2024 the slider could only narrow a chart
+  that already showed everything a question asked about. The line charts now draw fifteen years
+  before the questions' window. Setting the slider to start at 2000 sets those years aside
+  (`docs/study-design.md` §4).
 - **Why (the first pilot session, 2026-10-12):** View had no purpose (§7.2). Zoom was named nowhere
   a participant reads, sat in the modebar, and could not be reached from the keyboard. The slider
   makes the zoom a visible control under the chart, as every other control is, and its handles take
@@ -792,6 +815,8 @@ The four, each with its log event:
   - They reorder the chips, never the lines, as View did (§7.2).
   - Not an order by change since 2000, which would rank the countries by how far they rose or fell.
     That hands over part of T1's rubric, and T1 stays in RQ1.
+  - 2000, not 1985, though the chart starts there since 2026-10-12. 2000 is where T1's question
+    starts, and Ukraine has no 1985 value to order by.
   - Logged as `sort_change`, `key` `alpha`, `start` or `end`, with direction `none`, `desc`, `desc`.
 - **Regions**, four checkboxes: Africa, Asia, Americas, Europe.
   - A region is ticked while all its countries are shown. Unticking hides them all; ticking shows
