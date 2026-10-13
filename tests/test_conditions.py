@@ -9,6 +9,7 @@ only divergence must be the Plotly config and the controls rendered beside the c
 from __future__ import annotations
 
 import json
+from collections import Counter
 
 import plotly.graph_objects as go
 import pytest
@@ -1197,6 +1198,35 @@ def test_the_map_geometry_ships_with_the_app_and_covers_every_mapped_country(row
         if task.chart == "map":
             codes = {runtime_data.series(e, task.vaccine, rows)[0].iso_code for e in task.entities}
             assert codes <= shapes, f"{_task_id(task)}: no shape for {sorted(codes - shapes)}"
+
+
+def test_the_map_draws_no_land_but_africa(rows):
+    """Plotly's Africa file traced Europe's and Asia's coasts across the top of the frame. The land
+    and the coastline the map draws must both be exactly Africa's outline: the arcs only one
+    country uses (visual-spec.md section 1)."""
+    asset = (config.PROJECT_ROOT / "src" / "assets" / "geo_africa.js").read_text(encoding="utf-8")
+    name = f"{figures.MAP_SCOPE}_{figures.MAP_RESOLUTION}m"
+    prefix = f'window.PlotlyGeoAssets.topojson["{name}"] = '
+    objects = json.loads(asset[asset.index(prefix) + len(prefix) :].rstrip().rstrip(";"))["objects"]
+
+    def arcs(value) -> list[int]:
+        if isinstance(value, int):
+            return [value if value >= 0 else ~value]
+        return [arc for part in value for arc in arcs(part)]
+
+    uses = Counter(arc for g in objects["countries"]["geometries"] for arc in arcs(g["arcs"]))
+    outline = {arc for arc, count in uses.items() if count == 1}
+    for layer in ("land", "coastlines"):
+        drawn = {arc for g in objects[layer]["geometries"] for arc in arcs(g["arcs"])}
+        assert drawn == outline, f"{layer}: {sorted(drawn ^ outline)}"
+    # The map shows the land and the coastline from this file, and nothing else of the base map's.
+    task = next(t for t in ALL_TASKS if t.chart == "map")
+    figure = figures.build_figure(
+        list(task.entities), task.vaccine, rows, chart_type="map", years=task.years
+    )
+    geo = figure.layout.geo
+    assert (geo.showland, geo.showcoastlines, geo.showcountries) == (True, True, True)
+    assert not (geo.showocean or geo.showlakes or geo.showrivers or geo.showsubunits)
 
 
 @pytest.mark.parametrize("task", ALL_TASKS, ids=_task_id)

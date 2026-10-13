@@ -100,9 +100,14 @@ rest (whichever reads better, as the handoff picks), and otherwise beside it, on
 written "CAR" and "Democratic Republic of Congo" "DR Congo". Each form sets its own placements.
 Every other country is plain land (§4). The handoff's key carries a "No data" block for that land;
 this one does not, because those countries do report coverage and are only outside the question,
-and no item's country lacks a value (`docs/study-design.md` §4). The geometry is Plotly's own file,
-served from `src/assets/geo_africa.js` (written by `scripts/vendor_map_geometry.py`) rather than
-fetched from Plotly's CDN in each participant's browser mid-task.
+and no item's country lacks a value (`docs/study-design.md` §4). **No land but Africa is drawn**
+(2026-10-12, Eduardo): Plotly's Africa file fills only Africa, but its coastline also traced Spain,
+Italy, Greece, Turkey and Arabia across the top of the frame. The coastline is now the land's own
+outline, so it runs round Africa and nowhere else, Sinai's land border included. The geometry is
+Plotly's own file with that one change, served from `src/assets/geo_africa.js` (written by
+`scripts/vendor_map_geometry.py`) rather than fetched from Plotly's CDN in each participant's
+browser mid-task. The figure is unchanged: the outline is in the geometry, so both conditions draw
+it alike.
 
 ## 2. Axes
 
@@ -346,7 +351,7 @@ three keys are drawn into the figure, so both conditions have them.
 | Coloured countries | the seven map bands |
 | Every other country | `#EEE8E2`, plain land, 1 px white borders |
 | Borders between coloured countries | `#FFFFFF`, 1.25 px |
-| Coastline | `#BBAEA4`, the gridline colour, 2 px, under all land |
+| Coastline | `#BBAEA4`, the gridline colour, 2 px, under all land; Africa's outline only (§1) |
 | Countries hidden by a chip, or not below the highlight (interactive, §7.3–7.4) | same colour, opacity 0.15 |
 
 ### Text and structure
