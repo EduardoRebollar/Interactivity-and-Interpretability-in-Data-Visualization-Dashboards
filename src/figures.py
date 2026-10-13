@@ -1615,54 +1615,59 @@ def _draw_cells(figure: go.Figure, order: Sequence[str], faded: Sequence[str]) -
     # Data units per pixel: one column is one unit across, one row one unit down.
     gap_x, gap_y = _CELL_GAP / 2 / width, _CELL_GAP / 2 / height
     rx, ry = _CELL_RADIUS / width, _CELL_RADIUS / height
-    figure.layout.shapes = [
-        shape for shape in figure.layout.shapes if not (shape.name or "").startswith(_CELL)
-    ]
-    figure.layout.annotations = [
-        a for a in figure.layout.annotations if not (a.name or "").startswith(_CELL)
-    ]
+    # Built as plain lists and assigned once. `add_shape` re-validates every shape already on the
+    # figure, so two hundred cells added one at a time took over a second to draw, and the chart
+    # is redrawn on every sort and every chip: a second click landed before the first was drawn.
+    shapes = [s for s in figure.layout.shapes if not (s.name or "").startswith(_CELL)]
+    annotations = [a for a in figure.layout.annotations if not (a.name or "").startswith(_CELL)]
     values = dict(zip((str(name) for name in cells.y), cells.z, strict=True))
     for position, name in enumerate(order):
         opacity = config.FADED_OPACITY if name in faded else 1
         for column, value in enumerate(values[name]):
-            figure.add_shape(
-                type="path",
-                xref="x",
-                yref="y",
-                path=_rounded_rect(
-                    round(column - 0.5 + gap_x, 6),
-                    round(position - 0.5 + gap_y, 6),
-                    round(column + 0.5 - gap_x, 6),
-                    round(position + 0.5 - gap_y, 6),
-                    round(rx, 6),
-                    round(ry, 6),
-                ),
-                fillcolor=(
-                    config.NO_DATA_COLOR
-                    if value is None
-                    else band_color(value, config.HEATMAP_BANDS)
-                ),
-                line={"width": 0},
-                opacity=opacity,
-                layer="below",
-                name=f"{_CELL}{name}",
+            shapes.append(
+                {
+                    "type": "path",
+                    "xref": "x",
+                    "yref": "y",
+                    "path": _rounded_rect(
+                        round(column - 0.5 + gap_x, 6),
+                        round(position - 0.5 + gap_y, 6),
+                        round(column + 0.5 - gap_x, 6),
+                        round(position + 0.5 - gap_y, 6),
+                        round(rx, 6),
+                        round(ry, 6),
+                    ),
+                    "fillcolor": (
+                        config.NO_DATA_COLOR
+                        if value is None
+                        else band_color(value, config.HEATMAP_BANDS)
+                    ),
+                    "line": {"width": 0},
+                    "opacity": opacity,
+                    "layer": "below",
+                    "name": f"{_CELL}{name}",
+                }
             )
             if value is None:
-                figure.add_annotation(
-                    x=column,
-                    y=position,
-                    xref="x",
-                    yref="y",
-                    text="No data",
-                    showarrow=False,
-                    font={
-                        "family": config.FONT_FAMILY,
-                        "size": _HEAT_FONT,
-                        "color": config.TEXT_MUTED,
-                    },
-                    opacity=opacity,
-                    name=f"{_CELL}{name}",
+                annotations.append(
+                    {
+                        "x": column,
+                        "y": position,
+                        "xref": "x",
+                        "yref": "y",
+                        "text": "No data",
+                        "showarrow": False,
+                        "font": {
+                            "family": config.FONT_FAMILY,
+                            "size": _HEAT_FONT,
+                            "color": config.TEXT_MUTED,
+                        },
+                        "opacity": opacity,
+                        "name": f"{_CELL}{name}",
+                    }
                 )
+    figure.layout.shapes = shapes
+    figure.layout.annotations = annotations
 
 
 def _heat_key(figure: go.Figure) -> None:

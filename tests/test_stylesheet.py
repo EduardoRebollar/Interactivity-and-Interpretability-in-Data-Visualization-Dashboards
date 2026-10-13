@@ -227,3 +227,28 @@ def test_the_chart_colours_never_appear_in_the_chrome():
     chart = {c.upper() for c in config.SERIES_COLORS}
     chart |= {c.upper() for _stop, c in config.SEQUENTIAL_SCALE}
     assert not used & chart
+
+
+def test_no_control_takes_a_click_while_the_chart_is_redrawn():
+    """Dash drops a reply still on its way when a callback fires again, so a click before the
+    chart was redrawn would be worked out from the view before the last one (visual-spec.md section
+    7). While Dash marks the chart loading, nothing that redraws it takes a pointer: the controls,
+    the key's buttons (which set their own `pointer-events`), Reset view and the chart, whose drag
+    layers Plotly styles inline."""
+    # Read whole: `_rules` splits a selector list at its commas, and this one is an `:is()` list.
+    guard = re.findall(
+        r'([^{}]*#chart\[data-dash-is-loading="true"\][^{}]*)\{([^{}]*)\}', _css(OVERRIDES)
+    )
+    assert len(guard) == 1
+    selector, body = guard[0]
+    for target in (".ui-controls", ".ui-key", ".ui-hint-row button", "#chart *"):
+        assert target in selector, target
+    assert body.strip().rstrip(";") == "pointer-events: none !important"
+
+
+def test_the_chart_is_redrawn_by_the_view_callback_alone():
+    """The guard reads the chart's loading mark as the view callback's: no other callback may
+    redraw the chart, or the controls would be held for it too."""
+    redraws = [key for key in app.create_app().callback_map if "chart.figure" in key]
+    assert len(redraws) == 1
+    assert "control-state.data" in redraws[0]

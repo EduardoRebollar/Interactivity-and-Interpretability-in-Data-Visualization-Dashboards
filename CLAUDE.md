@@ -822,7 +822,8 @@ context cheap and the reports as long as they need to be.
   apostrophe ("study’s"), which the app now matches; hash re-pinned to `3bcd2413c9656ae8`.
   `consent.APPROVED = True`. 1288 tests. Headless Chrome at 1440 × 790: no banner, the curly
   apostrophe on screen, a drawn signature recorded under the new version, no console errors.
-  `irb/questionnaire.pdf` not re-exported; its colophon still names the old hash.
+  `irb/questionnaire.pdf` not re-exported then; it was after the pilot changes, the same day,
+  with the new hash.
 - 2026-10-12 — **Two full test sessions on production checked, then deleted.** Every answer, timing,
   interaction event, survey and About you landed in Neon (schema v17, no spool, no invalid
   durations; scoring read them). Deleted IDs `98987` and `2310948109832`, their 138 events and the
@@ -839,7 +840,8 @@ context cheap and the reports as long as they need to be.
 - 2026-10-12 — **Pilot session 1**, with Eduardo's faculty supervisor (static A, then interactive
   B; 36 min). Findings, the transcript, and the changes it led to are in `study-design.md` §10. The
   plan runs in phases:
-  - Phase 0: keep the pilot out of the study data; ask HSRRC about an amendment.
+  - Phase 0: keep the pilot out of the study data; ask HSRRC about an amendment (none needed,
+    HSRRC answered the same day).
   - Phase 1: quick fixes.
   - Phase 2: line chart.
   - Phase 3: clickable keys.
@@ -887,7 +889,7 @@ context cheap and the reports as long as they need to be.
     Space, the pressed outline and `aria-pressed`, hover through the overlay, each chart's fade,
     the sort with a band, static has no buttons), one logged event per click, none on load, and no
     console errors.
-- 2026-10-12 — **Pilot changes, phase 4: T1 overloaded** (uncommitted at time of writing).
+- 2026-10-12 — **Pilot changes, phase 4: T1 overloaded** (committed as 3f71605).
   - T7 was specified, then dropped by Eduardo for this. A-T1 and B-T1, interactive only, carry a
     second strip under the first: Coverage (a 0–100 range slider that zooms the y axis and
     re-places the name tags), Order (the chips A–Z or by coverage in 2000 or 2024; the lines
@@ -905,6 +907,26 @@ context cheap and the reports as long as they need to be.
     a 1440 × 900 window by 32 px, the only card that is. Recorded as a pilot check.
   - A fast keyboard run can commit a slider twice with the same `previous`; the chart ends where
     the slider does. The Years slider is the same.
+- 2026-10-12 — **No amendment; questionnaire re-exported; a redraw race fixed** (uncommitted at
+  time of writing).
+  - HSRRC: the pilot changes need no amendment (`study-design.md` §10).
+  - `irb/questionnaire.pdf` re-exported (37 pages). The Years and Coverage sliders printed as
+    empty boxes, since Dash draws them from script; the exporter now draws them at rest. The cover
+    names T1's extra controls.
+  - Production serves 3f71605, checked over HTTP (stylesheet, callbacks); the Vercel API still
+    refuses this team.
+  - Found by a full session in headless Chrome: on T4, Reset view right after a sort and a key
+    colour did nothing and logged nothing. Dash drops a reply still on its way when a callback
+    fires again, and the heatmap took over a second to redraw (each cell added by `add_shape`,
+    which re-validates every shape already there). Now the cells are assigned at once, about 0.1 s,
+    every figure byte-identical by hash; and while the chart redraws, the controls, key buttons,
+    Reset view and chart take no pointer events (`visual-spec.md` §7). Under an 800 ms round
+    trip: clicks during a redraw are ignored, the next one works, the log matches the screen.
+  - 1434 tests. Eight full sessions through the UI in headless Chrome, all four cells at 1440 ×
+    790 and 1366 × 768, every control used in the interactive halves: 504 checks, none failed,
+    no console errors. Every T2–T6 answer logged as its derived key, T1's text as typed; each
+    control's event logged; none in a static half; every record v18; consent, window size and
+    About you once each, both surveys.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small

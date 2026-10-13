@@ -295,6 +295,12 @@
    the page's focus ring. `position: relative` changes nothing on the static chart, which has no
    layer. */
 .ui-chart { position: relative; }
+/* While the chart is being redrawn, nothing that redraws it takes a click (docs/visual-spec.md
+   section 7). Every control goes through one callback, and Dash drops a reply still on its way
+   when the next fires, so a click now would be worked out from the view before the last one.
+   Dash marks the chart `data-dash-is-loading` for as long as that reply is out. Plotly sets
+   `pointer-events` on its own drag layers inline, hence the chart's descendants and !important. */
+body:has(#chart[data-dash-is-loading="true"]) :is(.ui-controls, .ui-key, .ui-hint-row button, #chart, #chart *) { pointer-events: none !important; }
 .ui-keys { position: absolute; inset: 0; pointer-events: none; }
 .ui-key { position: absolute; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; pointer-events: auto; }
 .ui-key:hover { outline: 1px solid var(--c-line); outline-offset: 1px; }

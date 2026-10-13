@@ -210,7 +210,44 @@ class Renderer:
         if kind == "Textarea":
             area = " ".join(filter(None, ["dash-textarea", classes]))
             return f'<textarea class="{area}"{_attr("rows", props.get("rows"))}></textarea>'
+        if kind == "RangeSlider":
+            return _range_slider(props)
         return self.render(props.get("children"))
+
+
+def _range_slider(props: dict) -> str:
+    """A range slider at rest, in the markup Dash 4 draws, so the app's own rules style it.
+
+    Dash draws it in the browser, from script, so the component has no markup of its own to print.
+    Marks and handles are placed by Dash's own formula: each is inset by half its width at the
+    ends, so the first and last sit inside the track."""
+    low, high = props["min"], props["max"]
+
+    def place(value, inset: int) -> str:
+        share = (value - low) / (high - low)
+        return f"calc({share * 100:g}% + {inset * (1 - 2 * share):g}px)"
+
+    first, last = props["value"]
+    track = (
+        '<span class="dash-slider-track"><span class="dash-slider-range" style="'
+        f"left: {(first - low) / (high - low) * 100:g}%; "
+        f'right: {(high - last) / (high - low) * 100:g}%"></span></span>'
+    )
+    marks = "".join(
+        f'<div class="dash-slider-mark" style="left: {place(float(value), 8)}">'
+        f"{html.escape(str(label))}</div>"
+        for value, label in (props.get("marks") or {}).items()
+    )
+    thumbs = "".join(
+        f'<span class="dash-slider-thumb-at" style="left: {place(value, 10)}">'
+        f'<span class="dash-slider-thumb dash-slider-thumb-{n}"></span></span>'
+        for n, value in enumerate((first, last), start=1)
+    )
+    root = "dash-slider-root has-marks" if marks else "dash-slider-root"
+    return (
+        '<div class="dash-slider-container"><div class="dash-slider-wrapper">'
+        f'<span class="{root}">{track}{marks}{thumbs}</span></div></div>'
+    )
 
 
 def _embedded(source: str | None) -> str | None:
@@ -399,6 +436,23 @@ section { break-before: page; }
 .dash-input-container { display: inline-flex; align-items: center; box-sizing: border-box; }
 .dash-input-element { flex: 1 1 0; min-width: 0; font: inherit; color: inherit; background: none;
                       border: none; outline: none; }
+/* And the part a range slider needs (the Years slider, T1's Coverage), as Dash draws it at rest;
+   the app's own rules give it its colours, width and mark labels. */
+.dash-slider-root { position: relative; display: flex; align-items: center; width: 100%;
+                    height: 14px; padding: 17px 0; box-sizing: border-box; }
+.dash-slider-root.has-marks { padding: 6px 0 28px; }
+.dash-slider-track { position: relative; flex-grow: 1; height: 4px; border-radius: 9999px; }
+.dash-slider-range { position: absolute; height: 100%; border-radius: 9999px;
+                     background: var(--Dash-Fill-Interactive-Strong); }
+.dash-slider-thumb-at { position: absolute; transform: translateX(-50%); }
+.dash-slider-thumb { display: block; width: 16px; height: 16px; border-radius: 50%;
+                     background: var(--Dash-Fill-Interactive-Strong); border: 2px solid #FFFFFF;
+                     box-shadow: 0 1px 3px 0 rgba(22, 23, 24, 0.2); }
+.dash-slider-mark { position: absolute; bottom: 0; transform: translateX(-50%); height: 12px;
+                    line-height: 12px; white-space: nowrap; }
+.dash-slider-mark:before { content: ''; position: absolute; bottom: 100%; left: 50%;
+                           transform: translateX(-50%); width: 4px; height: 6px; margin-bottom: 2px;
+                           border-radius: 2px; background: rgba(0, 24, 102, 0.1); }
 /* Chrome's printing does not place an absolutely positioned grid item in its grid cell, so the
    text box laid over "Other" vanished from the PDF. On paper it is an ordinary item of the grid,
    in the same cell as that option (the last of pointer's, the last but one of field's). */
@@ -458,8 +512,10 @@ by two questions comparing the versions;</li>
 chart, a scatter plot, a grid of coloured cells and a map. The two versions show identical charts;
 the interactive one adds hover tooltips to every chart and controls under each one: a button per
 country that hides or shows it, and Reset view; on the line charts a Years slider, Show all and
-focusing a line; sorting on the bar chart and the grid; and, on the scatter plot, the grid and the
-map, highlighting a colour by clicking it in the key.
+focusing a line; sorting on the bar chart and the grid; on the scatter plot, the grid and the map,
+highlighting a colour by clicking it in the key; and, on the first question only, four more
+controls that question does not need, which participants are not told about (shown with the
+line chart's interactive version).
 Each participant answers form A with one version and form B with the other, in one of four
 counterbalanced orders.</p>
 <p class="q-note">Generated {date.today().isoformat()} by scripts/export_questionnaire.py from the

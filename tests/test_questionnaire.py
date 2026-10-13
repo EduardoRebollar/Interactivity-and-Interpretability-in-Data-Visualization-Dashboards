@@ -82,6 +82,17 @@ def test_t1s_extra_controls_are_shown_to_the_irb(page):
         assert label in page, label
 
 
+def test_the_range_sliders_print_at_rest(page):
+    """Dash draws a slider from script, so it has no markup of its own: the questionnaire draws the
+    Years slider and T1's Coverage slider itself, with both handles at the ends and every mark."""
+    markup = re.sub(r"<(style|script)\b.*?</\1>", "", page, flags=re.S)
+    assert markup.count('class="dash-slider-root has-marks"') == 2
+    assert markup.count('class="dash-slider-thumb dash-slider-thumb-') == 4
+    assert markup.count('style="left: 0%; right: 0%"') == 2, "the full range is chosen"
+    marks = re.findall(r'<div class="dash-slider-mark"[^>]*>([^<]*)</div>', markup)
+    assert marks == ["2000", "2006", "2012", "2018", "2024", "0%", "25%", "50%", "75%", "100%"]
+
+
 def test_every_chart_is_drawn(page):
     """Practice, twelve items, and one interactive example per chart type: eighteen charts."""
     assert page.count('class="chart"') == 1 + 12 + 5

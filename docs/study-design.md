@@ -1365,10 +1365,11 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 ## 10. Open items
 
 - IRB approval, and the final consent wording.
-- **Changes since HSRRC's approval, to put to HSRRC before the study (2026-10-12).** The approved
-  request form describes the features generically ("filtering, sorting, line isolation") and the
-  logging as "clicks, filter and sort selections". Every new control stays inside that, and no item
-  was added or removed. These change what the approved questionnaire (item 18) shows:
+- **Changes since HSRRC's approval (2026-10-12): no amendment needed.** Eduardo put them to
+  HSRRC, which answered the same day that they need no amendment. The approved request form
+  describes the features generically ("filtering, sorting, line isolation") and the logging as
+  "clicks, filter and sort selections". Every new control stays inside that, and no item was added
+  or removed. These change what the approved questionnaire (item 18) shows:
   - the practice question's wording (2019–2021);
   - the controls: a Years slider in place of View; a click on a line fades the others; the heatmap
     sort's options; the key's colours in place of the map's highlight box; and T1's four extra,
@@ -1376,7 +1377,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - the instructions: the full-screen request, "explain each one on its own", and the line and key
     bullets.
 
-  `irb/questionnaire.pdf` is re-exported once the changes are final.
+  `irb/questionnaire.pdf` was re-exported with all of them on 2026-10-12 (37 pages, consent text
+  version `3bcd2413c9656ae8`).
 - **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
   on form A, the interactive half on form B, 36 minutes in all. It is pilot data, kept out of the
   study: the participant knows the study's hypotheses, and the instrument changed after the

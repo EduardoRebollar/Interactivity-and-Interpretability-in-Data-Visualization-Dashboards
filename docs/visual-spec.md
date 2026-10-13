@@ -528,6 +528,19 @@ name tags. They too act only on what is drawn, and only after a participant uses
 order and follow it when a sort changes it: the bar chart's "Countries in alphabetical order" and the
 heatmap's "A–Z" (§7.2). At rest each reads as in both conditions.
 
+**No click lands while the chart is being redrawn (2026-10-12).** Every control goes through one
+callback, and Dash keeps only the newest reply to it: a reply still on its way when the next
+control fires is dropped, and the next is worked out from the view before the first. The log has
+already recorded the first by then, so the chart, the controls and the log could disagree. A full
+session in headless Chrome found it on the heatmap, whose redraw then took over a second: Reset
+view straight after a sort and a key click did nothing and logged nothing. Two fixes, the same day:
+- the heatmap draws its cells in one step, so it redraws in about 0.1 s, as the other charts do;
+- while Dash marks the chart as updating, the controls, the key's buttons, Reset view and the
+  chart take no pointer events (`zz-overrides.css`). Nothing changes on screen.
+
+The keyboard is not held: two controls changed from the keyboard within that tenth of a second can
+still meet the old view.
+
 **The controls sit under the chart (2026-09-25).** The controls strip and the hint row come after
 the chart and the gap caption, and exist only in the interactive condition, so the chart is at the
 same place on the page in both conditions (§10).
