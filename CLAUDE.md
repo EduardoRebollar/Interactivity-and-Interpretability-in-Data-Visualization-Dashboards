@@ -54,10 +54,11 @@ These are methodological requirements, not preferences. Do not relax them withou
   year-over-year change in the tooltip (the clickable legend went with the chart handoff,
   2026-10-11); sorting the bar chart and the heatmap's rows; on the scatter, heatmap and map, a
   click on a colour in the key highlights its band (replacing the map's "Below [n] %" box,
-  2026-10-12); hover on every chart. All are built and defined in `docs/visual-spec.md` §7. All
-  sit under the chart except the key's buttons, an overlay standing over the key in the chart's
-  own box. That overlay is no part of the figure, so the chart stands in the same place, and is
-  the same figure, in both conditions.
+  2026-10-12); hover on every chart; and on T1 alone, both forms, four controls it does not need,
+  named to participants nowhere (Coverage, Order, Regions, Show: the overload, 2026-10-12). All
+  are built and defined in `docs/visual-spec.md` §7. All sit under the chart except the key's
+  buttons, an overlay standing over the key in the chart's own box. That overlay is no part of the
+  figure, so the chart stands in the same place, and is the same figure, in both conditions.
 - **Five chart types, one builder each** (2026-09-23): line, bar, scatter, heatmap, map. The rule
   above holds for every one — `tests/test_conditions.py` checks byte-identical JSON for every task.
 - **Year-over-year change lives in the hover tooltip, not on the chart** (`visual-spec.md` §7.1). A
@@ -197,8 +198,14 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
   the chosen bands' lower bounds.
 - `view_reset.previous` has `bands` in place of `threshold`.
 
-More of v18 is planned (T7), and this entry grows with it before anything is collected. No new
-event, key, table or column so far, so `init_db.py` needs no re-run.
+- T1's four extra controls (`visual-spec.md` §7.7): `view_change` with `control` `coverage` (a
+  `[low, high]` coverage range) or `display` (the parts shown, of `points`, `tags`);
+  `sort_change` with `key` `alpha`, `start` or `end` (the chips' order); `filter_change` with
+  `control` `region`, `action` `hide`/`show` and the ticked countries. `view_reset.previous`
+  gains `order`, `yrange` and `display` on T1.
+
+T7 was specified and dropped the same day, before any code shipped; T1's overload took its place.
+No new event, key, table or column, so `init_db.py` needs no re-run.
 
 **Schema v17 (2026-10-12).** T1, T3 and A-T4 reworded, keys unchanged. B-T2 asks for the
 sixth-highest bar, in 2017 (key Mozambique); B-T4 for the highest cell, Laos and Cameroon replacing
@@ -836,7 +843,7 @@ context cheap and the reports as long as they need to be.
   - Phase 1: quick fixes.
   - Phase 2: line chart.
   - Phase 3: clickable keys.
-  - Phase 4: T7.
+  - Phase 4: T7, replaced the same day by overloading T1 with controls.
 - 2026-10-12 — **Pilot data out of Neon (phase 0).**
   - Participant `1`'s 85 v17 events and registration were exported to `data/study_logs/pilot/`,
     then withdrawn with `withdraw_participant.py --apply`: 0 events left, ID `1` marked withdrawn.
@@ -854,7 +861,7 @@ context cheap and the reports as long as they need to be.
   wording is on screen, no console errors. Against the committed version, only the interactive
   T3 card moved (36 px up). Found, not caused: the interactive T1 card ends at 802 px on a
   790-tall window.
-- 2026-10-12 — **Pilot changes, phase 2: the line chart** (uncommitted at time of writing).
+- 2026-10-12 — **Pilot changes, phase 2: the line chart** (committed as 2042564).
   - A Years range slider replaces View, with Show all under it. It zooms the x axis, follows
     every other zoom, and its handles take the arrow keys, with no number boxes (Dash 4's commit
     only on blur). Reset view now undoes a zoom.
@@ -866,7 +873,7 @@ context cheap and the reports as long as they need to be.
     move the slider; focus, Show all, Reset view; static has no slider), with the log showing one
     event per action and none spurious, and no console errors.
   - Line-chart cards are 12 px shorter: T1 now fits a 790 px window, not a 768 one.
-- 2026-10-12 — **Pilot changes, phase 3: the key's colours** (uncommitted at time of writing).
+- 2026-10-12 — **Pilot changes, phase 3: the key's colours** (committed as 12abf80).
   - On the scatter, heatmap and map, a click on a key block highlights its band: other marks fade
     to 0.15 (dots, single cells, countries by selection). Several bands can be chosen; a second
     click releases one, and so does Reset view.
@@ -880,6 +887,24 @@ context cheap and the reports as long as they need to be.
     Space, the pressed outline and `aria-pressed`, hover through the overlay, each chart's fade,
     the sort with a band, static has no buttons), one logged event per click, none on load, and no
     console errors.
+- 2026-10-12 — **Pilot changes, phase 4: T1 overloaded** (uncommitted at time of writing).
+  - T7 was specified, then dropped by Eduardo for this. A-T1 and B-T1, interactive only, carry a
+    second strip under the first: Coverage (a 0–100 range slider that zooms the y axis and
+    re-places the name tags), Order (the chips A–Z or by coverage in 2000 or 2024; the lines
+    never move), Regions (four boxes that hide or show a region's lines; Europe disabled on
+    B-T1) and Show (points, name tags). Named in no instruction and no hint.
+  - Every figure byte-identical at rest. Each control logs one event; Reset view puts all four
+    back.
+  - Kept in RQ1, and reported alone as a pre-registered secondary: accuracy, median time and
+    each control's users and counts by condition (`analysis/report.overload`, the viewer).
+  - 1431 tests. Headless Chrome, both forms at 1440 × 900: 38 checks (keyboard on Coverage,
+    the chip reorder without a renderer error, regions and chips agreeing, points and tags off,
+    Reset view; T6 and the static T1 carry none of it), one logged event per action, no console
+    errors.
+  - The interactive T1 card is 106 px taller: Submit ends at 932 px (896 in compact mode), past
+    a 1440 × 900 window by 32 px, the only card that is. Recorded as a pilot check.
+  - A fast keyboard run can commit a slider twice with the same `previous`; the chart ends where
+    the slider does. The Years slider is the same.
 - **Still to do before the pilot:**
   - Answer tiles on narrow windows (Open questions).
   - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
@@ -890,8 +915,9 @@ context cheap and the reports as long as they need to be.
     CLI is not installed and the API refused this team) and re-run `scripts/verify_deployment.py`.
 - Next: pilot, and the checks in `study-design.md` §10: static accuracy on T2, T4 and T5
   (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6 strict against adjacent-band,
-  whether T4 sits at ceiling in the interactive condition, and whether the chips, the bar and
-  heatmap sorts and the map's highlight are found at all.
+  whether T4 sits at ceiling in the interactive condition, whether the chips, the bar and
+  heatmap sorts and the key's colours are found at all, and whether T1's four extra controls are
+  found and what they cost in time.
 
 ## Decisions made
 
@@ -1065,8 +1091,11 @@ context cheap and the reports as long as they need to be.
   - A Years range slider replaces View on line charts. Zoom is named once in the instructions.
   - A click on a colour in the key highlights it on the scatter, heatmap and map. The map's
     "Below n %" box goes: the supervisor found it mirrored the question ("almost cheating").
-  - T7 is added: an at-a-glance item, scored separately, as the supervisor's counterpoint where
-    interactivity may not help.
+  - ~~T7 is added: an at-a-glance item, scored separately~~ T1 is overloaded instead (Eduardo,
+    the same day), as the supervisor's counterpoint where interactivity may not help: four
+    controls it does not need, interactive only, told to no participant. Kept in RQ1 and also
+    reported alone; T1's interactive difference is the overloaded interface's, never
+    interactivity's alone (`study-design.md` §7).
   - The main study stays logging only: no think-aloud, no questions at the break, no debrief.
   - Taken on recommendation:
     - practice window 2019–2021;

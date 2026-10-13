@@ -770,10 +770,23 @@ _VIEW_KEYS = ("xaxis.range", "yaxis.range", "xaxis.autorange", "yaxis.autorange"
 # The controls under the chart, by the `control` of their pattern id (`layout.control_id`). The
 # chart's own events are named by their prop id: "chart.clickData", "chart.relayoutData" and
 # "chart.restyleData" (a legend click).
-CONTROLS = ("chips", "sort", "show-all", "years", "key-band", "reset")
+CONTROLS = (
+    "chips",
+    "sort",
+    "show-all",
+    "years",
+    "key-band",
+    "reset",
+    # T1's extra controls, the overload (visual-spec.md section 7.7, 2026-10-12).
+    "coverage",
+    "chip-order",
+    "regions",
+    "display",
+)
 
 # `sort_change.direction` for each sort key: which way the new order runs. The line chart's View
-# (`listed`, `coverage`) went on 2026-10-12.
+# (`listed`, `coverage`) went on 2026-10-12. T1's chip Order shares `alpha` with the bar sort, and
+# adds `start` and `end`, highest first.
 _SORT_DIRECTION = {
     "alpha": "none",
     "desc": "desc",
@@ -781,28 +794,38 @@ _SORT_DIRECTION = {
     "default": "none",
     "min": "asc",
     "max": "desc",
+    "start": "desc",
+    "end": "desc",
 }
 
 
 class ControlResult(NamedTuple):
     """What one control interaction changes. Any field may be `no_update`.
 
-    `chips` is a list of rows, each {"options", "value"}, as `layout.chip_rows` makes them. `sort`
-    is the value the sort control must be set to, which only Reset view changes. `years` is the
-    Years slider's [first, last], set when a zoom it did not make moves the axis, and by Reset view.
-    `keys` is each key button's class, in their order, marking the highlighted bands.
+    `chips` is a list of rows, each {"options", "value"}, as `layout.chip_rows` makes them. `group`
+    is the Countries group rebuilt, when T1's chip Order changes (`layout.chip_group` says why a
+    reorder cannot be sent as new options). `sort` is the value the sort control must be set to,
+    which only Reset view changes. `years` is the Years slider's [first, last], set when a zoom it
+    did not make moves the axis, and by Reset view. `keys` is each key button's class, in their
+    order, marking the highlighted bands. `coverage`, `order`, `regions` and `display` are T1's
+    extra controls' values, set by Reset view, a refusal, or (Regions) the chips.
     """
 
     figure: Any
     chips: Any
+    group: Any
     sort: Any
     years: Any
     keys: Any
+    coverage: Any
+    order: Any
+    regions: Any
+    display: Any
     control: Any
     spool: Any
 
 
-UNCHANGED = ControlResult(*(no_update,) * 7)
+UNCHANGED = ControlResult(*(no_update,) * 12)
 
 
 def _active_task(state: SessionState):
@@ -894,6 +917,10 @@ def _view_figure(task, control: dict[str, Any]):
     if control.get("xrange"):
         # The participant's zoom, kept through every redraw (see `_zoomed_range`).
         figure.update_xaxes(range=control["xrange"])
+    if control.get("yrange"):
+        # T1's Coverage zoom. It places the name tags again, so it comes before anything that
+        # hides or fades them.
+        figures.set_y_range(figure, control["yrange"])
     shown = _shown(control)
     if task.chart == "line" and "World" in task.entities:
         shown.append("World")
@@ -904,11 +931,35 @@ def _view_figure(task, control: dict[str, Any]):
     figures.set_visible(figure, shown)
     if task.chart == "line":
         figures.focus_line(figure, control["isolated"])
+        # T1's Show toggles, last: what they turn off stays off.
+        figures.set_display(figure, control["display"])
     if task.chart in figures.KEY_CHARTS:
         # Last, so what the chips hid or faded stays so, and the heatmap's cells are where the
         # row sort drew them.
         figures.set_bands(figure, control["bands"])
     return figure
+
+
+def _chip_order(task, control: dict[str, Any]) -> list[str]:
+    """The chips' order: the task's own, or, on T1, the Order control's (visual-spec.md 7.7)."""
+    if tasks.has_extra_controls(task):
+        return layout.chip_order(task, control["order"])
+    return layout.filterable(list(task.entities))
+
+
+def _coverage(raw: Any) -> list[int] | None:
+    """T1's Coverage slider value as [low, high]: whole percentages within 0-100, low below high.
+    None for anything else."""
+    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+        return None
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in raw):
+        return None
+    if any(not math.isfinite(value) or value != int(value) for value in raw):
+        return None
+    low, high = (int(value) for value in raw)
+    if not config.Y_RANGE[0] <= low < high <= config.Y_RANGE[1]:
+        return None
+    return [low, high]
 
 
 def _years(raw: Any) -> list[int] | None:
@@ -935,6 +986,10 @@ def _fresh_control(task, screen: str) -> dict[str, Any]:
         "sort": layout.default_sort(task.chart),
         "bands": [],
         "xrange": None,
+        # T1's extra controls (visual-spec.md section 7.7); inert on every other chart.
+        "order": layout.CHIP_ORDERS[0][0],
+        "yrange": None,
+        "display": list(figures.DISPLAY_PARTS),
     }
 
 
@@ -975,6 +1030,14 @@ def _stored_control(task, screen: str, control_state: dict[str, Any] | None) -> 
         )
     if task.chart == "line":
         control["xrange"] = _range(stored.get("xrange"))
+    if tasks.has_extra_controls(task):
+        if stored.get("order") in dict(layout.CHIP_ORDERS):
+            control["order"] = stored["order"]
+        yrange = _coverage(stored.get("yrange"))
+        control["yrange"] = None if yrange == layout.COVERAGE_START else yrange
+        stored_display = stored.get("display")
+        if isinstance(stored_display, list):
+            control["display"] = [p for p in figures.DISPLAY_PARTS if p in stored_display]
     return control
 
 
@@ -1010,6 +1073,10 @@ def control_step(
     sort_key: str | None = None,
     years: Any = None,
     key_band: int | None = None,
+    coverage: Any = None,
+    chip_order: Any = None,
+    regions: Any = None,
+    display: Any = None,
     click_data: dict[str, Any] | None = None,
     relayout: dict[str, Any] | None = None,
     restyle: Any = None,
@@ -1031,9 +1098,13 @@ def control_step(
     record with events no participant caused.
 
     Some changes are refused: unticking the last chip, a legend click that would leave no line, a
-    Years value that is not two whole years in order. The browser has already moved the control by
-    then, so a refusal puts it back rather than leaving it saying something the chart does not.
-    Nothing is logged for one.
+    Years value that is not two whole years in order, and on T1 a Coverage value that is not two
+    whole percentages in order or a Regions untick that would leave no line. The browser has
+    already moved the control by then, so a refusal puts it back rather than leaving it saying
+    something the chart does not. Nothing is logged for one.
+
+    `coverage`, `chip_order`, `regions` and `display` are T1's extra controls (visual-spec.md
+    section 7.7); every other chart has none, and ignores them.
 
     `preview` is the `preview-state` store. When it names a task, the chart is the preview's
     (`preview_task`), not the session's, and nothing is logged at all.
@@ -1059,9 +1130,14 @@ def control_step(
     options = layout.filterable(list(task.entities))
     default_sort = layout.default_sort(task.chart)
     before = _shown(control)
+    order_before = _chip_order(task, control)
+    extra = tasks.has_extra_controls(task)
     event: tuple[str, dict[str, Any]] | None = None
     sort_value: Any = no_update
     years_value: Any = no_update
+    coverage_value: Any = no_update
+    order_value: Any = no_update
+    display_value: Any = no_update
 
     if triggered == "chips":
         chosen = [e for e in options if e in (chips or [])]
@@ -1138,33 +1214,119 @@ def control_step(
             event = ("view_change", {"control": "years", "value": chosen, "previous": current})
             control["xrange"] = figures.year_window(*chosen)
 
+    elif triggered == "coverage":
+        # T1's Coverage slider (visual-spec.md section 7.7): it zooms the coverage axis.
+        if not extra:
+            return UNCHANGED
+        chosen = _coverage(coverage)
+        current = control["yrange"] or list(layout.COVERAGE_START)
+        if chosen is None:
+            # Put the slider back to what the chart shows.
+            coverage_value = current
+        elif chosen == current:
+            return UNCHANGED
+        else:
+            event = ("view_change", {"control": "coverage", "value": chosen, "previous": current})
+            control["yrange"] = None if chosen == layout.COVERAGE_START else chosen
+
+    elif triggered == "chip-order":
+        # T1's Order: the chips by name or by coverage in 2000 or 2024. The lines never move.
+        offered = dict(layout.CHIP_ORDERS)
+        if not extra or not isinstance(chip_order, str) or chip_order not in offered:
+            return UNCHANGED
+        if chip_order == control["order"]:
+            return UNCHANGED
+        event = ("sort_change", {"key": chip_order, "direction": _SORT_DIRECTION[chip_order]})
+        control["order"] = chip_order
+
+    elif triggered == "regions":
+        # T1's Regions: a region ticked while all its countries are shown. A tick shows them all,
+        # an untick hides them all; the chips follow (and a region follows its chips, below).
+        # A list, never a string: `"Asia" in "Asia"` would pass a string off as a choice.
+        if not extra or not isinstance(regions, list):
+            return UNCHANGED
+        on_chart = layout.regions_on_chart(task)
+        ticked_before = layout.regions_ticked(task, before)
+        ticked = [r for r in layout.REGIONS if r in regions and on_chart[r]]
+        added = [r for r in ticked if r not in ticked_before]
+        removed = [r for r in ticked_before if r not in ticked]
+        if not added and not removed:
+            return UNCHANGED
+        shown = set(before)
+        for region in added:
+            shown |= set(on_chart[region])
+        for region in removed:
+            shown -= set(on_chart[region])
+        chosen = [e for e in options if e in shown]
+        if chosen and chosen != before:
+            event = (
+                "filter_change",
+                {
+                    "control": "region",
+                    "action": "show" if added else "hide",
+                    "value": chosen,
+                    "previous": before,
+                },
+            )
+            control["selected"] = chosen
+            control["isolated"] = None
+        # Otherwise refused (it would leave no line): the boxes are set back to the chips, below.
+
+    elif triggered == "display":
+        # T1's Show: the points and the name tags, each on or off.
+        if not extra or not isinstance(display, list):
+            return UNCHANGED
+        chosen = [p for p in figures.DISPLAY_PARTS if p in display]
+        if chosen == control["display"]:
+            return UNCHANGED
+        event = (
+            "view_change",
+            {"control": "display", "value": chosen, "previous": control["display"]},
+        )
+        control["display"] = chosen
+
     elif triggered == "reset":
+        fresh = _fresh_control(task, screen)
         unchanged = (
             before == options
             and control["sort"] == default_sort
             and not control["bands"]
             and control["isolated"] is None
             and control["xrange"] is None
+            and control["order"] == fresh["order"]
+            and control["yrange"] is None
+            and control["display"] == fresh["display"]
         )
         if unchanged:
             return UNCHANGED
-        event = (
-            "view_reset",
-            {
-                "previous": {
-                    "selected": before,
-                    "sort": control["sort"],
-                    "isolated": control["isolated"],
-                    "bands": control["bands"],
-                    "xrange": control["xrange"],
-                }
-            },
-        )
+        previous = {
+            "selected": before,
+            "sort": control["sort"],
+            "isolated": control["isolated"],
+            "bands": control["bands"],
+            "xrange": control["xrange"],
+        }
+        if extra:
+            previous.update(
+                order=control["order"], yrange=control["yrange"], display=control["display"]
+            )
+        event = ("view_reset", {"previous": previous})
         control.update(
-            selected=list(options), isolated=None, sort=default_sort, bands=[], xrange=None
+            selected=list(options),
+            isolated=None,
+            sort=default_sort,
+            bands=[],
+            xrange=None,
+            order=fresh["order"],
+            yrange=None,
+            display=fresh["display"],
         )
         sort_value = default_sort if default_sort is not None else no_update
         years_value = list(layout.YEARS_START) if task.chart == "line" else no_update
+        if extra:
+            coverage_value = list(layout.COVERAGE_START)
+            order_value = fresh["order"]
+            display_value = list(fresh["display"])
 
     elif triggered == "chart.clickData":
         # Only a line can be focused. A click on a bar, dot, cell or country does nothing, and a
@@ -1219,19 +1381,29 @@ def control_step(
         return UNCHANGED
 
     figure = _view_figure(task, control)
-    chip_rows = layout.chip_rows(options, _shown(control), task.chart)
+    order = _chip_order(task, control)
+    chip_rows = layout.chip_rows(order, _shown(control), task.chart)
+    # T1's Order moved the chips: the group is rebuilt, not sent new options (layout.chip_group).
+    group = layout.chip_group(task, order, _shown(control)) if order != order_before else no_update
     offered = _key_bands(task)
     keys = (
         [layout.key_class(band in control["bands"]) for band in offered] if offered else no_update
     )
+    # T1's Regions follow the chips: a region is ticked while all its countries are shown.
+    regions_value = layout.regions_ticked(task, _shown(control)) if extra else no_update
     # Logged AFTER the figure is built. Logged first, a database failure left the participant's
     # click with no visible effect -- the chart simply did not change.
     return ControlResult(
         figure,
         chip_rows,
+        group,
         sort_value,
         years_value,
         keys,
+        coverage_value,
+        order_value,
+        regions_value,
+        display_value,
         control,
         log(event),
     )
@@ -1289,19 +1461,33 @@ def _key_press(fired: dict[str, Any]) -> int | None:
 
 
 def view_outputs(result: ControlResult, counts: list[int]) -> tuple[Any, ...]:
-    """The `view` callback's outputs for a result, given how many components each of its five
-    `ALL` outputs matched on this screen (the chips, sort, years, and the key buttons' class and
-    `aria-pressed`).
+    """The `view` callback's outputs for a result, given how many components each of its `ALL`
+    outputs matched on this screen: the chips' group, the chips, sort, years, the key buttons'
+    class and `aria-pressed`, and T1's coverage, order, regions and display.
 
     An `ALL` output must be a list with one entry per component, `no_update` entries included:
     Dash 4 refuses a bare `no_update` there with a server error, which the tests calling
-    `control_step` could never see (found in headless Chrome).
+    `control_step` could never see (found in headless Chrome). When the group is rebuilt, the
+    checklists it replaces are left alone.
     """
-    chips, sorts, years, key_classes, key_pressed = counts
-    if result.chips is not no_update:
-        values = [row["value"] for row in result.chips][:chips]
+    (
+        groups,
+        chips,
+        sorts,
+        years,
+        key_classes,
+        key_pressed,
+        coverages,
+        orders,
+        region_lists,
+        displays,
+    ) = counts
+    if result.group is not no_update:
+        group, values = [result.group] * groups, [no_update] * chips
+    elif result.chips is not no_update:
+        group, values = [no_update] * groups, [row["value"] for row in result.chips][:chips]
     else:
-        values = [no_update] * chips
+        group, values = [no_update] * groups, [no_update] * chips
     if result.keys is not no_update:
         classes = list(result.keys)[:key_classes]
         pressed = ["true" if "is-on" in cls else "false" for cls in result.keys][:key_pressed]
@@ -1309,11 +1495,16 @@ def view_outputs(result: ControlResult, counts: list[int]) -> tuple[Any, ...]:
         classes, pressed = [no_update] * key_classes, [no_update] * key_pressed
     return (
         result.figure,
+        group,
         values,
         [result.sort] * sorts,
         [result.years] * years,
         classes,
         pressed,
+        [result.coverage] * coverages,
+        [result.order] * orders,
+        [result.regions] * region_lists,
+        [result.display] * displays,
         result.control,
         result.spool,
     )
@@ -1553,11 +1744,16 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
     # the chart, on every task screen in both conditions, supplies the rest.
     @app.callback(
         Output("chart", "figure", allow_duplicate=True),
+        Output(layout.control_id("chip-group", ALL), "children"),
         Output(layout.control_id("chips", ALL), "value"),
         Output(layout.control_id("sort", ALL), "value"),
         Output(layout.control_id("years", ALL), "value"),
         Output(layout.control_id("key-band", ALL), "className"),
         Output(layout.control_id("key-band", ALL), "aria-pressed"),
+        Output(layout.control_id("coverage", ALL), "value"),
+        Output(layout.control_id("chip-order", ALL), "value"),
+        Output(layout.control_id("regions", ALL), "value"),
+        Output(layout.control_id("display", ALL), "value"),
         Output("control-state", "data", allow_duplicate=True),
         Output("spool-state", "data", allow_duplicate=True),
         Input("chart", "clickData"),
@@ -1569,6 +1765,10 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         Input(layout.control_id("years", ALL), "value"),
         Input(layout.control_id("key-band", ALL), "n_clicks"),
         Input(layout.control_id("reset", ALL), "n_clicks"),
+        Input(layout.control_id("coverage", ALL), "value"),
+        Input(layout.control_id("chip-order", ALL), "value"),
+        Input(layout.control_id("regions", ALL), "value"),
+        Input(layout.control_id("display", ALL), "value"),
         State("session-state", "data"),
         State("log-state", "data"),
         State("control-state", "data"),
@@ -1586,6 +1786,10 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         year_ranges,
         _key_clicks,
         _reset,
+        coverages,
+        orders,
+        region_lists,
+        displays,
         stored,
         log,
         control_state,
@@ -1607,6 +1811,10 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
             sort_key=sorts[0] if sorts else None,
             years=year_ranges[0] if year_ranges else None,
             key_band=_key_press(fired[0]) if fired else None,
+            coverage=coverages[0] if coverages else None,
+            chip_order=orders[0] if orders else None,
+            regions=region_lists[0] if region_lists else None,
+            display=displays[0] if displays else None,
             click_data=click_data,
             relayout=relayout,
             restyle=restyle,
@@ -1616,7 +1824,7 @@ def _register_callbacks(app: dash.Dash, preview: bool = False) -> None:
         if result == UNCHANGED:
             # Most calls: a screen being built, or a render-time relayout. Nothing to send.
             raise PreventUpdate
-        counts = [len(outputs) for outputs in callback_context.outputs_list[1:6]]
+        counts = [len(outputs) for outputs in callback_context.outputs_list[1:11]]
         return view_outputs(result, counts)
 
     # Stamps the browser clock when a screen appears. Clientside so it never touches the server

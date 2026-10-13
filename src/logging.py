@@ -77,6 +77,11 @@ from src import config, db
 #   `key`, `action` `add` or `remove`, and `value` and `previous` the chosen bands' lower bounds,
 #   ascending: % on the heatmap and the map, points of change on the scatter.
 # - `view_reset.previous` has `bands` (the chosen lower bounds) in place of `threshold`.
+# - T1 carries four extra controls in the interactive condition, the overload (visual-spec.md
+#   section 7.7): `view_change` with `control` `coverage` ([low, high] %) or `display` (the parts
+#   shown, of `points` and `tags`); `filter_change` with `control` `region`; and `sort_change`
+#   with `key` `alpha`, `start` or `end` for the chip Order. On T1, `view_reset.previous` also
+#   carries `order`, `yrange` and `display`.
 # The record shape is unchanged: no new event, key or table, so no init_db.py re-run. Nothing has
 # been collected under v18; the pilot's v17 session is kept out of the study.
 #
@@ -238,14 +243,16 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # `clear`). `value` and `previous` are the countries on the chart after and before, except for
     # `key`, where they are the chosen bands' lower bounds (v18), and `threshold`, where they were
     # the typed number or null. Show all also releases a focused line (v18): pressed with every
-    # chip already ticked, its `value` equals its `previous`.
+    # chip already ticked, its `value` equals its `previous`. On T1, `region` (v18) shows or hides
+    # a region's countries, `value` and `previous` the countries shown.
     "filter_change": ("control", "action", "value", "previous"),
     # A click on a line: `isolated` true focuses it (the others fade, since v18; until then they
     # were hidden), false releases it.
     "line_isolate": ("entity", "isolated"),
     # `key`: the bar chart's `alpha`, `desc` or `asc`; the heatmap's `default`, `min` or `max`
-    # (`mean` until v18; the line chart's View `listed` or `coverage` until v18). `direction`:
-    # `none`, `desc` or `asc`.
+    # (`mean` until v18; the line chart's View `listed` or `coverage` until v18); T1's chip Order
+    # `alpha`, `start` or `end` (v18; the chips, never the lines). `direction`: `none`, `desc` or
+    # `asc`.
     "sort_change": ("key", "direction"),
     # Reset view: undoes filtering, sorting, focusing, a highlight and (since v18) a zoom in one
     # press. `previous` is the view it undid: `selected`, `sort`, `isolated`, `bands`, `xrange`
@@ -253,8 +260,10 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "view_reset": ("previous",),
     # A zoom or pan of the line chart's x axis. `control` `chart` is the chart's own relayout
     # (`value` its payload, `previous` null); `years` is the Years slider (v18), `value` and
-    # `previous` the [first, last] years shown. Documented as possible in both conditions, though
-    # the static chart's render-time relayout carries no range and is never logged.
+    # `previous` the [first, last] years shown. On T1 (v18), `coverage` zooms the y axis, `value`
+    # and `previous` [low, high] %, and `display` turns points or name tags off, `value` and
+    # `previous` the parts shown. Documented as possible in both conditions, though the static
+    # chart's render-time relayout carries no range and is never logged.
     "view_change": ("control", "value", "previous"),
     # Written by ResilientSink, not by a caller: `spooled` events that could not reach the database
     # were flushed once it came back, and `dropped` overflowed the bounded browser spool.

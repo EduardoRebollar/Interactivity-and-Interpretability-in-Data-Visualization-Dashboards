@@ -263,6 +263,17 @@ INTERACTIVE_NOTES = {
 }
 
 
+# T1's extra controls (docs/visual-spec.md section 7.7): shown to the IRB, not announced to
+# participants.
+T1_EXTRA_NOTE = (
+    "On this first question only, the interactive version also carries a second row of four "
+    "controls it does not need: a Coverage slider that zooms the vertical axis, an Order control "
+    "that reorders the country buttons, Regions boxes that show or hide a region's countries, and "
+    "Show boxes that turn the chart's points or name tags off. They test whether more controls "
+    "than a question needs get in the way, and participants are not told about them."
+)
+
+
 def _screens() -> list[tuple[str, str, object]]:
     """(title, note, screen) for every screen, in the order a participant meets them."""
     screens: list[tuple[str, str, object]] = [
@@ -327,6 +338,8 @@ def _screens() -> list[tuple[str, str, object]]:
             note = INTERACTIVE_NOTES[task.chart]
             if task.chart == "line":
                 note += f' For example: "{_hover_example()}".'
+            if tasks.has_extra_controls(task):
+                note += f" {T1_EXTRA_NOTE}"
             screens.append(
                 (
                     f"The interactive version of a question: {task.chart} chart",

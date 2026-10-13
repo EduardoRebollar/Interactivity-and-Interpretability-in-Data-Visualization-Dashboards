@@ -1050,6 +1050,10 @@ def test_reset_view_undoes_filtering_focusing_and_zooming_and_logs_what_it_undid
             "isolated": "India",
             "bands": [],
             "xrange": [2004.75, 2015.25],
+            # T1's extra controls (visual-spec.md section 7.7), as they stood.
+            "order": "alpha",
+            "yrange": None,
+            "display": ["points", "tags"],
         }
     }
     assert result.control["selected"] == _countries()
@@ -1076,6 +1080,193 @@ def test_reset_view_on_an_untouched_chart_logs_nothing(tmp_path):
     result, events = _interact("reset", tmp_path)
     assert result == app.UNCHANGED
     assert events == []
+
+
+# --- T1's extra controls, the overload (visual-spec.md section 7.7) -------------------------------
+
+
+def _t6_state():
+    """Form A's T6: the other line chart, which carries no extra controls."""
+    return _state(Stage.TASK, first_condition="interactive", task_index=5).to_dict()
+
+
+def _tag_ys(figure) -> dict[str, float]:
+    return {
+        a.name: a.y for a in figure.layout.annotations if (a.name or "").startswith(figures.TAG)
+    }
+
+
+def test_coverage_zooms_t1s_y_axis_and_places_the_tags_again(tmp_path):
+    result, events = _interact("coverage", tmp_path, coverage=[40, 100])
+    assert [e["event"] for e in events] == ["view_change"]
+    assert events[0]["payload"] == {
+        "control": "coverage",
+        "value": [40, 100],
+        "previous": [0, 100],
+    }
+    assert result.control["yrange"] == [40, 100]
+    assert list(result.figure.layout.yaxis.range) == [40, 100]
+    assert _tag_ys(result.figure) != _tag_ys(figures.task_figure(_first_task())), "tags re-placed"
+    back, events = _interact("coverage", tmp_path, control_state=result.control, coverage=[0, 100])
+    assert back.control["yrange"] is None
+    drawn = figures.task_figure(_first_task())
+    assert list(back.figure.layout.yaxis.range) == [0, 100]
+    assert back.figure.layout.to_plotly_json() == drawn.layout.to_plotly_json()
+
+
+@pytest.mark.parametrize("coverage", [[100, 0], [50, 50], [-5, 50], [0, 105], [12.5, 50], "0"])
+def test_a_malformed_coverage_value_is_put_back(tmp_path, coverage):
+    result, events = _interact("coverage", tmp_path, coverage=coverage)
+    assert events == [] and result.coverage == [0, 100]
+
+
+def test_the_chip_order_reorders_t1s_chips_and_never_the_lines(tmp_path):
+    result, events = _interact("chip-order", tmp_path, chip_order="end")
+    assert events[0]["payload"] == {"key": "end", "direction": "desc"}
+    assert _chip_order(result) == layout.chip_order(_first_task(), "end")
+    assert _chip_order(result) != _countries()
+    drawn = figures.task_figure(_first_task())
+    assert [t.y for t in result.figure.data] == [t.y for t in drawn.data]
+    assert result.figure.layout.to_plotly_json() == drawn.layout.to_plotly_json()
+
+
+@pytest.mark.parametrize(("key", "year"), [("start", 2000), ("end", 2024)])
+def test_the_chip_orders_run_highest_first_in_their_year(key, year):
+    task = _first_task()
+    rows = runtime_data.load_rows()
+    value = {}
+    for entity in _countries():
+        series = runtime_data.series(entity, task.vaccine, rows)
+        value[entity] = next(r.coverage_pct for r in series if r.year == year)
+    ordered = layout.chip_order(task, key)
+    assert [value[e] for e in ordered] == sorted(value.values(), reverse=True)
+
+
+def test_unticking_a_region_hides_its_countries_and_the_chips_follow(tmp_path):
+    asia = layout.regions_on_chart(_first_task())["Asia"]
+    others = [r for r in layout.REGIONS if r != "Asia"]
+    result, events = _interact("regions", tmp_path, regions=others)
+    payload = events[0]["payload"]
+    assert payload["control"] == "region" and payload["action"] == "hide"
+    assert payload["value"] == [e for e in _countries() if e not in asia]
+    assert _ticked(result) == payload["value"]
+    assert result.regions == others
+    again = tmp_path / "again"
+    again.mkdir()
+    shown, events = _interact(
+        "regions", again, control_state=result.control, regions=list(layout.REGIONS)
+    )
+    assert [e["payload"]["action"] for e in events] == ["show"]
+    assert _ticked(shown) == _countries()
+
+
+def test_a_chip_unticks_its_region(tmp_path):
+    result, _events = _interact("chips", tmp_path, chips=[e for e in _countries() if e != "India"])
+    assert "Asia" not in result.regions and "Africa" in result.regions
+
+
+def test_a_region_untick_that_would_empty_the_chart_is_refused(tmp_path):
+    only_europe = _view(selected=["Ukraine"])
+    result, events = _interact("regions", tmp_path, control_state=only_europe, regions=[])
+    assert events == []
+    assert result.control["selected"] == ["Ukraine"]
+    assert result.regions == ["Europe"], "the box is ticked again"
+
+
+def test_b_t1_has_no_european_country_so_its_europe_box_is_disabled():
+    (b_t1,) = [t for t in tasks.for_form("B") if t.task_id == "T1"]
+    assert layout.regions_on_chart(b_t1)["Europe"] == []
+
+    def walk(node):
+        yield node
+        children = getattr(node, "children", None)
+        for child in children if isinstance(children, (list, tuple)) else [children]:
+            if child is not None and not isinstance(child, str):
+                yield from walk(child)
+
+    screen = layout.task_screen(b_t1, True, 1, 6)
+    (regions,) = [
+        node for node in walk(screen) if getattr(node, "id", None) == layout.control_id("regions")
+    ]
+    disabled = {o["value"]: o["disabled"] for o in regions.options}
+    assert disabled == {"Africa": False, "Asia": False, "Americas": False, "Europe": True}
+
+
+def test_show_turns_t1s_points_and_name_tags_off(tmp_path):
+    result, events = _interact("display", tmp_path, display=["points"])
+    assert events[0]["payload"] == {
+        "control": "display",
+        "value": ["points"],
+        "previous": ["points", "tags"],
+    }
+    tags = [a for a in result.figure.layout.annotations if (a.name or "").startswith(figures.TAG)]
+    assert tags and all(a.visible is False for a in tags)
+    bare, _events = _interact("display", tmp_path, control_state=result.control, display=[])
+    assert all(trace.mode == "lines" for trace in bare.figure.data)
+
+
+def test_reset_view_undoes_t1s_extra_controls(tmp_path):
+    changed = _view(order="end", yrange=[40, 100], display=["tags"])
+    result, events = _interact("reset", tmp_path, control_state=changed)
+    previous = events[0]["payload"]["previous"]
+    assert (previous["order"], previous["yrange"], previous["display"]) == (
+        "end",
+        [40, 100],
+        ["tags"],
+    )
+    assert result.coverage == [0, 100] and result.order == "alpha"
+    assert result.display == ["points", "tags"]
+    assert result.group is not no_update, "the chips go back to A-Z"
+    drawn = figures.task_figure(_first_task())
+    assert result.figure.layout.to_plotly_json() == drawn.layout.to_plotly_json()
+    assert all(trace.mode == "lines+markers" for trace in result.figure.data)
+
+
+@pytest.mark.parametrize(
+    ("triggered", "kwargs"),
+    [
+        ("coverage", {"coverage": [0, 100]}),
+        ("chip-order", {"chip_order": "alpha"}),
+        ("regions", {"regions": list(layout.REGIONS)}),
+        ("display", {"display": ["points", "tags"]}),
+    ],
+)
+def test_t1s_extra_controls_as_they_stand_log_nothing(tmp_path, triggered, kwargs):
+    """Dash fires each control's callback when the screen is built, with its starting value."""
+    result, events = _interact(triggered, tmp_path, **kwargs)
+    assert result == app.UNCHANGED and events == []
+
+
+@pytest.mark.parametrize(
+    ("triggered", "kwargs"),
+    [
+        ("coverage", {"coverage": [40, 100]}),
+        ("chip-order", {"chip_order": "end"}),
+        ("regions", {"regions": ["Africa"]}),
+        ("display", {"display": []}),
+        ("regions", {"regions": "Asia"}),
+        ("chip-order", {"chip_order": ["end"]}),
+    ],
+)
+def test_t6_and_malformed_values_take_no_extra_control(tmp_path, triggered, kwargs):
+    """T6, the other line chart, has none of T1's extra controls; and a value of the wrong type
+    (a string for a list, a list for a key) is no press on T1 either."""
+    result, events = _interact(triggered, tmp_path, state=_t6_state(), **kwargs)
+    assert result == app.UNCHANGED and events == []
+    if isinstance(kwargs.get("regions"), str) or isinstance(kwargs.get("chip_order"), list):
+        result, events = _interact(triggered, tmp_path, **kwargs)
+        assert result == app.UNCHANGED and events == []
+
+
+@pytest.mark.parametrize(
+    "stored",
+    [{"order": "bogus"}, {"yrange": [100, 0]}, {"yrange": "40"}, {"display": "points"}],
+)
+def test_a_malformed_stored_extra_control_falls_back(tmp_path, stored):
+    result, _events = _interact("chips", tmp_path, control_state=_view(**stored), chips=["China"])
+    assert result.control["order"] == "alpha"
+    assert result.control["yrange"] is None
+    assert result.control["display"] == ["points", "tags"]
 
 
 def test_a_zoom_is_kept_in_the_view_and_every_redraw_keeps_it(tmp_path):
@@ -1670,9 +1861,9 @@ def test_a_control_for_another_chart_type_changes_nothing(tmp_path, chart):
         assert events == [], triggered
 
 
-def test_the_chips_never_change_order(tmp_path):
-    """Only the line chart's View reordered them, and it went on 2026-10-12, so the Countries
-    group is built once per screen and never rebuilt (layout.chip_group)."""
+def test_only_t1s_order_moves_the_chips_and_then_the_group_is_rebuilt(tmp_path):
+    """Dash 4 loses a chip's flag-and-name label when it moves between row checklists, so a
+    reorder rebuilds the Countries group (layout.chip_group). Only T1's Order reorders them."""
     for triggered, kwargs in (
         ("chips", {"chips": _countries()[:2]}),
         ("years", {"years": [2005, 2015]}),
@@ -1680,7 +1871,13 @@ def test_the_chips_never_change_order(tmp_path):
     ):
         result, _events = _interact(triggered, tmp_path, **kwargs)
         assert _chip_order(result) == _countries(), triggered
-    assert "group" not in app.ControlResult._fields
+        assert result.group is no_update, triggered
+    reordered, _events = _interact("chip-order", tmp_path, chip_order="end")
+    rebuilt = [node for node in reordered.group if getattr(node, "id", None)]
+    assert [node.id for node in rebuilt] == [layout.control_id("chips", i) for i in (0, 1)]
+    assert [o["value"] for node in rebuilt for o in node.options] == _chip_order(reordered)
+    outputs = app.view_outputs(reordered, [1, 2, 0, 1, 0, 0, 1, 1, 1, 1])
+    assert outputs[1] == [reordered.group] and outputs[2] == [no_update, no_update]
 
 
 def test_the_practice_has_one_row_of_chips():
@@ -1693,23 +1890,34 @@ def test_every_pattern_output_is_a_list_one_entry_per_component(tmp_path):
     """Dash 4 refuses a bare `no_update` for an `ALL` output with a server error. Every such
     output is a list as long as the components it matched, whatever the result."""
     changed, _events = _interact("chips", tmp_path, chips=_countries()[:2])
-    reset, _events = _interact("reset", tmp_path, control_state=_view(xrange=[2004.75, 2015.25]))
+    reset, _events = _interact(
+        "reset", tmp_path, control_state=_view(xrange=[2004.75, 2015.25], order="end")
+    )
     keyed, _events = _interact_on("map", "key-band", tmp_path, key_band=_key_index("map", 0))
     for result in (changed, changed._replace(chips=no_update), reset, keyed):
-        for counts in ([2, 0, 1, 0, 0], [1, 1, 0, 0, 0], [2, 0, 0, 7, 7], [0, 0, 0, 0, 0]):
+        for counts in (
+            [1, 2, 0, 1, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [1, 2, 0, 0, 7, 7, 0, 0, 0, 0],
+            [0] * 10,
+        ):
             outputs = app.view_outputs(result, counts)
-            assert len(outputs) == 8
-            for output, count in zip(outputs[1:6], counts, strict=True):
+            assert len(outputs) == 13
+            for output, count in zip(outputs[1:11], counts, strict=True):
                 assert isinstance(output, list) and len(output) == count
-    assert app.view_outputs(reset, [2, 0, 1, 0, 0])[3] == [[2000, 2024]]
-    pressed = app.view_outputs(keyed, [3, 0, 0, 7, 7])
+    t1 = app.view_outputs(reset, [1, 2, 0, 1, 0, 0, 1, 1, 1, 1])
+    assert t1[4] == [[2000, 2024]], "Years set back"
+    assert t1[7] == [[0, 100]] and t1[8] == ["alpha"] and t1[10] == [["points", "tags"]]
+    assert t1[9] == [list(layout.REGIONS)], "every region ticked again"
+    pressed = app.view_outputs(keyed, [1, 3, 0, 0, 7, 7, 0, 0, 0, 0])
     index = _key_index("map", 0)
-    assert pressed[4][index] == "ui-key is-on" and pressed[5][index] == "true"
-    assert pressed[5].count("true") == 1
+    assert pressed[5][index] == "ui-key is-on" and pressed[6][index] == "true"
+    assert pressed[6].count("true") == 1
 
 
 def test_every_sort_key_has_a_direction():
     keys = {value for _legend, options in layout.SORTS.values() for value, _label in options}
+    keys |= {value for value, _label in layout.CHIP_ORDERS}
     assert keys == set(app._SORT_DIRECTION)
 
 

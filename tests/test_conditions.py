@@ -164,7 +164,20 @@ def test_only_the_interactive_condition_renders_controls(rows, task):
     live = _controls(layout.task_screen(task, True, 1, 6))
     # `control-state` is not here: it is a store in the app's base layout, present in both.
     assert not static, "the static condition must have no controls"
-    assert live == CONTROL_IDS[task.chart], "each chart type gets its own controls and no other's"
+    expected = CONTROL_IDS[task.chart]
+    if tasks.has_extra_controls(task):
+        # T1's four more, the overload (visual-spec.md section 7.7).
+        expected = expected | T1_EXTRA_IDS
+    assert live == expected, "each chart type gets its own controls and no other's"
+
+
+T1_EXTRA_IDS = {"coverage", "chip-order", "regions", "display"}
+
+
+def test_only_t1_is_overloaded_and_in_both_forms():
+    """The extra controls are T1's alone: not the practice, not T6, the other line chart."""
+    overloaded = [(t.form, t.task_id) for t in ALL_TASKS if tasks.has_extra_controls(t)]
+    assert overloaded == [("A", "T1"), ("B", "T1")]
 
 
 # --- Year-over-year change, carried in the hover layer --------------------------------------------
@@ -610,6 +623,63 @@ def test_world_is_never_faded_and_cannot_be_focused(rows):
         figures.focus_line(figure, "World")
     with pytest.raises(FigureError):
         figures.focus_line(_chart("bar", rows), "India")
+
+
+def test_a_coverage_zoom_places_every_tag_where_its_line_ends(rows):
+    """T1's Coverage (visual-spec.md section 7.7): the y axis narrows, and every leader starts
+    where its line now ends on the plot, or at the plot's edge when the end lies outside."""
+    task = tasks.FORM_A[0]
+    figure = figures.set_y_range(figures.task_figure(task, rows), (40, 100))
+    assert list(figure.layout.yaxis.range) == [40, 100]
+    margin = figure.layout.margin.to_plotly_json()
+    height = config.CHART_HEIGHT - margin["t"] - margin["b"]
+    top, bottom = margin["t"], config.CHART_HEIGHT - margin["b"]
+    # The leader is one curve: a move, then "C" at once. The pill's path draws lines first.
+    leaders = {
+        s.name: s.path
+        for s in figure.layout.shapes
+        if (s.name or "").startswith(figures.TAG)
+        and s.type == "path"
+        and s.path.split()[1].startswith("C")
+    }
+    for trace in figure.data:
+        value = [y for y in trace.y if y is not None][-1]
+        expected = bottom - (value - 40) / 60 * height
+        expected = min(max(expected, top), bottom)
+        start_paper = float(leaders[f"{figures.TAG}{trace.name}"].split()[0].split(",")[1])
+        start_px = config.CHART_HEIGHT - margin["b"] - start_paper * height
+        assert abs(start_px - expected) < 0.01, trace.name
+    assert len(figures.tag_centres(figure)) == len(task.entities), "one tag per line, no more"
+
+
+def test_no_coverage_zoom_is_the_chart_as_drawn_and_a_bad_one_is_refused(rows):
+    task = tasks.FORM_A[0]
+    drawn = figures.task_figure(task, rows).to_plotly_json()
+    assert figures.set_y_range(figures.task_figure(task, rows), None).to_plotly_json() == drawn
+    for bad in ((50, 50), (60, 40), (-10, 50), (0, 120)):
+        with pytest.raises(FigureError):
+            figures.set_y_range(figures.task_figure(task, rows), bad)
+    with pytest.raises(FigureError):
+        figures.set_y_range(_chart("bar", rows), (40, 100))
+
+
+def test_show_turns_off_points_or_tags_and_both_on_is_the_chart_as_drawn(rows):
+    task = tasks.FORM_A[0]
+    drawn = figures.task_figure(task, rows).to_plotly_json()
+    both = figures.set_display(figures.task_figure(task, rows), ["points", "tags"])
+    assert both.to_plotly_json() == drawn
+    no_points = figures.set_display(figures.task_figure(task, rows), ["tags"])
+    assert all(t.mode == "lines" for t in no_points.data)
+    no_tags = figures.set_display(figures.task_figure(task, rows), ["points"])
+    tagged = [
+        item
+        for item in (*no_tags.layout.shapes, *no_tags.layout.annotations)
+        if (item.name or "").startswith(figures.TAG)
+    ]
+    assert tagged and all(item.visible is False for item in tagged)
+    assert all(t.mode == "lines+markers" for t in no_tags.data)
+    with pytest.raises(FigureError):
+        figures.set_display(figures.task_figure(task, rows), ["labels"])
 
 
 @pytest.mark.parametrize(

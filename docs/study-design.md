@@ -140,7 +140,7 @@ read is costly and that affordance lowers the cost:
 
 | Item | Chart | Affordance | The static cost it lowers |
 |---|---|---|---|
-| T1 | line, 8 countries | setting lines aside: a click on a line fades the rest, the chips hide them | tracing two lines through a tangle of crossings |
+| T1 | line, 8 countries | setting lines aside: a click on a line fades the rest, the chips hide them; and, since 2026-10-12, four controls it does not need (the overload) | tracing two lines through a tangle of crossings |
 | T2 | bar | sorting the bars | ranking bars that stand in no order |
 | T3 | scatter | hovering a dot; hiding dots with the chips; highlighting a change band from the key | judging, by eye, which of the dots sharing the darkest change colour sits furthest above the diagonal |
 | T4 | heatmap | hovering a cell; sorting rows by lowest (A) or highest (B) cell; highlighting a band from the key | telling dark (A) or light (B) bands apart against the key |
@@ -242,6 +242,22 @@ by two coders, blind to condition (§7).
 
 The difficulty is finding and following two lines through the tangle, then describing them. A
 click on a line fades the rest, and the chips hide them; either cuts through it.
+
+> **Overloaded with controls, 2026-10-12** (pilot session 1). The supervisor asked for at least one
+> case where interactivity might be too much: a chart carrying more controls than it needs.
+> Otherwise the study tests only cases chosen for interactivity to help. Eduardo chose to overload T1,
+> in both forms, rather than add an item. In the interactive condition T1 carries, besides every line
+> chart's controls, four of its own (`docs/visual-spec.md` §7.7):
+> - **Coverage**, zooming the y axis;
+> - **Order**, reordering the chips by name or by coverage in 2000 or 2024;
+> - **Regions**, showing or hiding a region's lines at once;
+> - **Show**, turning off the points or the name tags.
+>
+> None answers the question, and none ranks the countries by change, which would. They are
+> **unannounced**: neither the instructions nor the hint row name them (Eduardo), so whether they
+> are found is part of what T1 shows. T1 stays in RQ1, and is also reported on its own (§7). On T1
+> the design cannot separate "interactivity helps" from "too many controls hurt", since there is no
+> T1 with the standard controls alone. The write-up says so.
 
 > **Replaced 2026-09-27.** T1 asked for the year of one line's lowest point (Ukraine in A, Myanmar in
 > B). Every other item asked for a value or a relation, and none asked for an interpretation of a
@@ -563,7 +579,7 @@ works here as on every line chart.
 than quietly unbalancing the forms. Six known differences go to the pilot (§10):
 - **T2 and T4 ask different questions in each form (2026-10-12).** A-T2 the third-highest bar, B-T2
   the sixth-highest, its key on the 5-point floor above; A-T4 the lowest cell, B-T4 the highest,
-  which no row sort brings to the top (T2, T4 above). The pairs are matched in chart and rule, not
+  which no row sort brought to the top until Highest cell first, the same day (T2, T4 above). The pairs are matched in chart and rule, not
   in question, so a form difference on either item is expected rather than a surprise.
 - T1's falling line: Ukraine's collapse (80 points, 2008–2016) is far larger and faster than
   Brazil's decline (31 points over a decade). A-T1 is probably the easier form.
@@ -911,6 +927,17 @@ both.
 credit — the key band, or the band containing the key year ± 1 (§4). Reported alongside the strict
 score, never in place of it, and never folded into the T1–T6 proportion.
 
+*Secondary, pre-registered for the overloaded item (T1, 2026-10-12):* T1 reported on its own,
+alongside RQ1, which still counts it:
+- per condition, proportion correct and median time on T1;
+- in the interactive condition, how many participants used any of T1's four extra controls (§4),
+  and how often each.
+
+Descriptive only. On T1 the overload and interactivity cannot be told apart, so a T1 difference
+between conditions is reported as the effect of the overloaded interface, never of interactivity
+alone. Set beside the other items, it shows how an overloaded chart fared against charts carrying
+only the controls their questions use.
+
 T2–T6 are scored by exact string equality against a key **derived from `data/deploy/coverage.csv`**
 by the rule each item states. T1 has no key to derive, but its acceptance rule is checked on the same
 data in the same place, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
@@ -928,7 +955,7 @@ as per-chart-type effects.
 
 | Item | Affordance | Logged? |
 |---|---|---|
-| T1 | focusing a line (also chips, the Years slider, zoom) | yes — `line_isolate`, `filter_change` (`chips`, `show-all`), `view_change` (`chart`, `years`), `view_reset`. `filter_change` from `legend` stays in the vocabulary but cannot occur since the legend went (2026-10-11); `sort_change` from View cannot since View went (2026-10-12). |
+| T1 | focusing a line (also chips, the Years slider, zoom); and the four extra controls, which it does not need | yes — `line_isolate`, `filter_change` (`chips`, `show-all`, `region`), `view_change` (`chart`, `years`, `coverage`, `display`), `sort_change` (`alpha`, `start`, `end`: the chip Order), `view_reset`. `filter_change` from `legend` stays in the vocabulary but cannot occur since the legend went (2026-10-11); View's `sort_change` keys cannot since View went (2026-10-12). |
 | T2 | sorting the bars | yes — `sort_change` |
 | T3 | hover; hiding dots with the chips; highlighting a band from the key | the chips and the key — `filter_change` (`chips`, `key`) |
 | T4 | hover; sorting rows by lowest (A) or highest (B) cell; highlighting a band from the key | the sort and the key — `sort_change`, `filter_change` (`key`) |
@@ -1052,6 +1079,11 @@ reorder, and says "focus on it" for a click on a line, which now fades the other
 hiding them (`docs/visual-spec.md` §7.3, §7.6). It is the one place zoom is named (Eduardo,
 after the first pilot session). The fourth bullet names the key's colours in place of the map's
 "Below [n] %" box, which went the same day (§7.4 of the visual spec).
+
+**The one exception: T1's extra controls (2026-10-12) are named nowhere,** neither here nor in
+T1's hint row (Eduardo). This section otherwise names every control, so that no participant meets
+one unawares. T1's four are the overload (§4, T1), and whether they are found is part of what it
+shows. They appear in both forms' interactive T1 alike, whichever half that falls in.
 
 First half, both versions. Heading "Instructions", then "Practice Question":
 
@@ -1333,6 +1365,18 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 ## 10. Open items
 
 - IRB approval, and the final consent wording.
+- **Changes since HSRRC's approval, to put to HSRRC before the study (2026-10-12).** The approved
+  request form describes the features generically ("filtering, sorting, line isolation") and the
+  logging as "clicks, filter and sort selections". Every new control stays inside that, and no item
+  was added or removed. These change what the approved questionnaire (item 18) shows:
+  - the practice question's wording (2019–2021);
+  - the controls: a Years slider in place of View; a click on a line fades the others; the heatmap
+    sort's options; the key's colours in place of the map's highlight box; and T1's four extra,
+    unannounced controls;
+  - the instructions: the full-screen request, "explain each one on its own", and the line and key
+    bullets.
+
+  `irb/questionnaire.pdf` is re-exported once the changes are final.
 - **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
   on form A, the interactive half on form B, 36 minutes in all. It is pilot data, kept out of the
   study: the participant knows the study's hypotheses, and the instrument changed after the
@@ -1352,7 +1396,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - the line chart's hint names hover;
   - the first instructions screen asks for a full-screen window;
   - the second half asks for each answer to be explained on its own;
-  - a researcher script (§8).
+  - a researcher script (§8);
+  - T1 overloaded with four unannounced controls it does not need, the counterpoint the supervisor
+    asked for (§4, §7).
   
   Not changed:
   - no background music;
@@ -1387,6 +1433,11 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **Whether the interactive affordances are found at all.** Especially the chips, the heatmap's
     row sort, the key's colours and the bar sort, which the practice does not teach. The logs show
     all four (§7).
+  - **T1's overload (2026-10-12).**
+    - Do interactive participants find the four extra controls, and use them?
+    - Does T1 take longer interactively than statically, by more than T6, the other line chart?
+    - The second controls strip pushes T1's Submit past the fold on common windows, a 1440 × 900
+      laptop included (measured, below). Split T1's interactive times at 932 px.
   - **Whether T4 and T5 sit at ceiling in the interactive condition.** On T4 the row sort answers it
     in one click in both forms: Lowest cell first in A and, since 2026-10-12, Highest cell first in
     B. So does a click on the key cell's band. On T5, two clicks on the key's darkest bands leave the
@@ -1409,7 +1460,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   the interactive T1 card past the fold too. With the Years slider in place of View, its split is
   826 px (790 in compact mode, so it scrolls at 1366 × 768 but not at 1440 × 790). Split T1's
   interactive times the same way. **With the map's highlight box gone, T5's split is 807 px** (771
-  in compact mode at 1440 wide, 800 at 1366 × 768).
+  in compact mode at 1440 wide, 800 at 1366 × 768). **With T1's four extra controls (§4, T1),
+  T1's split is 932 px (896 in compact mode)**: its interactive card is the only one that runs
+  past a 1440 × 900 window, by 32 px.
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4

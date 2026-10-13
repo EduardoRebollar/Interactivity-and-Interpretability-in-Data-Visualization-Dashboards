@@ -74,6 +74,14 @@ def test_both_versions_of_the_instructions_are_in_it(page):
     assert "<b>static</b>" in page and "<b>interactive</b>" in page
 
 
+def test_t1s_extra_controls_are_shown_to_the_irb(page):
+    """Participants are not told of them (visual-spec.md section 7.7), but the IRB sees them: the
+    interactive line example is A-T1, with its second strip and a note saying what it is."""
+    assert html.escape(_script().T1_EXTRA_NOTE) in page
+    for label in ("Coverage", "Order", "Regions", "Highest in 2024", "Name tags"):
+        assert label in page, label
+
+
 def test_every_chart_is_drawn(page):
     """Practice, twelve items, and one interactive example per chart type: eighteen charts."""
     assert page.count('class="chart"') == 1 + 12 + 5

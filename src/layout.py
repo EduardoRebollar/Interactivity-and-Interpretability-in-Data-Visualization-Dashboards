@@ -247,10 +247,10 @@ def chip_group(task, order: list[str], shown: list[str]) -> list:
     """The Countries group's contents: its legend, then a checklist for each row of chips. An empty
     row is left out.
 
-    The chips never change order, since the line chart's View went (2026-10-12), so the group is
-    built once per screen. While View could reorder them it was rebuilt instead: Dash 4 loses track
-    of a flag-and-name label that moves to another row's checklist, and the renderer throws
-    (headless Chrome, 2026-09-26).
+    Only T1's Order control reorders the chips (2026-10-12; the line chart's View did until then).
+    Then the group is built afresh rather than sent new options: Dash 4 loses track of a
+    flag-and-name label that moves to another row's checklist, and the renderer throws (headless
+    Chrome, 2026-09-26).
     """
     justify = "space-between" if task.chart == "line" else "flex-start"
     return [
@@ -387,6 +387,144 @@ def key_buttons(task) -> html.Div:
     return html.Div(buttons, className="ui-keys")
 
 
+# --- T1's extra controls: the overload (visual-spec.md section 7.7, 2026-10-12) -----------------
+
+# Order: the chips by name, or by coverage in the first or the last year, highest first. Never by
+# change since 2000, which would rank the countries by how far they rose or fell: part of T1's
+# rubric, and T1 stays in RQ1.
+CHIP_ORDERS = (("alpha", "A–Z"), ("start", "Highest in 2000"), ("end", "Highest in 2024"))
+COVERAGE_START = list(config.Y_RANGE)
+# Regions: every one in both forms, a region with no country on the chart disabled (Europe on
+# B-T1), so both forms carry the same four. Only T1's countries need one.
+REGIONS = ("Africa", "Asia", "Americas", "Europe")
+REGION_OF = {
+    "Brazil": "Americas",
+    "China": "Asia",
+    "Ethiopia": "Africa",
+    "India": "Asia",
+    "Indonesia": "Asia",
+    "Nepal": "Asia",
+    "Nigeria": "Africa",
+    "Pakistan": "Asia",
+    "Uganda": "Africa",
+    "Ukraine": "Europe",
+}
+DISPLAY_OPTIONS = (("points", "Points"), ("tags", "Name tags"))
+
+
+def chip_order(task, key: str) -> list[str]:
+    """T1's chips in the Order control's order: listed (A to Z), or by coverage in 2000 or in the
+    last year reported, highest first; a country with nothing to sort by last."""
+    from src import runtime_data
+
+    listed = filterable(list(task.entities))
+    if key == "alpha":
+        return listed
+    if key not in ("start", "end"):
+        raise ValueError(f"Unknown chip order {key!r}; expected one of {CHIP_ORDERS}")
+    rows = runtime_data.load_rows()
+    values = {}
+    for entity in listed:
+        reported = [r.coverage_pct for r in runtime_data.series(entity, task.vaccine, rows)]
+        if key == "start":
+            values[entity] = reported[0]
+        else:
+            values[entity] = next((v for v in reversed(reported) if v is not None), None)
+    return sorted(listed, key=lambda e: (values[e] is None, -(values[e] or 0), listed.index(e)))
+
+
+def regions_on_chart(task) -> dict[str, list[str]]:
+    """Each region's countries on this chart, in the chips' listed order; none for an absent
+    region."""
+    listed = filterable(list(task.entities))
+    return {region: [e for e in listed if REGION_OF.get(e) == region] for region in REGIONS}
+
+
+def regions_ticked(task, shown: list[str]) -> list[str]:
+    """The regions whose countries are all shown: the Regions checkboxes that are ticked."""
+    return [
+        region
+        for region, countries in regions_on_chart(task).items()
+        if countries and all(country in shown for country in countries)
+    ]
+
+
+def _extra_group(legend: str, control, grow: bool = False) -> html.Div:
+    """One of T1's extra groups. Regions grows into the strip's leftover width and wraps its boxes,
+    as the Countries group does, so the strip never runs past the chart column."""
+    return html.Div(
+        [html.Span(legend, className="ui-legend"), control],
+        className=f"ui-group ui-group--{'grow' if grow else 'fit'}",
+        role="group",
+        **{"aria-label": legend},
+    )
+
+
+def extra_controls(task) -> html.Div:
+    """T1's four extra controls, in a second strip (visual-spec.md section 7.7): Coverage, Order,
+    Regions and Show. Interactive condition only, and named nowhere: they are the overload, and
+    whether they are found is part of what T1 shows (docs/study-design.md section 4)."""
+    on_chart = regions_on_chart(task)
+    listed = filterable(list(task.entities))
+    return html.Div(
+        [
+            _extra_group(
+                "Coverage",
+                html.Div(
+                    dcc.RangeSlider(
+                        id=control_id("coverage"),
+                        min=config.Y_RANGE[0],
+                        max=config.Y_RANGE[1],
+                        step=5,
+                        value=list(COVERAGE_START),
+                        marks={v: f"{v}%" for v in range(0, 101, 25)},
+                        allowCross=False,
+                        pushable=10,
+                        updatemode="mouseup",
+                        allow_direct_input=False,
+                        tooltip={"placement": "top", "always_visible": False},
+                    ),
+                    className="ui-coverage",
+                ),
+            ),
+            _extra_group(
+                "Order",
+                dcc.RadioItems(
+                    id=control_id("chip-order"),
+                    options=[{"label": label, "value": value} for value, label in CHIP_ORDERS],
+                    value=CHIP_ORDERS[0][0],
+                    className="seg ui-seg ui-seg--stack",
+                ),
+            ),
+            _extra_group(
+                "Regions",
+                dcc.Checklist(
+                    id=control_id("regions"),
+                    options=[
+                        {"label": region, "value": region, "disabled": not on_chart[region]}
+                        for region in REGIONS
+                    ],
+                    value=regions_ticked(task, listed),
+                    className="chips ui-chips",
+                    labelClassName="chip-name",
+                ),
+                grow=True,
+            ),
+            _extra_group(
+                "Show",
+                dcc.Checklist(
+                    id=control_id("display"),
+                    options=[{"label": label, "value": value} for value, label in DISPLAY_OPTIONS],
+                    value=[value for value, _label in DISPLAY_OPTIONS],
+                    className="chips ui-chips",
+                    labelClassName="chip-name",
+                ),
+            ),
+        ],
+        className="ui-controls",
+    )
+
+
 def task_controls(task) -> html.Div:
     """The controls strip under the chart. Rendered ONLY in the interactive condition.
 
@@ -394,13 +532,14 @@ def task_controls(task) -> html.Div:
     condition sees; what differs is that it can be worked with rather than only looked at. Every
     chart has the country chips (visual-spec.md section 7.3); the bar and heatmap add a sort, and
     the line chart the Years slider and Show all. The scatter's, heatmap's and map's keys take
-    clicks too (`key_buttons`, over the chart). Each opens on the chart as first drawn: every
+    clicks too (`key_buttons`, over the chart). T1 adds a second strip of four more controls it
+    does not need (`extra_controls`, the overload). Each opens on the chart as first drawn: every
     country shown, in the listed order, nothing faded, 2000-2024. The view they change lives in the
     app's `control-state` store, keyed to the task, so no task inherits another's.
 
-    Every control is a native form element or, for Years, Dash's slider, whose handles take the
-    arrow keys, so keyboard navigation comes for free (the accessibility baseline in CLAUDE.md). Do
-    not reimplement any of them as styled divs.
+    Every control is a native form element or, for Years and Coverage, Dash's slider, whose handles
+    take the arrow keys, so keyboard navigation comes for free (the accessibility baseline in
+    CLAUDE.md). Do not reimplement any of them as styled divs.
     """
     order = filterable(list(task.entities))
     groups = [_chips(task, order, order)]
@@ -408,7 +547,10 @@ def task_controls(task) -> html.Div:
         groups.append(_sort_group(task))
     if task.chart == "line":
         groups.append(_years_group())
-    return html.Div(groups, className="ui-controls")
+    strip = html.Div(groups, className="ui-controls")
+    if tasks.has_extra_controls(task):
+        return html.Div([strip, extra_controls(task)], className="ui-controls-pair")
+    return strip
 
 
 def hint_row(task) -> html.Div:

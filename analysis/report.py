@@ -137,6 +137,33 @@ def about_you(participants: pd.DataFrame, included: set[str]) -> pd.DataFrame:
     return frame.set_index(["question", "answer"])
 
 
+def overload(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Secondary, pre-registered: T1, the overloaded item, on its own (section 7, 2026-10-12).
+
+    Per condition: proportion correct (over coded answers) and median time on T1; and, from the
+    interactive condition's log, how many participants used each of T1's four extra controls and
+    how often. Descriptive only: on T1 the overload and interactivity cannot be told apart, so a
+    difference between conditions is the overloaded interface's, never interactivity's alone.
+    T1 still counts in RQ1.
+    """
+    from analysis.reshape import EXTRA_COLUMNS
+
+    t1 = tasks[tasks["use_accuracy"] & tasks["task_id"].isin(study_tasks.EXTRA_CONTROL_ITEMS)]
+    # Over coded answers only: an uncoded T1 is neither right nor wrong yet.
+    t1 = t1.assign(correct=t1["correct"].astype("Float64"))
+    table = t1.groupby("condition").agg(n=("task_id", "count"), correct=("correct", "mean"))
+    timed = tasks[tasks["use_timing"] & tasks["task_id"].isin(study_tasks.EXTRA_CONTROL_ITEMS)]
+    table["median_ms"] = timed.groupby("condition")["duration_ms"].median()
+    counts = {"used_any": t1[t1[EXTRA_COLUMNS].sum(axis=1) > 0]}
+    counts.update({f"{column}_users": t1[t1[column] > 0] for column in EXTRA_COLUMNS})
+    for name, rows in counts.items():
+        table[name] = rows.groupby("condition")["participant_id"].nunique()
+        table[name] = table[name].fillna(0).astype(int)
+    for column in EXTRA_COLUMNS:
+        table[f"{column}_total"] = t1.groupby("condition")[column].sum().astype(int)
+    return table
+
+
 def crossing_adjacent(tasks: pd.DataFrame) -> pd.DataFrame:
     """Secondary: the crossing item (T6) under strict and adjacent-band scoring (section 7)."""
     crossings = tasks[tasks["use_accuracy"] & (tasks["kind"] == "crossing")]
@@ -190,6 +217,7 @@ def render(
         ("Accuracy, RQ1 primary: proportion correct per participant, T1-T6", accuracy(tasks)),
         ("Accuracy, secondary: answered items only, skips excluded", accuracy_answered(tasks)),
         ("Crossing item, secondary: strict vs adjacent-band credit", crossing_adjacent(tasks)),
+        ("T1, the overloaded item, secondary: accuracy, time, extra controls", overload(tasks)),
         ("Skipped answers and justifications", skips(tasks)),
         ("Accuracy and time by item and chart type (descriptive, not tested)", by_item(tasks)),
         ("Mental effort, RQ3: Paas 1-9, with a7 beside it", mental_effort(conditions, included)),

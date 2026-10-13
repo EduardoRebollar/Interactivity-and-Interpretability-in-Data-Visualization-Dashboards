@@ -415,6 +415,16 @@ def is_written(task: Task) -> bool:
     return task.kind == "describe"
 
 
+# The items overloaded with controls they do not need (2026-10-12, docs/study-design.md section 4,
+# T1): in the interactive condition they carry four more, unannounced (visual-spec.md section 7.7).
+EXTRA_CONTROL_ITEMS = ("T1",)
+
+
+def has_extra_controls(task: Task) -> bool:
+    """True for a scored item overloaded with extra controls: T1, in both forms."""
+    return task.form in FORMS and task.task_id in EXTRA_CONTROL_ITEMS
+
+
 JUSTIFICATION_PROMPT = "In one sentence, describe why you chose your answer."
 
 # The first step's heading on a task screen, by item kind. The design handoff's wording.

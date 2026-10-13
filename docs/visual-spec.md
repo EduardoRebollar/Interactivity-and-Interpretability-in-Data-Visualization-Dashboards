@@ -500,6 +500,7 @@ The **only** permitted difference. Everything in §1–6 is identical across con
 | Hover tooltips | none | every chart: the value; on lines, also the change from the year before |
 | Country chips | none | every chart: show or hide each country drawn |
 | Line charts | image | Years (a range slider), Show all, focus a line, zoom and pan the x axis |
+| T1 only | image | four more, unannounced: Coverage, Order, Regions, Show (§7.7) |
 | Bar chart | image | Sort: A–Z, High → low, Low → high |
 | Scatter | image | the key's colours: a click highlights the dots in that band |
 | Heatmap | image | Sort rows: A–Z, Lowest cell first, Highest cell first; the key's colours highlight cells |
@@ -521,7 +522,9 @@ rendered *under* the chart. Nothing in this table adds, removes or restyles a ma
 `build_figure` takes no `interactive` argument, and `tests/test_conditions.py` proves both conditions
 open on byte-identical figure JSON for every task. Once a control is used, it changes the chart only
 through a view function that hides, reorders or fades what is already there (`figures.set_visible`,
-`sort_bars` and their 2026-09-25 companions for rows, fades and the highlight). Two labels name an
+`sort_bars` and their 2026-09-25 companions for rows, fades and the highlight). T1's extra controls
+(§7.7) also zoom the coverage axis, re-placing the name tags for it, and turn off the points or the
+name tags. They too act only on what is drawn, and only after a participant uses them. Two labels name an
 order and follow it when a sort changes it: the bar chart's "Countries in alphabetical order" and the
 heatmap's "A–Z" (§7.2). At rest each reads as in both conditions.
 
@@ -749,6 +752,49 @@ On every line chart, in the controls strip, where View stood. *Show all* sits un
   makes the zoom a visible control under the chart, as every other control is, and its handles take
   the arrow keys. Eduardo's decision; zoom is named once in the instructions and nowhere else.
 
+### 7.7 Question 1's extra controls (defined 2026-10-12)
+
+T1, in both forms and in the interactive condition only, carries four controls no other chart has.
+They sit in a second controls strip, under the first and above the hint row.
+- **Why.** The supervisor asked, after the first pilot session, for at least one case where
+  interactivity might be too much: a chart overloaded with controls it does not need. Eduardo chose
+  to overload T1 rather than add an item (`docs/study-design.md` §4, T1).
+- **Unannounced.** Neither the instructions nor T1's hint row name them (Eduardo). T1 is the only
+  chart with controls the participant is not told about. Finding them is part of what T1 shows.
+
+The four, each with its log event:
+- **Coverage**, a range slider from 0 to 100% in steps of 5, its handles at least 10 points apart.
+  - It zooms the y axis to the chosen range, so lines look steeper or flatter.
+  - The name tags are placed again for the new scale: in the same order, spread as at rest, each
+    leader starting from where its line ends inside the plot (clamped to the plot's edge when the end
+    lies outside the range).
+  - 0–100% is the chart as drawn. It commits when a handle is let go; no number boxes.
+  - Logged as `view_change`, `control` `coverage`, `value` and `previous` `[low, high]`.
+- **Order**, three radios: `A–Z` (the listed order), `Highest in 2000`, `Highest in 2024`.
+  - They reorder the chips, never the lines, as View did (§7.2).
+  - Not an order by change since 2000, which would rank the countries by how far they rose or fell.
+    That hands over part of T1's rubric, and T1 stays in RQ1.
+  - Logged as `sort_change`, `key` `alpha`, `start` or `end`, with direction `none`, `desc`, `desc`.
+- **Regions**, four checkboxes: Africa, Asia, Americas, Europe.
+  - A region is ticked while all its countries are shown. Unticking hides them all; ticking shows
+    them all. The chips follow, and a region follows its chips.
+  - A region with no country on the chart is disabled (Europe on B-T1), so both forms carry the
+    same four.
+  - The last countries on the chart cannot be hidden this way.
+  - Logged as `filter_change`, `control` `region`, `action` `hide` or `show`, `value` and
+    `previous` the countries shown.
+- **Show**, two checkboxes, both ticked: `Points` (the dots on each line, the end dot with them)
+  and `Name tags` (tags and leaders).
+  - Unticking one hides it until it is ticked again.
+  - Logged as `view_change`, `control` `display`, `value` and `previous` the parts shown.
+
+All four follow the rules of the others:
+- **What they change:** they act only on the chart as drawn, and never reach data the static chart
+  lacks.
+- **Order of drawing:** coverage zoom, then hiding, then focusing, then the Show toggles.
+- **Reset:** Reset view undoes them, and every task starts fresh.
+- **Keyboard:** slider handles take the arrow keys; radios and checkboxes are native.
+
 ## 8. Accessibility
 
 - Contrast floors above are enforced by `tests/test_palette.py`, so an inaccessible palette fails the
@@ -757,7 +803,8 @@ On every line chart, in the controls strip, where View stood. *Show all* sits un
 - All controls are keyboard-operable (CLAUDE.md baseline):
   - the chips are native checkboxes, and Sort and Sort rows are native radios;
   - Show all, Reset view and the key's colours (2026-10-12) are native buttons;
-  - Years' handles take the arrow keys (2026-10-12).
+  - Years' handles take the arrow keys (2026-10-12), as do T1's Coverage handles; T1's Order
+    radios and Regions and Show checkboxes are native (§7.7).
 - Focus rings appear only for keyboard focus (`:focus-visible`), as a 2 px white gap and a 2 px
   accent ring (§10).
 - Hover and focusing a line are mouse-only. So were zoom and pan until 2026-10-12; Years now reaches
@@ -910,6 +957,15 @@ strip and the hint row under the chart (§7).
 
   The key's buttons sit over the chart and take no room. The scatter, heatmap and map hints, one
   sentence longer, stay on one line. Nothing else moved.
+
+  **T1's four extra controls (§7.7), later the same day,** take a second strip under the first,
+  and the interactive T1 card ends 106 px lower in both forms:
+  - 896 at 1440 × 790 and at 1366 × 768 (compact mode), 106 and 128 px past the window;
+  - 932 outside compact mode, so it runs past a 1440 × 900 window by 32 px, the only card that
+    does.
+
+  Its static card is unchanged, and nothing else moved (headless Chrome, both forms, against
+  the commit before it).
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

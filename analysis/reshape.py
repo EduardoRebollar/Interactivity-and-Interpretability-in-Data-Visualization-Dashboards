@@ -60,9 +60,14 @@ BASE_COLUMNS = [
 # under 862 px since its sixteen dots, 2026-10-11), and the static ones never do (study-design.md
 # section 10): these columns tell who scrolled.
 WINDOW_COLUMNS = ["window_width", "window_height"]
+# T1's four extra controls, the overload (study-design.md sections 4 and 7, 2026-10-12): how often
+# each was used on a task, for T1's pre-registered table. Zero on every other item, which has none.
+EXTRA_CONTROLS = ("coverage", "order", "regions", "display")
+EXTRA_COLUMNS = [f"n_extra_{name}" for name in EXTRA_CONTROLS]
 TASK_COLUMNS = [
     *BASE_COLUMNS,
     *[f"n_{name}" for name in INTERACTION_EVENTS],
+    *EXTRA_COLUMNS,
     *WINDOW_COLUMNS,
 ]
 
@@ -207,6 +212,13 @@ def tidy_tasks(
             for session, task in zip(tasks_frame["session_id"], tasks_frame["task_id"], strict=True)
         ]
 
+    extras = _extra_counts(events)
+    for control, column in zip(EXTRA_CONTROLS, EXTRA_COLUMNS, strict=True):
+        tasks_frame[column] = [
+            extras.get((session, task, control), 0)
+            for session, task in zip(tasks_frame["session_id"], tasks_frame["task_id"], strict=True)
+        ]
+
     windows = _window_sizes(events)
     for column, key in zip(WINDOW_COLUMNS, ("width", "height"), strict=True):
         tasks_frame[column] = pd.array(
@@ -241,6 +253,41 @@ def _interaction_counts(events: pd.DataFrame) -> dict[tuple[str, str, str], int]
         subset["session_id"].astype(str), subset["task_id"], subset["event"], strict=True
     ):
         counts[(session, task, name)] = counts.get((session, task, name), 0) + 1
+    return counts
+
+
+def _extra_control(event: str, payload: dict[str, Any], task_id: str) -> str | None:
+    """Which of T1's extra controls an event came from (src/logging.py, v18), or None.
+
+    The chip Order logs `sort_change`, and T1's chart, a line chart, has no other sort; Coverage
+    and Show log `view_change`, told apart from a zoom by their `control`; Regions logs
+    `filter_change` with `control` `region`."""
+    if task_id not in tasks.EXTRA_CONTROL_ITEMS:
+        return None
+    control = payload.get("control")
+    if event == "view_change" and control in ("coverage", "display"):
+        return control
+    if event == "sort_change":
+        return "order"
+    if event == "filter_change" and control == "region":
+        return "regions"
+    return None
+
+
+def _extra_counts(events: pd.DataFrame) -> dict[tuple[str, str, str], int]:
+    """(session, task, extra control) -> how many times it was used."""
+    subset = events[events["event"].isin(("view_change", "sort_change", "filter_change"))]
+    counts: dict[tuple[str, str, str], int] = {}
+    for session, task, name, payload in zip(
+        subset["session_id"].astype(str),
+        subset["task_id"],
+        subset["event"],
+        subset["payload"],
+        strict=True,
+    ):
+        control = _extra_control(name, payload or {}, task)
+        if control is not None:
+            counts[(session, task, control)] = counts.get((session, task, control), 0) + 1
     return counts
 
 

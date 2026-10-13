@@ -586,6 +586,10 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
             study_report.crossing_adjacent(tasks_frame),
         ),
         (
+            "T1, the overloaded item, secondary: accuracy, time, extra controls",
+            study_report.overload(tasks_frame),
+        ),
+        (
             "Accuracy and time by item and chart type (descriptive, not tested)",
             study_report.by_item(tasks_frame),
         ),

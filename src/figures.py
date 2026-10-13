@@ -475,6 +475,57 @@ def focus_line(figure: go.Figure, entity: str | None) -> go.Figure:
     return figure
 
 
+def set_y_range(figure: go.Figure, y_range: Sequence[float] | None) -> go.Figure:
+    """Zoom a line chart's coverage axis, for T1's Coverage control (visual-spec.md section 7.7).
+
+    The name tags are placed again for the new scale, so each leader still starts where its line
+    ends: same order, spread as at rest, a line ending outside the range led from the plot's edge.
+    None leaves the chart as drawn. Run it before `set_visible` and `focus_line`, which act on the
+    tags it places.
+    """
+    if y_range is None:
+        return figure
+    if chart_type_of(figure) != "line":
+        raise FigureError("Only a line chart's coverage axis zooms")
+    low, high = y_range
+    if not config.Y_RANGE[0] <= low < high <= config.Y_RANGE[1]:
+        raise FigureError(f"A coverage range must lie within 0-100, low below high: {y_range}")
+    figure.update_yaxes(range=[low, high])
+    figure.layout.shapes = [s for s in figure.layout.shapes if not (s.name or "").startswith(TAG)]
+    figure.layout.annotations = [
+        a for a in figure.layout.annotations if not (a.name or "").startswith(TAG)
+    ]
+    _add_tags(figure, (low, high))
+    return figure
+
+
+DISPLAY_PARTS = ("points", "tags")
+
+
+def set_display(figure: go.Figure, shown: Sequence[str]) -> go.Figure:
+    """Turn a line chart's points or name tags off, for T1's Show control (visual-spec.md 7.7).
+
+    `shown` lists the parts left on, of DISPLAY_PARTS; both is the chart as drawn. Points off draws
+    each line without its dots, the end dot with them. Tags off hides every tag and leader. Run it
+    last, so what it hides stays hidden whatever the other controls did.
+    """
+    unknown = set(shown) - set(DISPLAY_PARTS)
+    if unknown:
+        raise FigureError(f"Not a part of the chart: {sorted(unknown)}")
+    if set(shown) >= set(DISPLAY_PARTS):
+        return figure
+    if chart_type_of(figure) != "line":
+        raise FigureError("Only a line chart's points and tags turn off")
+    if "points" not in shown:
+        for trace in figure.data:
+            trace.mode = "lines"
+    if "tags" not in shown:
+        for item in (*figure.layout.shapes, *figure.layout.annotations):
+            if (item.name or "").startswith(TAG):
+                item.visible = False
+    return figure
+
+
 def year_window(first: int, last: int) -> list[float] | None:
     """The line chart's x range showing `first` to `last`, with the chart's own margin either side
     (the Years slider, visual-spec.md section 7.6). None for 2000-2024: the chart as first drawn."""
@@ -877,7 +928,7 @@ def _line(
         anchor="right",
         name="axis-title",
     )
-    _add_tags(figure, vaccine, source)
+    _add_tags(figure)
     return figure
 
 
@@ -960,10 +1011,12 @@ def _x_px(year: float) -> float:
     return _LINE_MARGIN["l"] + (year - low) / (high - low) * width
 
 
-def _y_px(value: float) -> float:
-    """A coverage value's height on the line chart, in the card's pixels from the top."""
+def _y_px(value: float, y_range: Sequence[float] = config.Y_RANGE) -> float:
+    """A coverage value's height on the line chart, in the card's pixels from the top, for the
+    coverage axis's range (0-100 as drawn; T1's Coverage control narrows it, visual-spec.md 7.7)."""
+    low, high = y_range
     height = config.CHART_HEIGHT - _LINE_MARGIN["t"] - _LINE_MARGIN["b"]
-    return config.CHART_HEIGHT - _LINE_MARGIN["b"] - value / config.Y_RANGE[1] * height
+    return config.CHART_HEIGHT - _LINE_MARGIN["b"] - (value - low) / (high - low) * height
 
 
 def tag_centres(figure: go.Figure) -> dict[str, float]:
@@ -978,31 +1031,32 @@ def tag_centres(figure: go.Figure) -> dict[str, float]:
     }
 
 
-def _add_tags(figure: go.Figure, vaccine: str, source: tuple[Row, ...]) -> None:
+def _add_tags(figure: go.Figure, y_range: Sequence[float] = config.Y_RANGE) -> None:
     """A name tag at the end of every line, joined to it by a leader (visual-spec.md section 6).
 
     Tags keep the order of their lines' last reported values and are spread so their centres are
     at least TAG_GAP px apart, between 10 px above the plot's top and 4 px above its bottom: the
     handoff's `spread()`, which is `spread_labels`. Computed here, in `build_figure`, so both
-    conditions get the same tags.
+    conditions get the same tags. Each line's end is read from its own trace.
 
     Everything a tag draws -- leader, pill, dot and name -- is named `tag:<entity>`, so hiding a
     line takes its tag with it (`set_visible`). All of it is in paper coordinates: Plotly does not
     draw an annotation whose data coordinate lies outside its axis range (China's label on A-T1,
     2026-09-23), and a tag stays put when the x axis is zoomed.
+
+    `y_range` is the coverage axis's range: 0-100 as drawn, narrower when T1's Coverage control
+    zooms it (`set_y_range`). A line ending outside it has its leader start at the plot's edge.
     """
     margin = _LINE_MARGIN
+    top, bottom = margin["t"], config.CHART_HEIGHT - margin["b"]
     ends = []
     for trace in figure.data:
-        reported = [
-            r
-            for r in runtime_data.series(trace.name, vaccine, source)
-            if r.coverage_pct is not None
-        ]
+        reported = [(x, y) for x, y in zip(trace.x, trace.y, strict=True) if y is not None]
         if reported:
-            ends.append((_y_px(reported[-1].coverage_pct), _x_px(reported[-1].year), trace))
+            year, value = reported[-1]
+            y_end = min(max(_y_px(value, y_range), top), bottom)
+            ends.append((y_end, _x_px(year), trace))
     ends.sort(key=lambda end: end[0])
-    top, bottom = margin["t"], config.CHART_HEIGHT - margin["b"]
     centres = spread_labels([y for y, _x, _t in ends], top - 10, bottom - 4, config.TAG_GAP)
 
     def point(x: float, y: float) -> str:

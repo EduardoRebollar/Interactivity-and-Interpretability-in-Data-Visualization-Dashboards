@@ -279,9 +279,14 @@
    place of Dash's blue-grey (the track is an edge, 3.81:1 on the card), and its handles take the
    page's keyboard focus ring. */
 .ui-years { width: 240px; }
-.ui-years .dash-slider-track { background: var(--c-line); }
-.ui-years .dash-slider-mark { color: var(--c-muted); font-size: var(--fs-12); }
-.ui-years .dash-slider-thumb:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.ui-coverage { width: 180px; }
+.ui-years .dash-slider-track, .ui-coverage .dash-slider-track { background: var(--c-line); }
+.ui-years .dash-slider-mark, .ui-coverage .dash-slider-mark { color: var(--c-muted); font-size: var(--fs-12); }
+.ui-years .dash-slider-thumb:focus-visible, .ui-coverage .dash-slider-thumb:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* T1's extra controls (docs/visual-spec.md section 7.7): a second strip under the first, the
+   Coverage slider styled as Years. The pair keeps the gap the strip keeps from the hint row. */
+.ui-controls-pair { display: flex; flex-direction: column; gap: var(--s-3); }
 
 /* The key's colours on the scatter, heatmap and map take clicks (docs/visual-spec.md section 7.4).
    A layer of buttons over the chart, in the interactive condition only: `.ui-chart` is exactly the

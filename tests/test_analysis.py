@@ -304,6 +304,67 @@ def test_interaction_counts_attach_to_the_task_they_happened_on(tmp_path):
     assert counts.sum() == 2
 
 
+def _with_t1_extras(records: list[dict]) -> tuple[list[dict], dict]:
+    """The session's records with T1's extra controls used in the interactive half: Coverage
+    twice, Order, Regions, Show; and controls that are NOT extras, on T1 and on T2."""
+    t1, t2 = (
+        next(
+            r
+            for r in records
+            if r["event"] == "answer_submit"
+            and r["task_id"] == task_id
+            and r["condition"] == "interactive"
+        )
+        for task_id in ("T1", "T2")
+    )
+    added = [
+        {**t1, "event": "view_change", "payload": {"control": "coverage"}},
+        {**t1, "event": "view_change", "payload": {"control": "coverage"}},
+        {**t1, "event": "sort_change", "payload": {"key": "end", "direction": "desc"}},
+        {**t1, "event": "filter_change", "payload": {"control": "region"}},
+        {**t1, "event": "view_change", "payload": {"control": "display"}},
+        # Not extras: a chip, a zoom, the Years slider on T1, and the bar sort on T2.
+        {**t1, "event": "filter_change", "payload": {"control": "chips"}},
+        {**t1, "event": "view_change", "payload": {"control": "chart"}},
+        {**t1, "event": "view_change", "payload": {"control": "years"}},
+        {**t2, "event": "sort_change", "payload": {"key": "desc", "direction": "desc"}},
+    ]
+    return records + added, t1
+
+
+def test_t1s_extra_controls_are_counted_on_t1_alone(tmp_path):
+    """T1's pre-registered table needs each extra control's use (study-design.md section 7)."""
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    records, t1 = _with_t1_extras(study_logging.read_all(tmp_path))
+    tasks_frame = reshape.tidy_tasks(reshape.events_frame(records))
+    row = tasks_frame.set_index(["session_id", "task_id"]).loc[(str(t1["session_id"]), "T1")]
+    assert {c: int(row[c]) for c in reshape.EXTRA_COLUMNS} == {
+        "n_extra_coverage": 2,
+        "n_extra_order": 1,
+        "n_extra_regions": 1,
+        "n_extra_display": 1,
+    }
+    others = tasks_frame[tasks_frame["task_id"] != "T1"]
+    assert (others[reshape.EXTRA_COLUMNS] == 0).all().all(), "the bar sort on T2 is no extra"
+
+
+def test_the_overload_table_reports_t1_per_condition(tmp_path):
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    records, _t1 = _with_t1_extras(study_logging.read_all(tmp_path))
+    events = reshape.events_frame(records)
+    tasks_frame = reshape.tidy_tasks(events, rubric=coders(events))
+    conditions = reshape.tidy_conditions(events, tasks_frame)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    table = study_report.overload(scored)
+    assert set(table.index) == {"static", "interactive"}
+    assert table.loc["interactive", "used_any"] == 1
+    assert table.loc["static", "used_any"] == 0
+    assert table.loc["interactive", "n_extra_coverage_total"] == 2
+    assert table.loc["interactive", "n_extra_order_users"] == 1
+    assert (table["n"] == 1).all(), "one T1 per condition"
+    assert "T1, the overloaded item" in study_report.render(scored, conditions, _excluded)
+
+
 def test_an_invalid_duration_reaches_the_tidy_frame_as_absent(tmp_path):
     participant = _participant_for("static", "A")
     run_session(tmp_path, participant, correct_answer, duration_ms=lambda f, t: 5000.0)
