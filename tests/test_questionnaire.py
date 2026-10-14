@@ -57,6 +57,13 @@ def test_every_survey_and_background_question_is_in_it(page):
         expected += [question.text, *question.options, *question.rows]
     for text in expected:
         assert html.escape(text) in page, text
+    # E2 and E3 are free text: the IRB sees their boxes (2026-10-13).
+    texts = [q for q in tasks.ABOUT_QUESTIONS if q.kind == "text"]
+    assert page.count('<textarea class="dash-textarea field pager-text"') == 1 + len(texts)
+
+
+def test_the_finished_screen_asks_participants_not_to_discuss_the_questions(page):
+    assert html.escape(layout.DONT_DISCUSS) in page
 
 
 def test_the_practice_complete_screen_is_in_it(page):

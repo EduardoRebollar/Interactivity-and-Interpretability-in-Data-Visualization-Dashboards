@@ -519,13 +519,15 @@ LIKERT_ITEMS: dict[str, str] = {
     "a9": "I felt rushed while answering the questions.",
 }
 
-# Asked after the INTERACTIVE condition only: the static condition has no controls to rate.
+# Asked after the INTERACTIVE condition only: the static condition has no controls to rate. b4
+# (2026-10-13) is the only record of hover, which is not logged.
 CONTROLS_SECTION = "Chart controls"
 CONTROLS_HELP = "About the controls on the charts."
 CONTROLS_ITEMS: dict[str, str] = {
     "b1": "I could figure out how to use the chart controls without instructions.",
     "b2": "The chart controls helped me answer the questions.",
     "b3": "The chart controls were easy to use.",
+    "b4": "I hovered over the charts to see exact values.",
 }
 
 # Asked after the SECOND condition only, once both versions have been used.
@@ -546,8 +548,9 @@ MAX_TEXT = 2000
 
 # --- About you: docs/study-design.md section 6.2 ------------------------------------------------
 #
-# Asked once, at the END, one question per page. The handoff's wording (`auBuild()`), verbatim. Not
-# all broad categories: age in years and the two "Other" text boxes are on the IRB list in
+# Asked once, at the END, one question per page. A1-D2 in the handoff's wording (`auBuild()`),
+# verbatim; E1-E3 Eduardo's (2026-10-13), checks on the session rather than background. Not all
+# broad categories: age in years and the two "Other" text boxes are on the IRB list in
 # study-design.md section 10.
 
 PREFER_NOT = "Prefer not to say"
@@ -559,10 +562,11 @@ AGE_RANGE = (18, 99)
 class Question:
     """One About-you question.
 
-    `kind` is "choice" (one of `options`), "age" (a whole number in `AGE_RANGE`, or `PREFER_NOT`)
-    or "matrix" (one of `options` for each of `rows`). A choice whose options include `OTHER` has a
-    text box beside it, logged under `other_key`. `prefer_not_inline` marks the one question whose
-    "Prefer not to say" is an ordinary option rather than set apart beneath the others.
+    `kind` is "choice" (one of `options`), "age" (a whole number in `AGE_RANGE`, or `PREFER_NOT`),
+    "matrix" (one of `options` for each of `rows`) or "text" (free text up to `MAX_TEXT`, no
+    options). A choice whose options include `OTHER` has a text box beside it, logged under
+    `other_key`. `prefer_not_inline` marks the one question whose "Prefer not to say" is an
+    ordinary option rather than set apart beneath the others.
     """
 
     key: str
@@ -714,7 +718,40 @@ ABOUT_SECTIONS: tuple[tuple[str, tuple[Question, ...]], ...] = (
             ),
         ),
     ),
+    (
+        # 2026-10-13, study-design.md section 6.2. E1 sets up section 7's word-of-mouth sensitivity
+        # analysis; E2 and E3 enter no analysis. No "Prefer not to say": E1 identifies no one, and
+        # every question may be skipped.
+        "Before you finish",
+        (
+            Question(
+                "heard_details",
+                "E1",
+                "Before today, had you heard any details about this study from someone who took "
+                "part in it?",
+                ("Yes", "No", "Not sure"),
+            ),
+            Question(
+                "confusing",
+                "E2",
+                "Was anything in the questions or instructions confusing? If so, what?",
+                kind="text",
+                help="Optional",
+            ),
+            Question(
+                "feedback",
+                "E3",
+                "Anything else you'd like to tell the researcher or give feedback on?",
+                kind="text",
+                help="Optional",
+            ),
+        ),
+    ),
 )
+
+# The E1 answer section 7's sensitivity analysis leaves out.
+HEARD_KEY = "heard_details"
+HEARD_YES = "Yes"
 
 ABOUT_QUESTIONS: tuple[Question, ...] = tuple(q for _, qs in ABOUT_SECTIONS for q in qs)
 

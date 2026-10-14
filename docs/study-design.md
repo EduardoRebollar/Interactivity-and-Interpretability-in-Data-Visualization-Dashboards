@@ -1017,6 +1017,7 @@ agree, 6 Agree, 7 Strongly agree.
 | b1 | Chart controls | I could figure out how to use the chart controls without instructions. | after the interactive condition only |
 | b2 | | The chart controls helped me answer the questions. | |
 | b3 | | The chart controls were easy to use. | |
+| b4 | | I hovered over the charts to see exact values. | |
 | c1 | Comparing the two versions | Which charts helped you answer more accurately? | after the second condition only |
 | c2 | | Which charts did you prefer using? | |
 | c3 | | What made one set of charts easier or harder to use than the other? | |
@@ -1024,9 +1025,14 @@ agree, 6 Agree, 7 Strongly agree.
 c1 and c2 offer "The charts with controls", "The charts without controls" and "No difference". c3
 is free text, marked "Optional". Paas sits on the first page of "Your experience", before a1.
 
+**b4 added 2026-10-13** (schema v22). Hover is the affordance T3, T4 and T6 are built on, and hovers
+are not logged (§7), so without it a null interactive effect on those items could not be told
+apart from no one hovering. It is a self-report, on the same scale as b1–b3, and names hover
+(Eduardo's wording). Asked after the interactive condition only: the static charts take no hover.
+
 Logged, once per condition, as `survey_rating` with `{"scale": "likert7", "a1": …, …, "a9": …}`;
 after the interactive condition also `controls_rating` with `{"scale": "likert7", "b1": …, "b2": …,
-"b3": …}`; and after the second condition `comparison` with `{"c1": …, "c2": …, "c3": …}`. Every item
+"b3": …, "b4": …}`; and after the second condition `comparison` with `{"c1": …, "c2": …, "c3": …}`. Every item
 may be skipped, behind the same confirmation popup as a task (§5); a skipped rating is `null`. The
 popup comes when Next leaves a page unanswered, once per page, and at Continue for the last page
 only. Nothing is logged until Continue, so a participant can go back and change any answer.
@@ -1037,11 +1043,11 @@ two of them but reworded, so the two are not comparable.
 ### 6.2 About you
 
 **Redesigned 2026-09-25**, replacing the four broad-category items of 2026-09-21. Asked once, at the
-**end**, after the second survey. One question per page, with a rail of four sections: Session
-setup, Background, Experience with data visualization, Topic familiarity. Introduced as "A few
-questions about your setup and background." Every item may be skipped, behind the confirmation
-popup, and most also offer "Prefer not to say". The wording is the handoff's (`auBuild()` in
-`Study UI Screens.dc.html`), verbatim. An age that is not a whole number from 18 to 99 is refused on
+**end**, after the second survey. One question per page, with a rail of five sections: Session
+setup, Background, Experience with data visualization, Topic familiarity, Before you finish.
+Introduced as "A few questions about your setup and background." Every item may be skipped, behind
+the confirmation popup, and most also offer "Prefer not to say". The wording of A1–D2 is the
+handoff's (`auBuild()` in `Study UI Screens.dc.html`), verbatim; E1–E3 are Eduardo's (2026-10-13). An age that is not a whole number from 18 to 99 is refused on
 its own page, when Next is pressed: "Please enter your age as a whole number from 18 to 99, or tick
 Prefer not to say." (the server refuses it too). Typing in the box beside "Other" chooses "Other",
 so text typed there is never dropped for want of a ticked option.
@@ -1058,6 +1064,25 @@ so text typed there is never dropped for want of a ticked option.
 | `tools` | C4 | How familiar are you with each of these tools? | For each of Tableau; Plotly or Plotly Dash; Microsoft Excel or Google Sheets charts; Power BI; Our World in Data charts: Never heard of it; Heard of it, never used; Used a few times; Use regularly; Prefer not to say |
 | `topic_familiarity` | D1 | Before today, how familiar were you with data on childhood vaccination rates around the world? | 1 — Not at all familiar; 2 — Slightly familiar; 3 — Somewhat familiar; 4 — Very familiar; 5 — Extremely familiar; Prefer not to say |
 | `health_background` | D2 | Have you studied or worked in public health, medicine, nursing, or epidemiology? | Yes; No; Prefer not to say |
+| `heard_details` | E1 | Before today, had you heard any details about this study from someone who took part in it? | Yes; No; Not sure |
+| `confusing` | E2 | Was anything in the questions or instructions confusing? If so, what? *(Optional)* | Free text |
+| `feedback` | E3 | Anything else you'd like to tell the researcher or give feedback on? *(Optional)* | Free text |
+
+**Before you finish (E1–E3), added 2026-10-13** (schema v22). They check the session, not the
+participant's background:
+
+- **E1** catches word of mouth. The sample comes from one campus over several weeks, and every
+  participant on a form sees the same items, so someone told about one beforehand has an advantage
+  nothing in the log shows. A Yes sets up §7's sensitivity analysis. E1 offers no "Prefer not to
+  say": it identifies no one, and a skip is always possible.
+- **E2 and E3** are where a participant can report a control that did not respond, or a question
+  they misread. Since no second pilot was run (§10), they are the study's only channel for that.
+  They are not an outcome and enter no analysis: read after each session to catch a problem early,
+  and paraphrased, never quoted, in any write-up, like the text beside "Other". Each is capped at
+  `tasks.MAX_TEXT` characters, like c3. A blank one is a skip, confirmed like any other.
+
+The finished screen also asks participants not to discuss the questions (§8). That prevents what E1
+can only detect.
 
 **These are not all broad categories.** Request form 17, as revised 2026-09-26, promises that the
 answers are kept under the participant ID only, never with a name, and that the text typed beside
@@ -1071,7 +1096,10 @@ Logged as a `demographics` event, once per participant, in the **second** condit
 after that session's `session_end`. The session is closed at its survey as before, so a participant
 who stops at About you still leaves two complete sessions (§7's `incomplete_session`), and one who
 stops earlier leaves no demographics. `tools` is an object from tool name to answer; `age` is an
-integer or "Prefer not to say"; any value may be null (skipped).
+integer or "Prefer not to say"; `confusing` and `feedback` are the text as typed, trimmed; any value
+may be null (skipped). E1–E3 travel in the same event as A1–D2 because they are asked on the same
+screen and sent by the same Continue: the event is the About-you screen's, not only its background
+questions'.
 
 ## 7. Scoring
 
@@ -1123,6 +1151,12 @@ between conditions is reported as the effect of the overloaded interface, never 
 alone. Set beside the other items, it shows how an overloaded chart fared against charts carrying
 only the controls their questions use.
 
+*Sensitivity, pre-registered for word of mouth (E1, 2026-10-13):* the RQ1 primary recomputed
+without every participant who answered E1 "Yes" (§6.2), reported beside the primary, never in its
+place. "Not sure", a skip, and no About-you record at all stay in; the report counts each answer,
+so a reader can see how many the rule removed and how many it could not judge. It is a robustness
+check, not an exclusion: no other analysis drops these participants.
+
 T2–T6 are scored by exact string equality against a key **derived from `data/deploy/coverage.csv`**
 by the rule each item states. T1 has no key to derive, but its acceptance rule is checked on the same
 data in the same place, and cross-checked against the tables in §4 (`analysis/keys.py`). A derived key
@@ -1151,6 +1185,12 @@ For T3, T4 and T6, an interactive participant who answers correctly may or may n
 Analyses of affordance use are confined to T1, T2, T3's and T4's key, T4's sort, T5 and T6's line
 controls; for T3, T4 and T6 a correct interactive answer may rest on an unlogged hover, and the
 write-up says so.
+
+**b4 (2026-10-13)** is the only evidence of hover: each interactive participant's own rating of
+whether they hovered over the charts to see exact values (§6.1). It is a self-report,
+once per condition rather than per item, so it says whether someone hovered at all, never on which
+item. Reported descriptively with b1–b3, and beside the T3, T4 and T6 results; never tested, and
+never used to split or exclude participants.
 
 **Reasoning depth (RQ2).** Each justification coded on three binary features:
 
@@ -1182,7 +1222,7 @@ reported as such rather than as a number. At n ≥ 25 the double-coded sample is
 conventional, but thin, and the write-up should say so.
 
 **Cognitive load (RQ3).** Paas score per condition, 1–9. A skipped rating is missing for that
-participant × condition. The survey (§6.1) is reported descriptively: a1–a9 per condition, b1–b3
+participant × condition. The survey (§6.1) is reported descriptively: a1–a9 per condition, b1–b4
 for the interactive condition (the only one that asks them), and c1–c2 as a count of each answer
 (`analysis/report`). c3's free text is reported descriptively too; it is not part of the RQ2
 coding, which covers task justifications only. a7 (mental effort) is reported beside Paas, never in
@@ -1191,6 +1231,8 @@ its place.
 **About you (§6.2)** describes the sample, as counts of each answer and the median and range of
 age; it is not an outcome and enters no test. `analysis/report` prints every count, however small,
 for the researcher; a group of fewer than five is combined or withheld when it is written up (§6.2).
+E1 is counted like the rest and drives the sensitivity analysis above. For E2 and E3 the report
+gives only how many wrote something; the text is in `participants.csv`, for the researcher.
 
 **Time on task.** From the browser clock (`performance.now()`), never the server, so cold starts and
 network latency do not enter a dependent variable.
@@ -1447,9 +1489,11 @@ logged at the size Begin found. A value the browser did not send is logged null 
 Analysis carries it onto every task row as `window_width` and `window_height`.
 
 **Finished.** Heading "Finished! Thank you!": "Your responses have been successfully recorded. You
-can close this tab." and "If you change your mind, you can withdraw your responses within two weeks
-of today, without giving a reason. Email rebollar@oxy.edu and include your participant ID (your
-participant ID is {ID})."
+can close this tab.", "Please don't discuss the questions with anyone who may take part." and "If
+you change your mind, you can withdraw your responses within two weeks of today, without giving a
+reason. Email rebollar@oxy.edu and include your participant ID (your participant ID is {ID})." The
+middle sentence was added 2026-10-13, with E1 (§6.2): E1 can only detect word of mouth, and this
+asks for none.
 
 ## 9. Consent
 
@@ -1569,6 +1613,18 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   coverage from 2000 to 2024". The line charts now draw 1985–2024, and T6's wording changed (§4).
   Every question still asks about 2000 onward, and no item, control or logged field was added.
   `irb/questionnaire.pdf` is re-exported with the new charts and T6's wording.
+- **Four questions and a sentence added (2026-10-13): approved by HSRRC on 2026-10-13.** b4
+  after the interactive half (§6.1); E1–E3 at the end of About you (§6.2); and the
+  finished screen's request not to discuss the questions (§8). Unlike the changes above, these add
+  items to the approved questionnaire (request form item 18), which HSRRC's no-amendment answer
+  rested on not doing. Also for HSRRC:
+  - E2 and E3 are free text, and could carry identifying details. Request form 17 promises that
+    the text beside "Other" is never quoted; §6.2 extends that to E2 and E3, which the form does
+    not yet say.
+  - The consent form's Procedures names the background questions (age, field, experience with
+    charts) but not these. Whether it needs a sentence is HSRRC's call.
+  - Schema v22. No participant had been run when they were made, so nothing collected is split
+    by version: the first participant is still seq 14.
 - **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
   on form A, the interactive half on form B, 36 minutes in all. It is pilot data, kept out of the
   study: the participant knows the study's hypotheses, and the instrument changed after the

@@ -2,11 +2,12 @@
 
 Per condition: accuracy (the RQ1 primary outcome over T1-T6, as the mean of per-participant
 proportions, a skip scored incorrect), the pre-registered secondaries (skips excluded; adjacent-band
-credit on the crossing item), skip counts, accuracy item by item, Paas mental effort (RQ3) with a7
-beside it, the survey (a1-a9; b1-b3 after the interactive condition; the comparison c1-c3 after the
-second), and time on task. Plus the exclusion table section 7 requires, and About you, which
-describes the sample. Inferential tests are deliberately absent: they belong in the analysis
-notebook, run once, on the frames this package produces.
+credit on the crossing item) and sensitivity (without those who had heard about the study), skip
+counts, accuracy item by item, Paas mental effort (RQ3) with a7 beside it, the survey (a1-a9; b1-b4
+after the interactive condition; the comparison c1-c3 after the second), and time on task. Plus the
+exclusion table section 7 requires, and About you, which describes the sample. Inferential tests
+are deliberately absent: they belong in the analysis notebook, run once, on the frames this package
+produces.
 
 T1 is scored by rubric (section 7). A participant whose T1 is not yet coded has no RQ1 proportion
 for that condition, so the accuracy tables count only fully scored participants, and the report says
@@ -33,6 +34,33 @@ def accuracy(tasks: pd.DataFrame) -> pd.DataFrame:
     """Proportion correct over T1-T6 per participant per condition, summarised by condition."""
     usable = tasks[tasks["use_accuracy"]]
     return _per_participant(usable).groupby("condition").agg(["count", "mean", "std"])
+
+
+WORD_OF_MOUTH_TITLE = "Accuracy, sensitivity: RQ1 without participants who had heard (E1 Yes)"
+CONTROLS_TITLE = "Chart controls b1-b4 (1-7), interactive condition; b4 is hover"
+
+
+def word_of_mouth(tasks: pd.DataFrame, participants: pd.DataFrame | None) -> pd.DataFrame:
+    """Sensitivity, pre-registered (section 7, 2026-10-13): the RQ1 primary without every
+    participant who answered E1 "Yes", beside the primary itself, by condition.
+
+    "Not sure", a skip and no About-you record stay in. The two rows' counts differ by the
+    participants the rule took out; how many gave each answer is in the About-you table.
+    """
+    usable = tasks[tasks["use_accuracy"]]
+    heard: set[str] = set()
+    if participants is not None and study_tasks.HEARD_KEY in participants:
+        said_yes = participants[study_tasks.HEARD_KEY] == study_tasks.HEARD_YES
+        heard = set(participants.loc[said_yes, "participant_id"].astype(str))
+    kept = usable[~usable["participant_id"].astype(str).isin(heard)]
+    analyses = {"primary": usable, "without E1 Yes": kept}
+    return pd.concat(
+        {
+            name: _per_participant(rows).groupby("condition").agg(["count", "mean", "std"])
+            for name, rows in analyses.items()
+        },
+        names=["analysis"],
+    )
 
 
 def accuracy_answered(tasks: pd.DataFrame) -> pd.DataFrame:
@@ -86,7 +114,8 @@ def survey(conditions: pd.DataFrame, included: set[str]) -> pd.DataFrame:
 
 
 def controls(conditions: pd.DataFrame, included: set[str]) -> pd.DataFrame:
-    """b1-b3 (1-7), asked after the interactive condition only, descriptively."""
+    """b1-b4 (1-7), asked after the interactive condition only, descriptively. b4 is the only
+    record of hover (section 7)."""
     from analysis.reshape import CONTROLS_KEYS
 
     rated = _rated(conditions, included)
@@ -116,15 +145,23 @@ def comparison(conditions: pd.DataFrame, included: set[str]) -> pd.DataFrame:
 
 def about_you(participants: pd.DataFrame, included: set[str]) -> pd.DataFrame:
     """The sample, from About you (section 6.2): each answer's count, and the age in years as a
-    summary. The text beside "Other" is left to participants.csv."""
+    summary. The text beside "Other" is left to participants.csv, and so is E2's and E3's: for
+    those only how many wrote something is counted, so no typed text reaches the report."""
     from analysis.reshape import DEMOGRAPHIC_COLUMNS
 
     answered = participants[participants["participant_id"].astype(str).isin(included)]
+    written = {q.key for q in study_tasks.ABOUT_QUESTIONS if q.kind == "text"}
     rows = []
     for column in DEMOGRAPHIC_COLUMNS:
         if column.endswith("_other"):
             continue
         values = answered[column]
+        if column in written:
+            given = int(values.notna().sum())
+            read_it = "(written; read the text in participants.csv)"
+            rows.append({"question": column, "answer": read_it, "n": given})
+            rows.append({"question": column, "answer": "(skipped)", "n": len(values) - given})
+            continue
         if column == "age":
             years = pd.to_numeric(values, errors="coerce").dropna()
             if len(years):
@@ -216,13 +253,14 @@ def render(
         ("T1 written answers awaiting the rubric coders", uncoded(tasks)),
         ("Accuracy, RQ1 primary: proportion correct per participant, T1-T6", accuracy(tasks)),
         ("Accuracy, secondary: answered items only, skips excluded", accuracy_answered(tasks)),
+        (WORD_OF_MOUTH_TITLE, word_of_mouth(tasks, participants)),
         ("Crossing item, secondary: strict vs adjacent-band credit", crossing_adjacent(tasks)),
         ("T1, the overloaded item, secondary: accuracy, time, extra controls", overload(tasks)),
         ("Skipped answers and justifications", skips(tasks)),
         ("Accuracy and time by item and chart type (descriptive, not tested)", by_item(tasks)),
         ("Mental effort, RQ3: Paas 1-9, with a7 beside it", mental_effort(conditions, included)),
         ("Survey a1-a9 (1-7), descriptive", survey(conditions, included)),
-        ("Chart controls b1-b3 (1-7), interactive condition", controls(conditions, included)),
+        (CONTROLS_TITLE, controls(conditions, included)),
         ("Comparing the two versions, c1-c3, second condition", comparison(conditions, included)),
         ("Time on task (ms), timing-usable rows only", time_on_task(tasks)),
     ]

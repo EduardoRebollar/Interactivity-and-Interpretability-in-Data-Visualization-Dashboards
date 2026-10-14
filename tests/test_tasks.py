@@ -373,31 +373,47 @@ def test_the_justification_prompt_is_a_sentence_not_a_question():
 
 def test_the_survey_is_the_handoffs_three_sections():
     assert list(tasks.LIKERT_ITEMS) == [f"a{n}" for n in range(1, 10)]
-    assert list(tasks.CONTROLS_ITEMS) == ["b1", "b2", "b3"]
+    # b4, the self-report of hover, since 2026-10-13.
+    assert list(tasks.CONTROLS_ITEMS) == ["b1", "b2", "b3", "b4"]
+    assert "hovered" in tasks.CONTROLS_ITEMS["b4"]
     assert tasks.COMPARISON_KEYS == ("c1", "c2", "c3")
     assert tasks.LIKERT_POINTS == 7
     assert set(tasks.LIKERT_ANCHORS) == set(range(1, 8)), "every point is labelled"
     assert len(tasks.COMPARISON_OPTIONS) == 3
 
 
-def test_about_you_is_ten_questions_in_four_sections():
+def test_about_you_is_thirteen_questions_in_five_sections():
+    """The handoff's ten in four sections, then Before you finish (2026-10-13)."""
     assert [title for title, _ in tasks.ABOUT_SECTIONS] == [
         "Session setup",
         "Background",
         "Experience with data visualization",
         "Topic familiarity",
+        "Before you finish",
     ]
     codes = [q.code for q in tasks.ABOUT_QUESTIONS]
-    assert codes == ["A1", "B1", "B2", "B3", "C1", "C2", "C3", "C4", "D1", "D2"]
-    assert len({q.key for q in tasks.ABOUT_QUESTIONS}) == 10
+    assert codes == ["A1", "B1", "B2", "B3", "C1", "C2", "C3", "C4", "D1", "D2", "E1", "E2", "E3"]
+    assert len({q.key for q in tasks.ABOUT_QUESTIONS}) == 13
+
+
+def test_before_you_finish_is_e1_then_two_free_text_questions():
+    _title, (heard, confusing, feedback) = tasks.ABOUT_SECTIONS[-1]
+    assert (heard.key, heard.kind, heard.options) == (
+        tasks.HEARD_KEY,
+        "choice",
+        ("Yes", "No", "Not sure"),
+    )
+    assert tasks.HEARD_YES in heard.options
+    for question in (confusing, feedback):
+        assert question.kind == "text" and question.help == "Optional"
 
 
 @pytest.mark.parametrize("question", tasks.ABOUT_QUESTIONS, ids=lambda q: q.code)
 def test_each_about_you_question_is_well_formed(question):
     assert question.text.strip()
-    assert question.kind in ("choice", "age", "matrix")
-    if question.kind == "age":
-        assert question.options == ()
+    assert question.kind in ("choice", "age", "matrix", "text")
+    if question.kind in ("age", "text"):
+        assert question.options == () and question.other_key is None
         return
     assert len(set(question.options)) == len(question.options)
     if tasks.PREFER_NOT in question.options:
@@ -411,12 +427,13 @@ def test_each_about_you_question_is_well_formed(question):
         assert question.other_key is None
 
 
-def test_only_the_pointer_question_lacks_prefer_not_to_say():
-    """The handoff offers no "Prefer not to say" for the pointer device, which identifies no one.
-    Age offers it as a checkbox beside the number box, not as an option."""
+def test_only_the_pointer_and_heard_questions_lack_prefer_not_to_say():
+    """The handoff offers no "Prefer not to say" for the pointer device, which identifies no one,
+    and E1 offers none for the same reason. Age offers it as a checkbox beside the number box, not
+    as an option; a free-text question has no options at all."""
     lacking = [
         q.code
         for q in tasks.ABOUT_QUESTIONS
-        if q.kind != "age" and tasks.PREFER_NOT not in q.options
+        if q.kind not in ("age", "text") and tasks.PREFER_NOT not in q.options
     ]
-    assert lacking == ["A1"]
+    assert lacking == ["A1", "E1"]

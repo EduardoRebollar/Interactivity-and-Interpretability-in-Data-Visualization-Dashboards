@@ -179,16 +179,29 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 
 - The app logs interaction events (filter changes, legend/isolation clicks, sort actions), task
   timings, participant answers (skips recorded as `null` plus `skipped`), the post-condition survey
-  (Paas, a1–a9, b1–b3 after the interactive half, c1–c3 after the second), About you
-  (`demographics`, at the end), a `consent` event, and the browser window's size once
-  (`window_size`). Hovers are **not** logged (decided
-  2026-09-21).
+  (Paas, a1–a9, b1–b4 after the interactive half, c1–c3 after the second), About you
+  (`demographics`, at the end, with E1–E3 last), a `consent` event, and the browser window's size
+  once (`window_size`). Hovers are **not** logged (decided 2026-09-21); b4 asks about them.
 - **Names and signatures never enter the event log.** The signed consent record goes to its own
   `consent_records` table (or `data/consent/` locally), which has no participant ID so it cannot be
   joined to answers — IRB form items 15 and 17. `scripts/export_consents.py --purge` moves it to the
   Oxy Drive and out of Neon.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v22 (2026-10-13).** Four questions added (`study-design.md` §6.1, §6.2).
+- `controls_rating` gains b4, "I hovered over the charts to see exact values.", the only record
+  of hover.
+- `demographics` gains a fifth About-you section, Before you finish:
+  - `heard_details` (E1: Yes, No or Not sure), which drives §7's word-of-mouth sensitivity
+    analysis (`report.word_of_mouth`);
+  - `confusing` and `feedback` (E2, E3: free text up to `tasks.MAX_TEXT`), which the report counts
+    and never prints.
+- The finished screen asks participants not to discuss the questions (`layout.DONT_DISCUSS`).
+
+**Approved by HSRRC on 2026-10-13** (`study-design.md` §10): unlike the earlier changes, these
+add items to the approved questionnaire. No new event, table or column, so `init_db.py` needs no
+re-run. Nothing collected for the study, so no migration.
 
 **Schema v21 (2026-10-13).** Each T3 scatter draws twenty-one dots, not sixteen
 (`study-design.md` §4).
@@ -1076,6 +1089,19 @@ context cheap and the reports as long as they need to be.
   - 1470 tests pass. Schema v21.
   - From here, a change to an item, chart, control or logged field lands mid-study and splits the
     data by schema version, which analysis refuses to pool (`study-design.md` §10).
+- 2026-10-13 — **Four questions and a sentence added; approved by HSRRC the same day**
+  (uncommitted at time of writing). b4 (hover, self-reported) after the interactive half. About you gains a fifth section,
+  Before you finish: E1 heard details (Yes / No / Not sure), and E2 confusing and E3 feedback, both
+  free text. The finished screen asks participants not to discuss the questions. §7 pre-registers
+  a word-of-mouth sensitivity analysis on E1 "Yes". Schema v22. 1480 tests.
+  - Headless Chrome, both orders at 1440 × 790: b4 is page 14 of the interactive survey, the
+    rail shows five sections, a blank E3 asks to confirm, and the line is on the finished screen.
+    `controls_rating` and `demographics` logged as given (E2 trimmed, a blank E3 null), every
+    record v22, no console errors.
+  - `irb/questionnaire.pdf` re-exported (38 pages).
+  - The first participant is still seq 14. To check production after the push without using a
+    sequence number, ask the page callback to draw the survey, About you and finished screens
+    from a made-up session state (`/_dash-update-component`, `url.pathname`); it writes nothing.
 - **Now: data collection** (n ≥ 25), in person (request form 5B), with the researcher script in
   `study-design.md` §8.
   - After each session: `archive_consents.py` moves the signed form to the Drive and out of Neon.

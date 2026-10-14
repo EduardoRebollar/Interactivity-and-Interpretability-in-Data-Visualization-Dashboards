@@ -64,8 +64,14 @@ SURVEY = {
 WINDOW = {"width": 1280, "height": 720}
 
 
-def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5, window=WINDOW):
-    """Drive a complete session through app.step. `answer_for(form, task_id)` picks each answer."""
+ABOUT = {"age": 25, "role": "Graduate student"}
+
+
+def run_session(
+    log_dir, participant_id, answer_for, duration_ms=5000.0, load=5, window=WINDOW, about=ABOUT
+):
+    """Drive a complete session through app.step. `answer_for(form, task_id)` picks each answer;
+    `about` is what the About-you screen hands over."""
     session = log = None
 
     def click(trigger, **kwargs):
@@ -102,7 +108,7 @@ def run_session(log_dir, participant_id, answer_for, duration_ms=5000.0, load=5,
         click("survey-clock", survey={**SURVEY, "paas": load})
         if condition == 0:
             click("resume-button")
-    click("demographics-clock", demographics={"age": 25, "role": "Graduate student"})
+    click("demographics-clock", demographics=about)
     assert SessionState.from_dict(session).stage is Stage.COMPLETE
 
 
@@ -1063,11 +1069,60 @@ def test_the_report_puts_a7_beside_paas_and_describes_the_sample(tmp_path):
     effort = study_report.mental_effort(conditions, {_participant_for("static", "B")})
     assert list(effort.columns.get_level_values(0).unique()) == ["paas", "a7"]
     text = study_report.render(marked, conditions, found, participants)
-    for title in ("Chart controls b1-b3", "Comparing the two versions", "About you: the sample"):
+    for title in ("Chart controls b1-b4", "Comparing the two versions", "About you: the sample"):
         assert title in text
+    assert study_report.WORD_OF_MOUTH_TITLE in text
     counts = study_report.comparison(conditions, {_participant_for("static", "B")})
     assert counts.loc[("c1", "The charts with controls"), "n"] == 1
     assert counts.loc[("c2", "No difference"), "n"] == 1
     sample = study_report.about_you(participants, {_participant_for("static", "B")})
     assert sample.loc[("age", "median 25 (range 25-25)"), "n"] == 1
     assert sample.loc[("role", "Graduate student"), "n"] == 1
+
+
+def test_the_word_of_mouth_sensitivity_leaves_out_e1_yes_only(tmp_path):
+    """Section 7 (2026-10-13): the RQ1 primary again without those who answered E1 "Yes". "Not
+    sure" and no answer stay in, and the primary itself is untouched."""
+
+    def wrong_t6(form, task_id):
+        return wrong_answer(form, task_id) if task_id == "T6" else correct_answer(form, task_id)
+
+    heard = _participant_for("static", "A")
+    run_session(tmp_path, heard, correct_answer, about={"heard_details": "Yes"})
+    run_session(tmp_path, _participant_for("static", "B"), wrong_t6, about={"heard_details": "No"})
+    unsure = {"heard_details": "Not sure"}
+    run_session(tmp_path, _participant_for("interactive", "A"), wrong_t6, about=unsure)
+    run_session(tmp_path, _participant_for("interactive", "B"), wrong_t6, about={})
+    events, tasks_frame, conditions = _score(tmp_path)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    participants = reshape.tidy_participants(events)
+
+    table = study_report.word_of_mouth(scored, participants)
+    for condition in ("static", "interactive"):
+        primary = table.loc[("primary", condition)]
+        without = table.loc[("without E1 Yes", condition)]
+        assert primary["count"] == 4 and primary["mean"] == pytest.approx((1 + 3 * 5 / 6) / 4)
+        assert without["count"] == 3 and without["mean"] == pytest.approx(5 / 6)
+    assert study_report.accuracy(scored)["count"].tolist() == [4, 4], "the primary keeps everyone"
+    # No About-you records at all: the rule has no one to remove.
+    unchanged = study_report.word_of_mouth(scored, None)
+    assert unchanged.loc["primary"].equals(unchanged.loc["without E1 Yes"])
+    assert heard in set(participants.loc[participants["heard_details"] == "Yes", "participant_id"])
+
+
+def test_free_text_at_the_end_is_counted_never_printed(tmp_path):
+    """E2 and E3 are paraphrased, never quoted (section 6.2): the report counts who wrote one and
+    leaves the text to participants.csv."""
+    participant = _participant_for("interactive", "B")
+    typed = {"confusing": "The key on chart four puzzled me.", "feedback": None}
+    run_session(tmp_path, participant, correct_answer, about={**ABOUT, **typed})
+    events, tasks_frame, conditions = _score(tmp_path)
+    marked, found = exclusions.apply(tasks_frame, conditions)
+    participants = reshape.tidy_participants(events)
+    assert participants.loc[0, "confusing"] == typed["confusing"]
+    sample = study_report.about_you(participants, {participant})
+    written = "(written; read the text in participants.csv)"
+    assert sample.loc[("confusing", written), "n"] == 1
+    assert sample.loc[("feedback", written), "n"] == 0
+    assert sample.loc[("feedback", "(skipped)"), "n"] == 1
+    assert typed["confusing"] not in study_report.render(marked, conditions, found, participants)

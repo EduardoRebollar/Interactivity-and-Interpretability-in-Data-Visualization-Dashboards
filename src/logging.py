@@ -60,6 +60,13 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v22 (2026-10-13): four questions added (docs/study-design.md sections 6.1, 6.2).
+# - `controls_rating` gains b4, a self-report of hover, which is not logged.
+# - `demographics` gains `heard_details` (E1: Yes, No or Not sure), and `confusing` and `feedback`
+#   (E2, E3: free text, trimmed, up to tasks.MAX_TEXT characters), from a fifth About-you section.
+# - The finished screen asks participants not to discuss the questions.
+# No new event, table or column, so scripts/init_db.py needs no re-run.
+#
 # v21 (2026-10-13): each T3 scatter draws twenty-one dots, not sixteen (docs/study-design.md
 # section 4). A: Algeria, Eritrea, Guinea, Namibia and South Africa; B: Benin, Central African
 # Republic, Cote d'Ivoire, Gabon and Sudan. The scatter names the Central African Republic "CAR".
@@ -200,7 +207,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.
@@ -219,7 +226,8 @@ EVENTS: dict[str, tuple[str, ...]] = {
     # About you: once per participant, in the second condition's session after its session_end.
     # The keys of `tasks.DEMOGRAPHIC_KEYS` (docs/study-design.md section 6.2). Any value may be null
     # (skipped); `tools` is an object from tool name to answer, `age` an integer or "Prefer not to
-    # say", and the two `_other` keys the text typed beside "Other".
+    # say", the two `_other` keys the text typed beside "Other", and `confusing` and `feedback`
+    # free text (v22, with `heard_details`).
     "demographics": (
         "pointer",
         "pointer_other",
@@ -233,6 +241,9 @@ EVENTS: dict[str, tuple[str, ...]] = {
         "tools",
         "topic_familiarity",
         "health_background",
+        "heard_details",
+        "confusing",
+        "feedback",
     ),
     # Session lifecycle
     "session_start": ("interactive", "entities", "vaccines", "year_range"),
@@ -253,8 +264,8 @@ EVENTS: dict[str, tuple[str, ...]] = {
     "load_rating": ("scale", "value"),
     # The survey's 7-point items a1-a9, once per condition, after load_rating. Null if skipped.
     "survey_rating": ("scale", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9"),
-    # b1-b3, about the chart controls: after the INTERACTIVE condition only.
-    "controls_rating": ("scale", "b1", "b2", "b3"),
+    # b1-b4, about the chart controls: after the INTERACTIVE condition only. b4 since v22.
+    "controls_rating": ("scale", "b1", "b2", "b3", "b4"),
     # c1 and c2 (one of tasks.COMPARISON_OPTIONS) and c3 (free text): after the SECOND condition
     # only.
     "comparison": ("c1", "c2", "c3"),
@@ -831,7 +842,7 @@ class StudyLogger:
         return self._likert("survey_rating", ratings)
 
     def rate_controls(self, ratings: dict[str, int | None]) -> dict[str, Any]:
-        """Record b1-b3, about the chart controls. The interactive condition only: the static
+        """Record b1-b4, about the chart controls. The interactive condition only: the static
         condition has no controls, so a rating of them there could only be a mistake."""
         if not self.interactive:
             raise LogError("The chart controls are rated after the interactive condition only")

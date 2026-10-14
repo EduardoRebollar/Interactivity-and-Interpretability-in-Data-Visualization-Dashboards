@@ -53,6 +53,9 @@ DEMOGRAPHICS = {
     "read_charts": "About weekly",
     "tools/Tableau": "Used a few times",
     "tools/Power BI": "Never heard of it",
+    "heard_details": "No",
+    "confusing": "  The heatmap's key took me a moment.  ",
+    "feedback": "   ",
 }
 # ...and what the `demographics` event records from them.
 DEMOGRAPHICS_LOGGED = {
@@ -74,6 +77,10 @@ DEMOGRAPHICS_LOGGED = {
     },
     "topic_familiarity": None,
     "health_background": None,
+    "heard_details": "No",
+    # E2 and E3 are trimmed like c3, and a blank one is a skip.
+    "confusing": "The heatmap's key took me a moment.",
+    "feedback": None,
 }
 # Every survey field; `step` records only those the screen asks.
 SURVEY_KWARGS = {
@@ -2903,7 +2910,8 @@ def test_next_moves_on_and_confirms_a_blank_page_first():
     state = _pager_start(first_condition="interactive")
     answered = _pager(state, "next", survey={"paas": 5})
     assert answered["result"][0]["page"] == 1
-    assert answered["result"][8] == "Question 2 of 13"
+    # Paas, a1-a9 and b1-b4 after an interactive first half.
+    assert answered["result"][8] == "Question 2 of 14"
     assert not [c for c in answered["calls"] if c[0] == "confirm"]
     blank = _pager(state, "next", survey={"paas": None})
     assert blank["result"][0]["page"] == 1
@@ -2945,13 +2953,13 @@ def test_the_rail_reopens_a_finished_section_and_keeps_the_later_one_reachable()
     assert reopened[0]["page"] == 0 and reopened[0]["max"] == 11
     assert reopened[2] == ["pager-go pager-go--current", "pager-go pager-go--reached"]
     assert reopened[3] == [False, False]
-    assert reopened[5] == ["Question 1 of 10", "3 questions"]
+    assert reopened[5] == ["Question 1 of 10", "4 questions"]
 
 
 def test_the_last_page_puts_continue_in_place_of_next_and_hands_it_the_focus():
-    state = {**_pager_start(first_condition="interactive"), "page": 11, "max": 11}
-    run = _pager(state, "next", survey={"b2": 4})
-    assert run["result"][0]["page"] == 12
+    state = {**_pager_start(first_condition="interactive"), "page": 12, "max": 12}
+    run = _pager(state, "next", survey={"b3": 4})
+    assert run["result"][0]["page"] == 13
     assert run["result"][9:12] == [False, True, False]
     assert ["focus", "load-button"] in run["calls"]
 
@@ -3353,6 +3361,41 @@ def test_prefer_not_to_say_answers_the_age_question(tmp_path):
     assert answers["age"] == tasks.PREFER_NOT
     assert app._demographic_answers({"age": ""})["age"] is None
     assert app._demographic_answers({"age": 99.0})["age"] == 99
+
+
+def test_before_you_finish_takes_its_answers_as_given(tmp_path):
+    """E1 is one of its options; E2 and E3 are free text, trimmed and capped like c3, and a
+    non-text value, which no text box sends, is refused before anything is written (2026-10-13)."""
+    answers = app._demographic_answers(
+        {"heard_details": "Not sure", "confusing": "x" * (tasks.MAX_TEXT + 50), "feedback": " ok "}
+    )
+    assert answers["heard_details"] == "Not sure"
+    assert answers["confusing"] == "x" * tasks.MAX_TEXT
+    assert answers["feedback"] == "ok"
+    for raw in ({"heard_details": "Maybe"}, {"feedback": 3}):
+        _session, _log, _screen, error, _spool = app.step(
+            "demographics-clock",
+            _state(Stage.DEMOGRAPHICS).to_dict(),
+            {},
+            log_dir=tmp_path,
+            demographics=raw,
+        )
+        assert error, raw
+    assert not list(tmp_path.glob("*.jsonl"))
+
+
+def test_a_blank_free_text_question_is_a_skip_to_confirm():
+    """E2 and E3 are questions, not boxes beside one, so leaving one blank is confirmed."""
+    source = app.confirm_js("demographics-button")
+    about = [{"type": "about", "item": item} for item in ("confusing", "feedback")]
+    (run,) = _run_js([[source, 1, False, [["Nothing", ""], about]]])
+    assert run["result"][0]["skipped"] == 1
+
+
+def test_the_finished_screen_asks_participants_not_to_discuss_the_questions():
+    screen = json.dumps(app.render(_state(Stage.COMPLETE)).to_plotly_json(), default=str)
+    assert layout.DONT_DISCUSS in screen
+    assert "withdraw your responses within two weeks" in screen
 
 
 def test_declining_writes_nothing_anywhere(tmp_path):

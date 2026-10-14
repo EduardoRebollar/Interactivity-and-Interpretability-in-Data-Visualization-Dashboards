@@ -582,6 +582,10 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
             study_report.accuracy(tasks_frame),
         ),
         (
+            study_report.WORD_OF_MOUTH_TITLE,
+            study_report.word_of_mouth(tasks_frame, scoring.participants),
+        ),
+        (
             "Crossing item, secondary: strict vs adjacent-band credit",
             study_report.crossing_adjacent(tasks_frame),
         ),
@@ -598,10 +602,7 @@ def report_tables(scoring: Scoring) -> list[tuple[str, pd.DataFrame]]:
             study_report.mental_effort(conditions, included),
         ),
         ("Survey a1-a9 (1-7), descriptive", study_report.survey(conditions, included)),
-        (
-            "Chart controls b1-b3 (1-7), interactive condition",
-            study_report.controls(conditions, included),
-        ),
+        (study_report.CONTROLS_TITLE, study_report.controls(conditions, included)),
         (
             "Comparing the two versions, c1-c3, second condition",
             study_report.comparison(conditions, included),

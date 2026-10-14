@@ -131,10 +131,10 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_twenty_one():
-    """v21: each T3 scatter draws twenty-one dots, not sixteen (v20: each T4 heatmap draws twelve
-    rows, not eight)."""
-    assert SCHEMA_VERSION == 21
+def test_schema_version_is_twenty_two():
+    """v22: b4 on the controls, E1-E3 at the end of About you (v21: each T3 scatter draws
+    twenty-one dots, not sixteen)."""
+    assert SCHEMA_VERSION == 22
 
 
 @pytest.mark.parametrize(
@@ -222,14 +222,16 @@ def test_the_survey_rejects_off_scale_or_misnamed_items(logger, change):
 
 
 def test_the_controls_are_rated_after_the_interactive_condition_only(logger, tmp_path):
-    record = logger.rate_controls({"b1": 5, "b2": None, "b3": 7})
+    record = logger.rate_controls({"b1": 5, "b2": None, "b3": 7, "b4": 6})
     assert record["event"] == "controls_rating"
-    assert record["payload"] == {"scale": "likert7", "b1": 5, "b2": None, "b3": 7}
+    assert record["payload"] == {"scale": "likert7", "b1": 5, "b2": None, "b3": 7, "b4": 6}
     with pytest.raises(LogError, match="1-7"):
-        logger.rate_controls({"b1": 9, "b2": 1, "b3": 1})
+        logger.rate_controls({"b1": 9, "b2": 1, "b3": 1, "b4": 1})
+    with pytest.raises(LogError, match="b4"):
+        logger.rate_controls({"b1": 5, "b2": 5, "b3": 5})
     static = StudyLogger("P07", condition_order=1, interactive=False, log_dir=tmp_path)
     with pytest.raises(LogError, match="interactive condition only"):
-        static.rate_controls({"b1": 5, "b2": 5, "b3": 5})
+        static.rate_controls({"b1": 5, "b2": 5, "b3": 5, "b4": 5})
     static.close()
 
 

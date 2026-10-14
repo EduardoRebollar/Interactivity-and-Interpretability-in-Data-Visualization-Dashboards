@@ -693,13 +693,16 @@ def _demographic_answers(raw: dict[str, Any] | None) -> dict[str, Any]:
 
     A value that is not one of the options cannot come from the radio buttons, so it is refused
     rather than stored: this is study data, and an unrecognised category cannot be analysed. Text
-    typed beside "Other" is kept only when "Other" is the answer.
+    typed beside "Other" is kept only when "Other" is the answer. A free-text question (E2, E3) is
+    trimmed and capped like c3; blank is a skip.
     """
     raw = raw or {}
     answers: dict[str, Any] = {}
     for question in tasks.ABOUT_QUESTIONS:
         if question.kind == "age":
             answers[question.key] = _age(raw)
+        elif question.kind == "text":
+            answers[question.key] = _text(raw.get(question.key), tasks.MAX_TEXT)
         elif question.kind == "matrix":
             rows = {}
             for row in question.rows:

@@ -1170,6 +1170,14 @@ def _about_field(question):
         return _age()
     if question.kind == "matrix":
         return _matrix(question)
+    if question.kind == "text":
+        # The same box as c3's, the survey's free text.
+        return dcc.Textarea(
+            id=about_id(question.key),
+            maxLength=tasks.MAX_TEXT,
+            rows=4,
+            className="field pager-text",
+        )
     apart = question.options[-1] == PREFER_NOT and not question.prefer_not_inline
     main = question.options[:-1] if apart else question.options
     if question.ordinal:
@@ -1290,8 +1298,8 @@ def pager_screen(title: str, intro: str, pages: list[tuple], finish_id: str) -> 
 
 
 def demographics_screen() -> html.Main:
-    """About you: once per participant, at the end, one question per page in four sections
-    (docs/study-design.md section 6.2, the handoff's screen 10)."""
+    """About you: once per participant, at the end, one question per page in five sections
+    (docs/study-design.md section 6.2, the handoff's screen 10, and Before you finish)."""
     pages = []
     for section, questions in ABOUT_SECTIONS:
         for question in questions:
@@ -1733,6 +1741,11 @@ def break_screen() -> html.Main:
     )
 
 
+# Asked of every participant at the end (2026-10-13, study-design.md section 8): E1 can only detect
+# word of mouth, and this asks for none.
+DONT_DISCUSS = "Please don't discuss the questions with anyone who may take part."
+
+
 def complete_screen(participant_id: str | None = None) -> html.Main:
     """The end, with the withdrawal right IRB form item 13 promises to remind participants of."""
     who = f" (your participant ID is {participant_id})" if participant_id else ""
@@ -1740,6 +1753,7 @@ def complete_screen(participant_id: str | None = None) -> html.Main:
     return stage_page(
         screen_title("Finished! Thank you!", "🙂"),
         html.P("Your responses have been successfully recorded. You can close this tab."),
+        html.P(DONT_DISCUSS),
         html.P(
             [
                 "If you change your mind, you can withdraw your responses within two weeks of "
