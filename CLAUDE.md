@@ -896,8 +896,8 @@ context cheap and the reports as long as they need to be.
     then withdrawn with `withdraw_participant.py --apply`: 0 events left, ID `1` marked withdrawn.
   - The sequence is at 13, so the first study participant is **seq 14 (interactive first, form
     A)**.
-  - The pilot's consent record is still in Neon (one row). Eduardo archives it with
-    `archive_consents.py`, which asks for the password.
+  - The pilot's consent record stayed in Neon until 2026-10-13, when `archive_consents.py` moved
+    it to the Drive.
 - 2026-10-12 — **Pilot changes, phase 1** (committed as 2a5e7f9). Practice window
   2019–2021. Heatmap sort A–Z / Lowest cell first / Highest cell first (B-T4's key row now comes
   to the top too). Chips at most six to a row, five on the map beside the Highlight box, named as
@@ -1050,7 +1050,7 @@ context cheap and the reports as long as they need to be.
   - Two checks failed, both one bug: arrow keys on the Years slider 120 ms apart left the chart a
     year behind the slider. Dash 4 draws the view callback's replies as they arrive, an older one
     after a newer one, and a line chart's reply now takes 0.25–0.5 s.
-- 2026-10-13 — **The keyboard is held while the chart redraws** (uncommitted at time of writing;
+- 2026-10-13 — **The keyboard is held while the chart redraws** (committed as 29554dc;
   `visual-spec.md` §7, §8).
   - `src/assets/redraw_guard.js` drops keys on the elements the CSS pointer guard covers. Tab and
     the modifiers still work, and a held arrow key moves a slider one step per redraw.
@@ -1065,20 +1065,28 @@ context cheap and the reports as long as they need to be.
   are read from the study's data (`study-design.md` §10). Answer-tile overflow accepted, since
   participants work full screen. The 22 local test logs from 2026-10-11 were deleted;
   `data/study_logs/pilot/` is kept.
-- **Still to do before the study:**
-  - Commit and push the keyboard guard, then confirm production serves it. Over HTTP,
-    `/assets/redraw_guard.js` must match the committed file. The Vercel CLI is not installed and
-    the API refuses this team.
-  - Archive the pilot's consent record, still in Neon (one row), with
-    `scripts/archive_consents.py`.
-  - Optional: `scripts/verify_deployment.py`. It tests the database only, not the site. Its
-    three synthetic participants use three sequence numbers, so the first participant becomes
-    seq 17 (static first, form A) instead of 14.
-- Next: the study (n ≥ 25), and the checks in `study-design.md` §10, read from its data: static
-  accuracy on T2, T4 and T5 (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6
-  strict against adjacent-band, whether T4 sits at ceiling in the interactive condition, whether
-  the chips, the bar and heatmap sorts and the key's colours are found at all, and whether T1's
-  four extra controls are found and what they cost in time.
+- 2026-10-13 — **Ready for the study; the instrument is done.** Checked the same day:
+  - Production serves 29554dc: over HTTP, `redraw_guard.js`, `zz-overrides.css` and
+    `chart_pan.js` match the committed files byte for byte.
+  - Neon (read-only): no events, one registration (the pilot's, seq 13, withdrawn), no consent
+    records. The pilot's record is in `G:\My Drive\Consent Forms`
+    (`consent-forms_2026-10-13_181012.7z`).
+  - `verify_deployment.py` not run, so the sequence is untouched: the first participant is
+    **seq 14 (interactive first, form A)**.
+  - 1470 tests pass. Schema v21.
+  - From here, a change to an item, chart, control or logged field lands mid-study and splits the
+    data by schema version, which analysis refuses to pool (`study-design.md` §10).
+- **Now: data collection** (n ≥ 25), in person (request form 5B), with the researcher script in
+  `study-design.md` §8.
+  - After each session: `archive_consents.py` moves the signed form to the Drive and out of Neon.
+  - Withdrawal requests (two weeks): `withdraw_participant.py`, dry run first.
+  - `view_data.py` against Neon (`--env-file .env.local`): the Health tab shows cell balance,
+    incomplete sessions, outages and the manipulation check as sessions come in.
+- After collection: the checks in `study-design.md` §10, read from the data: static accuracy on
+  T2, T4 and T5 (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6 strict against
+  adjacent-band, whether T4 sits at ceiling in the interactive condition, whether the chips, the
+  bar and heatmap sorts and the key's colours are found at all, and whether T1's four extra
+  controls are found and what they cost in time.
 
 ## Decisions made
 
@@ -1287,6 +1295,9 @@ context cheap and the reports as long as they need to be.
     full screen on a 1366 × 768 display is still that size; `window_size` shows who met it.
   - **The keyboard is held while the chart redraws** (`visual-spec.md` §7), reversing "the
     keyboard is not held" of 2026-10-12.
+  - **`verify_deployment.py` not run** before the study, so the first participant stays at seq 14.
+    The two production test sessions of 2026-10-12 (v17) had put full sessions through Neon;
+    `db.py` is unchanged since 2026-09-21, and v18–v21 add no table or column.
 
 ## Open questions
 

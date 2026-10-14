@@ -12,7 +12,9 @@ per item, controls on every chart, a new survey, and About you, which moves to t
 verified in headless Chrome 2026-09-26; restyled 2026-10-11 from the chart handoff
 (`docs/chart-handoff/`), with T5's maps redrawn, T6 given six more lines, and T2 and T4 moved to
 MCV1 (§4); line charts drawn from 1985 on 2026-10-12, every line item still asking about 2000
-onward (§4).** The consent text in §9 is the form submitted to Occidental's HSRRC and must not be shown to a participant until approved.
+onward (§4). Approved by Occidental's HSRRC on 2026-10-12; one pilot session the same day (§10).
+Final for data collection on 2026-10-13, starting at seq 14 (§10).** The consent text in §9 is
+the form HSRRC approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -1573,8 +1575,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   session. On 2026-10-12 its 85 events (schema v17) and its registration were exported to
   `data/study_logs/pilot/` (local, gitignored), then removed from Neon by
   `scripts/withdraw_participant.py`. ID `1` is marked withdrawn at seq 13 and cannot be used again.
-  **The study starts at seq 14 (interactive first, form A).** The signed consent record stays in
-  Neon until `scripts/archive_consents.py` moves it to the Drive. Changed because of it:
+  **The study starts at seq 14 (interactive first, form A).** The signed consent record was moved
+  to the Drive by `scripts/archive_consents.py` on 2026-10-13 and is no longer in Neon. Changed
+  because of it:
   - the practice asks about 2019–2021, not 2015–2021 (§4);
   - the heatmap's row sort is A–Z, Lowest cell first, Highest cell first; Average went (§4, T4);
   - the chips run at most six to a row (`docs/visual-spec.md` §7.3; seven since 2026-10-13);
@@ -1600,6 +1603,11 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   study's own data, after collection, and can no longer change an item before it. An item changed
   mid-study would split the data by schema version, which analysis refuses to pool
   (`analysis/reshape.py`).
+- **Data collection begins (2026-10-13).** The study runs on the instrument as deployed that day:
+  commit 29554dc, log schema v21. Neon then held no events and no consent records, and one
+  registration, the pilot's (seq 13, withdrawn), so the first participant is seq 14.
+  `scripts/verify_deployment.py` was not run, since its synthetic participants would have taken
+  seq 14–16.
 - **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would

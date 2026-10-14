@@ -21,8 +21,9 @@ the chart handoff** (`docs/chart-handoff/`): every chart restyled; the line char
 to name tags; the scatter names its dots and colours them by change, in place of the legend and the
 shapes; a colour per bar; nine and seven blue bands in place of Cividis; the map shows the whole
 continent and names its countries (§1–7, §10). **Amended 2026-10-13:** the scatter draws 21 dots,
-and the chips run at most seven to a row (§6, §7.3). A change to any of §1–8 or §10 needs this
-document edited first, then the code.
+and the chips run at most seven to a row (§6, §7.3). **Final for data collection, 2026-10-13**
+(commit 29554dc): a change from here reaches participants mid-study (`study-design.md` §10). A
+change to any of §1–8 or §10 needs this document edited first, then the code.
 
 **The chart handoff sets the look, not the content (2026-10-11).** `docs/chart-handoff/` (its README,
 `screenshots/`, `africa map.png` and `scatterplot.png`) draws Form A's five chart types to fix the

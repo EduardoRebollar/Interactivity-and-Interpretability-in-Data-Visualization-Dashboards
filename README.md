@@ -17,7 +17,7 @@ Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 ```bash
 uv sync
 uv run python scripts/download_data.py      # fetch from Our World in Data
-uv run python -m src.data                   # clean and cache -> 5200 rows
+uv run python -m src.data                   # clean and cache -> 10,880 rows
 uv run python scripts/export_deploy_data.py # write data/deploy/coverage.csv
 uv run python -m src.app                    # http://127.0.0.1:8050
 ```
@@ -170,7 +170,13 @@ uv run python scripts/score_study.py --events data/study_logs/events.csv
 uv run python scripts/code_justifications.py sheets         # blind sheets for two coders
 uv run python scripts/code_justifications.py kappa          # after both are coded
 uv run python scripts/code_justifications.py depth          # reasoning depth per answer
+
+uv run python scripts/code_justifications.py rubric-sheets  # T1's descriptions, for both coders
+uv run python scripts/code_justifications.py rubric         # kappa per part; verdicts once settled
 ```
+
+Run the rubric steps before `score_study.py`'s final run: a participant's T1–T6 accuracy is not
+computed while their T1 is uncoded.
 
 The answer key is in `analysis/keys.py`, **derived from the data** by each item's stated rule and
 checked against §4; `score_study.py` refuses to run if they disagree. `analysis/` is excluded from
@@ -183,45 +189,72 @@ the analyst and must not go to a coder.
 This repo is public. `DATABASE_URL` belongs in Vercel's environment variables and in `.env.local`
 only; `.env` and `.env.*` are gitignored. See [.env.example](.env.example).
 
+## Running the study
+
+Sessions are run in person, with the researcher script in `docs/study-design.md` §8. Each
+participant is assigned their counterbalancing cell from the database sequence. The first study
+participant is seq 14 (interactive first, form A); seq 13 and below were tests and the pilot.
+
+```bash
+# While collecting: cell balance, unfinished sessions, outages, the manipulation check (Health tab)
+uv run --env-file .env.local python scripts/view_data.py
+
+# After each session: signed consent forms -> encrypted 7-Zip on the Drive, then out of Neon
+uv run --env-file .env.local python scripts/archive_consents.py
+
+# A withdrawal request, within two weeks: dry run first, then --apply
+uv run --env-file .env.local python scripts/withdraw_participant.py P07
+uv run --env-file .env.local python scripts/withdraw_participant.py P07 --apply
+```
+
+Without `--env-file .env.local`, `withdraw_participant.py` touches local files only and leaves the
+participant's data in Neon.
+
+A push to `main` redeploys production. From here, a change to an item, chart, control or logged
+field lands mid-study and splits the data by schema version, which analysis refuses to pool
+(`docs/study-design.md` §10).
+
 ## Status
 
-**The instrument is complete and runs end to end.** A participant can take the whole session from one
-URL: a signed consent form (or a decline), participant ID, a few demographic questions, instructions,
-practice, six tasks, a short survey, a break, then the second condition in the other version and the
-other form. Any question may be skipped, after a confirmation.
+**Data collection is starting (2026-10-13; target n ≥ 25).** The instrument is finished.
+Occidental's HSRRC approved the study on 2026-10-12. It said the changes made after the pilot need
+no amendment, and approved drawing the line charts from 1985 on 2026-10-13. The consent form in
+`src/consent.py` is the approved form, word for word. Production serves commit 29554dc (log
+schema v21).
 
-Built and tested:
-- the data layer;
-- the event logger (schema v7, Postgres or JSONL), with retry and spooling through a database outage;
-- five chart types (line, bar, scatter, heatmap, map) on a palette checked for contrast and for
-  colour-blind separation;
+A participant takes the whole session from one URL: a signed consent form (or a decline),
+participant ID, instructions, practice, six tasks, a survey, a break, then the second condition on
+the other form, a second survey, and a few questions about themselves. Any question may be skipped,
+after a confirmation.
+
+One pilot session was run on 2026-10-12. Its data is kept out of the study, and the changes it led
+to are listed in `docs/study-design.md` §10. There is no second pilot, so the pilot checks in §10
+are read from the study's own data after collection.
+
+Built and tested (1470 tests, and full sessions in all four counterbalancing cells driven through
+the UI in headless Chrome):
+- the data layer, 1985–2024;
+- the event logger (Postgres or JSONL), with retry and spooling through a database outage;
+- five chart types (line, bar, scatter, heatmap, map) carrying twelve items over two parallel
+  forms, on a palette checked for contrast and for colour-blind separation;
 - the session flow state machine and the study screens;
 - the interactive controls, with their interaction logging:
-  - on line charts: filter, sort, line isolation, and year-over-year change in the tooltip;
-  - sorting the bar chart;
-  - a coverage range on the map;
+  - country chips and Reset view on every chart;
+  - on line charts: a Years slider, Show all, focusing a line, and year-over-year change in the
+    tooltip;
+  - sorting the bar chart and the heatmap's rows;
+  - on the scatter, heatmap and map, a click on a colour in the key highlights its band;
   - hover on every chart;
-- the signed consent record, kept apart from the study data, with export and a two-week withdrawal
-  script;
+  - on T1 only, four further controls it does not need, named to participants nowhere
+    (`docs/study-design.md` §4, §7);
+- the signed consent record, kept apart from the study data and archived encrypted to the Drive,
+  with a two-week withdrawal script;
 - duplicate-submit protection, and flagged rather than wrong durations after a reload;
-- the Vercel entry point;
-- the offline scoring pipeline: derived answer key, pre-registered exclusions, blind RQ2 coding and
-  Cohen's kappa.
+- the offline scoring pipeline: derived answer key, pre-registered exclusions, T1's rubric, blind
+  RQ2 coding and Cohen's kappa.
 
-The twelve items were replaced on 2026-09-23 by a bank that pairs each chart type with one
-interactive affordance, plus one crossing item (T6) that asks when one country's line overtakes
-another's (`docs/study-design.md` §4).
-
-**Approved by Occidental's HSRRC on 2026-10-12; not yet run with participants.** The consent form
-in `src/consent.py` is the approved form, word for word.
-
-Also open before piloting:
-
-- The pilot checks in `docs/study-design.md` §10. The bar, heatmap and map items sit at the
-  acceptance floor on purpose, so check static accuracy there. Check form equivalence on T1,
-  B-T3 and T6, and T6's strict score against its adjacent-band secondary. Check whether
-  participants find the bar sort and the map's coverage range at all.
-- Session resume is not implemented; the participant-ID screen asks for one sitting in one tab. §8.
-- Hover and line isolation are mouse-only, so a keyboard-only participant in the interactive
-  condition meets the scatter, heatmap and crossing items with no affordance. The bar sort and the
-  map's range work from the keyboard.
+Known limits:
+- Session resume is not implemented; the participant-ID screen asks for one sitting in one tab
+  (`docs/study-design.md` §8).
+- Hover and focusing a line are mouse-only. Every other control works from the keyboard
+  (`docs/visual-spec.md` §8).
