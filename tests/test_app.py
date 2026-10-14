@@ -22,7 +22,7 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
-from dash import html, no_update
+from dash import dcc, html, no_update
 from dash.exceptions import PreventUpdate
 from plotly.utils import PlotlyJSONEncoder
 
@@ -781,17 +781,20 @@ def test_the_chips_split_into_even_rows_of_at_most_six(tmp_path):
     [
         (1, [1]),
         (6, [6]),
-        (7, [4, 3]),
+        (7, [7]),
         (8, [4, 4]),
         (10, [5, 5]),
-        (13, [5, 4, 4]),
+        (12, [6, 6]),
+        (13, [7, 6]),
         (16, [6, 5, 5]),
         (18, [6, 6, 6]),
+        (21, [7, 7, 7]),
+        (22, [6, 6, 5, 5]),
     ],
 )
-def test_chip_rows_hold_at_most_six_and_the_first_rows_take_the_extra(count, sizes):
+def test_chip_rows_hold_at_most_seven_and_the_first_rows_take_the_extra(count, sizes):
     """The scatter's sixteen ran in four ragged rows when there were always two (pilot session 1,
-    visual-spec.md section 7.3)."""
+    visual-spec.md section 7.3); its twenty-one run three rows of seven since 2026-10-13."""
     names = [f"Country {index:02d}" for index in range(count)]
     rows = layout.chip_rows(names, names[:2], "scatter")
     assert [len(row["options"]) for row in rows] == sizes
@@ -808,6 +811,50 @@ def test_every_chart_lays_its_chips_out_in_full_rows():
             rows = layout.chip_rows(order, order, task.chart)
             assert all(row["options"] for row in rows), task.task_id
             assert max(len(row["options"]) for row in rows) <= layout.CHIPS_PER_ROW
+
+
+def test_each_charts_chips_run_in_the_rows_the_spec_gives():
+    """visual-spec.md section 7.3. Seven to a row (2026-10-13) is for the scatter's twenty-one;
+    every other chart keeps the rows it had under six."""
+    expected = {
+        "T1": [4, 4],
+        "T2": [5, 5],
+        "T3": [7, 7, 7],
+        "T4": [6, 6],
+        "T5": [6, 6, 6],
+        "T6": [4, 4],
+    }
+    for form in ("A", "B"):
+        for task in tasks.for_form(form):
+            order = layout.filterable(list(task.entities))
+            rows = layout.chip_rows(order, order, task.chart)
+            assert [len(row["options"]) for row in rows] == expected[task.task_id], (form, task)
+
+
+def test_the_heatmaps_twelve_chips_run_six_to_a_row_on_smaller_chips():
+    """At full size six of T4's twelve did not fit one line beside Sort rows, so the heatmap's chips
+    are drawn smaller (2026-10-13, visual-spec.md section 7.3); no other chart's are."""
+    for form in ("A", "B"):
+        for task in tasks.for_form(form):
+            order = layout.filterable(list(task.entities))
+            group = layout.chip_group(task, order, order)
+            lists = [node for node in group if isinstance(node, dcc.Checklist)]
+            tight = {"ui-chips--tight" in node.className.split() for node in lists}
+            assert tight == {task.chart == "heatmap"}, (form, task.task_id)
+            if task.chart == "heatmap":
+                assert [len(node.options) for node in lists] == [6, 6], form
+
+
+def test_every_charts_chips_spread_across_their_row():
+    """The handoff spread only the line charts' chips; every chart's since 2026-10-13
+    (visual-spec.md section 7.3)."""
+    for form in ("A", "B"):
+        for task in tasks.for_form(form):
+            order = layout.filterable(list(task.entities))
+            group = layout.chip_group(task, order, order)
+            lists = [n for n in group if isinstance(n, dcc.Checklist)]
+            assert lists, (form, task.task_id)
+            assert {n.style["justifyContent"] for n in lists} == {"space-between"}, task.task_id
 
 
 @pytest.mark.parametrize(
@@ -1666,7 +1713,9 @@ def test_a_chip_fades_a_heatmap_row_where_it_is_drawn(tmp_path):
     faded = {s.name for s in shapes if s.opacity != 1}
     assert faded == {f"cell:{names[0]}"}
     position = list(result.figure.layout.yaxis.categoryarray).index(names[0])
-    top = round(position - 0.5 + 2 / 46.75, 6)
+    margin = result.figure.layout.margin
+    row_px = (config.CHART_HEIGHT - margin.t - margin.b) / len(names)
+    top = round(position - 0.5 + 2 / row_px, 6)
     assert all(f",{top} " in s.path for s in shapes if s.name == f"cell:{names[0]}")
 
 

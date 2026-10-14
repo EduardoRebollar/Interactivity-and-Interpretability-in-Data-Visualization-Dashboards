@@ -607,7 +607,7 @@ def _validate(entities: list[str], vaccine: str, chart_type: str, years: tuple[i
                 f"{len(colored)} series requested but only {config.MAX_SERIES} distinguishable "
                 "colors exist; World is exempt as the dashed reference"
             )
-    # Sixteen dots, each named beside it (visual-spec.md section 6): T3's number.
+    # Twenty-one dots, each named beside it (visual-spec.md section 6): T3's number.
     if chart_type == "scatter" and len(entities) > config.MAX_SCATTER_DOTS:
         raise FigureError(
             f"{len(entities)} dots requested; a scatter names at most {config.MAX_SCATTER_DOTS}"
@@ -867,10 +867,13 @@ def tag_name(entity: str) -> str:
 
 def drawn_name(entity: str, chart_type: str) -> str:
     """The name a chart of this type prints for `entity`: on the map its short name
-    (`_name_country`), elsewhere its tag name. The chips use it too (2026-10-12), so a chip says
-    what the chart says, and "Democratic Republic of Congo" no longer wraps a row of chips."""
+    (`_name_country`), on the scatter its own short name (`_name_dot`, 2026-10-13), elsewhere its
+    tag name. The chips use it too (2026-10-12), so a chip says what the chart says, and
+    "Democratic Republic of Congo" no longer wraps a row of chips."""
     if chart_type == "map":
         return config.MAP_SHORT_NAMES.get(entity, entity)
+    if chart_type == "scatter" and entity in config.SCATTER_SHORT_NAMES:
+        return config.SCATTER_SHORT_NAMES[entity]
     return tag_name(entity)
 
 
@@ -1366,7 +1369,7 @@ def _name_dot(figure: go.Figure, entity: str, x: float, y: float) -> None:
     5 px past the name (visual-spec.md section 1). Both are named `dot:<entity>`, so a chip that
     hides the dot hides them too. The handoff's width estimate: 0.56 em a character."""
     side = config.SCATTER_LABEL_SIDES.get(entity, "right")
-    label = tag_name(entity)
+    label = drawn_name(entity, "scatter")
     width = len(label) * _DOT_NAME_SIZE * 0.56
     point = 1 / 4  # data units per pixel: 4 px a point
     name = f"{_DOT}{entity}"
@@ -1559,8 +1562,9 @@ def _heatmap(
     return figure
 
 
-# The grid runs from x 215 to 995 and y 118 to 492 in the card: six 130 px columns, rows 46.75 px
-# tall for eight rows, 4 px gaps, 4 px corners (visual-spec.md section 1).
+# The grid runs from x 215 to 995 and y 118 to 492 in the card: six 130 px columns, rows sharing the
+# 374 px (31.17 px for T4's twelve, since 2026-10-13), 4 px gaps, 4 px corners (visual-spec.md
+# section 1).
 _HEAT_MARGIN = {"l": 215, "r": 55, "t": 118, "b": 28}
 # The heatmap key's bar: left edge, top, height and width, in the card's pixels (`_heat_key`,
 # `key_blocks`). "Coverage" (about 84 px) and the 560 px bar together are centred on the card's

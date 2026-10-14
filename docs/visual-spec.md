@@ -20,8 +20,9 @@ are used twice each and every dot has its own marker shape (§4, §6). **Amended
 the chart handoff** (`docs/chart-handoff/`): every chart restyled; the line chart's legend gives way
 to name tags; the scatter names its dots and colours them by change, in place of the legend and the
 shapes; a colour per bar; nine and seven blue bands in place of Cividis; the map shows the whole
-continent and names its countries (§1–7, §10). A change to any of §1–8 or §10 needs this document
-edited first, then the code.
+continent and names its countries (§1–7, §10). **Amended 2026-10-13:** the scatter draws 21 dots,
+and the chips run at most seven to a row (§6, §7.3). A change to any of §1–8 or §10 needs this
+document edited first, then the code.
 
 **The chart handoff sets the look, not the content (2026-10-11).** `docs/chart-handoff/` (its README,
 `screenshots/`, `africa map.png` and `scatterplot.png`) draws Form A's five chart types to fix the
@@ -85,16 +86,23 @@ scale (§4). No hover on the diagonal.
 Dots are 9 px, unoutlined, **coloured by their change** from 2000 to 2024 in seven steps (§4), and
 **named beside them** (§6). Each name sits 8 px from its dot's centre, to the right unless that would
 collide, on a white knockout 20 px tall that runs from just behind the dot to 5 px past the name, so
-gridlines and the diagonal stop short of it. The side is set per form, as the handoff sets Form A's
-(left for Niger, Ethiopia, Nigeria, the Central African Republic, Madagascar, Kenya and Tanzania;
-in Form B left for Nepal, Iraq, India and the Philippines, and above for Bangladesh). Draw order:
+gridlines and the diagonal stop short of it. The side is set per country, as the handoff sets Form
+A's (left for Niger, Ethiopia, Nigeria, the Central African Republic, Madagascar, Kenya and Tanzania,
+and since 2026-10-13 South Africa; in Form B left for Nepal, Iraq, India, the Philippines and, since
+2026-10-13, Cote d'Ivoire, and above for Bangladesh). A country on both forms' scatters (Benin, the
+Central African Republic and Sudan, since 2026-10-13) takes the same side on both, and every
+side was checked against both charts: no name touches another name or another dot (headless
+Chrome, `tests/test_conditions.py`). The Central African Republic is named "CAR" on the scatter
+(2026-10-13, §7.3), as on the map. Draw order:
 grid, axes, diagonal, knockouts, names, dots. No legend: a stepped key stands in the right margin
 (§4). **Dots are never clipped at the plot's edge (2026-10-11).** Plotly clips a marker to the axes
 by default, and B-T3's Oman sits at 99, 99.
 
 **Heatmap.** Rows in the task's order, the first at the top. Columns are categories, so 2020–2024
-takes the same width as the other five-year steps. Cells 130 px wide and 46.75 px tall, with 4 px
-white gaps and 4 px rounded corners, so two adjacent cells of one band stay two cells. Plotly cannot
+takes the same width as the other five-year steps. Cells 130 px wide, with 4 px white gaps and 4 px
+rounded corners, so two adjacent cells of one band stay two cells. The rows share the grid's 374 px:
+twelve rows of 31.17 px since 2026-10-13 (`docs/study-design.md` §4, T4), eight of 46.75 px
+before, as handed off. Plotly cannot
 round a heatmap's cells, so the cells are drawn as shapes, and the heatmap trace beneath them,
 fully transparent, carries the hover; its tooltips are every chart's white card (§7.1), edged in
 the cell's band. **No number is written in a cell**: that would give the
@@ -465,8 +473,8 @@ to land on the wrong option. A fixed-height container around the chart holds the
 
 ## 6. Series limits and labelling
 
-- **At most 8 lines on one chart**, World not counted, and **at most 16 dots on a scatter**
-  (2026-10-11). Bars take their countries' colours (§4); heatmap rows and map countries use the
+- **At most 8 lines on one chart**, World not counted, and **at most 21 dots on a scatter**
+  (16 from 2026-10-11, 21 from 2026-10-13). Bars take their countries' colours (§4); heatmap rows and map countries use the
   blue bands; scatter dots the change scale. Only lines are capped by the palette.
 - **Colour is never the only channel identifying a series.** Each chart type carries a second one:
 
@@ -642,18 +650,52 @@ Average answered neither form's question.
 
 - **Chips on every chart (2026-09-25).** One chip per country the chart draws, with its flag, in
   the task's entity order. World has none.
-- **At most six chips to a row (2026-10-12).** The rows are as even as the count allows, the first
-  taking any extra:
-  - 16 run 6/5/5 (T3);
+- **At most seven chips to a row (2026-10-13; six from 2026-10-12).** The rows are as even as the
+  count allows, the first taking any extra:
+  - 21 run 7/7/7 (T3, since 2026-10-13);
   - 18 run 6/6/6 (T5);
+  - 12 run 6/6 (T4, since 2026-10-13), on smaller chips (below);
   - 10 run 5/5 (T2);
-  - 8 run 4/4 (T1, T4, T6).
+  - 8 run 4/4 (T1, T6).
+
+  **Seven, for T3 (2026-10-13, Eduardo).** The scatter's sixteen ran 6/5/5, spread to 99 px apart.
+  The five dots added to each form (`docs/study-design.md` §4) fill three rows of seven, 13–26 px
+  apart (headless Chrome). The group is 1016 px wide on every window, and a full-size chip is 72 px
+  plus its name. Seven fit only if a row's names total 452 px or less. With "Central African Rep."
+  (143 px), A's first row needed 490 px, so the scatter names the Central African Republic "CAR",
+  on its dot and its chip, as the map does. The heatmap's smaller chips, which keep the full name,
+  were offered and not taken: they left 18–42 px between chips. Every other chart's rows are the
+  same under seven as under six.
+
+  **The heatmap's chips are smaller (2026-10-13, Eduardo), so its twelve fit two rows.** Its strip
+  also holds Sort rows, which leaves the chips 817 px. At the size every other chart uses, B-T4's
+  first row (Afghanistan to Madagascar) needed 896 px and wrapped, leaving Madagascar alone on a
+  line; A's needed 852. On the heatmap only (`.ui-chips--tight`, `zz-overrides.css`):
+
+  | | Every other chart | Heatmap |
+  |---|---|---|
+  | Text | 16 px | 15 px, the heatmap's row names' size |
+  | Flag | 24 × 16 px | 21 × 14 px |
+  | Padding, left / right | 8 / 10 px | 6 / 8 px |
+  | Box to flag, flag to name | 7, 8 px | 5, 6 px |
+  | Between chips | 10 px | 6 px |
+  | Height | 30 px | 30 px |
+
+  B's first row then takes 785 px and A's 743 (headless Chrome), so the strip and the card are as
+  tall as with eight rows. Four to a row at full size was tried first: three lines, and an
+  interactive card 32 px taller.
+- **Each row of chips spreads across the group's width, on every chart (2026-10-13, Eduardo).**
+  `justify-content: space-between`, which the handoff set on the line charts alone; until then the
+  bar, scatter, heatmap and map packed their chips to the left. A shorter row (the scatter's 5s)
+  spreads across the same width, so chips in different rows do not stand in columns, as on the line
+  charts. T1's Regions and Show checkboxes (§7.7) are not country chips and stay packed left.
 
   Until the map's Highlight box went (§7.4, later the same day), the map's ran five to a row: six
   beside the box wrapped at every window size (headless Chrome).
 
   A chip names its country as the chart prints it (`figures.drawn_name`): "CAR" and "DR Congo" on
-  the map, "Central African Rep." and "DR Congo" elsewhere. Spelled out, "Democratic Republic of
+  the map and, since 2026-10-13, "CAR" on the scatter; "Central African Rep." and "DR Congo"
+  elsewhere. Spelled out, "Democratic Republic of
   Congo" still wrapped form A's map row. The chip's value, which is what is logged, stays the full
   name.
 
@@ -891,8 +933,9 @@ strip and the hint row under the chart (§7).
 - **Source of truth: the design handoff's stylesheet**, `docs/design-handoff/assets/study.css`,
   copied unchanged to `src/assets/study.css`, where Dash loads it automatically. Where Dash's markup
   cannot match one of its selectors, the smallest possible rule goes in `src/assets/zz-overrides.css`,
-  each commented with why. No inline style dicts in `layout.py`, beyond the data-driven values the
-  handoff sets inline itself (the chips' spacing on line charts) and, since 2026-10-12, the key
+  each commented with why. No inline style dicts in `layout.py`, beyond the values the handoff
+  sets inline itself (the chips' spacing, on line charts until 2026-10-13 and on every chart
+  since, §7.3) and, since 2026-10-12, the key
   buttons' positions, which come from the figure's own key geometry (§7.4).
 - **Dash 4's option lists (2026-09-26).** The stylesheet puts a class on each option's `<label>`
   (`.chip`, `.ui-tile`, `.seg-item`). Dash 4 cannot: its labels are `.dash-options-list-option`,
@@ -1018,6 +1061,30 @@ strip and the hint row under the chart (§7).
 
   Its static card is unchanged, and nothing else moved (headless Chrome, both forms, against
   the commit before it).
+
+  **T4's twelve rows (2026-10-13, `study-design.md` §4)** move nothing on the page. The chart is
+  the same height, its rows thinner (§1), and the chips still take two rows, on smaller chips
+  (§7.3). Submit's bottom edge is where it was with eight rows, in both forms (headless Chrome,
+  against the committed version):
+
+  | Window | T4, interactive | T4, static |
+  |---|---|---|
+  | 1440 × 790 (compact) | 751 | 603 |
+  | 1366 × 768 (compact) | 751 | 619 |
+  | 1440 × 900 | 787 | 635 |
+
+  **T3's twenty-one dots (2026-10-13, `study-design.md` §4)** move nothing on the page either. The
+  chart is the same size, and the chips still take three rows, of seven instead of 6/5/5 (§7.3).
+  The checks were made in headless Chrome against the committed version, at 1440 × 790, 1366 ×
+  768 and 1440 × 900, both forms and both conditions:
+  - Submit ends where it did, in every case;
+  - every other item's chip rows and Submit are as they were (checked at 1440 × 900 and
+    1366 × 768);
+  - every name stands clear of every other name and dot, as drawn.
+
+  Both cards fit every window measured. Measured on `/preview`, less the preview's own bar (104 px,
+  112 outside compact mode): the same method gives T3's and T5's splits as recorded in
+  `study-design.md` §10.
 - **T1's answer panel (2026-09-27).** T1 is written, not chosen (`study-design.md` §4, §5). Its
   panel has one numbered step:
   - "1 Write your description:" heads the handoff's own `.ui-textarea`, the justification's box,

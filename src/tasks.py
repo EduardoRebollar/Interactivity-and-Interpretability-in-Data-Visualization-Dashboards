@@ -138,22 +138,29 @@ FORM_A: tuple[Task, ...] = (
         vaccine="DTP3",
         # Not Angola or DR Congo: their dots sit within 2 points of Nigeria's and would hide it.
         # Sixteen dots (2026-10-11): the ten added each improved at least 20 points less than
-        # Niger, so none rivals the key. docs/study-design.md section 4.
+        # Niger, so none rivals the key. Twenty-one since 2026-10-13, so the chips fill three rows
+        # of seven: Algeria, Eritrea, Guinea, Namibia and South Africa, found by search, each
+        # named clear of every other name and dot. docs/study-design.md section 4.
         entities=(
+            "Algeria",
             "Benin",
             "Burkina Faso",
             "Cameroon",
             "Central African Republic",
             "Chad",
             "Egypt",
+            "Eritrea",
             "Ethiopia",
+            "Guinea",
             "Kenya",
             "Libya",
             "Madagascar",
             "Mali",
             "Mozambique",
+            "Namibia",
             "Niger",
             "Nigeria",
+            "South Africa",
             "Sudan",
             "Tanzania",
         ),
@@ -170,17 +177,23 @@ FORM_A: tuple[Task, ...] = (
             "coverage?"
         ),
         # MCV1 since 2026-10-11, with Benin's row in place of the Central African Republic's,
-        # whose lowest cell (36) sits 9 points above Chad's 27. docs/study-design.md section 4.
+        # whose lowest cell (36) sits 9 points above Chad's 27. Twelve rows since 2026-10-13: the
+        # four added each bottom out at 63 or above, beyond Pakistan's 57, the sixth option row, so
+        # key, margin and options are unchanged. docs/study-design.md section 4.
         vaccine="MCV1",
         entities=(
             "Benin",
             "Burkina Faso",
             "Cambodia",
             "Chad",
+            "Cote d'Ivoire",
             "India",
             "Indonesia",
+            "Iraq",
             "Mali",
             "Pakistan",
+            "South Africa",
+            "Syria",
         ),
         options=("Benin", "Burkina Faso", "Chad", "India", "Mali", "Pakistan"),
     ),
@@ -305,10 +318,16 @@ FORM_B: tuple[Task, ...] = (
         prompt=IMPROVED_PROMPT,
         vaccine="DTP3",
         # Not Afghanistan: its +35 all but ties India's +36. Sixteen dots, as in A: the ten added
-        # each improved at least 20 points less than India.
+        # each improved at least 20 points less than India. Twenty-one since 2026-10-13, as in A.
+        # Asia's eligible countries were used up, so Benin, the Central African Republic and Sudan
+        # are A's own dots, placed as there; Cote d'Ivoire and Gabon are B's alone.
         entities=(
             "Bangladesh",
+            "Benin",
             "Cambodia",
+            "Central African Republic",
+            "Cote d'Ivoire",
+            "Gabon",
             "India",
             "Indonesia",
             "Iraq",
@@ -320,6 +339,7 @@ FORM_B: tuple[Task, ...] = (
             "Oman",
             "Pakistan",
             "Philippines",
+            "Sudan",
             "Syria",
             "Thailand",
             "Yemen",
@@ -338,17 +358,23 @@ FORM_B: tuple[Task, ...] = (
         ),
         # The highest cell since 2026-10-12: Nepal's 97 against Pakistan's 86, the only cell in the
         # lightest band. Laos and Cameroon replace Myanmar (91) and Uganda (90), which sat in that
-        # band too. The options are the six highest rows. docs/study-design.md section 4.
+        # band too. The options are the six highest rows. Twelve rows since 2026-10-13, as in A: the
+        # four added each top out at 73 or below, under Mali's 78, the sixth option row.
+        # docs/study-design.md section 4.
         vaccine="MCV1",
         entities=(
             "Afghanistan",
             "Cameroon",
+            "Democratic Republic of Congo",
+            "Ethiopia",
             "Laos",
             "Madagascar",
             "Mali",
             "Nepal",
             "Niger",
+            "Nigeria",
             "Pakistan",
+            "Yemen",
         ),
         options=("Cameroon", "Laos", "Mali", "Nepal", "Niger", "Pakistan"),
     ),

@@ -296,6 +296,16 @@
 .ui-main > .ui-controls { margin-top: 14px; }
 .ui-main > .ui-controls-pair { margin-top: var(--s-3); }
 
+/* The heatmap's chips, a little smaller than every other chart's (docs/visual-spec.md section 7.3,
+   2026-10-13). Its strip also holds Sort rows, which leaves the chips 817 px, and at full size six
+   of T4's twelve did not fit one line: B's first row needed 896 px and wrapped. Text at 15 px, the
+   heatmap's row-name size, with a smaller flag, padding and gaps, fits it in 785. The chip keeps
+   its 30 px height, so the strip is as tall as on any other chart. */
+.ui-chips--tight { column-gap: 6px; }
+.ui-chips--tight .dash-options-list-option:is(.chips > *) { padding: 0 8px 0 6px; gap: 5px; font-size: var(--fs-13); }
+.ui-chips--tight .chip-name { gap: 6px; }
+.ui-chips--tight .chip-flag { width: 21px; height: 14px; }
+
 /* The key's colours on the scatter, heatmap and map take clicks (docs/visual-spec.md section 7.4).
    A layer of buttons over the chart, in the interactive condition only: `.ui-chart` is exactly the
    figure's box, so it positions them; the layer lets every other pointer event through to the

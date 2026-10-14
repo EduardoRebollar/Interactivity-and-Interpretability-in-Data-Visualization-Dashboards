@@ -102,7 +102,9 @@ boolean, one decision point — only the mechanism moved.
   Sudan, Iraq, Jordan, Kyrgyzstan, Laos, Lebanon, Oman, Philippines, Syria, Thailand, Yemen; and,
   added 2026-10-11 for B-T5's map only (61 in all): Algeria, Botswana, Congo, Côte d'Ivoire, Eritrea,
   Gabon, Ghana, Guinea, Malawi, Mauritania, Morocco, Namibia, Senegal, South Africa, Tunisia,
-  Zimbabwe. (Since 2026-10-12 Gabon also draws a line on A-T1, and Ghana and Guinea on B-T6.)
+  Zimbabwe. (Since 2026-10-12 Gabon also draws a line on A-T1, and Ghana and Guinea on B-T6.
+  Since 2026-10-13 Algeria, Eritrea, Guinea, Namibia and South Africa are dots on A-T3, and Cote
+  d'Ivoire and Gabon on B-T3.)
 - **Aggregates (7):** World, Africa, Asia, Europe, North America, South America, Oceania.
 - **Years:** 1985–2024 (2000–2024 until 2026-10-12). 68 entities × 40 years × 4 vaccines =
   **10,880 rows**. The line charts draw every year, so the Years slider has years to set aside;
@@ -187,6 +189,27 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
   Oxy Drive and out of Neon.
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
+
+**Schema v21 (2026-10-13).** Each T3 scatter draws twenty-one dots, not sixteen
+(`study-design.md` §4).
+- A adds Algeria, Eritrea, Guinea, Namibia and South Africa.
+- B adds Benin, the Central African Republic, Cote d'Ivoire, Gabon and Sudan. The first three are
+  A's own dots, placed exactly as there.
+- All are in scope, every one improving at least 20 points less than the key.
+- The scatter names the Central African Republic "CAR", on its dot and its chip.
+- The chips run at most seven to a row, so twenty-one run 7/7/7. Every other chart's rows are
+  unchanged (`visual-spec.md` §7.3).
+
+Question, key, margin and options are unchanged, but a v20 T3 answer was given against a different
+chart. No new event, key, table or column, so `init_db.py` needs no re-run. Nothing collected for
+the study, so no migration.
+
+**Schema v20 (2026-10-13).** Each T4 heatmap draws twelve rows, not eight (`study-design.md` §4):
+A adds Cote d'Ivoire, Iraq, South Africa and Syria; B adds DR Congo, Ethiopia, Nigeria and Yemen,
+all in scope and beyond the six option rows. Question, key, margin and options unchanged, but a v19
+T4 answer was given against a different chart. The heatmap's chips are smaller, so twelve still
+run 6/6 (`visual-spec.md` §7.3). No new event, key, table or column, so `init_db.py` needs no
+re-run. Nothing collected for the study, so no migration.
 
 **Schema v19 (2026-10-12).** Line charts drawn from 1985 (`study-design.md` §4).
 - A v18 T1, T6 or practice answer was given against a chart drawn from 2000.
@@ -974,6 +997,46 @@ context cheap and the reports as long as they need to be.
     Submit 12 px lower (T1's split 944 px), static cards unchanged (`visual-spec.md` §10).
   - `irb/questionnaire.pdf` re-exported (37 pages). No full session was run through the UI.
   - Not to be deployed until HSRRC answers (`study-design.md` §10).
+- 2026-10-13 — **Four more rows on each T4 heatmap** (uncommitted at time of writing), twelve per
+  form. A +Cote d'Ivoire, Iraq, South Africa, Syria; B +DR Congo, Ethiopia, Nigeria, Yemen; all in
+  scope, beyond the six option rows, none on the other form's grid. Key, margin and options
+  unchanged. Rows 31.17 px tall. Schema v20.
+  - Six full-size chips did not fit one line beside Sort rows, so the heatmap's chips are smaller
+    (15 px text, 21 × 14 flags, tighter padding and gaps; `.ui-chips--tight`) and run 6/6. No
+    other chart's chips change.
+  - Headless Chrome, `/preview`, both forms and conditions at 1440 × 790, 1366 × 768 and
+    1440 × 900: 109 checks, no console errors. Every card ends where it did; T4's interactive
+    Submit is at 787 px (751 compact), static 635. The other charts' chips are unchanged.
+  - **`/preview` adds its own bar above the task** (104 px, 112 outside compact mode).
+    Subtract it before comparing Submit positions with `study-design.md` §10.
+  - `irb/questionnaire.pdf` re-exported (37 pages).
+- 2026-10-13 — **Chips spread across their rows on every chart** (uncommitted at time of
+  writing): `justify-content: space-between`, which the handoff set on the line charts alone; the
+  bar, scatter, heatmap and map had packed theirs left (`visual-spec.md` §7.3). T1's Regions and
+  Show stay packed left. Interactive only, no figure change, no schema bump. 1453 tests.
+  - Headless Chrome, every chart in both forms at 1440 × 900 and 1366 × 768: 73 checks. Every
+    row runs edge to edge on one line and takes clicks.
+  - Strip heights, Submit and T1's other boxes are where the committed version has them. No
+    console errors.
+  - `irb/questionnaire.pdf` re-exported.
+- 2026-10-13 — **Five more dots on each T3 scatter** (uncommitted at time of writing), twenty-one
+  per form, so the interactive chips fill three rows of seven (13–26 px apart; sixteen ran 6/5/5,
+  up to 99 px apart). A +Algeria, Eritrea, Guinea, Namibia, South Africa; B +Benin, Central
+  African Republic, Cote d'Ivoire, Gabon, Sudan. Key, margin and options unchanged. Schema v21.
+  - Eduardo's choices: full-size chips with the scatter naming the CAR "CAR", over the heatmap's
+    smaller chips; and B sharing three of A's dots, over expanding the scope.
+  - Found by search over the scope. Every added dot is 4+ points from the others and improves 20+
+    less than the key, the chips fit seven to a row, and every name places clear of every other
+    name and dot. A's closest pair is now 4.1 points (6.1 before), and its pairs within 8 points
+    went from 1 to 6, against B's 7.
+  - `CHIPS_PER_ROW` 7. No other chart's rows change.
+  - New test: no scatter name touches another name or dot. 1459 tests.
+  - Headless Chrome, `/preview`, both forms and conditions at 1440 × 790, 1366 × 768 and
+    1440 × 900: 95 checks.
+    - T3: rows 7/7/7 edge to edge; no name touching a name or dot, as drawn; hover; a chip hides
+      a dot with its name; a key colour fades the rest; static inert.
+    - Every Submit where the committed version has it, on every item, and no console errors.
+  - `irb/questionnaire.pdf` re-exported.
 - **Still to do before the pilot:**
   - **Ask HSRRC about the 1985 start** (the approved form says "2000 to 2024"; `study-design.md`
     §10), and deploy it only once they answer.

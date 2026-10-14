@@ -17,7 +17,8 @@ with `src/assets/zz-bridge.css` (generated) and `src/assets/zz-overrides.css` fo
 markup needs, and the handoff's own inline values as classes (docs/visual-spec.md section 10).
 Every screen sits in `shell`: the header band, the stepper, and the page's background. The short
 screens are `stage_page`; the survey and About you are `pager_screen`. No screen sets an inline
-style except where the value comes from the data (the chips' spacing on a line chart).
+style except the chips' spacing, which the handoff sets inline, and the key buttons' positions,
+which come from the figure (docs/visual-spec.md section 10).
 """
 
 from __future__ import annotations
@@ -177,8 +178,13 @@ UNDO_ICON = (
 )
 # At most this many chips to a row (visual-spec.md section 7.3, 2026-10-12). Until then there were
 # always two rows, each wrapping on its own, so the scatter's sixteen chips stood in four ragged
-# rows. The map's ran five to a row while its strip also held the Highlight box.
-CHIPS_PER_ROW = 6
+# rows. The map's ran five to a row while its strip also held the Highlight box. Seven since
+# 2026-10-13, for the scatter's twenty-one; every other chart's rows are as they were under six.
+CHIPS_PER_ROW = 7
+# The charts whose chips are drawn smaller (`ui-chips--tight`, zz-overrides.css). The heatmap's
+# strip also holds Sort rows, and six of T4's twelve chips at full size did not fit one line beside
+# it (visual-spec.md section 7.3, 2026-10-13).
+TIGHT_CHIP_CHARTS = ("heatmap",)
 
 # How far each key button reaches past its block, across and down, in px: the heatmap's blocks are
 # 16 px tall and touch their neighbours; the scatter's touch above and below (visual-spec.md 7.4).
@@ -216,10 +222,10 @@ def chip_rows(order: list[str], shown: list[str], chart: str = "line") -> list[d
     """The chips in rows of at most CHIPS_PER_ROW, as even as the count allows, the first rows
     taking any extra: each row's options and ticked values.
 
-    Sixteen run 6/5/5 and eight 4/4. The count sets the rows, not the window, so a reorder by
-    coverage moves chips between rows without moving anything else on the page (the handoff's state
-    S5). A chip names its country as the chart prints it (`figures.drawn_name`); its value, which
-    is what is logged, is the full name.
+    Twenty-one run 7/7/7, eighteen 6/6/6 and eight 4/4. The count sets the rows, not the window,
+    so a reorder by coverage moves chips between rows without moving anything else on the page (the
+    handoff's state S5). A chip names its country as the chart prints it (`figures.drawn_name`);
+    its value, which is what is logged, is the full name.
     """
     count = max(1, -(-len(order) // CHIPS_PER_ROW))
     size, extra = divmod(len(order), count)
@@ -252,7 +258,7 @@ def chip_group(task, order: list[str], shown: list[str]) -> list:
     flag-and-name label that moves to another row's checklist, and the renderer throws (headless
     Chrome, 2026-09-26).
     """
-    justify = "space-between" if task.chart == "line" else "flex-start"
+    tight = " ui-chips--tight" if task.chart in TIGHT_CHIP_CHARTS else ""
     return [
         html.Span("Countries", className="ui-legend"),
         *[
@@ -260,10 +266,11 @@ def chip_group(task, order: list[str], shown: list[str]) -> list:
                 id=control_id("chips", index),
                 options=row["options"],
                 value=row["value"],
-                className="chips ui-chips",
+                className="chips ui-chips" + tight,
                 labelClassName="chip-name",
-                # Data-driven, as in the handoff: line charts spread their chips across the row.
-                style={"justifyContent": justify},
+                # Inline, as in the handoff, which spread the line charts' chips across the row.
+                # Every chart's since 2026-10-13 (visual-spec.md section 7.3).
+                style={"justifyContent": "space-between"},
             )
             for index, row in enumerate(chip_rows(order, shown, task.chart))
             if row["options"]

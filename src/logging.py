@@ -60,6 +60,17 @@ from src import config, db
 
 # Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
 #
+# v21 (2026-10-13): each T3 scatter draws twenty-one dots, not sixteen (docs/study-design.md
+# section 4). A: Algeria, Eritrea, Guinea, Namibia and South Africa; B: Benin, Central African
+# Republic, Cote d'Ivoire, Gabon and Sudan. The scatter names the Central African Republic "CAR".
+# Question, key and options unchanged, but a v20 T3 answer was given against a different chart. No
+# new event, key, table or column, so scripts/init_db.py needs no re-run.
+#
+# v20 (2026-10-13): each T4 heatmap draws twelve rows, not eight (docs/study-design.md section 4).
+# A: Cote d'Ivoire, Iraq, South Africa and Syria; B: DR Congo, Ethiopia, Nigeria and Yemen.
+# Question, key and options unchanged, but a v19 T4 answer was given against a different chart. No
+# new event, key, table or column, so scripts/init_db.py needs no re-run.
+#
 # v19 (2026-10-12): the line charts draw 1985-2024, not 2000-2024 (docs/study-design.md section
 # 4). Every line item still asks about 2000 onward.
 # - A v18 T1, T6 or practice answer was given against a chart drawn from 2000.
@@ -189,7 +200,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 21
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

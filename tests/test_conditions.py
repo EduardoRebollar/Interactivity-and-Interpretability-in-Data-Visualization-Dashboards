@@ -896,9 +896,50 @@ def test_every_scatter_dot_is_named_and_coloured_by_its_change(rows, task):
         assert trace.marker.symbol is None
         name = f"dot:{trace.name}"
         (label,) = [a for a in figure.layout.annotations if a.name == name]
-        assert label.text == figures.tag_name(trace.name)
+        assert label.text == figures.drawn_name(trace.name, "scatter")
         (knockout,) = [s for s in figure.layout.shapes if s.name == name]
         assert knockout.fillcolor == config.BACKGROUND and knockout.layer == "between"
+
+
+@pytest.mark.parametrize("task", SCATTERS, ids=_task_id)
+def test_no_dot_name_touches_another_name_or_dot(rows, task):
+    """visual-spec.md section 1: each name sits beside its dot, on the side
+    config.SCATTER_LABEL_SIDES gives it, clear of every other name and dot. Twenty-one dots since
+    2026-10-13, and a country on both scatters takes one side on both, so both charts are checked.
+
+    Measured in the plot's pixels (4 px a point) as `figures._name_dot` estimates a name: 0.56 em a
+    character at 11.5 px, 12 px tall. Calibrated against both charts in headless Chrome."""
+    figure = figures.build_figure(
+        list(task.entities), task.vaccine, rows, chart_type="scatter", years=task.years
+    )
+    px, em, half_height, radius = 4, 11.5, 6, config.SCATTER_MARKER_SIZE / 2
+    dots = {trace.name: (trace.x[0] * px, trace.y[0] * px) for trace in figure.data}
+    boxes = {}
+    for label in figure.layout.annotations:
+        if not (label.name or "").startswith("dot:"):
+            continue
+        x, y, width = label.x * px, label.y * px, len(label.text) * em * 0.56
+        if label.yshift:  # above, centred
+            left, y = x - width / 2, y + label.yshift
+        elif label.xanchor == "left":  # right of the dot
+            left = x + label.xshift
+        else:  # left of the dot
+            left = x + label.xshift - width
+        boxes[label.name[4:]] = (left, left + width, y - half_height, y + half_height)
+    assert set(boxes) == set(dots)
+
+    def overlap(a, b):
+        return a[0] < b[1] and b[0] < a[1] and a[2] < b[3] and b[2] < a[3]
+
+    def covers(box, dot):
+        nearest_x = min(max(dot[0], box[0]), box[1])
+        nearest_y = min(max(dot[1], box[2]), box[3])
+        return (nearest_x - dot[0]) ** 2 + (nearest_y - dot[1]) ** 2 < radius**2
+
+    for name, box in boxes.items():
+        on_dots = [other for other, dot in dots.items() if other != name and covers(box, dot)]
+        on_names = [other for other, b in boxes.items() if other != name and overlap(box, b)]
+        assert not on_dots and not on_names, (name, on_dots, on_names)
 
 
 @pytest.mark.parametrize(
@@ -1073,7 +1114,8 @@ def test_a_hidden_row_fades_where_it_is_drawn_and_follows_a_sort(rows):
     before = {name: [c.fillcolor for c in _cells(figure, name)] for name in names}
     figures.sort_rows(figure, "min")
     position = list(figure.layout.yaxis.categoryarray).index(hidden)
-    top = round(position - 0.5 + 2 / 46.75, 6)  # 2 px of the 4 px gap, in rows
+    row_px = (config.CHART_HEIGHT - figure.layout.margin.t - figure.layout.margin.b) / len(names)
+    top = round(position - 0.5 + 2 / row_px, 6)  # 2 px of the 4 px gap, in rows
     for cell in _cells(figure, hidden):
         assert cell.opacity == config.FADED_OPACITY
         assert f",{top} " in cell.path, "the faded row is drawn where the sort put it"
@@ -1313,10 +1355,11 @@ def test_an_unknown_chart_type_is_refused(rows):
         figures.build_figure(["Nigeria"], VACCINE, rows, chart_type="pie")
 
 
-def test_the_scatter_is_capped_at_sixteen_named_dots(rows):
-    """Not by the palette, as the line is: dots are coloured by change (visual-spec.md s. 6)."""
+def test_the_scatter_is_capped_at_twenty_one_named_dots(rows):
+    """Not by the palette, as the line is: dots are coloured by change (visual-spec.md s. 6).
+    Sixteen until 2026-10-13."""
     too_many = config.COUNTRIES[: config.MAX_SCATTER_DOTS + 1]
-    with pytest.raises(FigureError, match="at most 16"):
+    with pytest.raises(FigureError, match="at most 21"):
         figures.build_figure(too_many, VACCINE, rows, chart_type="scatter", years=(2000, 2024))
 
 

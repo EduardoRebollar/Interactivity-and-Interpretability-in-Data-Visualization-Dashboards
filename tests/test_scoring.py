@@ -173,22 +173,50 @@ def test_the_bar_options_sit_at_the_ranks_section_4_records():
 
 @needs_data
 def test_the_dots_added_to_each_scatter_are_no_rivals_for_the_key():
-    """Section 4: sixteen dots per form since 2026-10-11. The ten that are not options each
-    improved at least 20 points less than the key, so they add legend entries to match, not
-    answers to weigh; the six options are the six dots the item had before, and B's closest pair
-    is still Cambodia and Pakistan on the 4-point floor."""
+    """Section 4: sixteen dots per form since 2026-10-11, twenty-one since 2026-10-13. The fifteen
+    that are not options each improved at least 20 points less than the key, so they add dots to
+    read, not answers to weigh; the six options are the six dots the item had before. B's closest
+    pair is still Cambodia and Pakistan on the 4-point floor; A's is Algeria or Eritrea with Kenya,
+    since 2026-10-13. B shares three of A's dots, which sit in the same places on both charts."""
     table = keys.key_table()
-    for form in ("A", "B"):
-        task = next(t for t in tasks.for_form(form) if t.task_id == "T3")
+    scatters = {form: next(t for t in tasks.for_form(form) if t.task_id == "T3") for form in "AB"}
+    for form, task in scatters.items():
         evidence = table[(form, "T3")].evidence
         improvement = evidence["improvement"]
         key = table[(form, "T3")].correct
-        assert len(improvement) == 16, form
+        assert len(improvement) == 21, form
         added = set(task.entities) - set(task.options)
-        assert len(added) == 10, form
+        assert len(added) == 15, form
         assert all(improvement[key] - improvement[dot] >= 20 for dot in added), form
-    assert table[("A", "T3")].evidence["closest_dots_pp"] == 6.08
+    assert table[("A", "T3")].evidence["closest_dots_pp"] == 4.12
     assert table[("B", "T3")].evidence["closest_dots_pp"] == 4.0
+    shared = set(scatters["A"].entities) & set(scatters["B"].entities)
+    assert shared == {"Benin", "Central African Republic", "Sudan"}
+    assert not shared & (set(scatters["A"].options) | set(scatters["B"].options))
+
+
+@needs_data
+def test_the_rows_added_to_each_heatmap_sit_beyond_the_option_rows():
+    """Section 4: twelve rows per form since 2026-10-13. The options are the six rows nearest the
+    question's end, A's six lowest and B's six highest, and the six rows that are not options are
+    strictly beyond them, so the grid's extra rows add cells to scan, not answers to weigh. None of
+    them is on the other form's grid."""
+    table = keys.key_table()
+    grids = {form: next(t for t in tasks.for_form(form) if t.task_id == "T4") for form in "AB"}
+    for form, task in grids.items():
+        evidence = table[(form, "T4")].evidence
+        lowest = evidence["extreme"] == "lowest"
+        extremes = {
+            name: value
+            for name, (value, _year) in evidence["row_minima" if lowest else "row_maxima"].items()
+        }
+        assert len(extremes) == 12, form
+        ranked = sorted(extremes, key=extremes.get, reverse=not lowest)
+        assert set(ranked[:6]) == set(task.options), form
+        sixth, seventh = extremes[ranked[5]], extremes[ranked[6]]
+        assert (seventh > sixth) if lowest else (seventh < sixth), form
+    shared = set(grids["A"].entities) & set(grids["B"].entities)
+    assert shared == {"Mali", "Pakistan"}
 
 
 @needs_data

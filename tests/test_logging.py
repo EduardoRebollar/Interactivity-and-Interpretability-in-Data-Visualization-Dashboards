@@ -131,10 +131,10 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_nineteen():
-    """v19: the line charts drawn from 1985, T6 asking "after 2000", three lines swapped (v18: the
-    changes after the first pilot session)."""
-    assert SCHEMA_VERSION == 19
+def test_schema_version_is_twenty_one():
+    """v21: each T3 scatter draws twenty-one dots, not sixteen (v20: each T4 heatmap draws twelve
+    rows, not eight)."""
+    assert SCHEMA_VERSION == 21
 
 
 @pytest.mark.parametrize(

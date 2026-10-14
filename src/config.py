@@ -281,8 +281,8 @@ TAG_EDGE_COLOR = "#E4D8CC"  # 1.40:1, decorative: the tag's name carries it
 
 # The scatter (visual-spec.md sections 1 and 4, the chart handoff, 2026-10-11). Every dot is named
 # beside it and coloured by its change from the first year to the second, so it needs no legend and
-# no shape of its own; at most sixteen dots, T3's number.
-MAX_SCATTER_DOTS = 16
+# no shape of its own; at most twenty-one dots, T3's number since 2026-10-13 (sixteen before).
+MAX_SCATTER_DOTS = 21
 SCATTER_MARKER_SIZE = 9
 # The change scale: seven steps, three blues for a rise, grey within 5 points, three reds for a
 # fall. (upper bound of the step, colour), from the largest rise down; a change exactly on a
@@ -298,7 +298,9 @@ CHANGE_STEPS: list[tuple[float, str]] = [
     (-40, "#A3262C"),  # -20 to -40         7.31:1
     (None, "#6E1D20"),  # less than -40    11.29:1
 ]
-# Where a dot's name goes when the right would collide, as the handoff places them per form.
+# Where a dot's name goes when the right would collide, as the handoff places them per form. Keyed
+# by country, so a country on both scatters (Benin, the Central African Republic and Sudan, since
+# 2026-10-13) takes one side on both; South Africa and Cote d'Ivoire joined that day.
 SCATTER_LABEL_SIDES: dict[str, str] = {
     "Niger": "left",
     "Ethiopia": "left",
@@ -307,12 +309,17 @@ SCATTER_LABEL_SIDES: dict[str, str] = {
     "Madagascar": "left",
     "Kenya": "left",
     "Tanzania": "left",
+    "South Africa": "left",
     "Nepal": "left",
     "Iraq": "left",
     "India": "left",
     "Philippines": "left",
+    "Cote d'Ivoire": "left",
     "Bangladesh": "above",
 }
+# The scatter's own short names (2026-10-13): seven chips to a row fit only if "Central African
+# Rep." is "CAR", as on the map (visual-spec.md section 7.3). Its dot and its chip both say it.
+SCATTER_SHORT_NAMES: dict[str, str] = {"Central African Republic": "CAR"}
 
 # A colour per bar, by country (visual-spec.md section 4, the chart handoff, 2026-10-11). A country
 # in COUNTRY_COLORS keeps its line colour; these are the T2 countries without one. Chosen by search

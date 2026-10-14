@@ -115,8 +115,8 @@ This is deliberate. If interactive participants could pull in entities that stat
 not, interactivity would be changing *what data is available* as well as *how it is worked with*, and
 no observed difference could be attributed to interactivity alone.
 
-At most 8 lines plus the dashed World reference, or 16 scatter dots (2026-10-11), per
-`docs/visual-spec.md` §6. The bar chart, the scatter, the heatmap and the map are not limited by the
+At most 8 lines plus the dashed World reference, or 21 scatter dots (16 from 2026-10-11, 21 from
+2026-10-13), per `docs/visual-spec.md` §6. The bar chart, the scatter, the heatmap and the map are not limited by the
 line palette: bars have colours of their own, dots are coloured by their change, and rows and
 countries take the blue bands (`docs/visual-spec.md` §4).
 
@@ -382,10 +382,12 @@ diagonal?")
 |---|---|---|
 | Dots, 2000 → 2024 | Burkina Faso 45 → 91, Chad 38 → 68, Ethiopia 30 → 73, Mali 43 → 82, **Niger 34 → 86**, Nigeria 29 → 67 | Bangladesh 82 → 97, Cambodia 59 → 83, **India 58 → 94**, Indonesia 75 → 78, Nepal 74 → 97, Pakistan 59 → 87 |
 | Added 2026-10-11 | Benin 78 → 63, Cameroon 62 → 77, Central African Republic 37 → 42, Egypt 98 → 97, Kenya 82 → 91, Libya 94 → 86, Madagascar 57 → 60, Mozambique 70 → 70, Sudan 62 → 39, Tanzania 79 → 83 | Iraq 80 → 90, Jordan 91 → 96, Kyrgyzstan 99 → 85, Laos 51 → 67, Lebanon 83 → 49, Oman 99 → 99, Philippines 78 → 71, Syria 86 → 73, Thailand 97 → 92, Yemen 74 → 42 |
+| Added 2026-10-13 | Algeria 86 → 92, Eritrea 81 → 95, Guinea 46 → 63, Namibia 79 → 74, South Africa 73 → 74 | Benin 78 → 63, Central African Republic 37 → 42, Cote d'Ivoire 65 → 77, Gabon 45 → 61, Sudan 62 → 39 |
 | Improvement, key vs runner-up | +52 vs +46 (Burkina Faso): 6 | +36 vs +28 (Pakistan): 8 |
-| Best added dot | +15 (Cameroon), 37 below the key | +16 (Laos), 20 below the key |
-| Dots below the diagonal | 4 | 6 |
-| Closest two dots | 6.1 points (Ethiopia, Nigeria) | 4.0 points (Cambodia, Pakistan) |
+| Best added dot | +17 (Guinea, 2026-10-13), 35 below the key | +16 (Laos; Gabon, 2026-10-13), 20 below the key |
+| Dots below the diagonal | 5 (4 until 2026-10-13) | 8 (6 until 2026-10-13) |
+| Closest two dots | 4.1 points (Algeria and Eritrea, each with Kenya; 6.1, Ethiopia and Nigeria, until 2026-10-13) | 4.0 points (Cambodia, Pakistan) |
+| Pairs of dots within 8 points | 6 (1 until 2026-10-13) | 7 |
 | Options | Burkina Faso, Chad, Ethiopia, Mali, Niger, Nigeria | Bangladesh, Cambodia, India, Indonesia, Nepal, Pakistan |
 | Key's change colour, shared with | more than +40: Burkina Faso (+46), Ethiopia (+43) | +20 to +40: Pakistan (+28), Cambodia (+24), Nepal (+23) |
 | Key | **Niger** | **India** |
@@ -394,6 +396,28 @@ Every dot is named beside it and coloured by its change (`docs/visual-spec.md` �
 cost is choosing among the dots that share the darkest change colour: judging, by eye, which sits
 furthest above the diagonal, 6 points ahead in A and 8 in B. Hover gives each dot's two values
 exactly.
+
+> **Five dots added to each form, 2026-10-13** (Eduardo), so that in the interactive condition the
+> chips fill three rows of seven (`docs/visual-spec.md` §7.3). Sixteen ran 6/5/5, with up to
+> 99 px between chips. Twenty-one dots per form. As on 2026-10-11, every added dot improved at
+> least 20 points less than the key. The key, the runner-up, the margin and the options are
+> unchanged, and the key shares its colour with the same dots as before. The sets were chosen by
+> search, all in scope, under three conditions:
+> - the 4-point floor;
+> - a name beside every dot that touches no other name or dot (`config.SCATTER_LABEL_SIDES`);
+> - the 21 chips running seven to a row, each row on one line.
+> - **A** adds five African countries, and no existing name moves. Its closest pair falls from 6.1
+>   points to 4.1, and its pairs within 8 points rise from 1 to 6, against B's 7. The forms' density
+>   now nearly matches (Matching the forms, below).
+> - **B shares three of A's dots:** Benin, the Central African Republic and Sudan, placed exactly
+>   as in A (the two T4 grids already share Mali and Pakistan). Asia's eligible countries were all
+>   used on 2026-10-11. No in-scope country that appears only on B placed its name clear of B's
+>   crowded top-right corner. B's additions sit in the open middle and lower left: no new pair
+>   within 8 points, the nearest 8.0 (Benin, Philippines). Expanding the scope instead, with
+>   Bolivia, Papua New Guinea, Panama and the like, was offered and not taken (Eduardo).
+> - **The scatter names the Central African Republic "CAR"**, on its dot and its chip, as the map
+>   does: at full size, "Central African Rep." would not fit a row of seven. It is not an option in
+>   either form, and T6's line tag keeps the longer name.
 
 > **Highlighting from the key, 2026-10-12** (pilot session 1). The pilot's participant wanted to
 > click the key to filter. A click on the key's band now fades every dot outside it
@@ -441,7 +465,7 @@ which.)
 | | Form A | Form B |
 |---|---|---|
 | Asks for | the lowest cell | the highest cell |
-| Rows | Benin, Burkina Faso, Cambodia, Chad, India, Indonesia, Mali, Pakistan | Afghanistan, Cameroon, Laos, Madagascar, Mali, Nepal, Niger, Pakistan |
+| Rows (12 since 2026-10-13, below) | Benin, Burkina Faso, Cambodia, Chad, Cote d'Ivoire, India, Indonesia, Iraq, Mali, Pakistan, South Africa, Syria | Afghanistan, Cameroon, Democratic Republic of Congo, Ethiopia, Laos, Madagascar, Mali, Nepal, Niger, Nigeria, Pakistan, Yemen |
 | Key cell | **Chad, 2005: 27%** | **Nepal, 2024: 97%** |
 | Next row's | Benin, lowest 44% (2024) | Pakistan, highest 86% (2024) |
 | Margin | 17 | 11 |
@@ -455,6 +479,31 @@ and Highest cell first in B (since 2026-10-12, below). Since
 2026-10-11 the cells are banded (`docs/visual-spec.md` §4): the key cell is the only one of its
 colour in either grid, at least one band from the next. A's options are its six lowest rows, B's
 its six highest.
+
+> **Four more rows per form, 2026-10-13** (Eduardo), so a static reader has more cells to scan:
+> twelve rows, not eight. Every added row sits beyond the six option rows, on the far side of the
+> grid from the key, as T2's added bars and T3's added dots did. **The key, its margin, its band,
+> the options and the key's place among them are unchanged.** No added row is on the other form's
+> grid, so the forms still share only Mali and Pakistan. MCV1, every cell reported:
+>
+> | Form | Row | 2000 | 2005 | 2010 | 2015 | 2020 | 2024 | Its extreme cell |
+> |---|---|---|---|---|---|---|---|---|
+> | A | Cote d'Ivoire | 68 | 84 | 64 | 67 | 63 | 75 | lowest 63, 36 above Chad's 27 |
+> | A | Iraq | 86 | 69 | 75 | 71 | 93 | 91 | lowest 69 |
+> | A | South Africa | 72 | 64 | 72 | 86 | 84 | 76 | lowest 64 |
+> | A | Syria | 84 | 81 | 82 | 64 | 70 | 81 | lowest 64 |
+> | B | DR Congo | 26 | 61 | 66 | 65 | 62 | 55 | highest 66 |
+> | B | Ethiopia | 28 | 40 | 64 | 56 | 57 | 72 | highest 72 |
+> | B | Nigeria | 33 | 41 | 56 | 42 | 60 | 57 | highest 60 |
+> | B | Yemen | 70 | 73 | 68 | 61 | 53 | 41 | highest 73, 24 below Nepal's 97 |
+>
+> In A the added rows' lowest cells sit 6 or more above Pakistan's 57, the sixth option row; in B
+> their highest sit 5 or more below Mali's 78. Each was picked for a cell that dips (A) or rises (B)
+> towards the middle bands, so no added row reads at a glance as all light or all dark. Two African
+> and two Asian rows in A; B had one Asian candidate, Yemen, so three of its four are African. Not
+> Myanmar, the practice's country. Rows are 31.17 px tall, not 46.75 (`docs/visual-spec.md` §1).
+> The heatmap's chips are drawn a little smaller, so the twelve still run in two rows of six beside
+> Sort rows (`docs/visual-spec.md` §7.3), and the interactive card keeps its height (§10).
 
 > **Highlighting from the key, 2026-10-12** (pilot session 1). A click on a colour in the key fades
 > every cell outside that band (`docs/visual-spec.md` §7.4). No other row has a cell in the key
@@ -654,8 +703,9 @@ than quietly unbalancing the forms. Eight known differences go to the pilot (§1
   Brazil's decline (31 points over a decade). A-T1 is probably the easier form.
 - A-T4's key clears the next row by 17 points and two bands, B-T4's by 11 and one (T4 above). A-T4
   is probably the easier form.
-- B-T3's closest dots sit on the 4-point floor, and since 2026-10-11 B's sixteen dots are more
-  crowded than A's (T3 above).
+- B-T3's closest dots sit on the 4-point floor. Since 2026-10-11 B's dots were also more crowded
+  than A's. Since 2026-10-13 the gap is small: A's closest pair is 4.1 points, and A has 6 pairs
+  within 8 points against B's 7 (T3 above). Three of B's dots are A's, placed exactly as in A.
 - The two T6 crossings are drawn differently. In A, two lines converge from opposite directions. In
   B, one line climbs to meet a level one, and the lines come within 1 point a year before they
   cross. A's nearest extra line passes closer to where the pair meet (Nigeria, 7.4 points) than
@@ -855,6 +905,33 @@ the controls, not the questions or the keys.
   the mid-1980s or later, and each pair's earlier crossings would only grow. Also not taken: asking
   about the whole of 1985–2024. A-T1 fails its rule over that period, India's 1990–1992 dip being
   14 points, and Ukraine is unreported for seven of those years.
+
+### Revision 2026-10-13: four more rows on T4
+
+- **Added:** four rows to each T4 heatmap, every one beyond the six option rows, on the far side
+  from the key (T4 above). Twelve rows per form. Form A: Cote d'Ivoire, Iraq, South Africa, Syria.
+  Form B: Democratic Republic of Congo, Ethiopia, Nigeria, Yemen. All already in the scope.
+- **Unchanged:** the question, the key, its margin and band, the options and the key's position
+  among them. No row is shared with the other form's grid beyond Mali and Pakistan.
+- **Visual:** rows 31.17 px tall, not 46.75; both conditions alike (`docs/visual-spec.md` §1). The
+  heatmap's chips are smaller, so twelve run 6/6 beside Sort rows (§7.3 there), and neither
+  card's height changes (§10).
+- **Log schema v20:** a v19 T4 answer was given against eight rows, a v20 one against twelve
+  (`src/logging.py`). Nothing collected for the study.
+
+### Revision 2026-10-13: five more dots on T3
+
+- **Added:** five dots to each T3 scatter, every one improving at least 20 points less than the key
+  (T3 above). Twenty-one dots per form. Form A: Algeria, Eritrea, Guinea, Namibia, South Africa.
+  Form B: Benin, Central African Republic, Cote d'Ivoire, Gabon, Sudan, the first three also on A's
+  scatter. All already in the scope.
+- **Unchanged:** the question, the key, its margin, the options and the key's position among them,
+  and which dots share the key's colour. A's closest pair is now 4.1 points (6.1 before).
+- **Visual:** both conditions alike. The Central African Republic's dot is named "CAR" (its chip
+  too, in the interactive condition). The chips run seven to a row, 7/7/7 (`docs/visual-spec.md`
+  §7.3), and no other chart's rows change.
+- **Log schema v21:** a v20 T3 answer was given against sixteen dots, a v21 one against
+  twenty-one (`src/logging.py`). Nothing collected for the study.
 
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
@@ -1501,7 +1578,7 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   Neon until `scripts/archive_consents.py` moves it to the Drive. Changed because of it:
   - the practice asks about 2019–2021, not 2015–2021 (§4);
   - the heatmap's row sort is A–Z, Lowest cell first, Highest cell first; Average went (§4, T4);
-  - the chips run at most six to a row (`docs/visual-spec.md` §7.3);
+  - the chips run at most six to a row (`docs/visual-spec.md` §7.3; seven since 2026-10-13);
   - a Years slider replaces View on the line charts, and zoom is named once in the instructions
     (`docs/visual-spec.md` §7.6);
   - a click on a line fades the others instead of hiding them (`docs/visual-spec.md` §7.3);
@@ -1524,8 +1601,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
     mean the floor is too tight for that chart type.
   - **Form equivalence.** T1's falling line is Ukraine's 80-point collapse in form A and Brazil's
-    31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor, and
-    its sixteen dots are more crowded than A's (§4). The T6 crossings are drawn differently (§4).
+    31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor and
+    A-T3's 0.1 above it; since 2026-10-13 the two scatters are about as crowded, and share three
+    dots (§4). The T6 crossings are drawn differently (§4).
   - **Whether T3 sits at ceiling in both conditions (2026-10-11).** Its dots are named and coloured
     by change, which removes the legend lookup that was its static cost (§4). If static accuracy
     matches interactive accuracy near ceiling, T3 measures little about hover.
@@ -1595,6 +1673,10 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   further from the chart (`visual-spec.md` §10). The splits are now T1 944 px (908 in compact
   mode), T3 874 (838), and T5 819 (783 at 1440 wide, 812 at 1366 × 768). A-T6's interactive
   Submit ends at about 776 px, still inside a 1440 × 790 window. The static cards are unchanged.
+  T4's twelve rows (2026-10-13) leave its cards' heights as they were: the interactive Submit
+  ends at 787 px (751 in compact mode), inside a 790 px window (`visual-spec.md` §10). So do
+  T3's twenty-one dots, the same day. The chips still take three rows, now of seven, so T3's split
+  stays 874 px (838 in compact mode).
 - **Hover is not logged**, so affordance use cannot be observed for T3, T4 and T6 (§7).
 - **Keyboard-only participants.** Hover and clicking a line are mouse-only, so a
   keyboard-only participant in the interactive condition meets T3 and T6 with only the chips, and T4
