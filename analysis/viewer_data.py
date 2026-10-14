@@ -240,18 +240,28 @@ def health(
         return checks
 
     versions = sorted({r["schema_version"] for r in records if r["schema_version"] is not None})
-    if len(versions) != 1:
+    current = study_logging.SCHEMA_VERSION
+    named = ", ".join(f"v{v}" for v in versions)
+    if not versions or not reshape.poolable(versions):
         checks.append(
             Check(
                 "Schema version", FAIL, f"Events mix schema versions {versions}; do not pool them."
             )
         )
-    elif versions[0] != study_logging.SCHEMA_VERSION:
+    elif not reshape.poolable([*versions, current]):
+        checks.append(
+            Check("Schema version", WARN, f"Events are {named}; this code writes v{current}.")
+        )
+    elif versions != [current]:
+        # Declared in reshape.POOLED_VERSIONS, with the reason, which the tab shows.
+        reason = next(
+            text for group, text in reshape.POOLED_VERSIONS.items() if {*versions, current} <= group
+        )
         checks.append(
             Check(
                 "Schema version",
-                WARN,
-                f"Events are v{versions[0]}; this code writes v{study_logging.SCHEMA_VERSION}.",
+                OK,
+                f"Events are {named}, pooled with v{current} as declared: {reason}",
             )
         )
     else:

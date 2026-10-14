@@ -119,10 +119,27 @@ def test_mixed_schema_versions_fail(complete_records):
 
 
 def test_an_older_single_schema_version_warns(complete_records):
+    """v21 is declared poolable with nothing (v22 is, with v23: the next tests)."""
     records = _fresh(complete_records)
     for record in records:
-        record["schema_version"] = study_logging.SCHEMA_VERSION - 1
+        record["schema_version"] = 21
     assert _checks(records)["Schema version"].status == vd.WARN
+
+
+def test_versions_declared_poolable_pass_and_say_so(complete_records):
+    """v22 and v23 (A-T6 reworded, 2026-10-14): participant 2's v22 session alone, and beside a
+    v23 one, both pass, and the check names the pooling rather than staying silent about it."""
+    assert study_logging.SCHEMA_VERSION == 23
+    only_v22 = _fresh(complete_records)
+    for record in only_v22:
+        record["schema_version"] = 22
+    mixed = _fresh(complete_records)
+    mixed[0]["schema_version"] = 22
+    for records in (only_v22, mixed):
+        check = _checks(records)["Schema version"]
+        assert check.status == vd.OK
+        assert "pooled with v23 as declared" in check.detail
+        assert "A-T6" in check.detail
 
 
 def test_an_unknown_event_name_fails(complete_records):

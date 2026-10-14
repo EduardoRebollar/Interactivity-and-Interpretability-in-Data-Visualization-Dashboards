@@ -19,6 +19,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from analysis import reshape  # noqa: E402
 from src import config, db  # noqa: E402
 from src import logging as study_logging  # noqa: E402
 
@@ -92,10 +93,13 @@ def main() -> int:
 
     versions = {r.get("schema_version") for r in records}
     if len(versions) > 1:
-        print(
-            f"WARNING: mixed schema versions {sorted(versions)} — do not pool these.",
-            file=sys.stderr,
-        )
+        if None not in versions and reshape.poolable(versions):
+            print(f"  schema versions {sorted(versions)}, poolable as analysis/reshape.py declares")
+        else:
+            print(
+                f"WARNING: mixed schema versions {sorted(versions, key=str)} — do not pool these.",
+                file=sys.stderr,
+            )
     return 0
 
 

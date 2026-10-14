@@ -189,6 +189,16 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
 - This logging IS the study data. Do not remove, disable, or "clean up as unused" any logging code.
 - Log schema changes are breaking — flag them explicitly. Bump `SCHEMA_VERSION` in `src/logging.py`.
 
+**Schema v23 (2026-10-14), the first change mid-study.** A-T6 reworded: "The Central African
+Republic's coverage became lower than Ethiopia's at some point after 2000. …", the same crossing
+named from the other line (`study-design.md` §4). Chart, options and key (2004-2008) unchanged;
+B-T6 unchanged.
+- Participant `2` (seq 14) answered under v22 and is kept (Eduardo).
+- `analysis/reshape.py` `POOLED_VERSIONS` declares v22 and v23 poolable, with the reason. Any other
+  mix is still refused, and the viewer's Health tab names the pooling.
+- A test ties each T6 prompt's direction to `keys.PARAMS`.
+- No new event, key, table or column, so `init_db.py` needs no re-run. Not yet put to HSRRC.
+
 **Schema v22 (2026-10-13).** Four questions added (`study-design.md` §6.1, §6.2).
 - `controls_rating` gains b4, "I hovered over the charts to see exact values.", the only record
   of hover.
@@ -1103,6 +1113,12 @@ context cheap and the reports as long as they need to be.
   - The first participant is still seq 14. To check production after the push without using a
     sequence number, ask the page callback to draw the survey, About you and finished screens
     from a made-up session state (`/_dash-update-component`, `url.pathname`); it writes nothing.
+- 2026-10-14 — **A-T6 reworded after participant 2** (uncommitted at time of writing): "The
+  Central African Republic's coverage became lower than Ethiopia's …", key unchanged. Schema v23;
+  participant 2's v22 data kept and pooled as declared (`study-design.md` §10). 1483 tests.
+  Headless Chrome, `/preview`, A-T6 and B-T6 in both conditions at 1440 × 790 and 1366 × 768: the
+  new wording on one line, every Submit where the committed version has it, no console errors.
+  `irb/questionnaire.pdf` re-exported (38 pages). Not yet put to HSRRC.
 - **Now: data collection** (n ≥ 25), in person (request form 5B), with the researcher script in
   `study-design.md` §8.
   - After each session: `archive_consents.py` moves the signed form to the Drive and out of Neon.

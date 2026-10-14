@@ -265,6 +265,29 @@ def test_mixed_schema_versions_are_refused(tmp_path):
         reshape.events_frame(records)
 
 
+def test_versions_declared_poolable_are_scored_together(tmp_path):
+    """v22 and v23 (A-T6 reworded, 2026-10-14; study-design.md section 10): participant 2
+    answered A-T6 under v22, and is kept. Their session scores as it would under v23. Nothing
+    else is declared, so v21 beside v23 is still refused."""
+    assert study_logging.SCHEMA_VERSION == 23
+    assert set(reshape.POOLED_VERSIONS) == {frozenset({22, 23})}
+    run_session(tmp_path / "v22", _participant_for("interactive", "A"), correct_answer)
+    run_session(tmp_path / "v23", _participant_for("static", "A"), correct_answer)
+    v22 = [{**r, "schema_version": 22} for r in study_logging.read_all(tmp_path / "v22")]
+    v23 = study_logging.read_all(tmp_path / "v23")
+
+    pooled = reshape.tidy_tasks(reshape.events_frame(v22 + v23))
+    alone = reshape.tidy_tasks(reshape.events_frame(study_logging.read_all(tmp_path / "v22")))
+    v22_rows = pooled[pooled["participant_id"].isin(set(alone["participant_id"]))]
+    pd.testing.assert_frame_equal(v22_rows.reset_index(drop=True), alone.reset_index(drop=True))
+    a_t6 = v22_rows[(v22_rows["form"] == "A") & (v22_rows["task_id"] == "T6")]
+    assert list(a_t6["correct"]) == [True]
+
+    v21 = [{**r, "schema_version": 21} for r in study_logging.read_all(tmp_path / "v22")]
+    with pytest.raises(reshape.ReshapeError, match="schema versions"):
+        reshape.events_frame(v21 + v23)
+
+
 def test_an_interactive_event_in_the_static_condition_fails_the_manipulation_check(tmp_path):
     run_session(tmp_path, _participant_for("static", "A"), correct_answer)
     records = study_logging.read_all(tmp_path)

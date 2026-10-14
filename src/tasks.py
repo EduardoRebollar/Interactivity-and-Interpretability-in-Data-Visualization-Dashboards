@@ -238,10 +238,13 @@ FORM_A: tuple[Task, ...] = (
         task_id="T6",
         form="A",
         kind="crossing",
-        # "after 2000" since 2026-10-12, when the chart began at 1985: Ethiopia is also above the
-        # Central African Republic in 1994-1997.
+        # "after 2000" since 2026-10-12, when the chart began at 1985: the Central African Republic
+        # is also below Ethiopia in 1994-1997. Named from the Central African Republic's line since
+        # 2026-10-14, mid-study; until then "Ethiopia's coverage became higher than the Central
+        # African Republic's ...". The same crossing, so the same key (docs/study-design.md
+        # section 4).
         prompt=(
-            "Ethiopia's coverage became higher than the Central African Republic's at some point "
+            "The Central African Republic's coverage became lower than Ethiopia's at some point "
             "after 2000. Roughly when did that first happen?"
         ),
         vaccine="DTP3",

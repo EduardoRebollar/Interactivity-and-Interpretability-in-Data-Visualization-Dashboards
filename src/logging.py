@@ -58,7 +58,14 @@ from typing import Any, Protocol
 
 from src import config, db
 
-# Bump on any breaking change to the record shape. Analysis must refuse to mix versions.
+# Bump on any breaking change to the record shape. Analysis must refuse to mix versions, except
+# those it declares poolable (analysis/reshape.py POOLED_VERSIONS).
+#
+# v23 (2026-10-14): A-T6 reworded mid-study, to the same crossing named from the other line: "The
+# Central African Republic's coverage became lower than Ethiopia's ..." (docs/study-design.md
+# section 4). Chart, options and key unchanged, but a v22 A-T6 answer was given to the old words.
+# One participant answered under v22; analysis pools v22 with v23, as declared. No new event, key,
+# table or column, so scripts/init_db.py needs no re-run.
 #
 # v22 (2026-10-13): four questions added (docs/study-design.md sections 6.1, 6.2).
 # - `controls_rating` gains b4, a self-report of hover, which is not logged.
@@ -207,7 +214,7 @@ from src import config, db
 # v3 (2026-09-15): parallel forms. Adds the `form` column, the `load_rating` event (Paas mental
 # effort, for RQ3), and `justification` on answers (the material for RQ2). Additive, and nothing has
 # been collected, so no migration — but the record shape changed, so the version moves.
-SCHEMA_VERSION = 22
+SCHEMA_VERSION = 23
 
 # event name -> documented payload keys. Guards against a typo silently inventing an event type
 # that analysis would then miss.

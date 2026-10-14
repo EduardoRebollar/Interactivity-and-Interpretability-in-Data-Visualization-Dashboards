@@ -601,11 +601,14 @@ country is named on the map (`docs/visual-spec.md` §1). The forms share one cou
 
 ### T6 — Crossing (line, hover)
 
-*{Country}'s coverage became higher than {other country}'s at some point after 2000. Roughly when
-did that first happen?* (Until 2026-10-12, "… at some point. Roughly when …": the chart then
-started in 2000.) Options, in calendar order: 2000-2003, 2004-2008, 2009-2012, 2013-2016,
-2017-2020, 2021-2024. 2000-2003 was added 2026-09-25 so that every item offers six options. No
-key, margin or adjacent band moves.
+*{Country}'s coverage became {higher / lower} than {other country}'s at some point after 2000.
+Roughly when did that first happen?* Form A since 2026-10-14: "The Central African Republic's
+coverage became lower than Ethiopia's …" (until then "Ethiopia's coverage became higher than the
+Central African Republic's …", below). Form B: "Pakistan's coverage became higher than
+Mozambique's …". (Until 2026-10-12, "… at some point. Roughly when …": the chart then started in
+2000.) Options, in calendar order: 2000-2003, 2004-2008, 2009-2012, 2013-2016, 2017-2020,
+2021-2024. 2000-2003 was added 2026-09-25 so that every item offers six options. No key, margin or
+adjacent band moves.
 
 | | Form A | Form B |
 |---|---|---|
@@ -657,6 +660,17 @@ tooltip, so hovering either line near the crossing gives its exact value, and th
 from the year before shows which line is rising. Zoom, and since 2026-10-12 the Years slider,
 works here as on every line chart.
 
+> **A-T6 reworded mid-study, 2026-10-14 (Eduardo).** Form A now asks when the Central African
+> Republic's coverage first became lower than Ethiopia's, where it asked when Ethiopia's first became
+> higher than the Central African Republic's. It is the same crossing, named from the other line. The
+> Central African Republic is above Ethiopia every year from 2000 to 2006, below it in 2007 (48 against
+> 50), and below it every year after, so the key is still 2004-2008. The chart, the options, the
+> margin (1.79 years) and the adjacent band are unchanged. `analysis/keys.py` reads the pair from
+> `PARAMS`, not from the prompt, so the derivation is untouched. A test now checks that each T6
+> prompt names the pair in the direction `PARAMS` gives (`tests/test_scoring.py`). B-T6 is unchanged,
+> so the forms now differ in direction (Matching the forms, below). One participant had answered
+> under the old wording; that answer is kept (§10).
+
 > **Drawn from 1985, asked from 2000 (2026-10-12, Eduardo).** Every line chart now starts in 1985
 > (`docs/visual-spec.md` §1), so the Years slider has years to set aside. Both pairs cross before
 > 2000 (the table's "Before 2000" row), so "first" would name 1994 in A and 1990 in B, where no
@@ -696,7 +710,7 @@ works here as on every line chart.
 | Floor | drop 25, rise 25 | 5 | 5 | 10 | 10 | 1 year |
 
 `tests/test_scoring.py` pins these margins, so a data refresh that moves one fails the suite rather
-than quietly unbalancing the forms. Eight known differences go to the pilot (§10):
+than quietly unbalancing the forms. Nine known differences go to the pilot (§10):
 - **T2 and T4 ask different questions in each form (2026-10-12).** A-T2 the third-highest bar, B-T2
   the sixth-highest, its key on the 5-point floor above; A-T4 the lowest cell, B-T4 the highest,
   which no row sort brought to the top until Highest cell first, the same day (T2, T4 above). The pairs are matched in chart and rule, not
@@ -717,6 +731,11 @@ than quietly unbalancing the forms. Eight known differences go to the pilot (§1
   A, Ethiopia is above the Central African Republic for four years, 1994–1997. In B, Pakistan and
   Mozambique change places five times, 1987–1996, mostly by a few points. B's earlier crossings are
   more, and A's is plainer. Which one draws more readers who miss "after 2000" is for the pilot.
+- **The T6 questions run in opposite directions (2026-10-14).** A-T6 asks when one line became
+  lower than the other, B-T6 when one became higher (T6 above). A comparison stated with "lower" is
+  probably a little slower to take in than one with "higher", so A-T6 may be the harder form for a
+  reason that has nothing to do with the chart. Each form appears in each condition equally often,
+  so this adds noise, not bias.
 - **A-T1's falling line starts mid-chart (2026-10-12).** Ukraine reports from 1992, and no
   caption says why (`docs/visual-spec.md` §3); every line on B-T1 starts in 1985. Also, with
   "after 2000", A-T6's question takes two lines on a 1440-wide window where B-T6's takes one
@@ -934,6 +953,17 @@ the controls, not the questions or the keys.
   §7.3), and no other chart's rows change.
 - **Log schema v21:** a v20 T3 answer was given against sixteen dots, a v21 one against
   twenty-one (`src/logging.py`). Nothing collected for the study.
+
+### Revision 2026-10-14: A-T6 reworded, mid-study
+
+- **Reworded:** A-T6 asks "The Central African Republic's coverage became lower than Ethiopia's at
+  some point after 2000. Roughly when did that first happen?" (T6 above). The first mid-study change
+  to an item.
+- **Unchanged:** the chart, the options, the key (2004-2008), its margin and its adjacent band, and
+  all of B-T6.
+- **Kept:** participant 2's A-T6 answer, given under the old wording (§10).
+- **Log schema v23:** a v22 A-T6 answer was given to the old words (`src/logging.py`).
+  `analysis/reshape.py` pools v22 with v23, as declared there, and refuses any other mix.
 
 The 2026-09-22 bank, its audit and its acceptance rule for crossings and gaps are in the git history,
 and so are the rise item and the lowest-point T1, with their rules and values.
@@ -1659,12 +1689,26 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   seq 14. Every "pilot check" in this document (§4 and the list below) is therefore read from the
   study's own data, after collection, and can no longer change an item before it. An item changed
   mid-study would split the data by schema version, which analysis refuses to pool
-  (`analysis/reshape.py`).
+  (`analysis/reshape.py`) unless the versions are declared poolable there, as v22 and v23 are
+  (below).
 - **Data collection begins (2026-10-13).** The study runs on the instrument as deployed that day:
   commit 29554dc, log schema v21. Neon then held no events and no consent records, and one
   registration, the pilot's (seq 13, withdrawn), so the first participant is seq 14.
   `scripts/verify_deployment.py` was not run, since its synthetic participants would have taken
   seq 14–16.
+- **A-T6 reworded after the first participant (2026-10-14, Eduardo).** It now asks when the
+  Central African Republic's coverage first became lower than Ethiopia's, the same crossing named
+  from the other line, with the same chart, options and key (§4, T6). One participant had been run:
+  ID `2`, seq 14, interactive on form A and then static on form B, 95 events, all schema v22. Their
+  A-T6 answer, given in the interactive half to the old wording, **is kept** and scored against the
+  same key. The two sentences name the same crossing, and nothing else on the screen changed.
+  - **Pooling.** The change moves the log schema to v23, and `analysis/reshape.py` declares v22
+    and v23 poolable (`POOLED_VERSIONS`), with the reason beside it. The record shape is the same.
+    Any other mix of versions is still refused, and the data viewer's Health tab names the pooling.
+  - **For HSRRC.** The approved questionnaire (request form item 18) carries the old wording.
+    Unlike 2026-10-13's changes, this adds no item. It has not yet been put to HSRRC.
+    `irb/questionnaire.pdf` is re-exported with the new wording.
+  - **The forms now differ in direction** (§4, Matching the forms).
 - **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
@@ -1672,7 +1716,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **Form equivalence.** T1's falling line is Ukraine's 80-point collapse in form A and Brazil's
     31-point decline in form B (§4). B-T3's two closest dots sit exactly on the 4-point floor and
     A-T3's 0.1 above it; since 2026-10-13 the two scatters are about as crowded, and share three
-    dots (§4). The T6 crossings are drawn differently (§4).
+    dots (§4). The T6 crossings are drawn differently (§4), and since 2026-10-14 A-T6 asks
+    about a line becoming lower where B-T6 asks about one becoming higher.
   - **Whether T3 sits at ceiling in both conditions (2026-10-11).** Its dots are named and coloured
     by change, which removes the legend lookup that was its static cost (§4). If static accuracy
     matches interactive accuracy near ceiling, T3 measures little about hover.

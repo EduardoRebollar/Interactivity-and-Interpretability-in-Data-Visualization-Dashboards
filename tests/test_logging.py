@@ -131,10 +131,10 @@ def test_every_record_has_the_full_key_set(logger):
         assert record["schema_version"] == SCHEMA_VERSION
 
 
-def test_schema_version_is_twenty_two():
-    """v22: b4 on the controls, E1-E3 at the end of About you (v21: each T3 scatter draws
-    twenty-one dots, not sixteen)."""
-    assert SCHEMA_VERSION == 22
+def test_schema_version_is_twenty_three():
+    """v23: A-T6 reworded mid-study, poolable with v22 (v22: b4 on the controls, E1-E3 at the end
+    of About you)."""
+    assert SCHEMA_VERSION == 23
 
 
 @pytest.mark.parametrize(

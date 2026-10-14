@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -903,6 +904,29 @@ def test_both_t6_pairs_cross_before_2000_and_the_keys_ignore_it():
     assert early_leads == {"A": [1994, 1995, 1996, 1997], "B": [1985, 1986, 1990, 1991, 1995]}
     table = keys.key_table()
     assert (table[("A", "T6")].correct, table[("B", "T6")].correct) == ("2004-2008", "2017-2020")
+
+
+def test_each_t6_prompt_states_the_crossing_the_key_is_derived_for():
+    """The key reads which line overtakes which from PARAMS, never from the prompt, so nothing else
+    ties the two. "X became higher than Y" must name the overtaker first, "X became lower than Y"
+    the overtaken: A-T6 has asked the second way since 2026-10-14 (study-design.md section 4), and
+    swapping only the names would ask about a crossing that never happens after 2000."""
+    for form in ("A", "B"):
+        task = next(t for t in tasks.for_form(form) if t.task_id == "T6")
+        named = re.match(
+            r"(?:The )?(.+)'s coverage became (higher|lower) than (?:the )?(.+)'s ", task.prompt
+        )
+        assert named, form
+        first, direction, second = named.groups()
+        params = _REAL_PARAMS[(form, "T6")]
+        expected = (
+            (params["overtaker"], params["overtaken"])
+            if direction == "higher"
+            else (params["overtaken"], params["overtaker"])
+        )
+        assert (first, second) == expected, form
+    a_t6 = next(t for t in tasks.FORM_A if t.task_id == "T6")
+    assert "became lower than" in a_t6.prompt
 
 
 @needs_data

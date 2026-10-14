@@ -261,9 +261,10 @@ def test_line_items_ask_about_a_country_on_the_chart():
     for form in FORMS:
         for task in tasks.for_form(form):
             if task.kind == "crossing":
+                # "higher" or, on A-T6 since 2026-10-14, "lower" (study-design.md section 4).
                 named = re.match(
-                    r"(.+)'s coverage became higher than (?:the )?(.+)'s at some point "
-                    r"after 2000\.",
+                    r"(?:The )?(.+)'s coverage became (?:higher|lower) than (?:the )?(.+)'s at "
+                    r"some point after 2000\.",
                     task.prompt,
                 )
                 assert named, task.task_id

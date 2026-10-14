@@ -94,6 +94,26 @@ DEMOGRAPHIC_COLUMNS = [
 ]
 
 
+# Schema versions that may be analysed together, each with what changed between them
+# (study-design.md section 10). A bump records what a participant saw, and usually means answers
+# under the two versions are not comparable, so analysis refuses a mix. A set here is the
+# exception: declared, never inferred, for versions whose record shape is the same and whose change
+# leaves every answer scored against the same item.
+POOLED_VERSIONS: dict[frozenset[int], str] = {
+    frozenset({22, 23}): (
+        "v23 rewords A-T6 only, to the same crossing named from the other line; chart, options "
+        "and key unchanged. Participant 2 (seq 14) answered under v22 and is kept (Eduardo, "
+        "2026-10-14)."
+    ),
+}
+
+
+def poolable(versions: Iterable[int]) -> bool:
+    """One version, or versions that a declared set in `POOLED_VERSIONS` covers."""
+    found = set(versions)
+    return len(found) <= 1 or any(found <= group for group in POOLED_VERSIONS)
+
+
 class ReshapeError(ValueError):
     """The events cannot be analysed as they are, e.g. they pool schema versions."""
 
@@ -123,7 +143,8 @@ def read_export(path: Path) -> list[dict[str, Any]]:
 
 
 def events_frame(records: Iterable[dict[str, Any]]) -> pd.DataFrame:
-    """Every event as a row, payload decoded. Refuses to pool schema versions."""
+    """Every event as a row, payload decoded. Refuses to pool schema versions not declared
+    poolable."""
     rows = []
     for record in records:
         row = dict(record)
@@ -133,9 +154,9 @@ def events_frame(records: Iterable[dict[str, Any]]) -> pd.DataFrame:
     if frame.empty:
         raise ReshapeError("No events to analyse")
     versions = set(frame["schema_version"].dropna().astype(int))
-    if len(versions) != 1:
-        # export_logs.py only warns about this. Analysis must refuse: the record shape differs
-        # between versions, so pooled rows are not comparable.
+    if not poolable(versions):
+        # export_logs.py only warns about this. Analysis must refuse: the record shape or the items
+        # differ between versions, so pooled rows are not comparable.
         raise ReshapeError(f"Events mix schema versions {sorted(versions)}; do not pool them")
     return frame
 
