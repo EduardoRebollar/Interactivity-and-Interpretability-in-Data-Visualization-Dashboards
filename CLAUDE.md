@@ -199,9 +199,10 @@ checked by `tests/test_consent.py`; never hand-edited. Kept out of the page's in
     and never prints.
 - The finished screen asks participants not to discuss the questions (`layout.DONT_DISCUSS`).
 
-**Approved by HSRRC on 2026-10-13** (`study-design.md` §10): unlike the earlier changes, these
-add items to the approved questionnaire. No new event, table or column, so `init_db.py` needs no
-re-run. Nothing collected for the study, so no migration.
+**Approved by HSRRC on 2026-10-13, with the consent form unchanged** (`study-design.md` §10), so
+`src/consent.py` and its pinned hash stand. Unlike the earlier changes, these add items to the
+approved questionnaire. No new event, table or column, so `init_db.py` needs no re-run. Nothing
+collected for the study, so no migration. Live since 7d5c730.
 
 **Schema v21 (2026-10-13).** Each T3 scatter draws twenty-one dots, not sixteen
 (`study-design.md` §4).

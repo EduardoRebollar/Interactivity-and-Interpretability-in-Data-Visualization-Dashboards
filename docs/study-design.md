@@ -1613,7 +1613,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   coverage from 2000 to 2024". The line charts now draw 1985–2024, and T6's wording changed (§4).
   Every question still asks about 2000 onward, and no item, control or logged field was added.
   `irb/questionnaire.pdf` is re-exported with the new charts and T6's wording.
-- **Four questions and a sentence added (2026-10-13): approved by HSRRC on 2026-10-13.** b4
+- **Four questions and a sentence added (2026-10-13): approved by HSRRC on 2026-10-13, with the
+  consent form unchanged.** b4
   after the interactive half (§6.1); E1–E3 at the end of About you (§6.2); and the
   finished screen's request not to discuss the questions (§8). Unlike the changes above, these add
   items to the approved questionnaire (request form item 18), which HSRRC's no-amendment answer
