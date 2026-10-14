@@ -479,6 +479,7 @@ src/
     signature.js        # the consent screen's signature pad; Dash serves assets/ automatically
     consent_pdf.js      # the signed consent sheet as a PDF, laid out as on the page
     chart_pan.js        # zoomed line chart: a sideways touchpad swipe moves the x axis
+    redraw_guard.js     # while the chart redraws, keys on the controls do nothing (as clicks)
     vendor/             # jsPDF and html2canvas for consent_pdf.js (generated; committed)
     geo_africa.js       # the map's country shapes, Plotly's own file, coast cut to Africa (generated; committed)
     flags/              # a PNG per country for the chips, from flagcdn.com (generated; committed)
@@ -996,7 +997,8 @@ context cheap and the reports as long as they need to be.
     above the strip's legend, not 5. Interactive only, since the strip is; every interactive
     Submit 12 px lower (T1's split 944 px), static cards unchanged (`visual-spec.md` §10).
   - `irb/questionnaire.pdf` re-exported (37 pages). No full session was run through the UI.
-  - Not to be deployed until HSRRC answers (`study-design.md` §10).
+  - ~~Not to be deployed until HSRRC answers.~~ Deployed with f507160; HSRRC approved it on
+    2026-10-13, with the consent form unchanged (`study-design.md` §10).
 - 2026-10-13 — **Four more rows on each T4 heatmap** (uncommitted at time of writing), twelve per
   form. A +Cote d'Ivoire, Iraq, South Africa, Syria; B +DR Congo, Ethiopia, Nigeria, Yemen; all in
   scope, beyond the six option rows, none on the other form's grid. Key, margin and options
@@ -1037,21 +1039,46 @@ context cheap and the reports as long as they need to be.
       a dot with its name; a key colour fades the rest; static inert.
     - Every Submit where the committed version has it, on every item, and no console errors.
   - `irb/questionnaire.pdf` re-exported.
-- **Still to do before the pilot:**
-  - **Ask HSRRC about the 1985 start** (the approved form says "2000 to 2024"; `study-design.md`
-    §10), and deploy it only once they answer.
-  - Answer tiles on narrow windows (Open questions).
-  - Write the pilot plan into `study-design.md` §10: how many, which §10 checks a pilot that small
-    can answer (each item × form × condition cell gets about a quarter of it), what result changes
-    an item, how pilot data is kept out of the study (an ID prefix, or export, delete and note the
-    sequence number the study starts at), and that pilot participants cannot join the study.
-  - Before the first session: confirm production serves the committed head (Vercel dashboard; the
-    CLI is not installed and the API refused this team) and re-run `scripts/verify_deployment.py`.
-- Next: pilot, and the checks in `study-design.md` §10: static accuracy on T2, T4 and T5
-  (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6 strict against adjacent-band,
-  whether T4 sits at ceiling in the interactive condition, whether the chips, the bar and
-  heatmap sorts and the key's colours are found at all, and whether T1's four extra controls are
-  found and what they cost in time.
+- 2026-10-13 — **HSRRC approved the 1985 start**, with the consent form unchanged.
+- 2026-10-13 — **Full sessions on f48d2e0, which production serves** (checked by hashing its
+  served assets against each commit).
+  - Eight sessions, all four cells at 1440 × 790 and 1366 × 768, in headless Chrome through the
+    UI: 1232 checks, no console errors.
+  - Every answer logged as its derived key, every record v21, and `year_range` `[1985, 2024]`.
+  - On screen: the 1985 axis; T3's 21 dots with chips 7/7/7; T4's 12 rows with chips 6/6; every
+    entity named.
+  - Two checks failed, both one bug: arrow keys on the Years slider 120 ms apart left the chart a
+    year behind the slider. Dash 4 draws the view callback's replies as they arrive, an older one
+    after a newer one, and a line chart's reply now takes 0.25–0.5 s.
+- 2026-10-13 — **The keyboard is held while the chart redraws** (uncommitted at time of writing;
+  `visual-spec.md` §7, §8).
+  - `src/assets/redraw_guard.js` drops keys on the elements the CSS pointer guard covers. Tab and
+    the modifiers still work, and a held arrow key moves a slider one step per redraw.
+  - A test ties its selector list to the CSS guard's. 1470 tests.
+  - Headless Chrome: 16 race trials (120 ms presses and a held key) with no mismatch, the requests
+    in order. With replies slowed to 1.5 s, 10 of 10 key checks pass: Space, Enter and arrows are
+    held, Tab and typing in the answer box are not, a Space let go after the redraw toggles
+    nothing, and every key works afterwards.
+  - The eight full sessions re-run with it: 1248 checks, none failed. Each Years `view_change`'s
+    `previous` is the value logged before it.
+- 2026-10-13 — **No further pilot** (Eduardo): the study starts at seq 14. §10's pilot checks
+  are read from the study's data (`study-design.md` §10). Answer-tile overflow accepted, since
+  participants work full screen. The 22 local test logs from 2026-10-11 were deleted;
+  `data/study_logs/pilot/` is kept.
+- **Still to do before the study:**
+  - Commit and push the keyboard guard, then confirm production serves it. Over HTTP,
+    `/assets/redraw_guard.js` must match the committed file. The Vercel CLI is not installed and
+    the API refuses this team.
+  - Archive the pilot's consent record, still in Neon (one row), with
+    `scripts/archive_consents.py`.
+  - Optional: `scripts/verify_deployment.py`. It tests the database only, not the site. Its
+    three synthetic participants use three sequence numbers, so the first participant becomes
+    seq 17 (static first, form A) instead of 14.
+- Next: the study (n ≥ 25), and the checks in `study-design.md` §10, read from its data: static
+  accuracy on T2, T4 and T5 (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6
+  strict against adjacent-band, whether T4 sits at ceiling in the interactive condition, whether
+  the chips, the bar and heatmap sorts and the key's colours are found at all, and whether T1's
+  four extra controls are found and what they cost in time.
 
 ## Decisions made
 
@@ -1254,13 +1281,19 @@ context cheap and the reports as long as they need to be.
     - "Highest in 2000" kept;
     - T1's rubric neither needs nor penalises 1985–1999.
 
+- 2026-10-13 — **Before the study** (Eduardo):
+  - **No further pilot**: straight to the study.
+  - **Answer-tile overflow accepted as it is**, since every participant works full screen. A
+    full screen on a 1366 × 768 display is still that size; `window_size` shows who met it.
+  - **The keyboard is held while the chart redraws** (`visual-spec.md` §7), reversing "the
+    keyboard is not held" of 2026-10-12.
+
 ## Open questions
 
-- Answer tiles overflow on narrow windows (found 2026-10-11). At 15 px (2026-10-12) every option
-  fits from 1440 px wide up. At 1366 × 768 form B's Mozambique (B-T2's key) and Bangladesh still
-  run past their tiles and clip the radio button; at 1280 × 720, a common laptop window at 150 %
-  scaling, 108 of 132 options do. Participants use their own computers. Fix the layout in both
-  conditions, or require a minimum window size; not done without asking (`study-design.md` §10).
+- ~~Answer tiles overflow on narrow windows (found 2026-10-11).~~ Accepted as it is (Eduardo,
+  2026-10-13): participants work full screen. At 1366 × 768 form B's Mozambique (B-T2's key) and
+  Bangladesh still run past their tiles; at 1280 × 720, 108 of 132 options do
+  (`study-design.md` §10).
 
 - ~~Does HSRRC accept a drawn electronic signature?~~ Settled by the approval (2026-10-12): the
   approved request form's item 12A describes it.

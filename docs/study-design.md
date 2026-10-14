@@ -1562,11 +1562,10 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 
   `irb/questionnaire.pdf` was re-exported with all of them on 2026-10-12 (37 pages, consent text
   version `3bcd2413c9656ae8`).
-- **Line charts drawn from 1985 (2026-10-12): HSRRC not yet asked.** The approved request form
-  (item 9) describes "WHO/UNICEF childhood vaccination coverage from 2000 to 2024". The line
-  charts now draw 1985–2024, and T6's wording changed (§4). Every question still asks about 2000
-  onward, and no item, control or logged field was added. Eduardo puts it to HSRRC before the
-  change is deployed. If an amendment is needed, item 9 reads "from 1985 to 2024".
+- **Line charts drawn from 1985 (2026-10-12): approved by HSRRC on 2026-10-13, with the consent
+  form unchanged.** The approved request form (item 9) describes "WHO/UNICEF childhood vaccination
+  coverage from 2000 to 2024". The line charts now draw 1985–2024, and T6's wording changed (§4).
+  Every question still asks about 2000 onward, and no item, control or logged field was added.
   `irb/questionnaire.pdf` is re-exported with the new charts and T6's wording.
 - **Pilot session 1 (2026-10-12).** One participant, Eduardo's faculty supervisor: the static half
   on form A, the interactive half on form B, 36 minutes in all. It is pilot data, kept out of the
@@ -1596,7 +1595,12 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - the heatmap's cells stay colour only: numbers in them would give a static reader exact values
     (§2), and the participant preferred reading the key;
   - the one-sentence explanation stays (the participant found it useful, not repetitive).
-- **Pilot checks for the 2026-09-23 bank, as redesigned 2026-09-25:**
+- **No further pilot (Eduardo, 2026-10-13).** The study starts directly after pilot session 1, at
+  seq 14. Every "pilot check" in this document (§4 and the list below) is therefore read from the
+  study's own data, after collection, and can no longer change an item before it. An item changed
+  mid-study would split the data by schema version, which analysis refuses to pool
+  (`analysis/reshape.py`).
+- **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
     mean the floor is too tight for that chart type.
@@ -1651,7 +1655,7 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 - **Scrolling differs by condition on two items (accepted 2026-09-26).** On a window 790 px tall
   or less, the interactive scatter (T3) and map (T5) cards run past the fold, so interactive
   participants scroll to Submit there and static ones never do (`visual-spec.md` §10). Eduardo
-  accepted it over tightening the layout. In the pilot, look at the interactive time on T3 and T5
+  accepted it over tightening the layout. In the data, look at the interactive time on T3 and T5
   for it. Participants use their own computers (request form 5B), so the window height varies by
   participant; `window_size` records it (§8), and `tasks.csv` carries it as `window_height`, so
   the interactive T3 and T5 times can be split at 790 px. **Since 2026-10-11 the splits are 898 px
@@ -1683,7 +1687,9 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   with only the row sort. The chips, the sorts, the key's colours, Show all and Reset view all work from
   the keyboard (`docs/visual-spec.md` §8); a whole session was run from the keyboard alone on
   2026-09-26, consent (by the paper-copy box) to About you. Since 2026-10-12 the Years slider also
-  zooms the line charts from the keyboard.
+  zooms the line charts from the keyboard. Since 2026-10-13 a key on a control does nothing while
+  the chart redraws, as a click does (`docs/visual-spec.md` §7), so a held arrow key moves a
+  slider one step per redraw.
 - ~~Whether the items can be answered without hover.~~ Resolved 2026-09-22 by the item acceptance
   rule, and kept for the 2026-09-23 bank, which was re-tuned to pass it (§4).
 - **Session resume is not implemented.** The participant-ID screen no longer promises it; it asks
@@ -1738,8 +1744,10 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   tiles' text went from 17 px to 15 px (`visual-spec.md` §10), which fits every option at 1440 ×
   790 and 1536 × 864. At 1366 × 768 form B's Mozambique (B-T2's key) and Bangladesh still run past
   their tiles, clipping the radio button too; at 1280 × 720, a common laptop window at 150 %
-  scaling, 108 of the 132 options do. Participants use their own computers, so this is
-  open until the layout is changed or a minimum window is required.
+  scaling, 108 of the 132 options do. Participants use their own computers.
+  **Accepted as it is (Eduardo, 2026-10-13):** every participant works in a full-screen window
+  (§8). A full screen is the display's own size, so a 1366 × 768 display still shows the overflow
+  above. `window_size` records each participant's window, so who met it can be read from the data.
 - **Fixed in the 2026-09-21 revision:** "randomized" is now "counterbalanced" in both forms; "hovers"
   and "so findings aren't platform specific" are gone from the request form; both forms now name
   Neon; the consent form now states the two-week withdrawal window.

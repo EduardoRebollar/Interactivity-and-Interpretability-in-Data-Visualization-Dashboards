@@ -3670,6 +3670,125 @@ def test_shift_with_a_plain_wheel_scrolls_sideways():
     assert case["calls"][0] == ["update", [2004.0, 2014.0]]
 
 
+# --- The keyboard held while the chart is redrawn (assets/redraw_guard.js) ---------------------
+#
+# The asset is loaded under Node with a stub document, whose chart is loading, drawn, or absent,
+# and its listeners are fed key events. Each case: the chart's state, the key, the event type, and
+# whether the key's target sits inside a held element (a control, a key's button, Reset view).
+
+_GUARD_HARNESS = r"""
+const fs = require("fs");
+const [source, cases] = [fs.readFileSync(process.argv[1], "utf8"), JSON.parse(process.argv[2])];
+const out = cases.map(({ chart, key, type, inside }) => {
+  const listeners = {};
+  let asked = null;
+  const node = {
+    getAttribute: (name) =>
+      name === "data-dash-is-loading" && chart === "loading" ? "true" : null,
+  };
+  const document = {
+    addEventListener: (t, fn, capture) => { listeners[t] = [fn, capture]; },
+    getElementById: (id) => (id === "chart" && chart !== "absent" ? node : null),
+  };
+  class Element {}
+  const target = Object.assign(Object.create(Element.prototype), {
+    closest: (selector) => { asked = selector; return inside ? {} : null; },
+  });
+  new Function("document", "Element", source)(document, Element);
+  let prevented = false;
+  let stopped = false;
+  listeners[type][0]({
+    key, target,
+    preventDefault: () => { prevented = true; },
+    stopImmediatePropagation: () => { stopped = true; },
+  });
+  const capture = {};
+  for (const [t, [, c]] of Object.entries(listeners)) capture[t] = c;
+  return { prevented, stopped, asked, capture };
+});
+console.log(JSON.stringify(out));
+"""
+
+_GUARD_ASSET = Path(app.__file__).parent / "assets" / "redraw_guard.js"
+
+
+def _guard(cases):
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed")
+    completed = subprocess.run(
+        [node, "-e", _GUARD_HARNESS, str(_GUARD_ASSET), json.dumps(cases)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        timeout=30,
+    )
+    return json.loads(completed.stdout)
+
+
+# Every key that changes a control: a slider step, a radio move, a checkbox or button press.
+_CONTROL_KEYS = [
+    "ArrowRight",
+    "ArrowLeft",
+    "ArrowUp",
+    "ArrowDown",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+    " ",
+    "Enter",
+]
+
+
+@pytest.mark.parametrize("event_type", ["keydown", "keyup"])
+def test_a_key_on_a_control_does_nothing_while_the_chart_redraws(event_type):
+    """Dash draws the view callback's replies as they arrive, an older one after a newer one, so
+    a key let through now could leave the chart at one view and the control at another
+    (visual-spec.md section 7, 2026-10-13). keyup too: a checkbox or button takes Space then."""
+    cases = [
+        {"chart": "loading", "key": key, "type": event_type, "inside": True}
+        for key in _CONTROL_KEYS
+    ]
+    for key, case in zip(_CONTROL_KEYS, _guard(cases), strict=True):
+        assert case["prevented"] and case["stopped"], key
+
+
+def test_the_same_key_works_once_the_chart_is_drawn():
+    drawn, absent = _guard(
+        [
+            {"chart": "drawn", "key": "ArrowRight", "type": "keydown", "inside": True},
+            {"chart": "absent", "key": "ArrowRight", "type": "keydown", "inside": True},
+        ]
+    )
+    assert not drawn["prevented"] and not drawn["stopped"]
+    assert not absent["prevented"] and not absent["stopped"], "a screen with no chart"
+
+
+@pytest.mark.parametrize("key", ["Tab", "Shift", "Control", "Alt", "Meta"])
+def test_focus_still_moves_while_the_chart_redraws(key):
+    (case,) = _guard([{"chart": "loading", "key": key, "type": "keydown", "inside": True}])
+    assert not case["prevented"] and not case["stopped"]
+
+
+def test_keys_elsewhere_on_the_page_are_untouched():
+    """The answer, the justification and Submit are not held: only what redraws the chart."""
+    (case,) = _guard([{"chart": "loading", "key": " ", "type": "keydown", "inside": False}])
+    assert not case["prevented"] and not case["stopped"]
+    assert case["asked"] == ".ui-controls, .ui-key, .ui-hint-row button, #chart"
+
+
+def test_the_guard_listens_before_the_controls_do():
+    """In the capture phase, on the document: before React's own listeners on its root, so a
+    held key never reaches the slider, radio or checkbox."""
+    (case,) = _guard([{"chart": "drawn", "key": "Tab", "type": "keydown", "inside": False}])
+    assert case["capture"] == {"keydown": True, "keyup": True}
+
+
 # --- The preview --------------------------------------------------------------------------------
 
 

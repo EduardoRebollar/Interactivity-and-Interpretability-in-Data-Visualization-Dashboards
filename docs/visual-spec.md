@@ -561,18 +561,25 @@ name tags. They too act only on what is drawn, and only after a participant uses
 order and follow it when a sort changes it: the bar chart's "Countries in alphabetical order" and the
 heatmap's "A–Z" (§7.2). At rest each reads as in both conditions.
 
-**No click lands while the chart is being redrawn (2026-10-12).** Every control goes through one
-callback, and Dash keeps only the newest reply to it: a reply still on its way when the next
-control fires is dropped, and the next is worked out from the view before the first. The log has
-already recorded the first by then, so the chart, the controls and the log could disagree. A full
+**No click or key lands while the chart is being redrawn (2026-10-12; keys 2026-10-13).** Every
+control goes through one callback, which works each change out from the view the browser last
+had. A control fired while the previous reply is still on its way is worked out from the view
+before it. The log has already recorded the first change by then, so the chart, the controls and
+the log could disagree. A full
 session in headless Chrome found it on the heatmap, whose redraw then took over a second: Reset
 view straight after a sort and a key click did nothing and logged nothing. Two fixes, the same day:
 - the heatmap draws its cells in one step, so it redraws in about 0.1 s, as the other charts do;
 - while Dash marks the chart as updating, the controls, the key's buttons, Reset view and the
   chart take no pointer events (`zz-overrides.css`). Nothing changes on screen.
 
-The keyboard is not held: two controls changed from the keyboard within that tenth of a second can
-still meet the old view.
+Since 2026-10-13 they take no keys either (`redraw_guard.js`): while the chart is redrawn, a key
+that would change a control, a key's button or Reset view does nothing, and Tab still moves focus.
+Held, an arrow key moves a slider one step per redraw. Until then the keyboard was not held, on the
+reasoning that two keys inside a tenth of a second were unlikely. The line chart's reply now takes
+0.25 to 0.5 s, since it is drawn from 1985. Eight full sessions in headless Chrome (2026-10-13)
+pressed the Years slider's arrow key fifteen times, 120 ms apart. In two of the sixteen line items
+the chart stopped a year behind the slider. Dash drew the replies as they arrived, an older one
+after a newer one, and the logged `previous` values stopped following one another.
 
 **The controls sit under the chart (2026-09-25).** The controls strip and the hint row come after
 the chart and the gap caption, and exist only in the interactive condition, so the chart is at the
@@ -894,6 +901,8 @@ All four follow the rules of the others:
   - Show all, Reset view and the key's colours (2026-10-12) are native buttons;
   - Years' handles take the arrow keys (2026-10-12), as do T1's Coverage handles; T1's Order
     radios and Regions and Show checkboxes are native (§7.7).
+  - While the chart is redrawn, keys on the controls do nothing, as clicks do (§7, 2026-10-13).
+    Tab still moves focus.
 - Focus rings appear only for keyboard focus (`:focus-visible`), as a 2 px white gap and a 2 px
   accent ring (§10).
 - Hover and focusing a line are mouse-only. So were zoom and pan until 2026-10-12; Years now reaches

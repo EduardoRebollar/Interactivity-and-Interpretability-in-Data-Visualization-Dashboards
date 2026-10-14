@@ -230,9 +230,10 @@ def test_the_chart_colours_never_appear_in_the_chrome():
 
 
 def test_no_control_takes_a_click_while_the_chart_is_redrawn():
-    """Dash drops a reply still on its way when a callback fires again, so a click before the
-    chart was redrawn would be worked out from the view before the last one (visual-spec.md section
-    7). While Dash marks the chart loading, nothing that redraws it takes a pointer: the controls,
+    """Every control goes through one callback, which works each change out from the view the
+    browser last had, so a click before the chart was redrawn would be worked out from the view
+    before the last one (visual-spec.md section 7). While Dash marks the chart loading, nothing
+    that redraws it takes a pointer: the controls,
     the key's buttons (which set their own `pointer-events`), Reset view and the chart, whose drag
     layers Plotly styles inline."""
     # Read whole: `_rules` splits a selector list at its commas, and this one is an `:is()` list.
@@ -244,6 +245,18 @@ def test_no_control_takes_a_click_while_the_chart_is_redrawn():
     for target in (".ui-controls", ".ui-key", ".ui-hint-row button", "#chart *"):
         assert target in selector, target
     assert body.strip().rstrip(";") == "pointer-events: none !important"
+
+
+def test_the_keyboard_is_held_over_the_elements_the_pointer_is():
+    """redraw_guard.js holds keys over the same elements as the pointer guard (visual-spec.md
+    section 7, 2026-10-13), so neither can be widened or narrowed alone. `#chart *` is the
+    pointer's only extra: the script asks whether a key's target is inside `#chart`, which
+    covers its descendants already."""
+    (selector,) = re.findall(r'\[data-dash-is-loading="true"\]\)\s*:is\(([^)]*)\)', _css(OVERRIDES))
+    pointer = {s.strip() for s in selector.split(",")} - {"#chart *"}
+    script = (ASSETS / "redraw_guard.js").read_text(encoding="utf-8")
+    (held,) = re.findall(r'var HELD = "([^"]*)";', script)
+    assert {s.strip() for s in held.split(",")} == pointer
 
 
 def test_the_chart_is_redrawn_by_the_view_callback_alone():
