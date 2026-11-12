@@ -5,7 +5,10 @@ proportions, a skip scored incorrect), the pre-registered secondaries (skips exc
 credit on the crossing item) and sensitivity (without those who had heard about the study), skip
 counts, accuracy item by item, Paas mental effort (RQ3) with a7 beside it, the survey (a1-a9; b1-b4
 after the interactive condition; the comparison c1-c3 after the second), and time on task. Plus the
-exclusion table section 7 requires, and About you, which describes the sample. Inferential tests
+exclusion table section 7 requires, and About you, which describes the sample. And the checks
+section 10 reads from the data after collection: accuracy and time by item and form, which
+controls were found on which item, the line charts set to start in 2000 or later, T6 answered in
+its first band, and the windows against each interactive card's Submit. Inferential tests
 are deliberately absent: they belong in the analysis notebook, run once, on the frames this package
 produces.
 
@@ -91,6 +94,197 @@ def by_item(tasks: pd.DataFrame) -> pd.DataFrame:
         # Over coded answers: an uncoded T1 is neither right nor wrong yet.
         correct=("correct", "mean"),
         median_ms=("duration_ms", "median"),
+    )
+
+
+def by_item_form(tasks: pd.DataFrame) -> pd.DataFrame:
+    """`by_item` split by form. DESCRIPTIVE ONLY. Section 10 reads several items form by form:
+    T1, B-T3 and T6 for form equivalence, T4's two margins, and T2 and T4, which ask different
+    questions per form. About twelve participants per cell, so never tested."""
+    usable = tasks[tasks["use_accuracy"]]
+    return usable.groupby(["task_id", "form", "condition"]).agg(
+        n=("task_id", "count"),
+        correct=("correct", "mean"),
+        median_ms=("duration_ms", "median"),
+    )
+
+
+# The controls under each chart type, as tasks.csv counts them (study-design.md section 2,
+# docs/visual-spec.md section 7). Hover is on every chart and is never logged. T1's four extra
+# controls are in `overload`; on T1 `n_sort_change` is its chip Order, one of them, so the line
+# chart lists no sort.
+CHART_CONTROLS = {
+    "line": ("n_chips", "n_show_all", "n_line_isolate", "n_years", "n_zoom", "n_view_reset"),
+    "bar": ("n_chips", "n_sort_change", "n_view_reset"),
+    "scatter": ("n_chips", "n_key", "n_view_reset"),
+    "heatmap": ("n_chips", "n_sort_change", "n_key", "n_view_reset"),
+    "map": ("n_chips", "n_key", "n_view_reset"),
+}
+CONTROL_NAMES = {
+    "n_chips": "chips",
+    "n_key": "key",
+    "n_show_all": "show_all",
+    "n_line_isolate": "focus",
+    "n_sort_change": "sort",
+    "n_years": "years",
+    "n_zoom": "zoom",
+    "n_view_reset": "reset",
+}
+CONTROLS_USED_TITLE = (
+    "Controls found, interactive condition: participants using each at least once "
+    "('-': not on that chart; hover is not logged)"
+)
+
+
+def controls_used(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Section 10: whether the interactive controls are found at all, per item and form.
+
+    Each cell counts the interactive participants who used that control at least once on that
+    item; `any` counts those who used any of the chart's controls. A control the chart does not
+    have reads '-', so it is never mistaken for one nobody used.
+    """
+    rows = tasks[tasks["use_accuracy"] & (tasks["condition"] == "interactive")]
+    out = []
+    for (task_id, form, chart), group in rows.groupby(["task_id", "form", "chart"]):
+        own = CHART_CONTROLS.get(chart, ())
+        row: dict[str, object] = {"task_id": task_id, "form": form, "chart": chart}
+        row["n"] = group["participant_id"].nunique()
+        for column, name in CONTROL_NAMES.items():
+            used = group.loc[group[column] > 0, "participant_id"].nunique()
+            row[name] = int(used) if column in own else "-"
+        anyone = group[list(own)].sum(axis=1) > 0 if own else pd.Series(False, index=group.index)
+        row["any"] = int(group.loc[anyone, "participant_id"].nunique())
+        out.append(row)
+    columns = ["task_id", "form", "chart", "n", *CONTROL_NAMES.values(), "any"]
+    return pd.DataFrame(out, columns=columns).set_index(["task_id", "form"])
+
+
+FROM_2000_TITLE = "Line charts: the x axis set to start in 2000 or later, interactive (section 10)"
+
+
+def from_2000(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Section 10: how many interactive participants set the line charts' x axis to start in 2000
+    or later on T1 and T6 (the Years slider, or a zoom), and whether they score better than those
+    who did not. Over coded answers; descriptive only, never tested."""
+    rows = tasks[
+        tasks["use_accuracy"] & (tasks["condition"] == "interactive") & (tasks["chart"] == "line")
+    ]
+    rows = rows.assign(
+        either=rows["years_from_2000"].astype(bool) | rows["zoom_from_2000"].astype(bool),
+        correct=rows["correct"].astype("Float64"),
+    )
+    out = []
+    for task_id, group in rows.groupby("task_id"):
+        did, did_not = group[group["either"]], group[~group["either"]]
+        out.append(
+            {
+                "task_id": task_id,
+                "n": len(group),
+                "by_years": int(group["years_from_2000"].astype(bool).sum()),
+                "by_zoom": int(group["zoom_from_2000"].astype(bool).sum()),
+                "either": len(did),
+                "correct_either": did["correct"].mean() if len(did) else float("nan"),
+                "correct_neither": did_not["correct"].mean() if len(did_not) else float("nan"),
+            }
+        )
+    return pd.DataFrame(out).set_index("task_id") if out else pd.DataFrame()
+
+
+EARLY_BAND_TITLE = (
+    f"T6 answered {study_tasks.CROSSING_BANDS[0]}, the band nearest each pair's crossing "
+    "before 2000"
+)
+
+
+def crossing_early_band(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Section 10: how often T6 is answered with its first band, by condition and form. A cluster
+    there means readers took the first crossing on the chart and missed "after 2000"."""
+    t6 = tasks[tasks["use_accuracy"] & (tasks["kind"] == "crossing")]
+    t6 = t6.assign(early=t6["answer"] == study_tasks.CROSSING_BANDS[0])
+    table = t6.groupby(["condition", "form"]).agg(n=("task_id", "count"), early=("early", "sum"))
+    table["early"] = table["early"].astype(int)
+    return table
+
+
+# Where each interactive card's Submit ends, in px from the top of the window (study-design.md
+# section 10, measured since the 2026-10-13 spacing): a shorter window scrolls to reach it. A window
+# 800 px tall or less is in compact mode (src/assets/zz-overrides.css), measured as (at 1440 wide,
+# at 1366 wide); a compact window narrower than 1440 takes the 1366 figure.
+SUBMIT_ENDS: dict[str, tuple[int, int, int]] = {
+    "T1": (944, 908, 908),
+    "T3": (874, 838, 838),
+    "T5": (819, 783, 812),
+}
+COMPACT_MAX_HEIGHT = 800
+
+
+def scroll_split(task_id: str, width: float | None, height: float) -> int:
+    """The window height below which the interactive card for `task_id` scrolls to Submit."""
+    full, compact_wide, compact_narrow = SUBMIT_ENDS[task_id]
+    if height > COMPACT_MAX_HEIGHT:
+        return full
+    return compact_wide if width is not None and width >= 1440 else compact_narrow
+
+
+WINDOWS_TITLE = "Windows: each participant's, logged at the first Begin (after the full-screen ask)"
+
+
+def windows(tasks: pd.DataFrame) -> pd.DataFrame:
+    """The sample's windows, one per participant: how many were in compact mode (800 px tall or
+    less), and the range of widths and heights. Section 10's layout checks rest on these."""
+    each = tasks.drop_duplicates("participant_id")[["window_width", "window_height"]]
+    known = each.dropna()
+    heights, widths = known["window_height"].astype(float), known["window_width"].astype(float)
+    return pd.DataFrame(
+        [
+            {
+                "participants": len(each),
+                "unknown": len(each) - len(known),
+                "compact": int((heights <= COMPACT_MAX_HEIGHT).sum()),
+                "height_min": heights.min(),
+                "height_median": heights.median(),
+                "height_max": heights.max(),
+                "width_min": widths.min(),
+                "width_median": widths.median(),
+                "width_max": widths.max(),
+            }
+        ]
+    )
+
+
+SCROLLING_TITLE = (
+    "Window height against each interactive card's Submit, T1, T3, T5: time by condition "
+    "(static rows grouped by the same window; whether a static card scrolled is not known)"
+)
+
+
+def scrolling(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Section 10: on T1, T3 and T5 the interactive card can run past the window, so interactive
+    participants may scroll to Submit where static ones need not. Each timing-usable row is placed
+    by its participant's window against that item's split, in both conditions, so a window effect
+    on time can be told from a scrolling one. Descriptive only."""
+    rows = tasks[
+        tasks["use_timing"]
+        & tasks["task_id"].isin(SUBMIT_ENDS)
+        & tasks["window_height"].notna()
+        & tasks["duration_ms"].notna()
+    ]
+    if rows.empty:
+        return pd.DataFrame(columns=["n", "median_ms"])
+    split = [
+        scroll_split(t, None if pd.isna(w) else float(w), float(h))
+        for t, w, h in zip(
+            rows["task_id"], rows["window_width"], rows["window_height"], strict=True
+        )
+    ]
+    rows = rows.assign(
+        window=[
+            "below split" if float(h) < s else "fits"
+            for h, s in zip(rows["window_height"], split, strict=True)
+        ]
+    )
+    return rows.groupby(["task_id", "condition", "window"]).agg(
+        n=("task_id", "count"), median_ms=("duration_ms", "median")
     )
 
 
@@ -284,6 +478,12 @@ def render(
         (T1_PARTS_TITLE, t1_parts(tasks)),
         ("Skipped answers and justifications", skips(tasks)),
         ("Accuracy and time by item and chart type (descriptive, not tested)", by_item(tasks)),
+        ("Accuracy and time by item and form (descriptive, not tested)", by_item_form(tasks)),
+        (CONTROLS_USED_TITLE, controls_used(tasks)),
+        (FROM_2000_TITLE, from_2000(tasks)),
+        (EARLY_BAND_TITLE, crossing_early_band(tasks)),
+        (WINDOWS_TITLE, windows(tasks)),
+        (SCROLLING_TITLE, scrolling(tasks)),
         ("Mental effort, RQ3: Paas 1-9, with a7 beside it", mental_effort(conditions, included)),
         ("Survey a1-a9 (1-7), descriptive", survey(conditions, included)),
         (CONTROLS_TITLE, controls(conditions, included)),

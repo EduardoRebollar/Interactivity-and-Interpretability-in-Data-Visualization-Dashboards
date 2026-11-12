@@ -67,10 +67,29 @@ WINDOW_COLUMNS = ["window_width", "window_height"]
 # each was used on a task, for T1's pre-registered table. Zero on every other item, which has none.
 EXTRA_CONTROLS = ("coverage", "order", "regions", "display")
 EXTRA_COLUMNS = [f"n_extra_{name}" for name in EXTRA_CONTROLS]
+# The controls that share an event, told apart by `control` (src/logging.py EVENTS), so section
+# 10's question of which controls were found at all can be answered per item: the chips, the key's
+# colours and Show all all log `filter_change`; a zoom of the chart and the Years slider both log
+# `view_change`. Sorts, focusing a line and Reset view have events of their own (`n_` columns
+# above). Hover is not logged.
+CONTROL_COLUMNS = {
+    "n_chips": ("filter_change", "chips"),
+    "n_key": ("filter_change", "key"),
+    "n_show_all": ("filter_change", "show-all"),
+    "n_zoom": ("view_change", "chart"),
+    "n_years": ("view_change", "years"),
+}
+# Line charts draw from 1985 and every line item asks about 2000 onward (tasks.ASKED_FROM).
+# Section 10: whether the x axis was set to start there or later at some point on the item, by
+# the Years slider (`value` [first, last]) or by a zoom of the chart (`value` Plotly's relayout,
+# whose `xaxis.range[0]` is the first year shown, half a year allowed for the axis padding).
+FROM_2000_COLUMNS = ["years_from_2000", "zoom_from_2000"]
 TASK_COLUMNS = [
     *BASE_COLUMNS,
     *[f"n_{name}" for name in INTERACTION_EVENTS],
     *EXTRA_COLUMNS,
+    *CONTROL_COLUMNS,
+    *FROM_2000_COLUMNS,
     *WINDOW_COLUMNS,
 ]
 
@@ -261,6 +280,13 @@ def tidy_tasks(
             for session, task in zip(tasks_frame["session_id"], tasks_frame["task_id"], strict=True)
         ]
 
+    controls, from_2000 = _control_counts(events)
+    pairs = list(zip(tasks_frame["session_id"], tasks_frame["task_id"], strict=True))
+    for column in CONTROL_COLUMNS:
+        tasks_frame[column] = [controls.get((*pair, column), 0) for pair in pairs]
+    for column in FROM_2000_COLUMNS:
+        tasks_frame[column] = [(*pair, column) in from_2000 for pair in pairs]
+
     windows = _window_sizes(events)
     for column, key in zip(WINDOW_COLUMNS, ("width", "height"), strict=True):
         tasks_frame[column] = pd.array(
@@ -296,6 +322,54 @@ def _interaction_counts(events: pd.DataFrame) -> dict[tuple[str, str, str], int]
     ):
         counts[(session, task, name)] = counts.get((session, task, name), 0) + 1
     return counts
+
+
+def _first_year(event_control: str, value: Any) -> float | None:
+    """The first year a line chart's x axis shows after a Years or zoom event, or None."""
+    if event_control == "n_years" and isinstance(value, list | tuple) and value:
+        first = value[0]
+    elif event_control == "n_zoom" and isinstance(value, dict):
+        first = value.get("xaxis.range[0]", (value.get("xaxis.range") or [None])[0])
+    else:
+        return None
+    try:
+        return float(first)
+    except (TypeError, ValueError):
+        return None
+
+
+def _control_counts(
+    events: pd.DataFrame,
+) -> tuple[dict[tuple[str, str, str], int], set[tuple[str, str, str]]]:
+    """(session, task, CONTROL_COLUMNS name) -> uses; and the (session, task, FROM_2000_COLUMNS
+    name) keys where the x axis was set to start at tasks.ASKED_FROM or later."""
+    by_event = {pair: column for column, pair in CONTROL_COLUMNS.items()}
+    # A slider handle sits on a whole year; a zoom's edge can fall inside the axis padding.
+    flags = {
+        "n_years": ("years_from_2000", tasks.ASKED_FROM),
+        "n_zoom": ("zoom_from_2000", tasks.ASKED_FROM - 0.5),
+    }
+    subset = events[events["event"].isin({event for event, _ in CONTROL_COLUMNS.values()})]
+    counts: dict[tuple[str, str, str], int] = {}
+    from_2000: set[tuple[str, str, str]] = set()
+    for session, task, name, payload in zip(
+        subset["session_id"].astype(str),
+        subset["task_id"],
+        subset["event"],
+        subset["payload"],
+        strict=True,
+    ):
+        payload = payload or {}
+        column = by_event.get((name, payload.get("control")))
+        if column is None:
+            continue
+        counts[(session, task, column)] = counts.get((session, task, column), 0) + 1
+        if column in flags:
+            flag, threshold = flags[column]
+            first = _first_year(column, payload.get("value"))
+            if first is not None and first >= threshold:
+                from_2000.add((session, task, flag))
+    return counts, from_2000
 
 
 def _extra_control(event: str, payload: dict[str, Any], task_id: str) -> str | None:

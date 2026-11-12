@@ -394,6 +394,166 @@ def test_the_overload_table_reports_t1_per_condition(tmp_path):
     assert "T1, the overloaded item" in study_report.render(scored, conditions, _excluded)
 
 
+def _interactive_answer(records: list[dict], task_id: str) -> dict:
+    return next(
+        r
+        for r in records
+        if r["event"] == "answer_submit"
+        and r["task_id"] == task_id
+        and r["condition"] == "interactive"
+    )
+
+
+def _with_line_controls(records: list[dict]) -> tuple[list[dict], dict, dict, dict]:
+    """The session with controls used in the interactive half, as the app logs them: on T1 a chip,
+    the Years slider to 1990 and a zoom from 2003; on T6 the Years slider to 2000, Show all
+    and a focus; on T5 two key colours and a chip; on T2 the bar sort."""
+    t1, t2, t5, t6 = (_interactive_answer(records, t) for t in ("T1", "T2", "T5", "T6"))
+    added = [
+        {**t1, "event": "filter_change", "payload": {"control": "chips", "action": "hide"}},
+        {**t1, "event": "view_change", "payload": {"control": "years", "value": [1990, 2024]}},
+        {
+            **t1,
+            "event": "view_change",
+            "payload": {
+                "control": "chart",
+                "value": {"xaxis.range[0]": 2003.2, "xaxis.range[1]": 2011},
+            },
+        },
+        {**t6, "event": "view_change", "payload": {"control": "years", "value": [2000, 2024]}},
+        {**t6, "event": "filter_change", "payload": {"control": "show-all", "action": "show"}},
+        {**t6, "event": "line_isolate", "payload": {"entity": "Ethiopia", "isolated": True}},
+        {**t5, "event": "filter_change", "payload": {"control": "key", "action": "add"}},
+        {**t5, "event": "filter_change", "payload": {"control": "key", "action": "add"}},
+        {**t5, "event": "filter_change", "payload": {"control": "chips", "action": "hide"}},
+        {**t2, "event": "sort_change", "payload": {"key": "desc", "direction": "desc"}},
+    ]
+    return records + added, t1, t5, t6
+
+
+def test_each_control_is_counted_apart_and_the_from_2000_flags_follow_the_axis(tmp_path):
+    """Section 10 asks which controls were found per item, and who set the line charts to start in
+    2000 or later; chips, the key and Show all share `filter_change`, zoom and Years
+    `view_change`."""
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    records, t1, t5, t6 = _with_line_controls(study_logging.read_all(tmp_path))
+    frame = reshape.tidy_tasks(reshape.events_frame(records)).set_index(["session_id", "task_id"])
+    row = {t: frame.loc[(str(r["session_id"]), t)] for t, r in (("T1", t1), ("T5", t5), ("T6", t6))}
+    assert (row["T1"]["n_chips"], row["T1"]["n_years"], row["T1"]["n_zoom"]) == (1, 1, 1)
+    assert (row["T5"]["n_key"], row["T5"]["n_chips"], row["T5"]["n_show_all"]) == (2, 1, 0)
+    assert (row["T6"]["n_show_all"], row["T6"]["n_years"]) == (1, 1)
+    # T1: the slider to 1990 does not count; the zoom from 2003 does. T6: the slider to 2000 does.
+    assert not row["T1"]["years_from_2000"] and row["T1"]["zoom_from_2000"]
+    assert row["T6"]["years_from_2000"] and not row["T6"]["zoom_from_2000"]
+    static = frame[frame["condition"] == "static"]
+    assert (static[list(reshape.CONTROL_COLUMNS)] == 0).all().all()
+    assert not static[reshape.FROM_2000_COLUMNS].any().any()
+
+
+def test_a_zoom_into_the_padding_before_2000_counts_and_one_from_1998_does_not(tmp_path):
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    records = study_logging.read_all(tmp_path)
+    t1, t6 = (_interactive_answer(records, t) for t in ("T1", "T6"))
+    for answer, first in ((t1, 1999.6), (t6, 1998.0)):
+        payload = {"control": "chart", "value": {"xaxis.range[0]": first, "xaxis.range[1]": 2024}}
+        records.append({**answer, "event": "view_change", "payload": payload})
+    frame = reshape.tidy_tasks(reshape.events_frame(records)).set_index(["session_id", "task_id"])
+    assert frame.loc[(str(t1["session_id"]), "T1"), "zoom_from_2000"]
+    assert not frame.loc[(str(t6["session_id"]), "T6"), "zoom_from_2000"]
+
+
+def _scored_with_controls(tmp_path):
+    run_session(tmp_path, _participant_for("interactive", "A"), correct_answer)
+    records, *_ = _with_line_controls(study_logging.read_all(tmp_path))
+    events = reshape.events_frame(records)
+    tasks_frame = reshape.tidy_tasks(events, rubric=coders(events))
+    conditions = reshape.tidy_conditions(events, tasks_frame)
+    scored, excluded = exclusions.apply(tasks_frame, conditions)
+    return scored, conditions, excluded
+
+
+def test_the_controls_table_counts_users_and_marks_controls_a_chart_lacks(tmp_path):
+    scored, conditions, excluded = _scored_with_controls(tmp_path)
+    table = study_report.controls_used(scored)
+    assert list(table.index) == [(f"T{i}", "A") for i in range(1, 7)], "interactive half: form A"
+    assert (table.loc[("T5", "A"), ["key", "chips", "any"]] == [1, 1, 1]).all()
+    assert table.loc[("T5", "A"), "years"] == "-" and table.loc[("T2", "A"), "key"] == "-"
+    assert table.loc[("T2", "A"), "sort"] == 1
+    assert table.loc[("T6", "A"), "focus"] == 1 and table.loc[("T1", "A"), "sort"] == "-"
+    assert table.loc[("T3", "A"), "any"] == 0 and table.loc[("T3", "A"), "chips"] == 0
+    assert (table["n"] == 1).all()
+    assert "Controls found, interactive condition" in study_report.render(
+        scored, conditions, excluded
+    )
+
+
+def test_the_from_2000_table_splits_accuracy_by_who_set_the_axis(tmp_path):
+    scored, _conditions, _excluded = _scored_with_controls(tmp_path)
+    table = study_report.from_2000(scored)
+    assert list(table.index) == ["T1", "T6"]
+    assert table.loc["T1", ["by_years", "by_zoom", "either"]].tolist() == [0, 1, 1]
+    assert table.loc["T6", ["by_years", "by_zoom", "either"]].tolist() == [1, 0, 1]
+    assert table.loc["T6", "correct_either"] == 1.0
+    assert math.isnan(table.loc["T6", "correct_neither"])
+
+
+def test_t6s_first_band_is_counted_by_condition_and_form(tmp_path):
+    def early(form, task_id):
+        return tasks.CROSSING_BANDS[0] if task_id == "T6" else correct_answer(form, task_id)
+
+    run_session(tmp_path, _participant_for("static", "A"), early)
+    _events, tasks_frame, conditions = _score(tmp_path)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    table = study_report.crossing_early_band(scored)
+    assert table.loc[("static", "A"), "early"] == 1
+    assert table.loc[("interactive", "B"), "early"] == 1
+    assert (table["n"] == 1).all()
+
+
+@pytest.mark.parametrize(
+    ("task_id", "width", "height", "split"),
+    [
+        ("T1", 1440, 900, 944),
+        ("T1", 1440, 790, 908),
+        ("T3", 1512, 865, 874),
+        ("T5", 1440, 790, 783),
+        ("T5", 1422, 753, 812),
+        ("T5", None, 700, 812),
+        ("T5", 1920, 801, 819),
+    ],
+)
+def test_the_scroll_split_follows_the_measured_submit_positions(task_id, width, height, split):
+    assert study_report.scroll_split(task_id, width, height) == split
+
+
+def test_windows_and_scrolling_place_each_answer_by_its_window(tmp_path):
+    """A 1280 x 720 window is compact and below every split; a 1920 x 1080 one fits them all."""
+    for window, cell in (
+        ({"width": 1280, "height": 720}, ("static", "A")),
+        ({"width": 1920, "height": 1080}, ("interactive", "A")),
+    ):
+        run_session(tmp_path, _participant_for(*cell), correct_answer, window=window)
+    _events, tasks_frame, conditions = _score(tmp_path)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    summary = study_report.windows(scored).iloc[0]
+    assert (summary["participants"], summary["compact"]) == (2, 1)
+    assert (summary["height_min"], summary["height_max"]) == (720, 1080)
+    table = study_report.scrolling(scored)
+    assert set(table.index.get_level_values("task_id")) == {"T1", "T3", "T5"}
+    assert table["n"].sum() == 12, "two participants, three items, two conditions"
+    assert set(table.index.get_level_values("window")) == {"below split", "fits"}
+    assert (table.xs("below split", level="window")["n"] == 1).all()
+
+
+def test_by_item_form_splits_each_item_by_form(tmp_path):
+    run_session(tmp_path, _participant_for("static", "A"), correct_answer)
+    _events, tasks_frame, conditions = _score(tmp_path)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    table = study_report.by_item_form(scored)
+    assert len(table) == 12 and (table["n"] == 1).all()
+    assert table.loc[("T2", "A", "static"), "correct"] == 1.0
+
+
 def test_an_invalid_duration_reaches_the_tidy_frame_as_absent(tmp_path):
     participant = _participant_for("static", "A")
     run_session(tmp_path, participant, correct_answer, duration_ms=lambda f, t: 5000.0)

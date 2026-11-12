@@ -1373,6 +1373,16 @@ context cheap and the reports as long as they need to be.
   pre-registered, n = 23). The supervisor's answers are still open (§10). Taken without asking:
   the equivalence verdict uses Holm's p, and the notebook also prints the 6-of-6 count, RQ3's
   "rather than", and time without degraded sessions (there are none).
+- 2026-11-11 — **The §7 tests have been run, once**, after a83471a committed the plan, on the
+  2571 events in Neon. The output is in `data/study_logs/derived/significance.txt` (gitignored).
+  **Do not run `notebooks/significance.py` on study data again.** Re-read that file instead.
+  `--simulate` and `--sensitivity` are safe.
+- 2026-11-11 — **§10's after-collection checks are in the report** (`analysis/report.py`):
+  accuracy and time by item and form, which controls were found per item, the line charts set to
+  start in 2000 or later, T6 answered 2000-2003, and the windows against each interactive
+  Submit. `tasks.csv` gains `n_chips`, `n_key`, `n_show_all`, `n_zoom`, `n_years`,
+  `years_from_2000` and `zoom_from_2000`. Output: `data/study_logs/derived/report_section10.txt`.
+  14 of 24 windows were 800 px tall or less (median 753, min 554), despite the full-screen ask.
 
 ## Open questions
 
