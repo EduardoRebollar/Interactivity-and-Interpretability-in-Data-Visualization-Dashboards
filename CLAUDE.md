@@ -1358,6 +1358,10 @@ context cheap and the reports as long as they need to be.
     one; his is final. The drafts are kept as `rubric_coder1_draft.csv` and `coder1_draft.csv`, so
     the write-up can say how many codes the review changed (anchored, so not an agreement
     statistic). Reported as AI-drafted, human-reviewed (`docs/grading-rules.md` §1, item 4).
+  - In review, before the key was opened (Eduardo): `notes_uncertainty` dropped from RQ2, so depth
+    is `cites_values` + `compares_series`, 0–2 (`coding.CODES`). The deviation is recorded in
+    `docs/grading-rules.md` §1 item 5 only; `study-design.md` keeps the pre-registered text, by
+    his choice. Decision-log row 1 amended: separate end values within one gridline earn (c).
 
 ## Open questions
 

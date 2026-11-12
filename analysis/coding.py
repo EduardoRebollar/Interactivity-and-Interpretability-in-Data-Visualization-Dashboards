@@ -56,7 +56,9 @@ from typing import Any
 from analysis import keys as answer_keys
 from src import config
 
-CODES = ("cites_values", "compares_series", "notes_uncertainty")
+# notes_uncertainty was dropped in review (docs/grading-rules.md, section 1 item 5). A sheet that
+# still carries its column loads, since read_sheet checks only that these columns are present.
+CODES = ("cites_values", "compares_series")
 WRITTEN_KIND = "describe"
 # T1's rubric: the three parts of study-design.md section 4, and whether anything contradicts one.
 RUBRIC_FIELDS = ("a", "b", "c", "contradicts")
@@ -152,7 +154,7 @@ def double_coded_sample(
 
 
 def write_sheet(units: Sequence[Unit], path: Path, seed: int = SEED) -> None:
-    """A blind coding sheet: unit id, text, and empty columns for the three codes."""
+    """A blind coding sheet: unit id, text, and an empty column for each code."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
@@ -211,7 +213,7 @@ def read_sheet(
 
 
 def depth(codes: dict[str, int]) -> int:
-    """Reasoning depth, 0-3: the number of the three features present."""
+    """Reasoning depth, 0-2: the number of the two features present."""
     return sum(codes[code] for code in CODES)
 
 

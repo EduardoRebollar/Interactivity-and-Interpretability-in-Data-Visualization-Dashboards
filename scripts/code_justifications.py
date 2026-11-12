@@ -8,7 +8,7 @@ RQ2, three steps:
                coder2.csv   the stratified 20% sample, for the second coder
                key.csv      the unblinding map -- for the analyst, NEVER for a coder
     kappa    Read both completed sheets and report Cohen's kappa per code, with prevalence.
-    depth    Join the primary coder's sheet back to the tasks and write depth.csv (0-3 per answer).
+    depth    Join the primary coder's sheet back to the tasks and write depth.csv (0-2 per answer).
 
 T1's rubric, two steps (both coders code every description):
 
@@ -127,7 +127,7 @@ def depth(out: Path) -> int:
     coded.to_csv(out / "depth.csv", index=False)
     print(f"Wrote {out / 'depth.csv'} ({len(coded)} coded answers)")
     print(
-        "\nDepth (0-3) and each code by condition: the share of units with the code. With and "
+        "\nDepth (0-2) and each code by condition: the share of units with the code. With and "
         "without T1, whose description names two countries, so compares_series is near certain "
         "there (study-design.md section 7)."
     )

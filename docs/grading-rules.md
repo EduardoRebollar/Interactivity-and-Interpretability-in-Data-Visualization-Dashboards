@@ -23,8 +23,8 @@ Report these in the write-up as deviations, alongside participant 19.
 2. **New secondary: T1 parts score (0-3).** The number of rubric parts (a, b, c) credited. The
    primary T1 score is unchanged: correct only when all three parts are credited and nothing
    contradicts one.
-3. **New secondary: RQ2 codes by version.** `cites_values`, `compares_series` and
-   `notes_uncertainty` are each reported by version, next to the pre-registered 0-3 depth sum.
+3. **New secondary: RQ2 codes by version.** `cites_values` and `compares_series` are each
+   reported by version, next to the depth sum (0-2 since item 5).
 4. **An AI draft, reviewed code by code** (amended 2026-11-11, before any code was entered).
    - Claude (Anthropic's Claude Opus 5.5, in Claude Code) drafts every code on both sheets, by
      these rules, from the blind sheets alone. It does not open `key.csv`, `rubric_key.csv` or
@@ -36,6 +36,18 @@ Report these in the write-up as deviations, alongside participant 19.
      `coder1_draft.csv`), so the write-up can report how many codes the review changed. That count
      is not an agreement statistic: the review starts from the draft and is anchored by it.
    - Report the scores as AI-drafted and human-reviewed.
+5. **`notes_uncertainty` dropped from RQ2** (decided 2026-11-11, in review, before the key was
+   opened).
+   - Depth is now `cites_values` + `compares_series`, from 0 to 2, not the pre-registered 0-3.
+   - Why: the 20 units the draft coded 1 all flag that the chart was hard to read (colours alike,
+     too many lines, torn between two answers, no exact value). None flags a limit of the data.
+     That is the cognitive-load side of RQ1, not interpretation depth, and static users, who
+     cannot hover for values, have more reason to report it, so the code would tilt depth by
+     version.
+   - The decision followed a look at the code's blind distribution (which units were coded 1, with
+     no version attached), not at any result by version.
+   - The draft's `notes_uncertainty` column stays in both RQ2 sheets, unreviewed; the analysis
+     ignores it.
 
 Everything else in this file explains how the existing codes are applied. It does not change what
 they measure.
@@ -58,7 +70,7 @@ The scripts run in single-grader mode (`SINGLE_GRADER` in `analysis/coding.py`).
 uv run python scripts/score_study.py                      # marks exclusions; T1 uncoded
 uv run python scripts/code_justifications.py rubric-sheets  # rubric_coder1.csv, the one T1 sheet
 uv run python scripts/code_justifications.py sheets         # coder1.csv, the one RQ2 sheet
-#   grade rubric_coder1.csv (a, b, c, contradicts) and coder1.csv (the three codes), 0 or 1 each:
+#   grade rubric_coder1.csv (a, b, c, contradicts) and coder1.csv (cites_values, compares_series), 0 or 1 each:
 #   Claude drafts both, keeping *_draft.csv copies; Eduardo reviews and corrects every code
 uv run python scripts/code_justifications.py rubric       # verdicts and parts scores
 uv run python scripts/code_justifications.py depth        # depth and each code, with and without T1
@@ -193,8 +205,9 @@ values are neither required nor penalised unless they contradict a part.)*
 
 ## 7. RQ2 codes (every justification, plus each T1 description)
 
-Each code is 0 or 1. Depth = the sum (0-3), as pre-registered. The three codes are also reported
-separately by version.
+Each code is 0 or 1. Depth = `cites_values` + `compares_series` (0-2). `notes_uncertainty` was
+dropped (§1, item 5); its definition is kept below as the draft applied it. The two codes are
+also reported separately by version.
 
 ### `cites_values`: refers to specific levels or magnitudes, however approximate
 
@@ -223,7 +236,7 @@ separately by version.
   this code will be present in nearly every answer. Section 7 already reports depth with and
   without T1.
 
-### `notes_uncertainty`: flags missing data, an estimate, or ambiguity
+### `notes_uncertainty` (dropped, §1 item 5): flags missing data, an estimate, or ambiguity
 
 - **Counts:** saying the answer or the reading was uncertain, or why.
   - "hard to tell between Niger and Burkina Faso"
@@ -239,14 +252,14 @@ separately by version.
 
 ### Invented examples
 
-| Justification | cites_values | compares_series | notes_uncertainty | depth |
-|---|---|---|---|---|
-| T2: "India's bar was third, after China and Vietnam." | 0 | 1 | 0 | 1 |
-| T2: "India was around 90%, just below Vietnam at 97%." | 1 | 1 | 0 | 2 |
-| T3: "Niger moved the furthest above the diagonal." | 0 | 0 | 0 | 0 |
-| T3: "Niger went from about 34 to 86, a bit more than Burkina Faso, but it was hard to tell." | 1 | 1 | 1 | 3 |
-| T4: "I think Chad had the lowest cell." | 0 | 0 | 0 | 0 |
-| T5: "Chad, Nigeria and the Central African Republic were the only ones shaded below 50%." | 0 | 1 | 0 | 1 |
+| Justification | cites_values | compares_series | depth |
+|---|---|---|---|
+| T2: "India's bar was third, after China and Vietnam." | 0 | 1 | 1 |
+| T2: "India was around 90%, just below Vietnam at 97%." | 1 | 1 | 2 |
+| T3: "Niger moved the furthest above the diagonal." | 0 | 0 | 0 |
+| T3: "Niger went from about 34 to 86, a bit more than Burkina Faso, but it was hard to tell." | 1 | 1 | 2 |
+| T4: "I think Chad had the lowest cell." | 0 | 0 | 0 |
+| T5: "Chad, Nigeria and the Central African Republic were the only ones shaded below 50%." | 0 | 1 | 1 |
 
 ## 8. Decision log
 
@@ -255,4 +268,16 @@ graded against it.
 
 | Date | Sheet | The case (described, not quoted) | Rule added | Answers re-checked |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-11 | rubric | Each country's end value given separately, never compared | *Amended in review, 2026-11-11, before the key was opened:* separate end values earn (c) when both are stated and fall within one gridline (10 points), since that conveys "ended close" by §5 (c)'s own definition (G1). One end value alone does not, nor does anything else that never relates the two (§5 (c), two separate descriptions). *Drafted as:* separate end values, equal or not, never earn (c) | all 46, re-checked in review: 3 changed |
+| 2026-11-11 | rubric | Form B: Brazil said to end higher, with nothing on the size of the gap | Earns no (c) and contradicts nothing; "slightly higher" still counts as ending close | all 46, drafted with it |
+| 2026-11-11 | rubric | A claim about every country, or the rest of them, where the faller is never named | Not read as a claim about the faller (G5) | all 46, drafted with it |
+| 2026-11-11 | rubric | The faller said to decrease over the whole period | An overall decline, an omission like "declined" (§5 (b)), unless it says the fall never stopped or ended at the low | all 46, drafted with it |
+| 2026-11-11 | rubric | The riser given a large fall it did not have, but not called flat, falling overall or ending lower | An omission for (a), not a contradiction: (a)'s contradictions are the three listed | all 46, drafted with it |
+| 2026-11-11 | rubric | The two said to converge at the end | A later rise for (b) only if the faller had first dropped below the riser; after a fall alone, converging is no sign of a rise | all 46, drafted with it |
+| 2026-11-11 | RQ2 | `compares_series` on T2: the bars above or below the answer referred to as a group, by count, rank or value, without names | Counts when it picks out specific bars (how many are taller, the lowest few, the top two, their values), like "the two bars above it"; describing a count-down alone does not | all 276, drafted with it |
+| 2026-11-11 | RQ2 | `compares_series` on T5, T1 and T6: countries referred to without names | On T5 only named countries count, not a pointer to the counted ones or a count. On T1 and T6, a pronoun, "the two countries" or the two lines by colour counts: they can only mean the question's pair | all 276, drafted with it |
+| 2026-11-11 | RQ2 | `notes_uncertainty`: the chart called hard to read, being torn between two options, checking by hovering | The first two count; checking an answer, with no doubt stated, does not. *Moot: the code was dropped in review (§1, item 5).* | all 276, drafted with it |
+| 2026-11-11 | RQ2 | `cites_values` on T4 and T5: years and key bands | A year read off the heatmap counts, its full span included, since T4's question names none; a key band counts unless it only restates the question's threshold | all 276, drafted with it |
+
+Rows of 2026-11-11 were added by Claude while drafting (§1, item 4); Eduardo confirms or changes each in
+review.

@@ -682,8 +682,23 @@ def test_an_unusable_coding_sheet_is_refused(tmp_path, rows, match):
         coding.read_sheet(path, expected_ids={"u1"})
 
 
-def test_depth_is_the_sum_of_the_three_codes():
-    assert coding.depth({"cites_values": 1, "compares_series": 1, "notes_uncertainty": 0}) == 2
+def test_depth_is_the_sum_of_the_two_codes():
+    """notes_uncertainty was dropped (docs/grading-rules.md, section 1 item 5): 0-2, not 0-3."""
+    assert coding.CODES == ("cites_values", "compares_series")
+    assert coding.depth({"cites_values": 1, "compares_series": 1}) == 2
+    assert coding.depth({"cites_values": 1, "compares_series": 1, "notes_uncertainty": 1}) == 2
+
+
+def test_a_sheet_that_still_carries_the_dropped_code_loads_and_it_is_ignored(tmp_path):
+    """The study's RQ2 sheets were written with a notes_uncertainty column and keep it, unreviewed.
+    Whatever it holds, even a blank or a stray value, is never read."""
+    path = tmp_path / "coded.csv"
+    _completed(path, [("u1", "t", 1, 0, ""), ("u2", "t", 0, 1, "x")])
+    codes = coding.read_sheet(path, expected_ids={"u1", "u2"})
+    assert codes == {
+        "u1": {"cites_values": 1, "compares_series": 0},
+        "u2": {"cites_values": 0, "compares_series": 1},
+    }
 
 
 def test_kappa_for_perfect_agreement_is_one():
@@ -710,14 +725,14 @@ def test_kappa_is_undefined_when_neither_rater_varies():
 
 def test_kappa_is_reported_per_code_with_prevalence():
     primary = {
-        "a": {"cites_values": 1, "compares_series": 0, "notes_uncertainty": 0},
-        "b": {"cites_values": 0, "compares_series": 1, "notes_uncertainty": 0},
+        "a": {"cites_values": 1, "compares_series": 0},
+        "b": {"cites_values": 0, "compares_series": 0},
     }
     report = coding.kappa_report(primary, primary)
-    assert set(report) == set(coding.CODES)
+    assert set(report) == {"cites_values", "compares_series"}
     assert report["cites_values"]["kappa"] == 1.0
     assert report["cites_values"]["prevalence"] == 0.5
-    assert math.isnan(report["notes_uncertainty"]["kappa"])
+    assert math.isnan(report["compares_series"]["kappa"]), "no variance: undefined, not a number"
 
 
 # --- The scripts, end to end --------------------------------------------------------------------
@@ -816,7 +831,6 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
         sheet = pd.read_csv(coding_dir / name, dtype=str)
         sheet["cites_values"] = "1"
         sheet["compares_series"] = ["0", "1"] * (len(sheet) // 2) + ["0"] * (len(sheet) % 2)
-        sheet["notes_uncertainty"] = "0"
         sheet.to_csv(coding_dir / name, index=False)
 
     assert code.main(["kappa", *tasks_arg]) == 0
@@ -904,7 +918,6 @@ def test_one_grader_runs_end_to_end_with_no_second_sheet_and_no_kappa(
         compares_series=sheet["justification"]
         .isin([*GOOD_T1.values(), BAD_T1])
         .map({True: "1", False: "0"}),
-        notes_uncertainty="0",
     )
     sheet.to_csv(coding_dir / "coder1.csv", index=False)
 
@@ -913,7 +926,8 @@ def test_one_grader_runs_end_to_end_with_no_second_sheet_and_no_kappa(
 
     assert code.main(["depth", *tasks_arg]) == 0
     printed = capsys.readouterr().out
-    assert "without T1" in printed and "notes_uncertainty" in printed
+    assert "without T1" in printed and "compares_series" in printed
+    assert "notes_uncertainty" not in printed, "dropped (docs/grading-rules.md, section 1 item 5)"
     coded = pd.read_csv(coding_dir / "depth.csv")
     table = code.depth_by_code(coded)
     # compares_series was given to the T1 descriptions alone, so it vanishes without them.
