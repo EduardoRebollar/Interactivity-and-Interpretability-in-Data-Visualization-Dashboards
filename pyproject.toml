@@ -27,6 +27,7 @@ dev = [
     "pytest>=9.1.1",
     "pandas>=3.0.5",
     "pyarrow>=25.0.1",
+    "scipy>=1.17.1",
 ]
 
 # Run as an application, not an installable library: uv sync provisions .venv

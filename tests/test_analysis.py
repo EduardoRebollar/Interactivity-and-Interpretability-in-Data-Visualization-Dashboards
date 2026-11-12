@@ -936,6 +936,124 @@ def test_one_grader_runs_end_to_end_with_no_second_sheet_and_no_kappa(
     assert (table.loc["without T1", "n"] == 10).all(), "five justifications per condition"
 
 
+# --- Reinstated participants (the participant 19 deviation) ----------------------------------
+
+
+def _tasks_with_a_reinstated_participant(path: Path) -> Path:
+    """A scored tasks.csv: P1 kept by the exclusions, and 19 taken out by them (as the empty
+    duplicate session does), each with a T1 description and a T2 justification per condition."""
+    rows = []
+    for participant, usable in (("P1", True), (exclusions.REINSTATED[0], False)):
+        for condition, form in (("static", "A"), ("interactive", "B")):
+            session = f"{participant}-{condition}"
+            rows += [
+                {
+                    "participant_id": participant,
+                    "session_id": session,
+                    "condition": condition,
+                    "form": form,
+                    "task_id": "T1",
+                    "kind": "describe",
+                    "answer": f"description by {participant}, {condition}",
+                    "justification": None,
+                    "use_accuracy": usable,
+                },
+                {
+                    "participant_id": participant,
+                    "session_id": session,
+                    "condition": condition,
+                    "form": form,
+                    "task_id": "T2",
+                    "kind": "rank",
+                    "answer": "India",
+                    "justification": f"because, by {participant}, {condition}",
+                    "use_accuracy": usable,
+                },
+            ]
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
+
+
+def _grade(path: Path, fields: dict[str, str]) -> None:
+    sheet = pd.read_csv(path, dtype=str)
+    sheet.assign(**fields).to_csv(path, index=False)
+
+
+def test_a_reinstated_participant_is_graded_on_sheets_of_their_own(tmp_path, capsys):
+    code = _script("code_justifications")
+    tasks_csv = _tasks_with_a_reinstated_participant(tmp_path / "tasks.csv")
+    out = tmp_path / "coding"
+    args = ["--tasks", str(tasks_csv), "--out", str(out)]
+    reinstated = exclusions.REINSTATED[0]
+
+    assert code.main(["sheets", *args]) == 0
+    assert code.main(["rubric-sheets", *args]) == 0
+    main_text = (out / "coder1.csv").read_text(encoding="utf-8")
+    assert f"by {reinstated}," not in main_text, "the main sheet holds only kept answers"
+
+    assert code.main(["reinstated-sheets", *args]) == 0
+    own = pd.read_csv(out / f"coder1_p{reinstated}.csv", dtype=str)
+    own_rubric = pd.read_csv(out / f"rubric_coder1_p{reinstated}.csv", dtype=str)
+    assert len(own) == 4 and own["justification"].str.contains(f"by {reinstated},").all()
+    assert len(own_rubric) == 2
+    assert list(own_rubric.columns) == list(coding.RUBRIC_SHEET_COLUMNS)
+    key = pd.read_csv(out / f"key_p{reinstated}.csv", dtype=str)
+    assert set(key["participant_id"]) == {reinstated}
+    capsys.readouterr()
+
+    assert code.main(["reinstated-sheets", *args]) == 1
+    assert "never overwritten" in capsys.readouterr().err
+
+    rubric_ones = {"a": "1", "b": "1", "c": "1", "contradicts": "0"}
+    _grade(out / "rubric_coder1.csv", rubric_ones)
+    _grade(out / f"rubric_coder1_p{reinstated}.csv", {**rubric_ones, "c": "0"})
+    assert code.main(["rubric", *args]) == 0
+    printed = capsys.readouterr().out
+    assert f"participant {reinstated} deviation" in printed and "2 of 4 correct" in printed
+    verdicts = coding.read_verdicts(out / "rubric_verdicts.csv")
+    assert verdicts[(f"{reinstated}-static", "T1")] is False
+    assert verdicts[("P1-static", "T1")] is True
+
+    codes = {"cites_values": "1", "compares_series": "0"}
+    _grade(out / "coder1.csv", codes)
+    _grade(out / f"coder1_p{reinstated}.csv", codes)
+    assert code.main(["depth", *args]) == 0
+    coded = pd.read_csv(out / "depth.csv", dtype={"participant_id": str})
+    assert coded.groupby("participant_id").size().to_dict() == {"P1": 4, reinstated: 4}
+    assert set(coded.columns) == {*coding.KEY_COLUMNS, *coding.CODES, "depth"}
+
+
+def test_rubric_and_depth_refuse_without_the_reinstated_sheets(tmp_path, capsys):
+    """Never quietly scored without them; and a refusal leaves the verdicts as they were."""
+    code = _script("code_justifications")
+    tasks_csv = _tasks_with_a_reinstated_participant(tmp_path / "tasks.csv")
+    out = tmp_path / "coding"
+    args = ["--tasks", str(tasks_csv), "--out", str(out)]
+    for step in ("sheets", "rubric-sheets"):
+        assert code.main([step, *args]) == 0
+    _grade(out / "rubric_coder1.csv", {"a": "1", "b": "1", "c": "1", "contradicts": "0"})
+    _grade(out / "coder1.csv", {"cites_values": "1", "compares_series": "1"})
+    (out / "rubric_verdicts.csv").write_text("earlier verdicts\n", encoding="utf-8")
+    capsys.readouterr()
+
+    assert code.main(["rubric", *args]) == 1
+    assert "reinstated-sheets" in capsys.readouterr().err
+    assert (out / "rubric_verdicts.csv").read_text(encoding="utf-8") == "earlier verdicts\n"
+    assert code.main(["depth", *args]) == 1
+    assert "reinstated-sheets" in capsys.readouterr().err
+
+
+def test_no_reinstated_sheets_when_the_rules_keep_the_participant(tmp_path, capsys):
+    code = _script("code_justifications")
+    tasks_csv = _tasks_with_a_reinstated_participant(tmp_path / "tasks.csv")
+    frame = pd.read_csv(tasks_csv)
+    frame.assign(use_accuracy=True).to_csv(tasks_csv, index=False)
+    out = tmp_path / "coding"
+    assert code.main(["reinstated-sheets", "--tasks", str(tasks_csv), "--out", str(out)]) == 0
+    assert "No reinstated participant" in capsys.readouterr().out
+    assert not out.exists() or not list(out.glob("*_p*.csv"))
+
+
 # --- T1's rubric ---------------------------------------------------------------------------------
 
 

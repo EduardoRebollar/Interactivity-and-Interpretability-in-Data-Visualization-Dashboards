@@ -30,6 +30,14 @@ TOP_TRIM_QUANTILE = 0.99
 # session looking incomplete. Both forms have the same number (tests/test_tasks.py).
 SCORED_TASKS = len(task_bank.for_form("A"))
 CONDITIONS_PER_PARTICIPANT = 2
+# The deviation (Eduardo, 2026-11-10): participant 19's interactive half was opened twice within
+# a second, leaving an empty third session, so `incomplete_session` takes out all 12 of their
+# answers. The main analysis drops that session and re-runs every rule
+# (notebooks/significance.py, which ties its own list to this one by test); the pre-registered
+# analysis keeps the rules as they are. `apply` never reads this. It tells
+# `scripts/code_justifications.py` whose answers to grade on sheets of their own, since the main
+# sheets hold only the answers these rules keep.
+REINSTATED: tuple[str, ...] = ("19",)
 
 
 @dataclass(frozen=True)

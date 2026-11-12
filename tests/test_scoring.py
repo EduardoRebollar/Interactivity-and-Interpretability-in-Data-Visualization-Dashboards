@@ -1010,6 +1010,13 @@ def test_analysis_is_excluded_from_the_vercel_bundle():
     assert "analysis/**" in excluded.strip("{}").split(",")
 
 
+def test_the_significance_notebook_is_excluded_from_the_vercel_bundle():
+    """notebooks/ is offline analysis, like analysis/: it reads the study's scored frames."""
+    manifest = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
+    excluded = manifest["functions"]["src/app.py"]["excludeFiles"].strip("{}").split(",")
+    assert "notebooks/**" in excluded
+
+
 def test_identifying_material_never_ships():
     """Local signed consent records and the IRB paperwork carry names; neither may be uploaded."""
     manifest = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))

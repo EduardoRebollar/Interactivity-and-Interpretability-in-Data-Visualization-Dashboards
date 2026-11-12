@@ -418,6 +418,7 @@ committed, `.env*` gitignored.
 - `dash`, `plotly` — ship to production
 - `psycopg[binary]` — Neon Postgres driver, ships to production
 - `pandas`, `pyarrow` — **local only**, for cleaning and validation; never imported by runtime modules
+- `scipy` — **local only** (dev group, 2026-11-11), for `notebooks/significance.py`
 - `ruff` for linting/formatting, `pytest` for tests
 - Do not add dependencies without asking first. A new runtime dependency also grows the Vercel
   bundle, so say which of the two groups above it belongs in.
@@ -517,6 +518,8 @@ analysis/               # offline scoring — NEVER ships; pandas allowed except
   sources.py            # where events are read from: CSV export, Postgres, or JSONL
   viewer_data.py        # the data viewer's checks and tables; never raises on broken data
   viewer_app.py         # the data viewer's Dash layout; localhost only, justifications masked
+notebooks/              # NEVER ships (vercel.json); reads the scored frames, never the database
+  significance.py       # the significance plan: crossover t, Wilcoxon, permutation, Holm, TOST; with and without 19
 scripts/
   download_data.py      # fetches from Our World in Data
   export_deploy_data.py # parquet -> data/deploy/coverage.csv
@@ -533,7 +536,7 @@ scripts/
   vendor_pdf_libs.py    # jsPDF + html2canvas -> src/assets/vendor/, pinned by SHA-256
   bridge_stylesheet.py  # study.css -> src/assets/zz-bridge.css, for Dash 4's option-list markup
   score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
-  code_justifications.py # blind sheets, T1 verdicts, depth by code -> data/study_logs/coding/
+  code_justifications.py # blind sheets, T1 verdicts, depth by code -> data/study_logs/coding/; 19's own sheets
   view_data.py          # local data viewer on 127.0.0.1:8051; read-only
   check_contrast.py     # WCAG contrast and colour-blind separation report for the palette
   check_bundle.py       # serves the app from requirements.txt alone, in a throwaway venv
@@ -552,6 +555,7 @@ tests/
   test_scoring.py       # derived keys match §4; each rule refuses an ill-posed or fragile item; no ship
   test_analysis.py      # real app sessions scored end to end; exclusions; coding harness; kappa
   test_viewer.py        # each health check trips on its fault; masking; download re-scores
+  test_significance.py  # error rates, power, the mixed-model match, the plan's refusals, reinstating 19
   test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
   test_consent.py       # the pinned consent text, the signed record, export and withdrawal scripts
   test_questionnaire.py # the IRB questionnaire: every question and option, the app's styles, no key

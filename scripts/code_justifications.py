@@ -25,6 +25,18 @@ is nothing to compare), and `rubric` writes the verdicts straight from the one r
 disagreements to settle. Grade by `docs/grading-rules.md`. `depth` is the same in both modes, and
 prints each code by condition beside the depth sum, with and without T1.
 
+**Reinstated participants (the participant 19 deviation, `analysis.exclusions.REINSTATED`).** The
+main sheets hold only the answers the pre-registered exclusions keep, so a reinstated
+participant's answers are graded on sheets of their own, and the reviewed main sheets are never
+regenerated:
+
+    reinstated-sheets  Write coder1_p19.csv, rubric_coder1_p19.csv and their keys (key_p19.csv,
+                       rubric_key_p19.csv). Refuses to overwrite any of them: they may be graded.
+
+Once they exist, `rubric` and `depth` read them beside the main sheets and refuse to run without
+them. The verdicts and depth.csv then carry the reinstated answers too; the pre-registered
+analysis leaves them out, since tasks.csv still marks them excluded.
+
 Run `scripts/score_study.py` first: this reads its tasks.csv, so exclusions are already marked.
 Everything written here is participant free text and is gitignored.
 
@@ -34,19 +46,21 @@ Usage:
     uv run python scripts/code_justifications.py depth
     uv run python scripts/code_justifications.py rubric-sheets
     uv run python scripts/code_justifications.py rubric
+    uv run python scripts/code_justifications.py reinstated-sheets
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from analysis import coding, keys  # noqa: E402
+from analysis import coding, exclusions, keys  # noqa: E402
 from src import config  # noqa: E402
 
 DERIVED = config.STUDY_LOGS_DIR / "derived"
@@ -117,13 +131,97 @@ def kappa(out: Path) -> int:
     return 0
 
 
-def depth(out: Path) -> int:
+def _sheet(stem: str, participant: str | None = None) -> str:
+    """A sheet's file name: the main sheet, or a reinstated participant's own (`coder1_p19.csv`)."""
+    return f"{stem}.csv" if participant is None else f"{stem}_p{participant}.csv"
+
+
+def _reinstated(
+    tasks_csv: Path, build: Callable[[Iterable[dict]], list[coding.Unit]], main_ids: set[str]
+) -> dict[str, list[coding.Unit]]:
+    """Each reinstated participant's units that the main sheets leave out: their answers the
+    pre-registered exclusions remove. A reinstated participant the rules keep has none."""
+    tasks = pd.read_csv(tasks_csv, dtype={"session_id": str, "participant_id": str})
+    found = {}
+    for participant in exclusions.REINSTATED:
+        rows = tasks[(tasks["participant_id"] == participant) & ~tasks["use_accuracy"]]
+        units = build(rows.to_dict("records"))
+        if {u.unit_id for u in units} & main_ids:
+            raise coding.CodingError(f"participant {participant}'s units are on the main sheet too")
+        if units:
+            found[participant] = units
+    return found
+
+
+def _read_reinstated(
+    path: Path, units: list[coding.Unit], read: Callable[[Path, set[str]], dict]
+) -> dict[str, dict[str, int]]:
+    if not path.exists():
+        raise coding.CodingError(
+            f"{path.name} is missing: the participant is reinstated, so run reinstated-sheets "
+            "and grade it first"
+        )
+    return read(path, {u.unit_id for u in units})
+
+
+def _note_reinstated(participant: str, units: list[coding.Unit], path: Path, what: str) -> None:
+    print(
+        f"Reinstated (the participant {participant} deviation): {len(units)} {what} from "
+        f"{path.name}, graded by one grader; the pre-registered analysis leaves them out"
+    )
+
+
+def reinstated_sheets(tasks_csv: Path, out: Path) -> int:
+    main_rq2 = {u.unit_id for u in _units(tasks_csv)}
+    main_rubric = {u.unit_id for u in _rubric_units(tasks_csv)}
+    rq2 = _reinstated(tasks_csv, coding.build_units, main_rq2)
+    rubric_units = _reinstated(tasks_csv, coding.build_rubric_units, main_rubric)
+    if not rq2 and not rubric_units:
+        print("No reinstated participant has answers off the main sheets.")
+        return 0
+    for participant in sorted(set(rq2) | set(rubric_units)):
+        stems = ("coder1", "key", "rubric_coder1", "rubric_key")
+        existing = [
+            _sheet(s, participant) for s in stems if (out / _sheet(s, participant)).exists()
+        ]
+        if existing:
+            raise coding.CodingError(
+                f"{', '.join(existing)} already exist and may hold grades; never overwritten"
+            )
+        if participant in rubric_units:
+            units = rubric_units[participant]
+            coding.write_rubric_sheet(
+                units, out / _sheet("rubric_coder1", participant), seed=coding.SEED
+            )
+            coding.write_key(units, out / _sheet("rubric_key", participant))
+            print(f"{len(units)} T1 descriptions -> {out / _sheet('rubric_coder1', participant)}")
+        if participant in rq2:
+            units = rq2[participant]
+            coding.write_sheet(units, out / _sheet("coder1", participant))
+            coding.write_key(units, out / _sheet("key", participant))
+            print(f"{len(units)} units -> {out / _sheet('coder1', participant)}")
+    print(f"Grade by {GRADING_RULES}. The keys are for the analyst, never for a coder.")
+    return 0
+
+
+def depth(tasks_csv: Path, out: Path) -> int:
     key = pd.read_csv(out / "key.csv", dtype=str)
-    primary = coding.read_sheet(out / "coder1.csv", expected_ids=set(key["unit_id"]))
-    rows = [
-        {"unit_id": uid, **codes, "depth": coding.depth(codes)} for uid, codes in primary.items()
-    ]
-    coded = key.merge(pd.DataFrame(rows), on="unit_id", validate="one_to_one")
+    sheets = [(key, coding.read_sheet(out / "coder1.csv", expected_ids=set(key["unit_id"])))]
+    for participant, units in _reinstated(
+        tasks_csv, coding.build_units, set(key["unit_id"])
+    ).items():
+        path = out / _sheet("coder1", participant)
+        codes = _read_reinstated(path, units, coding.read_sheet)
+        unit_key = pd.DataFrame([{c: getattr(u, c) for c in coding.KEY_COLUMNS} for u in units])
+        sheets.append((unit_key, codes))
+        _note_reinstated(participant, units, path, "units")
+    frames = []
+    for unit_key, codes in sheets:
+        rows = [
+            {"unit_id": uid, **coded, "depth": coding.depth(coded)} for uid, coded in codes.items()
+        ]
+        frames.append(unit_key.merge(pd.DataFrame(rows), on="unit_id", validate="one_to_one"))
+    coded = pd.concat(frames, ignore_index=True)
     coded.to_csv(out / "depth.csv", index=False)
     print(f"Wrote {out / 'depth.csv'} ({len(coded)} coded answers)")
     print(
@@ -191,25 +289,38 @@ def _report_verdicts(fields: dict[str, dict[str, int]], path: Path) -> None:
 def rubric(tasks_csv: Path, out: Path) -> int:
     units = _rubric_units(tasks_csv)
     ids = {unit.unit_id for unit in units}
+    # Read before anything is written: a missing or broken sheet leaves the verdicts as they were.
+    reinstated = {}
+    for participant, extra in _reinstated(tasks_csv, coding.build_rubric_units, ids).items():
+        path = out / _sheet("rubric_coder1", participant)
+        reinstated[participant] = (
+            extra,
+            path,
+            _read_reinstated(path, extra, coding.read_rubric_sheet),
+        )
     first = coding.read_rubric_sheet(out / "rubric_coder1.csv", ids)
     if coding.SINGLE_GRADER:
         _single_grader_note()
         print(f"No agreement statistic and nothing to settle: {len(ids)} T1 descriptions.")
-        coding.write_verdicts(units, first, out / "rubric_verdicts.csv")
-        _report_verdicts(first, out / "rubric_verdicts.csv")
-        return 0
-    second = coding.read_rubric_sheet(out / "rubric_coder2.csv", ids)
-    report = coding.kappa_report(first, second, coding.RUBRIC_FIELDS)
-    print(f"Rubric agreement over {len(ids)} T1 descriptions, before any discussion")
-    for field, stats in report.items():
-        print(
-            f"  {field:12} kappa {coding.format_kappa(stats['kappa']):>24}   "
-            f"prevalence {stats['prevalence']:.2f}   raw agreement {stats['agreement']:.2f}"
-        )
-    n_open = coding.write_disagreements(units, first, second, out / "rubric_disagreements.csv")
-    print(f"{n_open} disagreements -> {out / 'rubric_disagreements.csv'}")
-    settled = coding.read_settled(out / "rubric_settled.csv", ids)
-    final = coding.settled_fields(first, second, settled)
+        final = first
+    else:
+        second = coding.read_rubric_sheet(out / "rubric_coder2.csv", ids)
+        report = coding.kappa_report(first, second, coding.RUBRIC_FIELDS)
+        print(f"Rubric agreement over {len(ids)} T1 descriptions, before any discussion")
+        for field, stats in report.items():
+            print(
+                f"  {field:12} kappa {coding.format_kappa(stats['kappa']):>24}   "
+                f"prevalence {stats['prevalence']:.2f}   raw agreement {stats['agreement']:.2f}"
+            )
+        n_open = coding.write_disagreements(units, first, second, out / "rubric_disagreements.csv")
+        print(f"{n_open} disagreements -> {out / 'rubric_disagreements.csv'}")
+        settled = coding.read_settled(out / "rubric_settled.csv", ids)
+        final = coding.settled_fields(first, second, settled)
+    final = dict(final)
+    for participant, (extra, path, fields) in reinstated.items():
+        _note_reinstated(participant, extra, path, "T1 descriptions")
+        units = [*units, *extra]
+        final.update(fields)
     coding.write_verdicts(units, final, out / "rubric_verdicts.csv")
     _report_verdicts(final, out / "rubric_verdicts.csv")
     return 0
@@ -217,7 +328,10 @@ def rubric(tasks_csv: Path, out: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Blind RQ2 coding of justifications.")
-    parser.add_argument("step", choices=("sheets", "kappa", "depth", "rubric-sheets", "rubric"))
+    parser.add_argument(
+        "step",
+        choices=("sheets", "kappa", "depth", "rubric-sheets", "rubric", "reinstated-sheets"),
+    )
     parser.add_argument("--tasks", type=Path, default=DERIVED / "tasks.csv")
     parser.add_argument("--out", type=Path, default=CODING)
     args = parser.parse_args(argv)
@@ -230,7 +344,9 @@ def main(argv: list[str] | None = None) -> int:
             return rubric_sheets(args.tasks, args.out)
         if args.step == "rubric":
             return rubric(args.tasks, args.out)
-        return depth(args.out)
+        if args.step == "reinstated-sheets":
+            return reinstated_sheets(args.tasks, args.out)
+        return depth(args.tasks, args.out)
     except (coding.CodingError, FileNotFoundError) as exc:
         print(f"Cannot {args.step}: {exc}", file=sys.stderr)
         return 1

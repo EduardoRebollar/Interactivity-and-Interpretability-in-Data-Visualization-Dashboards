@@ -48,6 +48,18 @@ Report these in the write-up as deviations, alongside participant 19.
      no version attached), not at any result by version.
    - The draft's `notes_uncertainty` column stays in both RQ2 sheets, unreviewed; the analysis
      ignores it.
+6. **Participant 19's 14 units, graded after the others** (2026-11-11).
+   - Their 2 T1 descriptions and 12 RQ2 units were not on the main sheets. The empty duplicate
+     session takes out all 12 of their answers under the pre-registered exclusions, and the sheets
+     hold only the answers those rules keep. The main analysis reinstates participant 19, so their
+     units were graded on sheets of their own (`rubric_coder1_p19.csv`, `coder1_p19.csv`). That
+     came after the other 322 units (46 T1 descriptions, 276 RQ2 units) were reviewed.
+   - Drafted by Claude in the Claude web app (claude.ai), not in Claude Code, by these rules.
+   - Kept as drafted (Eduardo): no code was changed, so each sheet matches its draft
+     (`*_p19_draft.csv`).
+   - Not blind to condition. The units are one known participant's, whose order and forms were
+     known, so their condition could be inferred.
+   - The pre-registered analysis, without participant 19, uses none of these codes.
 
 Everything else in this file explains how the existing codes are applied. It does not change what
 they measure.
