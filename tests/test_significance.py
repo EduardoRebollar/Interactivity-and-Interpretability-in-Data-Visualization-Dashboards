@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -263,6 +264,59 @@ def test_new_secondaries_are_scored_per_participant():
     assert depth["depth"].max() <= 2
 
 
+def test_ceiling_counts_participants_with_every_item_right():
+    tasks, conditions, depth = sig.simulate(per_cell=6, seed=13)
+    scores = sig.participant_scores(tasks, conditions, depth)
+    top = sig.ceiling(scores)
+    assert list(top) == ["static", "interactive"]
+    for condition, (k, n) in top.items():
+        own = scores[scores["condition"] == condition]
+        assert n == own["accuracy"].notna().sum() == 24
+        assert k == (own["accuracy"] == 1).sum()
+    assert "All items right (ceiling): static" in "\n".join(sig.describe(scores))
+
+
+def test_a_degraded_session_re_runs_timing_without_it_and_none_adds_nothing():
+    """Section 7: a degraded session is reported, not excluded; timing is re-run without it."""
+    tasks, conditions, depth = sig.simulate(per_cell=6)
+    clean = sig.participant_scores(tasks, conditions, depth)
+    assert "log_time_not_degraded" not in clean
+    assert "Degraded sessions (logger spooled): 0" in "\n".join(sig.describe(clean))
+
+    conditions.loc[conditions["session_id"] == "s5-2", "degraded"] = True
+    scores = sig.participant_scores(tasks, conditions, depth)
+    rerun = scores.set_index("session_id")["log_time_not_degraded"]
+    assert np.isnan(rerun["s5-2"])
+    assert rerun.drop("s5-2").to_dict() == pytest.approx(
+        scores.set_index("session_id")["log_time"].drop("s5-2").to_dict()
+    )
+    results, _ = sig.run(scores)
+    assert results["log_time_not_degraded"].n == 23  # participant 5 leaves this outcome only
+    assert results["log_time"].n == 24
+    assert "Degraded sessions (logger spooled): 1" in "\n".join(sig.describe(scores))
+
+
+def test_the_equivalence_verdict_uses_the_holm_p_not_the_raw_one():
+    tasks, conditions, depth = sig.simulate(per_cell=6)
+    results, adjusted = sig.run(sig.participant_scores(tasks, conditions, depth))
+    results["accuracy"] = replace(results["accuracy"], p=0.01)
+    held = sig.render(results, {**adjusted, "accuracy": 0.2}, [])
+    assert "a real difference" not in held and "may reach the bound" not in held
+    passed = sig.render(results, {**adjusted, "accuracy": 0.01}, [])
+    assert "a real difference" in passed or "may reach the bound" in passed
+    withheld = sig.render(results, {}, [])
+    assert "Holm withheld: judged on the unadjusted p" in withheld
+
+
+def test_rq3_rather_than_needs_paas_to_fall_and_accuracy_to_be_equivalent():
+    big = {"per_cell": 60, "seed": 4, "accuracy_logit": 0.0}
+    results, adjusted = sig.run(sig.participant_scores(*sig.simulate(paas_shift=-2.0, **big)))
+    assert "accuracy equivalent yes -> supported" in sig.render(results, adjusted, [])
+    results, adjusted = sig.run(sig.participant_scores(*sig.simulate(paas_shift=0.0, **big)))
+    assert "Paas falls no" in sig.render(results, adjusted, [])
+    assert "-> not supported" in sig.render(results, adjusted, [])
+
+
 def test_main_reads_the_pipeline_csvs_and_prints_both_analyses(tmp_path, capsys):
     tasks, conditions, depth = sig.simulate(per_cell=6, empty_session_for="19")
     tasks.to_csv(tmp_path / "tasks.csv", index=False)
@@ -273,3 +327,4 @@ def test_main_reads_the_pipeline_csvs_and_prints_both_analyses(tmp_path, capsys)
     assert "MAIN: with participant 19 (deviation): n = 24" in out
     assert "AS PRE-REGISTERED: without participant 19: n = 23" in out
     assert "T1 parts score" in out and "Cites values" in out
+    assert out.count("All items right (ceiling)") == 2 and "RQ3 'rather than'" in out

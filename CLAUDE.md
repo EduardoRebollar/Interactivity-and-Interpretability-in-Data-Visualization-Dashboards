@@ -1366,6 +1366,13 @@ context cheap and the reports as long as they need to be.
     is `cites_values` + `compares_series`, 0–2 (`coding.CODES`). The deviation is recorded in
     `docs/grading-rules.md` §1 item 5 only; `study-design.md` keeps the pre-registered text, by
     his choice. Decision-log row 1 amended: separate end values within one gridline earn (c).
+- 2026-11-11 — **The inference plan is in `study-design.md` §7 ("Inference")**, written after
+  collection closed at 24 and after the poster, before any test; the looks are disclosed in §10.
+  Crossover t, Wilcoxon, a permutation check on accuracy, Holm across RQ1–RQ3, and a TOST on
+  accuracy at one item of six. Each runs with participant 19 (main, n = 24) and without (as
+  pre-registered, n = 23). The supervisor's answers are still open (§10). Taken without asking:
+  the equivalence verdict uses Holm's p, and the notebook also prints the 6-of-6 count, RQ3's
+  "rather than", and time without degraded sessions (there are none).
 
 ## Open questions
 

@@ -13,8 +13,9 @@ verified in headless Chrome 2026-09-26; restyled 2026-10-11 from the chart hando
 (`docs/chart-handoff/`), with T5's maps redrawn, T6 given six more lines, and T2 and T4 moved to
 MCV1 (§4); line charts drawn from 1985 on 2026-10-12, every line item still asking about 2000
 onward (§4). Approved by Occidental's HSRRC on 2026-10-12; one pilot session the same day (§10).
-Final for data collection on 2026-10-13, starting at seq 14 (§10).** The consent text in §9 is
-the form HSRRC approved.
+Final for data collection on 2026-10-13, starting at seq 14 (§10). Collection closed at 24 on
+2026-11-10; the inference plan was written into §7 on 2026-11-11, before any test (§7, §10).** The
+consent text in §9 is the form HSRRC approved.
 
 **The IRB approval request form outranks this document** (`irb/`, local only — see CLAUDE.md). Where
 the two disagree, this document is changed to match, or the disagreement is listed in §10 so the IRB
@@ -1324,6 +1325,132 @@ are counted and timing analyses are re-run without them as a robustness check.
 **Order is fixed**, because a different order gives different numbers: session-level rules first,
 then `too_fast`, then the 1% trim computed on whatever survives.
 
+### Inference (2026-11-11)
+
+> **Added after collection, before any test.** Everything above in this section was fixed before
+> collection. This subsection was not. It was drafted on 2026-11-03, with 18 participants run, and
+> written here on 2026-11-11, after collection closed and after the poster's descriptive results
+> (§10). It is fixed before any significance test is run, and the tests run once.
+> `notebooks/significance.py` implements it, with each choice below as a named constant. A
+> constant changed after this was committed is a deviation.
+
+**Sample.** Collection closed on 2026-11-10 at 24 participants, 6 in each counterbalancing cell,
+one short of §2's target of 25 (§10). A run on fewer than 24 is an interim look, and the notebook
+refuses one unless told it is.
+
+**Two analyses, and every test runs in both.** Holm (below) is applied within each one separately.
+
+- **Main analysis (a deviation): participant 19 reinstated, n = 24.** Their interactive half was
+  opened twice within a second. That left an empty third session, with no answer and no
+  `session_end`, so `incomplete_session` takes out all 12 of their answers. The main analysis
+  drops the empty session and re-runs every exclusion rule above, unchanged and in order. Their 14
+  units were graded on sheets of their own (`docs/grading-rules.md` §1, item 6).
+- **As pre-registered: the rules as written, without participant 19, n = 23.**
+
+Every main result is reported both ways. If a conclusion differs between them, the write-up says
+so.
+
+**Scores,** one per participant per condition:
+
+| RQ | Score | Over |
+|---|---|---|
+| RQ1 accuracy | Proportion correct, a skip scoring incorrect | T1–T6, the rows the exclusions keep |
+| RQ2 depth | Mean depth per unit, `cites_values` + `compares_series` (0–2) | T2–T6, the kept rows with a coded justification |
+| RQ3 effort | Paas, 1–9 | the condition's rating |
+
+A participant without a score in one condition, such as a skipped Paas, leaves that outcome only.
+Depth runs 0–2, not the 0–3 above: `notes_uncertainty` was dropped in grading review
+(`docs/grading-rules.md` §1, item 5). The pre-registered text above is kept as it was.
+
+**The main test, for each RQ: a two-period crossover analysis.**
+
+- Each participant's difference, interactive minus static, is regressed on two covariates: the
+  half the interactive condition fell in (second +1, first −1) and its form (B +1, A −1).
+- The intercept is the effect of interactivity, adjusted for practice and form. df = n − 3,
+  two-sided, α = .05.
+- In the main analysis, where the cells are equal, the estimate is the plain mean difference,
+  usually with a narrower interval. Without participant 19 one cell has 5, and the adjustment keeps the
+  practice and form effects out of the estimate.
+- It gives the same estimate as a random-intercept mixed model with condition, half and form as
+  fixed effects (`tests/test_significance.py`).
+- Each result is reported as the estimate with its 95% CI, t, df and p, and the effect size dz
+  (estimate over the residual SD). The half and form coefficients are reported descriptively.
+
+**Checks, which assume no bell curve.** Where a check and the main test disagree, both are
+reported.
+
+- *All three:* a Wilcoxon signed-rank test on the raw differences (zeros ranked, then dropped, as
+  Pratt), with the matched-pairs rank-biserial.
+- *Accuracy also:* a permutation test of the adjusted effect, since accuracy takes few values and
+  many differences are zero. Each participant's order is re-dealt within their form sequence,
+  which flips the sign of their difference and both covariates together. 10,000 re-deals,
+  seed 2026, on the t statistic, two-sided.
+
+**Three tests at once: Holm.** The family is the three main tests, one per RQ, and is fixed.
+
+- The smallest p is held to .05/3, the next to .05/2 and the last to .05, stopping at the first
+  that fails.
+- If a main outcome cannot be computed, the correction is withheld rather than run on fewer tests.
+- "Significant" for a main test always means its Holm p, the equivalence verdict below included.
+- Everything outside the family is exploratory. Its estimates, intervals and p-values are printed,
+  and it is never called significant.
+
+**Saying accuracy did not change: an equivalence test (TOST).** RQ3's "rather than" needs more
+than a non-significant accuracy result.
+
+- The bound, set here, is one item of six: ±1/6 in proportion correct.
+- Accuracy is equivalent when its 90% CI lies entirely inside the bound.
+
+| Accuracy | Holm-significant | Not significant |
+|---|---|---|
+| **90% CI inside ±1/6** | A real difference, smaller than one item | Equivalent: no difference as large as one item |
+| **90% CI past ±1/6** | A real difference, possibly one item or more | Inconclusive |
+
+RQ3's "rather than" is supported only if Paas falls (Holm-significant, interactive lower) **and**
+accuracy is equivalent. Otherwise the write-up says the effect on accuracy is unclear.
+
+**Secondary, estimated by the same model, never tested:**
+
+- time on task, the geometric mean of seconds over the rows `use_timing` keeps, as a ratio;
+- accuracy on answered items only (above);
+- accuracy without E1 "Yes" (above);
+- T1's parts score (0–3);
+- depth with T1;
+- each code's share of units, T2–T6.
+
+Also reported:
+
+- beside accuracy, how many participants got every item right in each condition (a ceiling costs
+  the test power, not validity);
+- the degraded sessions. If there is one, time is re-run without it, as the exclusions above
+  require. There is none (`conditions.csv`, 2026-11-11).
+
+The survey (§6.1) and About you (§6.2) are only described, as above.
+
+**What 24 can detect.** With 80% power, two-sided, df = n − 3:
+
+| | n = 23 | n = 24 |
+|---|---|---|
+| α = .05 | dz 0.61 | dz 0.60 |
+| α = .05/3, Holm's first step | dz 0.73 | dz 0.71 |
+
+`notebooks/significance.py --sensitivity` prints these. Only large effects are likely to reach
+significance, so a non-significant main test is reported as not detected, never as no effect.
+
+**Rules for the run.**
+
+- Run once, after every T1 description and justification is reviewed. The notebook refuses while
+  any T1 is uncoded, or while a reinstated participant is missing from `depth.csv`.
+- Paas is RQ3's measure. a7 (mental effort) is reported beside it, never in its place, whichever
+  moved more.
+- No test on a single item or chart type (above).
+- Two-sided tests only, since interactivity could also make things worse.
+- A p-value is reported as it is: p = .06 is p = .06, never "trending" or "marginally
+  significant".
+- A non-significant result is never "no effect". Only the equivalence test can say that, and only
+  for accuracy.
+- No exclusion beyond the rules above and participant 19's deviation.
+
 ## 8. Procedure
 
 `consent → participant ID → instructions → practice → practice complete → 6 tasks → survey → break
@@ -1759,6 +1886,39 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     review changed; that count is anchored by the draft, so it is not an agreement statistic.
     Neither approved IRB form mentions AI tools. Both restrict only identifying data, and the
     sheets carry none.
+- **Collection closed at 24 (2026-11-10).** Six participants in each counterbalancing cell, one
+  short of §2's target of 25. Reported as a shortfall.
+- **Participant 19 reinstated in the main analysis (2026-11-10, Eduardo).** A deviation.
+  - Their interactive half was opened twice within a second, leaving an empty third session.
+  - As pre-registered, `incomplete_session` takes out all 12 of their answers. The main analysis
+    drops the empty session and re-runs every rule.
+  - The analysis as pre-registered, without them, is reported beside it (§7, Inference).
+  - Their 14 units were graded after the others, not blind to condition
+    (`docs/grading-rules.md` §1, item 6).
+- **The inference plan was written after looks at the data (disclosed).** §7's Inference
+  subsection was not fixed before collection.
+  - **2026-11-03:** the plan was drafted, with an early look at 18 participants: distributions and
+    averages, no test. The plan's case for two of its choices cites that look: the adjustment for
+    half (second halves ran about 40 seconds faster per task), and the permutation check (7 of 18
+    accuracy differences were zero).
+  - **2026-11-10 to 11:** the poster was built from the averages, with bootstrap intervals and no
+    p-values. Effort, time and T2–T6 accuracy by condition had been seen before §7's Inference was
+    written.
+  - **2026-11-11:** written into §7, before any test. The write-up gives both dates: drafted
+    2026-11-03 (the plan document's own history), committed after the poster.
+- **Open with the supervisor (2026-11-11).** The plan's questions:
+  - Is 24 acceptable, reported as a shortfall?
+  - Is the main analysis run with participant 19, and the pre-registered one beside it?
+  - Are the tests the crossover t, Wilcoxon, and a permutation check on accuracy?
+  - Holm, or .05 for each RQ?
+  - Is one item of six the smallest accuracy difference worth caring about?
+  - Should the pre-registered 0–3 depth appear in a footnote? That needs the dropped code reviewed.
+  - Is time reported only, or a fourth main test?
+  - Does the poster stay descriptive?
+  - Is this list enough disclosure?
+
+  §7 records the plan as drafted. An answer that changes it before the run changes §7 first. One
+  that comes after the run is a deviation.
 - **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would

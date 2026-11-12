@@ -1,8 +1,9 @@
 """Significance tests: the analysis notebook `analysis/report.py` defers inference to.
 
-The plan is "Statistical Significance Plan" (drafted 2026-11-03, updated 2026-11-11). Write its
-choices into `docs/study-design.md` section 7 and commit them *before* this is run on study data:
-every choice is a named constant below, so that commit is the record of what was decided first.
+The plan is "Statistical Significance Plan" (drafted 2026-11-03, updated 2026-11-11), written
+into `docs/study-design.md` section 7, "Inference", which must be committed *before* this is run
+on study data: every choice is a named constant below, so that commit is the record of what was
+decided first. A change to a constant after that commit is a deviation, and section 7 says so.
 
 Run it once, after the T1 descriptions and the justifications are graded (`docs/grading-rules.md`).
 It reads the frames the existing pipeline writes and never touches the database:
@@ -84,6 +85,8 @@ LABELS = {
     "depth": "RQ2 reasoning depth (0-2, T2-T6)",
     "paas": "RQ3 mental effort (Paas 1-9)",
     "log_time": "Time on task (geometric mean, T1-T6)",
+    # Section 7's robustness check: computed only when a session was degraded (sink_recovered).
+    "log_time_not_degraded": "Time on task, without degraded sessions",
     "accuracy_answered": "Accuracy, answered items only",
     "accuracy_no_heard": "Accuracy, without E1 'Yes'",
     "t1_parts": "T1 parts score (0-3)",
@@ -152,6 +155,13 @@ def participant_scores(
     conds = conditions.copy()
     conds["session_id"] = conds["session_id"].astype(str)
     scores["paas"] = scores["session_id"].map(conds.set_index("session_id")["paas"]).astype(float)
+    # Section 7: a degraded session is reported, not excluded, and timing is re-run without it.
+    flagged = conds.get("degraded", pd.Series(False, index=conds.index))
+    flagged = flagged.map({True: True, False: False, "True": True, "False": False})
+    degraded = set(conds.loc[flagged.fillna(False).astype(bool), "session_id"])
+    scores["degraded"] = scores["session_id"].isin(degraded)
+    if scores["degraded"].any():
+        scores["log_time_not_degraded"] = scores["log_time"].where(~scores["degraded"])
 
     if depth is not None:
         coded = depth.copy()
@@ -444,7 +454,33 @@ def analyse(
     results, adjusted = run(scores)
     n = scores["participant_id"].nunique()
     banner = f"{title}: n = {n}"
-    return render(results, adjusted, [banner, "=" * len(banner), *notes])
+    return render(results, adjusted, [banner, "=" * len(banner), *notes], describe(scores))
+
+
+def ceiling(scores: pd.DataFrame) -> dict[str, tuple[int, int]]:
+    """Per condition: participants with every kept item right, of those with an accuracy score.
+    A ceiling costs the accuracy test power, not validity, so the plan reports it beside it."""
+    scored = scores.dropna(subset=["accuracy"])
+    return {
+        c: (int((g["accuracy"] == 1).sum()), len(g))
+        for c in ("static", "interactive")
+        for g in [scored[scored["condition"] == c]]
+    }
+
+
+def describe(scores: pd.DataFrame) -> list[str]:
+    """The descriptive lines printed after the tests: the ceiling and the degraded sessions."""
+    top = ceiling(scores)
+    n_degraded = int(scores["degraded"].sum()) if "degraded" in scores else 0
+    rerun = (
+        "timing re-run without them above"
+        if n_degraded
+        else "none, so section 7's timing re-run has nothing to drop"
+    )
+    return [
+        "All items right (ceiling): " + ", ".join(f"{c} {k} of {n}" for c, (k, n) in top.items()),
+        f"Degraded sessions (logger spooled): {n_degraded}; {rerun}",
+    ]
 
 
 def run(scores: pd.DataFrame) -> tuple[dict[str, Result], dict[str, float]]:
@@ -468,12 +504,17 @@ def _fmt(value: float, unit: str) -> str:
     return f"{value:+.3f}" if unit == "prop" else f"{value:+.2f}"
 
 
-def render(results: dict[str, Result], adjusted: dict[str, float], notes: list[str]) -> str:
+def render(
+    results: dict[str, Result],
+    adjusted: dict[str, float],
+    notes: list[str],
+    descriptive: list[str] | None = None,
+) -> str:
     lines = [*notes, ""] if notes else []
     lines.append("Main tests (Holm across RQ1-RQ3; two-sided; adjusted for half and form)")
     lines.append("-" * 76)
     header = (
-        f"{'outcome':<44}{'n':>3}  {'effect [95% CI]':<26}"
+        f"{'outcome':<44}{'n':>3}  {'effect [95% CI]':<26}{'t (df)':>12}"
         f"{'p':>7}{'Holm p':>8}{'Wilcoxon p':>11}{'dz':>6}"
     )
     for group in (CONFIRMATORY, [c for c in results if c not in CONFIRMATORY]):
@@ -485,7 +526,7 @@ def render(results: dict[str, Result], adjusted: dict[str, float], notes: list[s
                 lines.append(f"{LABELS[name]:<44}  not available (not coded yet?)")
                 continue
             r = results[name]
-            if name == "log_time":
+            if name.startswith("log_time"):
                 lo, hi = math.exp(r.ci95[0]), math.exp(r.ci95[1])
                 effect = f"x{math.exp(r.estimate):.2f} [{lo:.2f}, {hi:.2f}]"
             else:
@@ -498,8 +539,9 @@ def render(results: dict[str, Result], adjusted: dict[str, float], notes: list[s
                 if name in adjusted
                 else ("-" if name not in CONFIRMATORY else "n/a")
             )
+            t_df = f"{r.t:.2f} ({r.df})"
             lines.append(
-                f"{LABELS[name]:<44}{r.n:>3}  {effect:<26}"
+                f"{LABELS[name]:<44}{r.n:>3}  {effect:<26}{t_df:>12}"
                 f"{_p(r.p):>7}{holm_p:>8}{_p(r.wilcoxon_p):>11}{r.dz:>6.2f}"
             )
     if CONFIRMATORY and any(c not in results for c in CONFIRMATORY):
@@ -510,13 +552,17 @@ def render(results: dict[str, Result], adjusted: dict[str, float], notes: list[s
     if "accuracy" in results:
         acc = results["accuracy"]
         inside, p_tost = tost(acc, EQUIVALENCE_BOUND)
-        significant = acc.p < ALPHA
+        # Accuracy is one of the three main tests, so "significant" is its Holm p, never the raw
+        # one. With Holm withheld (a main outcome missing) the verdict says it used the raw p.
+        significant = adjusted.get("accuracy", acc.p) < ALPHA
         verdict = {
             (True, True): "a real difference, smaller than the bound",
             (True, False): "a difference that may reach the bound or more",
             (False, True): "equivalent: no difference as large as the bound",
             (False, False): "inconclusive",
         }[(significant, inside)]
+        if "accuracy" not in adjusted:
+            verdict += " (Holm withheld: judged on the unadjusted p)"
         bound_items = EQUIVALENCE_BOUND * ITEMS_PER_CONDITION
         lines += [
             "",
@@ -536,6 +582,17 @@ def render(results: dict[str, Result], adjusted: dict[str, float], notes: list[s
             f"form effect (descriptive): {acc.form:+.3f}; "
             "+ means higher in the second half / on form B."
         )
+        if "paas" in results and "paas" in adjusted:
+            falls = results["paas"].estimate < 0 and adjusted["paas"] < ALPHA
+            equivalent = inside and not significant
+            lines.append(
+                "RQ3 'rather than' (Paas falls, Holm p < .05, and accuracy equivalent): "
+                f"Paas falls {'yes' if falls else 'no'}, accuracy equivalent "
+                f"{'yes' if equivalent else 'no'} -> "
+                f"{'supported' if falls and equivalent else 'not supported'}"
+            )
+    if descriptive:
+        lines += ["", *descriptive]
     return "\n".join(lines)
 
 
