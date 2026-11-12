@@ -1353,6 +1353,11 @@ context cheap and the reports as long as they need to be.
   - Secondaries added the same day: T1's parts score (0–3, `t1_parts` in `tasks.csv`) and the RQ2
     codes by condition, with and without T1 (`code_justifications.py depth`).
   - `rubric` refuses `contradicts` = 1 with a, b and c all 1 (grading rule G4).
+  - Amended the same day, before any code was entered (Eduardo's choice, over Claude as a second
+    coder or sole grader): Claude drafts every code on both sheets, blind, and Eduardo reviews each
+    one; his is final. The drafts are kept as `rubric_coder1_draft.csv` and `coder1_draft.csv`, so
+    the write-up can say how many codes the review changed (anchored, so not an agreement
+    statistic). Reported as AI-drafted, human-reviewed (`docs/grading-rules.md` §1, item 4).
 
 ## Open questions
 

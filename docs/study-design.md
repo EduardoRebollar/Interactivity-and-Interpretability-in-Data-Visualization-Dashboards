@@ -1165,6 +1165,8 @@ A description is correct when (a), (b) and (c) are all present and `contradicts`
 > two-coder procedure above was replaced: Eduardo grades every description alone, by
 > `docs/grading-rules.md`, so no κ is reported and nothing is settled; the verdict comes straight
 > from the one sheet (`SINGLE_GRADER` in `analysis/coding.py`). A deviation, recorded in §10.
+> *Amended the same day, before any code was entered:* Claude drafts each code and Eduardo reviews
+> every one; his is final (§10).
 > Under the grading rules (G4) a contradicted part scores 0, so `contradicts` always comes with a
 > part at 0, and scoring refuses a sheet where it does not.
 >
@@ -1264,8 +1266,9 @@ reported as such rather than as a number. At n ≥ 25 the double-coded sample is
 conventional, but thin, and the write-up should say so.
 
 > **One grader (2026-11-11, Eduardo).** No second coder: Eduardo codes every justification and T1
-> description alone, by `docs/grading-rules.md`, so no κ is reported for any code (§10). The
-> rules settle the borderline cases: a number copied from the question or the options is not
+> description alone, by `docs/grading-rules.md`, so no κ is reported for any code (§10).
+> *Amended the same day, before any code was entered:* Claude drafts each code and Eduardo reviews
+> every one; his is final (§10). The rules settle the borderline cases: a number copied from the question or the options is not
 > `cites_values`; a bare superlative ("the highest of all") is not `compares_series`; a bare "I
 > think", or "about" before a number, is not `notes_uncertainty`.
 >
@@ -1749,6 +1752,13 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   parts score (0–3) and the RQ2 codes reported separately by condition (§7).
   - **For HSRRC.** The approved request form says nothing about the number of coders or an
     agreement statistic (read 2026-11-11), so this changes nothing HSRRC approved.
+  - **An AI draft, reviewed code by code (amended the same day, before any code was entered).**
+    Claude (Anthropic's Claude Opus 5.5) drafts every code on both sheets, blind, by
+    `docs/grading-rules.md`; Eduardo reviews every code, and his is final. The drafts are kept, so
+    the write-up reports the scores as AI-drafted and human-reviewed, with how many codes the
+    review changed; that count is anchored by the draft, so it is not an agreement statistic.
+    Neither approved IRB form mentions AI tools. Both restrict only identifying data, and the
+    sheets carry none.
 - **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would

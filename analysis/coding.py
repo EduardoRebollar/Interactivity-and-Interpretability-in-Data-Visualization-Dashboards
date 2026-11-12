@@ -29,6 +29,12 @@ files happen to exist. With it set, no second coder's sheet is written, no kappa
 T1's verdicts come straight from the one sheet. The two-coder procedure is still here and tested;
 setting `SINGLE_GRADER` to None restores it.
 
+**An AI draft, reviewed (amended 2026-11-11, before any code was entered).** Claude drafts every
+code on both sheets and Eduardo reviews each one; his is final (docs/grading-rules.md, section 1).
+The draft is the automatic coding warned against above unless the review is real, so the draft is
+kept beside each sheet and the write-up reports how many codes the review changed. Nothing here
+reads the draft: the sheets read are the reviewed ones.
+
 **T1's parts score (2026-11-11).** A secondary beside the primary verdict: how many of (a), (b)
 and (c) are credited, 0-3. Under the grading rules (G4) a part that is stated wrongly scores 0, so
 `contradicts` set with all three parts credited is a grading slip, and the sheet is refused.
@@ -62,9 +68,9 @@ VERDICT_COLUMNS = ("session_id", "task_id", "correct", *RUBRIC_FIELDS, "parts")
 # One grader, declared (study-design.md sections 7 and 10). None restores the pre-registered
 # two-coder procedure: two rubric sheets, kappa, and settling by discussion.
 SINGLE_GRADER: str | None = (
-    "Eduardo grades every T1 description and every justification alone (2026-11-11), by "
-    "docs/grading-rules.md; no agreement statistic exists. A deviation from study-design.md "
-    "section 7, recorded in section 10."
+    "Eduardo grades every T1 description and every justification (2026-11-11), by "
+    "docs/grading-rules.md, reviewing every code of a draft by Claude; no agreement statistic "
+    "exists. A deviation from study-design.md section 7, recorded in section 10."
 )
 # Where `scripts/code_justifications.py rubric` writes the settled verdicts, and where scoring
 # and the viewer read them. Participant data: gitignored under data/study_logs/.

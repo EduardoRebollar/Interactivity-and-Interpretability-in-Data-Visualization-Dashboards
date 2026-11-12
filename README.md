@@ -175,7 +175,8 @@ uv run python scripts/code_justifications.py rubric         # T1 verdicts and pa
 ```
 
 One grader codes everything (2026-11-11; `SINGLE_GRADER` in `analysis/coding.py`), by
-[docs/grading-rules.md](docs/grading-rules.md). With it set to None, the pre-registered two-coder
+[docs/grading-rules.md](docs/grading-rules.md), reviewing every code of a draft by Claude, which
+is kept beside each sheet as `*_draft.csv`. With it set to None, the pre-registered two-coder
 procedure runs instead: second sheets, `kappa`, and settling T1's disagreements.
 
 Run the rubric steps before `score_study.py`'s final run: a participant's T1–T6 accuracy is not

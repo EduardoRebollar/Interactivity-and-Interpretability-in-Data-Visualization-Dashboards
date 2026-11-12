@@ -1,7 +1,8 @@
 # Grading rules: T1 rubric and RQ2 codes
 
 **Written:** 2026-11-11, before any participant answer was read.
-**Grader:** Eduardo Rebollar, sole grader.
+**Grader:** Eduardo Rebollar, sole grader. *Amended the same day, before any code was entered:*
+Claude drafts every code and Eduardo reviews each one (§1, item 4).
 **Status:** clarifies how `docs/study-design.md` sections 4 and 7 are applied. It does not replace
 them. G2 and G3 restate rules §4 already gives for T1; the rest settles cases §4 and §7 leave open.
 Commit this file before opening any grading sheet. The commit date is the record that these rules
@@ -24,6 +25,17 @@ Report these in the write-up as deviations, alongside participant 19.
    contradicts one.
 3. **New secondary: RQ2 codes by version.** `cites_values`, `compares_series` and
    `notes_uncertainty` are each reported by version, next to the pre-registered 0-3 depth sum.
+4. **An AI draft, reviewed code by code** (amended 2026-11-11, before any code was entered).
+   - Claude (Anthropic's Claude Opus 5.5, in Claude Code) drafts every code on both sheets, by
+     these rules, from the blind sheets alone. It does not open `key.csv`, `rubric_key.csv` or
+     `tasks.csv`. Like the grader, it knows the hypotheses.
+   - A `draft_note` column explains each call the rules leave close. The scripts ignore it.
+   - Eduardo then reviews every code against the text and these rules, and changes any he
+     disagrees with. His code is final.
+   - The draft is kept unchanged beside each sheet (`rubric_coder1_draft.csv`,
+     `coder1_draft.csv`), so the write-up can report how many codes the review changed. That count
+     is not an agreement statistic: the review starts from the draft and is anchored by it.
+   - Report the scores as AI-drafted and human-reviewed.
 
 Everything else in this file explains how the existing codes are applied. It does not change what
 they measure.
@@ -37,7 +49,8 @@ they measure.
   2. re-check every answer already graded against it;
   3. carry on.
 
-  The write-up reports how many rules were added during grading.
+  The write-up reports how many rules were added during grading. Claude adds a row when its draft
+  meets a case the rules do not cover; Eduardo confirms or changes the rule in review.
 
 The scripts run in single-grader mode (`SINGLE_GRADER` in `analysis/coding.py`). The order:
 
@@ -45,7 +58,8 @@ The scripts run in single-grader mode (`SINGLE_GRADER` in `analysis/coding.py`).
 uv run python scripts/score_study.py                      # marks exclusions; T1 uncoded
 uv run python scripts/code_justifications.py rubric-sheets  # rubric_coder1.csv, the one T1 sheet
 uv run python scripts/code_justifications.py sheets         # coder1.csv, the one RQ2 sheet
-#   grade rubric_coder1.csv (a, b, c, contradicts) and coder1.csv (the three codes), 0 or 1 each
+#   grade rubric_coder1.csv (a, b, c, contradicts) and coder1.csv (the three codes), 0 or 1 each:
+#   Claude drafts both, keeping *_draft.csv copies; Eduardo reviews and corrects every code
 uv run python scripts/code_justifications.py rubric       # verdicts and parts scores
 uv run python scripts/code_justifications.py depth        # depth and each code, with and without T1
 uv run python scripts/score_study.py                      # again: RQ1 and the parts score
