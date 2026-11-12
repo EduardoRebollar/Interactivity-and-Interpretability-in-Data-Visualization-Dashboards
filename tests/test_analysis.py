@@ -724,7 +724,12 @@ def test_kappa_is_reported_per_code_with_prevalence():
 
 
 def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch, capsys):
-    """export -> score_study -> code_justifications sheets -> (coders) -> kappa -> depth."""
+    """export -> score_study -> code_justifications sheets -> (coders) -> kappa -> depth.
+
+    The pre-registered two-coder procedure. The study runs with one grader (`SINGLE_GRADER`,
+    2026-11-11); this keeps the two-coder path working for anyone who restores it.
+    """
+    monkeypatch.setattr(coding, "SINGLE_GRADER", None)
     logs = tmp_path / "logs"
     run_session(logs, _participant_for("static", "A"), correct_answer)
     run_session(logs, _participant_for("interactive", "B"), wrong_answer)
@@ -786,6 +791,9 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
     settled.to_csv(coding_dir / "rubric_settled.csv", index=False)
     assert code.main(["rubric", *tasks_arg]) == 0
     assert "2 of 4 correct" in capsys.readouterr().out
+    written = pd.read_csv(coding_dir / "rubric_verdicts.csv", dtype=str)
+    assert list(written.columns) == list(coding.VERDICT_COLUMNS)
+    assert sorted(written["parts"]) == ["0", "0", "3", "3"]
 
     verdicts = str(coding_dir / "rubric_verdicts.csv")
     args = ["--events", str(events_csv), "--out", str(derived), "--rubric", verdicts]
@@ -817,6 +825,101 @@ def test_scoring_and_coding_run_end_to_end_from_an_export(tmp_path, monkeypatch,
     depth = pd.read_csv(coding_dir / "depth.csv")
     assert len(depth) == 24
     assert set(depth["depth"]) <= {1, 2}
+
+
+def _fill_rubric(sheet: pd.DataFrame) -> pd.DataFrame:
+    """One grader, by docs/grading-rules.md: GOOD_T1 states all three parts. BAD_T1 ("stayed
+    about the same the whole time") contradicts (a) and (b), and "about the same" earns (c),
+    ended close."""
+    good = sheet["description"].isin(GOOD_T1.values())
+    return sheet.assign(
+        a=good.map({True: "1", False: "0"}),
+        b=good.map({True: "1", False: "0"}),
+        c="1",
+        contradicts=good.map({True: "0", False: "1"}),
+    )
+
+
+def test_one_grader_runs_end_to_end_with_no_second_sheet_and_no_kappa(
+    tmp_path, monkeypatch, capsys
+):
+    """The study's procedure since 2026-11-11: one sheet each, verdicts straight from the one
+    rubric sheet, the parts score through to tasks.csv and the report, kappa refused, and depth
+    reported per code with and without T1."""
+    assert coding.SINGLE_GRADER, "the study declares one grader"
+    logs = tmp_path / "logs"
+    run_session(logs, _participant_for("static", "A"), correct_answer)
+    run_session(logs, _participant_for("interactive", "B"), wrong_answer)
+    records = study_logging.read_all(logs)
+
+    export_logs = _script("export_logs")
+    monkeypatch.setattr(export_logs.study_logging, "read_all", lambda: records)
+    events_csv = tmp_path / "events.csv"
+    monkeypatch.setattr("sys.argv", ["export_logs", "--out", str(events_csv)])
+    assert export_logs.main() == 0
+    derived = tmp_path / "derived"
+    score_study = _script("score_study")
+    assert score_study.main(["--events", str(events_csv), "--out", str(derived)]) == 0
+    capsys.readouterr()
+
+    coding_dir = tmp_path / "coding"
+    code = _script("code_justifications")
+    tasks_arg = ["--tasks", str(derived / "tasks.csv"), "--out", str(coding_dir)]
+
+    assert code.main(["rubric-sheets", *tasks_arg]) == 0
+    assert "One grader" in capsys.readouterr().out
+    assert (coding_dir / "rubric_coder1.csv").exists()
+    assert not (coding_dir / "rubric_coder2.csv").exists(), "no second coder's sheet"
+    sheet = pd.read_csv(coding_dir / "rubric_coder1.csv", dtype=str)
+    _fill_rubric(sheet).to_csv(coding_dir / "rubric_coder1.csv", index=False)
+
+    assert code.main(["rubric", *tasks_arg]) == 0
+    out = capsys.readouterr().out
+    assert "nothing to settle" in out and "kappa" not in out
+    assert "2 of 4 correct" in out
+    assert "0 parts: 0, 1 parts: 2, 2 parts: 0, 3 parts: 2" in out
+    assert not (coding_dir / "rubric_disagreements.csv").exists()
+
+    verdicts = str(coding_dir / "rubric_verdicts.csv")
+    args = ["--events", str(events_csv), "--out", str(derived), "--rubric", verdicts]
+    assert score_study.main(args) == 0
+    printed = capsys.readouterr().out
+    assert "not coded yet" not in printed
+    assert study_report.T1_PARTS_TITLE in printed
+    scored = pd.read_csv(derived / "tasks.csv", dtype={"participant_id": str})
+    t1 = scored[scored["task_id"] == "T1"]
+    parts_by_participant = t1.groupby("participant_id")["t1_parts"].agg(set).to_dict()
+    assert parts_by_participant == {
+        _participant_for("static", "A"): {3},
+        _participant_for("interactive", "B"): {1},
+    }
+    assert scored.loc[scored["task_id"] != "T1", "t1_parts"].isna().all()
+
+    assert code.main(["sheets", *tasks_arg]) == 0
+    assert "No second coder's sheet" in capsys.readouterr().out
+    assert not (coding_dir / "coder2.csv").exists()
+    sheet = pd.read_csv(coding_dir / "coder1.csv", dtype=str)
+    sheet = sheet.assign(
+        cites_values="1",
+        compares_series=sheet["justification"]
+        .isin([*GOOD_T1.values(), BAD_T1])
+        .map({True: "1", False: "0"}),
+        notes_uncertainty="0",
+    )
+    sheet.to_csv(coding_dir / "coder1.csv", index=False)
+
+    assert code.main(["kappa", *tasks_arg]) == 1
+    assert "Cannot compute kappa: one grader" in capsys.readouterr().err
+
+    assert code.main(["depth", *tasks_arg]) == 0
+    printed = capsys.readouterr().out
+    assert "without T1" in printed and "notes_uncertainty" in printed
+    coded = pd.read_csv(coding_dir / "depth.csv")
+    table = code.depth_by_code(coded)
+    # compares_series was given to the T1 descriptions alone, so it vanishes without them.
+    assert (table.loc["all units", "compares_series"] > 0).all()
+    assert (table.loc["without T1", "compares_series"] == 0).all()
+    assert (table.loc["without T1", "n"] == 10).all(), "five justifications per condition"
 
 
 # --- T1's rubric ---------------------------------------------------------------------------------
@@ -899,16 +1002,98 @@ def test_rubric_kappa_is_reported_per_field():
 
 def test_verdicts_round_trip_and_an_absent_file_means_nothing_coded(tmp_path):
     units = _rubric_units()
-    verdicts = {u.unit_id: u.session_id in ("s0", "s2") for u in units}
+    coded = {
+        "s0": _fields(),
+        "s1": _fields(c=0),
+        "s2": _fields(),
+        "s3": _fields(a=0, b=0, contradicts=1),
+    }
+    fields = {u.unit_id: coded[u.session_id] for u in units}
     path = tmp_path / "verdicts.csv"
-    coding.write_verdicts(units, verdicts, path)
+    coding.write_verdicts(units, fields, path)
     assert coding.read_verdicts(path) == {
         ("s0", "T1"): True,
         ("s1", "T1"): False,
         ("s2", "T1"): True,
         ("s3", "T1"): False,
     }
+    assert coding.read_parts(path) == {
+        ("s0", "T1"): 3,
+        ("s1", "T1"): 2,
+        ("s2", "T1"): 3,
+        ("s3", "T1"): 1,
+    }
     assert coding.read_verdicts(tmp_path / "missing.csv") == {}
+    assert coding.read_parts(tmp_path / "missing.csv") == {}
+
+
+def test_a_verdicts_file_without_parts_is_refused_not_read_as_zeros(tmp_path):
+    path = tmp_path / "verdicts.csv"
+    path.write_text("session_id,task_id,correct\ns0,T1,1\n", encoding="utf-8")
+    assert coding.read_verdicts(path) == {("s0", "T1"): True}
+    with pytest.raises(coding.CodingError, match="no parts column"):
+        coding.read_parts(path)
+
+
+def test_the_parts_score_counts_the_parts_credited():
+    assert coding.parts_score(_fields()) == 3
+    assert coding.parts_score(_fields(b=0)) == 2
+    assert coding.parts_score(_fields(a=0, b=0, c=0)) == 0
+    assert coding.parts_score(_fields(a=0, contradicts=1)) == 2, "G4 already zeroes the part"
+
+
+def test_a_contradiction_with_every_part_credited_is_a_grading_slip(tmp_path):
+    """docs/grading-rules.md G4: a contradicted part scores 0, so contradicts with a, b and c all
+    1 cannot be right, on a coder's sheet or a settled one."""
+    units = _rubric_units()
+    ids = {u.unit_id for u in units}
+    path = tmp_path / "rubric.csv"
+    coding.write_rubric_sheet(units, path)
+    sheet = pd.read_csv(path, dtype=str).assign(a="1", b="1", c="1", contradicts="0")
+    sheet.to_csv(path, index=False)
+    assert len(coding.read_rubric_sheet(path, ids)) == 4
+    sheet.loc[0, "contradicts"] = "1"
+    sheet.to_csv(path, index=False)
+    with pytest.raises(coding.CodingError, match="G4"):
+        coding.read_rubric_sheet(path, ids)
+    settled = tmp_path / "settled.csv"
+    settled.write_text(f"unit_id,a,b,c,contradicts\n{sheet.loc[0, 'unit_id']},1,1,1,1\n")
+    with pytest.raises(coding.CodingError, match="G4"):
+        coding.read_settled(settled, ids)
+
+
+def test_t1_parts_reach_the_task_rows_and_a_skipped_description_scores_zero(tmp_path):
+    def skip_t1_in_b(form, task_id):
+        return None if (form, task_id) == ("B", "T1") else correct_answer(form, task_id)
+
+    run_session(tmp_path, _participant_for("static", "A"), skip_t1_in_b)
+    events = reshape.events_frame(study_logging.read_all(tmp_path))
+    coded = {key: 2 for key in coders(events)}
+    tasks_frame = reshape.tidy_tasks(events, rubric=coders(events), parts=coded)
+    t1 = tasks_frame[tasks_frame["task_id"] == "T1"].set_index("form")
+    assert t1.loc["A", "t1_parts"] == 2, "the coded value"
+    assert t1.loc["B", "t1_parts"] == 0, "a skipped description scores 0, as in the primary"
+    assert tasks_frame.loc[tasks_frame["task_id"] != "T1", "t1_parts"].isna().all()
+
+    uncoded = reshape.tidy_tasks(events)
+    t1 = uncoded[uncoded["task_id"] == "T1"].set_index("form")
+    assert pd.isna(t1.loc["A", "t1_parts"]), "uncoded is missing, never 0"
+    assert t1.loc["B", "t1_parts"] == 0
+
+
+def test_the_t1_parts_table_counts_each_score_by_condition(tmp_path):
+    run_session(tmp_path, _participant_for("static", "A"), correct_answer)
+    events = reshape.events_frame(study_logging.read_all(tmp_path))
+    rubric = coders(events)
+    parts = dict(zip(sorted(rubric), (3, 1), strict=True))
+    tasks_frame = reshape.tidy_tasks(events, rubric=rubric, parts=parts)
+    conditions = reshape.tidy_conditions(events, tasks_frame)
+    scored, _excluded = exclusions.apply(tasks_frame, conditions)
+    table = study_report.t1_parts(scored)
+    assert set(table.index) == {"static", "interactive"}
+    assert table["count"].tolist() == [1, 1]
+    assert sorted(table["mean"].tolist()) == [1.0, 3.0]
+    assert table[["n_0", "n_1", "n_2", "n_3"]].sum().tolist() == [0, 1, 0, 1]
 
 
 def test_score_study_refuses_a_key_that_does_not_check_out(tmp_path, monkeypatch, capsys):
@@ -928,6 +1113,7 @@ def test_the_report_renders_every_section(tmp_path):
         "Exclusions",
         "Accuracy, RQ1",
         "by item and chart type",
+        study_report.T1_PARTS_TITLE,
         "Mental effort",
         "Time on task",
     ):

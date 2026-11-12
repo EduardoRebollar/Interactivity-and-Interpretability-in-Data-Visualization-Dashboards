@@ -19,6 +19,12 @@ T1's rubric, two steps (both coders code every description):
                     b, c, contradicts), run it again: it writes rubric_verdicts.csv, which
                     scripts/score_study.py reads.
 
+**One grader (2026-11-11).** While `analysis.coding.SINGLE_GRADER` is set, as it is for this study,
+there is no second coder: `sheets` and `rubric-sheets` write one sheet each, `kappa` refuses (there
+is nothing to compare), and `rubric` writes the verdicts straight from the one rubric sheet, with no
+disagreements to settle. Grade by `docs/grading-rules.md`. `depth` is the same in both modes, and
+prints each code by condition beside the depth sum, with and without T1.
+
 Run `scripts/score_study.py` first: this reads its tasks.csv, so exclusions are already marked.
 Everything written here is participant free text and is gitignored.
 
@@ -40,11 +46,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from analysis import coding  # noqa: E402
+from analysis import coding, keys  # noqa: E402
 from src import config  # noqa: E402
 
 DERIVED = config.STUDY_LOGS_DIR / "derived"
 CODING = config.STUDY_LOGS_DIR / "coding"
+GRADING_RULES = "docs/grading-rules.md"
+
+
+def _single_grader_note() -> None:
+    print(f"One grader: {coding.SINGLE_GRADER}")
+
+
+def _written_task_ids() -> set[str]:
+    """The items scored by rubric (T1), whose description stands in for a justification."""
+    return {tid for (_form, tid), key in keys.key_table().items() if key.correct == keys.RUBRIC}
 
 
 def _units(tasks_csv: Path) -> list[coding.Unit]:
@@ -58,18 +74,34 @@ def sheets(tasks_csv: Path, out: Path) -> int:
     if not units:
         print("No justifications to code.", file=sys.stderr)
         return 1
-    sample = coding.double_coded_sample(units)
     coding.write_sheet(units, out / "coder1.csv")
-    coding.write_sheet([u for u in units if u.unit_id in sample], out / "coder2.csv")
     coding.write_key(units, out / "key.csv")
     print(f"{len(units)} units -> {out / 'coder1.csv'}")
-    print(f"{len(sample)} double-coded units -> {out / 'coder2.csv'}")
-    print(f"seed {coding.SEED}, fraction {coding.DOUBLE_CODED_FRACTION}, stratified by condition")
-    print(f"Unblinding map -> {out / 'key.csv'}  (do NOT give this to a coder)")
+    if coding.SINGLE_GRADER:
+        _single_grader_note()
+        print(f"No second coder's sheet. Grade by {GRADING_RULES}.")
+    else:
+        sample = coding.double_coded_sample(units)
+        coding.write_sheet([u for u in units if u.unit_id in sample], out / "coder2.csv")
+        print(f"{len(sample)} double-coded units -> {out / 'coder2.csv'}")
+        print(
+            f"seed {coding.SEED}, fraction {coding.DOUBLE_CODED_FRACTION}, stratified by condition"
+        )
+    print(
+        f"Unblinding map -> {out / 'key.csv'}  "
+        "(do NOT open it, or give it to a coder, until grading is done)"
+    )
     return 0
 
 
 def kappa(out: Path) -> int:
+    if coding.SINGLE_GRADER:
+        print(
+            "Cannot compute kappa: one grader codes everything, so there is no second coding to "
+            f"compare. {coding.SINGLE_GRADER}",
+            file=sys.stderr,
+        )
+        return 1
     key = pd.read_csv(out / "key.csv", dtype=str)
     everyone = set(key["unit_id"])
     primary = coding.read_sheet(out / "coder1.csv", expected_ids=everyone)
@@ -94,8 +126,31 @@ def depth(out: Path) -> int:
     coded = key.merge(pd.DataFrame(rows), on="unit_id", validate="one_to_one")
     coded.to_csv(out / "depth.csv", index=False)
     print(f"Wrote {out / 'depth.csv'} ({len(coded)} coded answers)")
-    print(coded.groupby("condition")["depth"].agg(["count", "mean", "std"]).to_string())
+    print(
+        "\nDepth (0-3) and each code by condition: the share of units with the code. With and "
+        "without T1, whose description names two countries, so compares_series is near certain "
+        "there (study-design.md section 7)."
+    )
+    with pd.option_context("display.width", 120, "display.max_columns", 20):
+        print(depth_by_code(coded).to_string())
     return 0
+
+
+def depth_by_code(coded: pd.DataFrame) -> pd.DataFrame:
+    """Each code's share of units, and depth's mean and SD, by condition, over every unit and
+    over every unit but T1's. Per unit, descriptive; the per-participant analysis is the
+    notebook's."""
+    written = _written_task_ids()
+    scopes = {"all units": coded, "without T1": coded[~coded["task_id"].isin(written)]}
+    tables = {}
+    for name, rows in scopes.items():
+        grouped = rows.groupby("condition")
+        table = grouped[list(coding.CODES)].mean()
+        table.insert(0, "n", grouped.size())
+        table["depth_mean"] = grouped["depth"].mean()
+        table["depth_std"] = grouped["depth"].std()
+        tables[name] = table
+    return pd.concat(tables, names=["units"]).round(3)
 
 
 def _rubric_units(tasks_csv: Path) -> list[coding.Unit]:
@@ -108,19 +163,41 @@ def rubric_sheets(tasks_csv: Path, out: Path) -> int:
     if not units:
         print("No T1 descriptions to code.", file=sys.stderr)
         return 1
-    # Different seeds, so neither coder's order can be matched against the other's.
     coding.write_rubric_sheet(units, out / "rubric_coder1.csv", seed=coding.SEED)
-    coding.write_rubric_sheet(units, out / "rubric_coder2.csv", seed=coding.SEED + 1)
+    if coding.SINGLE_GRADER:
+        print(f"{len(units)} T1 descriptions -> {out / 'rubric_coder1.csv'}")
+        _single_grader_note()
+        print(f"No second coder's sheet. Grade by {GRADING_RULES}.")
+    else:
+        # Different seeds, so neither coder's order can be matched against the other's.
+        coding.write_rubric_sheet(units, out / "rubric_coder2.csv", seed=coding.SEED + 1)
+        print(f"{len(units)} T1 descriptions -> {out / 'rubric_coder1.csv'} and rubric_coder2.csv")
     coding.write_key(units, out / "rubric_key.csv")
-    print(f"{len(units)} T1 descriptions -> {out / 'rubric_coder1.csv'} and rubric_coder2.csv")
-    print(f"Unblinding map -> {out / 'rubric_key.csv'}  (do NOT give this to a coder)")
+    print(
+        f"Unblinding map -> {out / 'rubric_key.csv'}  "
+        "(do NOT open it, or give it to a coder, until grading is done)"
+    )
     return 0
+
+
+def _report_verdicts(fields: dict[str, dict[str, int]], path: Path) -> None:
+    verdicts = [coding.rubric_correct(coded) for coded in fields.values()]
+    print(f"{sum(verdicts)} of {len(verdicts)} correct -> {path}")
+    scores = [coding.parts_score(coded) for coded in fields.values()]
+    spread = ", ".join(f"{k} parts: {scores.count(k)}" for k in range(4))
+    print(f"Parts score (secondary): {spread}")
 
 
 def rubric(tasks_csv: Path, out: Path) -> int:
     units = _rubric_units(tasks_csv)
     ids = {unit.unit_id for unit in units}
     first = coding.read_rubric_sheet(out / "rubric_coder1.csv", ids)
+    if coding.SINGLE_GRADER:
+        _single_grader_note()
+        print(f"No agreement statistic and nothing to settle: {len(ids)} T1 descriptions.")
+        coding.write_verdicts(units, first, out / "rubric_verdicts.csv")
+        _report_verdicts(first, out / "rubric_verdicts.csv")
+        return 0
     second = coding.read_rubric_sheet(out / "rubric_coder2.csv", ids)
     report = coding.kappa_report(first, second, coding.RUBRIC_FIELDS)
     print(f"Rubric agreement over {len(ids)} T1 descriptions, before any discussion")
@@ -132,9 +209,9 @@ def rubric(tasks_csv: Path, out: Path) -> int:
     n_open = coding.write_disagreements(units, first, second, out / "rubric_disagreements.csv")
     print(f"{n_open} disagreements -> {out / 'rubric_disagreements.csv'}")
     settled = coding.read_settled(out / "rubric_settled.csv", ids)
-    verdicts = coding.settle(first, second, settled)
-    coding.write_verdicts(units, verdicts, out / "rubric_verdicts.csv")
-    print(f"{sum(verdicts.values())} of {len(verdicts)} correct -> {out / 'rubric_verdicts.csv'}")
+    final = coding.settled_fields(first, second, settled)
+    coding.write_verdicts(units, final, out / "rubric_verdicts.csv")
+    _report_verdicts(final, out / "rubric_verdicts.csv")
     return 0
 
 

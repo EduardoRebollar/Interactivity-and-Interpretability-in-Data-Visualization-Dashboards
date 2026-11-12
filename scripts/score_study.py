@@ -53,7 +53,8 @@ def main(argv: list[str] | None = None) -> int:
         records, source = sources.load_records(args.events)
         events = reshape.events_frame(records)
         rubric = coding.read_verdicts(args.rubric)
-        tasks = reshape.tidy_tasks(events, rubric=rubric)
+        parts = coding.read_parts(args.rubric)
+        tasks = reshape.tidy_tasks(events, rubric=rubric, parts=parts)
         conditions = reshape.tidy_conditions(events, tasks)
         participants = reshape.tidy_participants(events)
     except (reshape.ReshapeError, db.DatabaseError, coding.CodingError) as exc:

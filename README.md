@@ -167,13 +167,16 @@ Offline, against the pre-registration in `docs/study-design.md` §7. Everything 
 uv run python scripts/score_study.py                        # accuracy, Paas, timing, exclusions
 uv run python scripts/score_study.py --events data/study_logs/events.csv
 
-uv run python scripts/code_justifications.py sheets         # blind sheets for two coders
-uv run python scripts/code_justifications.py kappa          # after both are coded
-uv run python scripts/code_justifications.py depth          # reasoning depth per answer
+uv run python scripts/code_justifications.py sheets         # the blind RQ2 sheet
+uv run python scripts/code_justifications.py depth          # depth and each code, with and without T1
 
-uv run python scripts/code_justifications.py rubric-sheets  # T1's descriptions, for both coders
-uv run python scripts/code_justifications.py rubric         # kappa per part; verdicts once settled
+uv run python scripts/code_justifications.py rubric-sheets  # T1's descriptions, the blind sheet
+uv run python scripts/code_justifications.py rubric         # T1 verdicts and parts scores
 ```
+
+One grader codes everything (2026-11-11; `SINGLE_GRADER` in `analysis/coding.py`), by
+[docs/grading-rules.md](docs/grading-rules.md). With it set to None, the pre-registered two-coder
+procedure runs instead: second sheets, `kappa`, and settling T1's disagreements.
 
 Run the rubric steps before `score_study.py`'s final run: a participant's T1–T6 accuracy is not
 computed while their T1 is uncoded.

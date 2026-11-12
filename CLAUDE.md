@@ -483,6 +483,7 @@ docs/
   visual-spec.md        # locked visual decisions (colors, chart types, layout)
   chart-handoff/        # the charts' visual style (2026-10-11): README, screenshots, renderer; Form A only
   study-design.md       # RQs, conditions, the 12 items + acceptance rule, measures, rubric, consent
+  grading-rules.md      # how T1's rubric and the RQ2 codes are graded; one grader (2026-11-11)
 src/
   config.py             # INTERACTIVE flag (local default only), palette, scope
   data.py               # load + clean — pandas, local only
@@ -511,7 +512,7 @@ analysis/               # offline scoring — NEVER ships; pandas allowed except
   keys.py               # answer key derived from the deploy CSV, checked against study-design §4
   reshape.py            # events -> tidy task and participant x condition frames
   exclusions.py         # the §7 rules, marked not dropped, each separately reportable
-  coding.py             # RQ2 blind coding sheets, stratified double-coding sample, Cohen's kappa
+  coding.py             # blind coding sheets, T1 verdicts and parts score, kappa; SINGLE_GRADER
   report.py             # the descriptive numbers §7 asks for, nothing inferential
   sources.py            # where events are read from: CSV export, Postgres, or JSONL
   viewer_data.py        # the data viewer's checks and tables; never raises on broken data
@@ -532,7 +533,7 @@ scripts/
   vendor_pdf_libs.py    # jsPDF + html2canvas -> src/assets/vendor/, pinned by SHA-256
   bridge_stylesheet.py  # study.css -> src/assets/zz-bridge.css, for Dash 4's option-list markup
   score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
-  code_justifications.py # blind sheets, kappa, reasoning depth -> data/study_logs/coding/
+  code_justifications.py # blind sheets, T1 verdicts, depth by code -> data/study_logs/coding/
   view_data.py          # local data viewer on 127.0.0.1:8051; read-only
   check_contrast.py     # WCAG contrast and colour-blind separation report for the palette
   check_bundle.py       # serves the app from requirements.txt alone, in a throwaway venv
@@ -602,7 +603,8 @@ tests/
   countries are alphabetical, like the chart's entities; years and year bands run in calendar
   order; every multiple-choice item offers six options (2026-09-25); no answer position holds more
   than a third of the keys. **T1 is written, not chosen** (2026-09-27): a description of two
-  trends, scored by rubric by two blind coders, still in RQ1 (`study-design.md` §4, §7). A
+  trends, scored blind by rubric, still in RQ1 (`study-design.md` §4, §7); planned for two
+  coders, graded by one since 2026-11-11 (`docs/grading-rules.md`, `coding.SINGLE_GRADER`). A
   participant's T1–T6 proportion is not computed while their T1 is uncoded.
 - **`analysis/` must never ship.** Everything under `src/` is uploaded to Vercel, so the key cannot
   live there. `analysis/**` is in `vercel.json`'s `excludeFiles`, a test asserts that it stays there,
@@ -1341,6 +1343,16 @@ context cheap and the reports as long as they need to be.
   - **`verify_deployment.py` not run** before the study, so the first participant stays at seq 14.
     The two production test sessions of 2026-10-12 (v17) had put full sessions through Neon;
     `db.py` is unchanged since 2026-09-21, and v18–v21 add no table or column.
+- 2026-11-11 — **One grader, with grading rules written first** (Eduardo), before any T1
+  description or justification was read. A deviation from `study-design.md` §7 (no κ), recorded in
+  §10 and reported as a limitation.
+  - `docs/grading-rules.md`, committed before any sheet was opened, holds the rules, invented
+    examples and a decision log. G3: judge the pattern, not the precision.
+  - `coding.SINGLE_GRADER` declares it: one sheet each, `kappa` refuses, T1's verdicts come
+    straight from the one sheet. The two-coder path stays, tested.
+  - Secondaries added the same day: T1's parts score (0–3, `t1_parts` in `tasks.csv`) and the RQ2
+    codes by condition, with and without T1 (`code_justifications.py depth`).
+  - `rubric` refuses `contradicts` = 1 with a, b and c all 1 (grading rule G4).
 
 ## Open questions
 

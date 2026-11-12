@@ -539,10 +539,12 @@ def score(
     *,
     key_problems: list[str] | None = None,
     rubric: dict[tuple[str, str], bool] | None = None,
+    parts: dict[tuple[str, str], int] | None = None,
 ) -> Scoring:
     """The score_study.py pipeline. Returns the refusal as `error` rather than raising.
 
-    `rubric` is T1's settled verdicts; by default the file `scripts/score_study.py` reads.
+    `rubric` is T1's settled verdicts and `parts` its parts scores; by default both come from the
+    file `scripts/score_study.py` reads.
     """
     key_problems = keys.check() if key_problems is None else key_problems
     if key_problems:
@@ -551,8 +553,9 @@ def score(
         return Scoring(error="No events recorded yet.")
     try:
         rubric = coding.read_verdicts(coding.VERDICTS_PATH) if rubric is None else rubric
+        parts = coding.read_parts(coding.VERDICTS_PATH) if parts is None else parts
         events = reshape.events_frame(records)
-        tasks_frame = reshape.tidy_tasks(events, rubric=rubric)
+        tasks_frame = reshape.tidy_tasks(events, rubric=rubric, parts=parts)
         conditions = reshape.tidy_conditions(events, tasks_frame)
         participants = reshape.tidy_participants(events)
         scored, excluded = exclusions.apply(tasks_frame, conditions)

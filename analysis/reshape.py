@@ -14,7 +14,9 @@ there.
 
 T1 is written and scored by rubric (section 7, 2026-09-27). Its `correct` comes from the coders'
 settled verdicts, passed in as `rubric`; an answer not yet coded has `correct` None, and a session
-holding one has no accuracy proportion rather than one out of five.
+holding one has no accuracy proportion rather than one out of five. Its secondary parts score
+(0-3, docs/grading-rules.md, 2026-11-11) comes the same way, passed in as `parts`, into
+`t1_parts`; every other item has None there.
 """
 
 from __future__ import annotations
@@ -52,6 +54,7 @@ BASE_COLUMNS = [
     "duration_invalid",
     "correct",
     "correct_adjacent",
+    "t1_parts",
     "skipped_answer",
     "skipped_justification",
 ]
@@ -161,10 +164,21 @@ def events_frame(records: Iterable[dict[str, Any]]) -> pd.DataFrame:
     return frame
 
 
+def _t1_parts(key: Any, answer: Any, coded: int | None) -> int | None:
+    """T1's parts score: the coded value, 0 for a skipped description, None while uncoded or for
+    any item scored by key."""
+    if key.correct != answer_keys.RUBRIC:
+        return None
+    if answer is None or not str(answer).strip():
+        return 0
+    return coded
+
+
 def tidy_tasks(
     events: pd.DataFrame,
     key_table: dict | None = None,
     rubric: dict[tuple[str, str], bool] | None = None,
+    parts: dict[tuple[str, str], int] | None = None,
 ) -> pd.DataFrame:
     """One row per scored answer: participant x condition x task, with correctness attached.
 
@@ -174,9 +188,12 @@ def tidy_tasks(
 
     `rubric` maps (session_id, task_id) to the settled verdict on a written answer (T1), as
     `coding.read_verdicts` returns it. A written answer missing from it is uncoded: `correct` None.
+    `parts` maps the same keys to T1's parts score, as `coding.read_parts` returns it, into
+    `t1_parts`: 0 for a skipped description, as the primary scores a skip, and None while uncoded.
     """
     key_table = key_table if key_table is not None else answer_keys.key_table()
     rubric = rubric or {}
+    parts = parts or {}
     charts = {(t.form, t.task_id): t.chart for form in tasks.FORMS for t in tasks.for_form(form)}
 
     answers = events[(events["event"] == "answer_submit") & (events["task_id"] != PRACTICE_ID)]
@@ -214,6 +231,9 @@ def tidy_tasks(
                 "correct_adjacent": answer_keys.is_correct_adjacent(
                     form, task_id, payload.get("answer"), key_table
                 ),
+                "t1_parts": _t1_parts(
+                    key, payload.get("answer"), parts.get((str(record["session_id"]), task_id))
+                ),
                 "skipped_answer": payload.get("answer") is None,
                 # T1 asks for no justification, so it can never be skipped there.
                 "skipped_justification": key.correct != answer_keys.RUBRIC
@@ -224,6 +244,7 @@ def tidy_tasks(
     tasks_frame["duration_ms"] = pd.to_numeric(tasks_frame["duration_ms"], errors="coerce")
     # Nullable: an uncoded written answer is neither right nor wrong yet.
     tasks_frame["correct"] = tasks_frame["correct"].astype("boolean")
+    tasks_frame["t1_parts"] = pd.array(tasks_frame["t1_parts"].tolist(), dtype="Int64")
 
     counts = _interaction_counts(events)
     for name in INTERACTION_EVENTS:

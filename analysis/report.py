@@ -11,7 +11,8 @@ produces.
 
 T1 is scored by rubric (section 7). A participant whose T1 is not yet coded has no RQ1 proportion
 for that condition, so the accuracy tables count only fully scored participants, and the report says
-how many T1 answers still wait for coders.
+how many T1 answers still wait for coders. T1's parts score (0-3), a secondary added 2026-11-11
+(docs/grading-rules.md), is reported beside the overloaded-item table.
 """
 
 from __future__ import annotations
@@ -201,6 +202,30 @@ def overload(tasks: pd.DataFrame) -> pd.DataFrame:
     return table
 
 
+T1_PARTS_TITLE = "T1 parts score, secondary: rubric parts stated correctly, 0-3"
+
+
+def t1_parts(tasks: pd.DataFrame) -> pd.DataFrame:
+    """Secondary (docs/grading-rules.md, 2026-11-11): how many of T1's three rubric parts each
+    description states correctly, by condition, beside the primary all-or-nothing verdict.
+
+    One T1 per participant per condition, so each row is a participant. A skipped description
+    scores 0, as the primary scores a skip; an uncoded one is left out. Descriptive here; any test
+    belongs in the analysis notebook.
+    """
+    columns = ["count", "mean", "std", *[f"n_{k}" for k in range(4)]]
+    usable = tasks[tasks["use_accuracy"] & (tasks["kind"] == "describe")]
+    if "t1_parts" not in usable:
+        return pd.DataFrame(columns=columns)
+    scored = usable[usable["t1_parts"].notna()]
+    scored = scored.assign(t1_parts=scored["t1_parts"].astype(int))
+    table = scored.groupby("condition")["t1_parts"].agg(["count", "mean", "std"])
+    for k in range(4):
+        counts = scored[scored["t1_parts"] == k].groupby("condition").size()
+        table[f"n_{k}"] = counts.reindex(table.index, fill_value=0).astype(int)
+    return table[columns]
+
+
 def crossing_adjacent(tasks: pd.DataFrame) -> pd.DataFrame:
     """Secondary: the crossing item (T6) under strict and adjacent-band scoring (section 7)."""
     crossings = tasks[tasks["use_accuracy"] & (tasks["kind"] == "crossing")]
@@ -256,6 +281,7 @@ def render(
         (WORD_OF_MOUTH_TITLE, word_of_mouth(tasks, participants)),
         ("Crossing item, secondary: strict vs adjacent-band credit", crossing_adjacent(tasks)),
         ("T1, the overloaded item, secondary: accuracy, time, extra controls", overload(tasks)),
+        (T1_PARTS_TITLE, t1_parts(tasks)),
         ("Skipped answers and justifications", skips(tasks)),
         ("Accuracy and time by item and chart type (descriptive, not tested)", by_item(tasks)),
         ("Mental effort, RQ3: Paas 1-9, with a7 beside it", mental_effort(conditions, included)),

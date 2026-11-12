@@ -262,7 +262,8 @@ none of them:
 Years and values are neither required nor penalised unless they contradict a part: a static reader
 cannot read them exactly (§2). "Ukraine dropped to about 20% around 2015 and came back" states (b);
 "Ukraine's coverage declined" alone does not, and "Ukraine stayed high" contradicts it. Scoring is
-by two coders, blind to condition (§7). Since the chart starts in 1985 (2026-10-12), a description
+blind to condition (§7): planned as two coders, done by one since 2026-11-11 (§10), by the rules in
+`docs/grading-rules.md`. Since the chart starts in 1985 (2026-10-12), a description
 may also cover 1985–1999. The parts are about 2000–2024, so what it says about the earlier years is
 neither required nor penalised, unless it is plainly offered as the 2000–2024 trend and contradicts
 a part.
@@ -1160,6 +1161,17 @@ A description is correct when (a), (b) and (c) are all present and `contradicts`
   never quietly scored out of five.
 - **Skips.** A skipped description scores incorrect, like any skip.
 
+> **One grader, and a parts score (2026-11-11, Eduardo).** Before any description was read, the
+> two-coder procedure above was replaced: Eduardo grades every description alone, by
+> `docs/grading-rules.md`, so no κ is reported and nothing is settled; the verdict comes straight
+> from the one sheet (`SINGLE_GRADER` in `analysis/coding.py`). A deviation, recorded in §10.
+> Under the grading rules (G4) a contradicted part scores 0, so `contradicts` always comes with a
+> part at 0, and scoring refuses a sheet where it does not.
+>
+> *Secondary, added the same day, before any reading:* the **parts score**, how many of (a), (b)
+> and (c) a description states correctly (0–3), by condition, beside the primary verdict. A
+> skipped description scores 0, as in the primary; an uncoded one is missing.
+
 **A skipped answer scores as incorrect** in the primary analysis (ruled 2026-09-21), so every
 participant is scored out of six per condition. Dropping skips instead would let a condition that
 provokes more skipping look more accurate than it is. *Secondary, pre-registered:* proportion correct
@@ -1250,6 +1262,17 @@ prevalence-sensitive, so a low κ on a rare code (`notes_uncertainty` is the lik
 rarity, not poor coding. Where a coder used a single category throughout, κ is undefined and is
 reported as such rather than as a number. At n ≥ 25 the double-coded sample is roughly 60 units:
 conventional, but thin, and the write-up should say so.
+
+> **One grader (2026-11-11, Eduardo).** No second coder: Eduardo codes every justification and T1
+> description alone, by `docs/grading-rules.md`, so no κ is reported for any code (§10). The
+> rules settle the borderline cases: a number copied from the question or the options is not
+> `cites_values`; a bare superlative ("the highest of all") is not `compares_series`; a bare "I
+> think", or "about" before a number, is not `notes_uncertainty`.
+>
+> *Secondary, added the same day, before any reading:* each code's share of units by condition,
+> beside the depth sum, over all units and without T1 (`scripts/code_justifications.py depth`).
+> The codes can move in opposite directions by condition (hover makes values easier to cite;
+> estimating may prompt more hedging), which a sum would hide.
 
 **Cognitive load (RQ3).** Paas score per condition, 1–9. A skipped rating is missing for that
 participant × condition. The survey (§6.1) is reported descriptively: a1–a9 per condition, b1–b4
@@ -1709,6 +1732,23 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
     Unlike 2026-10-13's changes, this adds no item. It has not yet been put to HSRRC.
     `irb/questionnaire.pdf` is re-exported with the new wording.
   - **The forms now differ in direction** (§4, Matching the forms).
+- **One grader, before any answer was read (2026-11-11, Eduardo).** §7 planned two coders for
+  every T1 description and a second coder for 20% of the justifications, with κ for each. Eduardo
+  grades everything alone instead. It is reported as a deviation and a limitation: no agreement
+  statistic exists, and the grader knows the hypotheses. To limit that:
+  - the grading rules (`docs/grading-rules.md`), with invented examples, were written and
+    committed before any description or justification was read;
+  - the sheets stay blind as before (opaque ids, a seeded shuffle, no condition, form, participant
+    or task), though a description that quotes exact values can still hint at the interactive
+    condition;
+  - the rules end in a decision log, so every rule added during grading is dated, earlier answers
+    are re-checked against it, and the write-up reports how many were added.
+
+  The code declares it (`SINGLE_GRADER` in `analysis/coding.py`), and the two-coder procedure is
+  still implemented and tested. Two secondaries were added the same day, before any reading: T1's
+  parts score (0–3) and the RQ2 codes reported separately by condition (§7).
+  - **For HSRRC.** The approved request form says nothing about the number of coders or an
+    agreement statistic (read 2026-11-11), so this changes nothing HSRRC approved.
 - **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
@@ -1726,7 +1766,8 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
   - **T1, the written item (2026-09-27).**
     - Its time, since it is the only item written in full.
     - Whether the rubric can be applied: κ per part, and how many descriptions the coders had to
-      discuss.
+      discuss. With one grader (2026-11-11) neither exists; the decision log's count of rules
+      added during grading (`docs/grading-rules.md`) stands in.
     - Whether a part fails for nearly everyone in both conditions, which would point at the rubric
       rather than the reading.
   - **T6 against its adjacent-band secondary.** If the two scores differ much, static readers are

@@ -22,6 +22,17 @@ disagreements are then settled by discussion into a third file, and scoring refu
 one is open. The same sheet machinery serves both: opaque ids, a seeded shuffle, and a key file
 coders never see. T1's description is also its RQ2 unit, in place of a justification.
 
+**One grader (2026-11-11).** Eduardo grades every T1 description and every justification alone,
+by `docs/grading-rules.md`, a deviation from section 7 recorded in section 10. `SINGLE_GRADER`
+declares it, as `reshape.POOLED_VERSIONS` declares a pooling: declared, never inferred from which
+files happen to exist. With it set, no second coder's sheet is written, no kappa is computed, and
+T1's verdicts come straight from the one sheet. The two-coder procedure is still here and tested;
+setting `SINGLE_GRADER` to None restores it.
+
+**T1's parts score (2026-11-11).** A secondary beside the primary verdict: how many of (a), (b)
+and (c) are credited, 0-3. Under the grading rules (G4) a part that is stated wrongly scores 0, so
+`contradicts` set with all three parts credited is a grading slip, and the sheet is refused.
+
 Stdlib only; kappa for binary codes is a few lines and does not justify a dependency.
 """
 
@@ -45,7 +56,16 @@ WRITTEN_KIND = "describe"
 RUBRIC_FIELDS = ("a", "b", "c", "contradicts")
 RUBRIC_SHEET_COLUMNS = ("unit_id", "description", "part_a", "part_b", "part_c", *RUBRIC_FIELDS)
 SETTLED_COLUMNS = ("unit_id", *RUBRIC_FIELDS)
-VERDICT_COLUMNS = ("session_id", "task_id", "correct")
+RUBRIC_PARTS = ("a", "b", "c")
+# The verdict, and the fields it came from, so the parts score (0-3) travels with it.
+VERDICT_COLUMNS = ("session_id", "task_id", "correct", *RUBRIC_FIELDS, "parts")
+# One grader, declared (study-design.md sections 7 and 10). None restores the pre-registered
+# two-coder procedure: two rubric sheets, kappa, and settling by discussion.
+SINGLE_GRADER: str | None = (
+    "Eduardo grades every T1 description and every justification alone (2026-11-11), by "
+    "docs/grading-rules.md; no agreement statistic exists. A deviation from study-design.md "
+    "section 7, recorded in section 10."
+)
 # Where `scripts/code_justifications.py rubric` writes the settled verdicts, and where scoring
 # and the viewer read them. Participant data: gitignored under data/study_logs/.
 VERDICTS_PATH = config.STUDY_LOGS_DIR / "coding" / "rubric_verdicts.csv"
@@ -268,14 +288,39 @@ def write_rubric_sheet(units: Sequence[Unit], path: Path, seed: int = SEED) -> N
             )
 
 
+def check_contradictions(fields: dict[str, dict[str, int]], source: str) -> None:
+    """Refuse `contradicts` = 1 with all three parts credited (docs/grading-rules.md, G4).
+
+    A contradiction is always against a part, and a contradicted part scores 0. So a unit with
+    every part at 1 and `contradicts` at 1 has a slip in it: one of the four fields is wrong.
+    """
+    slips = sorted(
+        uid
+        for uid, coded in fields.items()
+        if coded["contradicts"] and all(coded[part] for part in RUBRIC_PARTS)
+    )
+    if slips:
+        raise CodingError(
+            f"{source}: {len(slips)} unit(s) set contradicts with a, b and c all 1; under the "
+            f"grading rules (G4) the contradicted part scores 0: {slips[:5]}"
+        )
+
+
 def read_rubric_sheet(path: Path, expected_ids: set[str]) -> dict[str, dict[str, int]]:
-    """A completed rubric sheet. Every unit must be coded: both coders code all of them."""
-    return read_sheet(path, expected_ids, RUBRIC_FIELDS, RUBRIC_SHEET_COLUMNS)
+    """A completed rubric sheet. Every unit must be coded: each coder codes all of them."""
+    fields = read_sheet(path, expected_ids, RUBRIC_FIELDS, RUBRIC_SHEET_COLUMNS)
+    check_contradictions(fields, path.name)
+    return fields
 
 
 def rubric_correct(fields: dict[str, int]) -> bool:
     """Correct when all three parts are stated and none is contradicted (section 4)."""
     return bool(fields["a"] and fields["b"] and fields["c"] and not fields["contradicts"])
+
+
+def parts_score(fields: dict[str, int]) -> int:
+    """T1's secondary score, 0-3: the parts credited. A wrongly stated part is already 0 (G4)."""
+    return sum(fields[part] for part in RUBRIC_PARTS)
 
 
 def disagreements(first: dict[str, dict[str, int]], second: dict[str, dict[str, int]]) -> list[str]:
@@ -325,15 +370,16 @@ def read_settled(path: Path, expected_ids: set[str]) -> dict[str, dict[str, int]
     unknown = set(settled) - expected_ids
     if unknown:
         raise CodingError(f"{path.name} has units not in this study: {sorted(unknown)[:5]}")
+    check_contradictions(settled, path.name)
     return settled
 
 
-def settle(
+def settled_fields(
     first: dict[str, dict[str, int]],
     second: dict[str, dict[str, int]],
     settled: dict[str, dict[str, int]],
-) -> dict[str, bool]:
-    """Each unit's verdict: the coders' shared coding, or the settled one where they differed.
+) -> dict[str, dict[str, int]]:
+    """Each unit's final fields: the coders' shared coding, or the settled one where they differed.
 
     Refuses while any disagreement is unsettled, and refuses a settled coding for a unit the
     coders agreed on, which would overrule an agreement nobody disputed.
@@ -345,17 +391,33 @@ def settle(
     extra = sorted(set(settled) - set(open_ids))
     if extra:
         raise CodingError(f"Settled codings for units the coders agreed on: {extra[:5]}")
-    return {uid: rubric_correct(settled.get(uid, first[uid])) for uid in first}
+    return {uid: settled.get(uid, first[uid]) for uid in first}
 
 
-def write_verdicts(units: Sequence[Unit], verdicts: dict[str, bool], path: Path) -> None:
-    """Unblinded verdicts, (session_id, task_id) -> correct, for `scripts/score_study.py`."""
+def settle(
+    first: dict[str, dict[str, int]],
+    second: dict[str, dict[str, int]],
+    settled: dict[str, dict[str, int]],
+) -> dict[str, bool]:
+    """Each unit's verdict, from `settled_fields`."""
+    final = settled_fields(first, second, settled)
+    return {uid: rubric_correct(fields) for uid, fields in final.items()}
+
+
+def write_verdicts(units: Sequence[Unit], fields: dict[str, dict[str, int]], path: Path) -> None:
+    """Unblinded verdicts for `scripts/score_study.py`: (session_id, task_id) -> correct, the four
+    fields it came from, and the parts score."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(VERDICT_COLUMNS)
         for unit in sorted(units, key=lambda u: (u.session_id, u.task_id)):
-            writer.writerow([unit.session_id, unit.task_id, int(verdicts[unit.unit_id])])
+            coded = fields[unit.unit_id]
+            writer.writerow(
+                [unit.session_id, unit.task_id, int(rubric_correct(coded))]
+                + [coded[field] for field in RUBRIC_FIELDS]
+                + [parts_score(coded)]
+            )
 
 
 def read_verdicts(path: Path) -> dict[tuple[str, str], bool]:
@@ -369,3 +431,22 @@ def read_verdicts(path: Path) -> dict[tuple[str, str], bool]:
                 raise CodingError(f"{path.name} line {line}: correct must be 0 or 1")
             verdicts[(row["session_id"], row["task_id"])] = row["correct"] == "1"
     return verdicts
+
+
+def read_parts(path: Path) -> dict[tuple[str, str], int]:
+    """T1's parts scores from the verdicts file, (session_id, task_id) -> 0-3. No file: nothing
+    coded yet. A file written before the parts score existed is refused, not read as zeros."""
+    if not path.exists():
+        return {}
+    parts: dict[tuple[str, str], int] = {}
+    with path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        if "parts" not in (reader.fieldnames or ()):
+            raise CodingError(
+                f"{path.name} has no parts column: run scripts/code_justifications.py rubric again"
+            )
+        for line, row in enumerate(reader, start=2):
+            if row["parts"] not in ("0", "1", "2", "3"):
+                raise CodingError(f"{path.name} line {line}: parts must be 0-3")
+            parts[(row["session_id"], row["task_id"])] = int(row["parts"])
+    return parts
