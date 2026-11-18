@@ -38,3 +38,7 @@ data/study_logs/**
 !data/study_logs/.gitkeep
 *.spool.jsonl
 *.recovered.jsonl
+
+# The paper's participant quotes, until Eduardo clears what goes in the public version. Also in
+# paper/.gitignore.
+paper/private/

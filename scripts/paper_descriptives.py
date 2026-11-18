@@ -112,6 +112,33 @@ BANNER_N = re.compile(r": n = (\d+)\s*$")
 CEILING = re.compile(
     r"All items right \(ceiling\): static (\d+) of (\d+), interactive (\d+) of (\d+)"
 )
+# The lines printed after the tables, each read as printed (strings), for paper/numbers.tex.
+SIGNED = r"[+-]?\d+\.\d+"
+LINES = {
+    "tost": re.compile(
+        rf"^Accuracy equivalence \(TOST, bound \+/-(?P<bound>{SIGNED}) = (?P<items>\d+) item of "
+        rf"(?P<of>\d+)\): 90% CI \[(?P<low>{SIGNED}), (?P<high>{SIGNED})\], p = (?P<p>\S+) -> "
+        r"(?P<verdict>.+?)\s*$"
+    ),
+    "items": re.compile(
+        rf"^In items out of (?P<of>\d+): (?P<est>{SIGNED}) "
+        rf"\[(?P<low>{SIGNED}), (?P<high>{SIGNED})\]"
+    ),
+    "permutation": re.compile(
+        r"^Accuracy permutation check \((?P<reps>[\d,]+) re-deals of order\): p = (?P<p>\S+)"
+    ),
+    "cells": re.compile(r"^Cells \(interactive half-form\): \{(?P<cells>[^}]*)\}"),
+    "effects": re.compile(
+        rf"^Half effect \(descriptive\): (?P<half>{SIGNED}); form effect \(descriptive\): "
+        rf"(?P<form>{SIGNED});"
+    ),
+    "rq3": re.compile(
+        r"^RQ3 'rather than' .*: Paas falls (?P<falls>yes|no), accuracy equivalent "
+        r"(?P<equivalent>yes|no) -> (?P<verdict>supported|not supported)\s*$"
+    ),
+    "degraded": re.compile(r"^Degraded sessions \(logger spooled\): (?P<n>\d+)"),
+}
+CELL = re.compile(r"'(?P<cell>[^']+)': (?P<n>\d+)")
 
 # --- Item 6 -----------------------------------------------------------------------------------
 SKIPPED = "(skipped)"
@@ -234,9 +261,12 @@ def load_inputs(
 
 # --- significance.txt -----------------------------------------------------------------------
 def parse_significance(text: str, labels: dict[str, str]) -> dict[str, dict]:
-    """Both analyses in `significance.txt`: each one's n, its outcome rows as printed, and its
-    ceiling counts. An outcome the run could not compute reads None. Refuses a file without both
-    analyses, since every check needs both."""
+    """Both analyses in `significance.txt`: each one's n, its outcome rows as printed, its ceiling
+    counts, and the lines printed after the tables (`LINES`: the equivalence test, accuracy in
+    items, the permutation check, the cells, the half and form effects, RQ3's "rather than" and
+    the degraded sessions), all as printed. An outcome the run could not compute reads None; a line
+    it did not print is absent. Refuses a file without both analyses, since every check needs
+    both."""
     by_label = {label: key for key, label in labels.items()}
     blocks: dict[str, list[str]] = {}
     current = None
@@ -254,6 +284,7 @@ def parse_significance(text: str, labels: dict[str, str]) -> dict[str, dict]:
         banner_n = BANNER_N.search(lines[0])
         outcomes: dict[str, dict[str, str] | None] = {}
         ceiling = None
+        printed: dict[str, dict[str, str]] = {}
         for line in lines[1:]:
             label = line[:LABEL_WIDTH].rstrip()
             if label in by_label:
@@ -269,10 +300,17 @@ def parse_significance(text: str, labels: dict[str, str]) -> dict[str, dict]:
                     "static": (int(found[1]), int(found[2])),
                     "interactive": (int(found[3]), int(found[4])),
                 }
+            for key, pattern in LINES.items():
+                if found := pattern.search(line):
+                    printed[key] = found.groupdict()
+        if "cells" in printed:
+            cells = CELL.findall(printed["cells"]["cells"])
+            printed["cells"] = {cell: n for cell, n in cells}
         parsed[name] = {
             "n": int(banner_n[1]) if banner_n else None,
             "outcomes": outcomes,
             "ceiling": ceiling,
+            "lines": printed,
         }
     return parsed
 

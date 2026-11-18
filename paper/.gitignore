@@ -1,0 +1,23 @@
+# From the Oxy CS comps paper template's .gitignore.
+
+# output files
+*.pdf
+
+# archive files
+*.zip
+*.rar
+
+# latex intermediaries
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.xml
+
+# Participant quotes and anything else not yet cleared for the public paper. Also in the
+# repository's own .gitignore.
+private/

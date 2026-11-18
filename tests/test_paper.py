@@ -1,11 +1,12 @@
-"""Tests for scripts/paper_descriptives.py: the paper's exploratory descriptives
-(paper/exploratory.md, items 1 to 7).
+"""Tests for the paper's scripts: scripts/paper_descriptives.py, the exploratory descriptives
+(paper/exploratory.md, items 1 to 7), and scripts/paper_numbers.py, which writes paper/numbers.tex.
 
-The script runs on study data once, so everything it computes is checked here first, on made-up
-files shaped like the pipeline's, with significance.txt printed by the notebook's own main(): each
-item on planted cases; the checks that make it refuse to write when its inputs disagree with
-significance.txt, tasks.csv or the coding sheets; that it never calls one of the notebook's tests;
-and that no free text reaches an output.
+Both run on study data, so everything they compute is checked here first, on made-up files shaped
+like the pipeline's, with significance.txt printed by the notebook's own main(): each item on
+planted cases; the checks that make them refuse to write when their inputs disagree with
+significance.txt, tasks.csv or the coding sheets; that neither calls one of the notebook's tests;
+that no free text reaches an output; and that every number the paper uses is defined in the
+committed paper/numbers.tex.
 """
 
 from __future__ import annotations
@@ -35,6 +36,15 @@ paper = importlib.util.module_from_spec(_spec)
 sys.modules["paper_descriptives"] = paper  # its dataclasses look their module up here
 _spec.loader.exec_module(paper)
 sig = paper.load_notebook()
+NUMBERS = ROOT / "scripts" / "paper_numbers.py"
+_numbers_spec = importlib.util.spec_from_file_location("paper_numbers", NUMBERS)
+numbers_script = importlib.util.module_from_spec(_numbers_spec)
+sys.modules["paper_numbers"] = numbers_script
+_numbers_spec.loader.exec_module(numbers_script)
+assert numbers_script.load_descriptives() is paper, "one module, so a trap set on it holds"
+PAPER = ROOT / "paper"
+# Neither paper script may import the library the notebook's tests use.
+IMPORTS_SCIPY = re.compile(r"^\s*(import|from)\s+scipy\b", flags=re.MULTILINE)
 
 # Planted in every free-text field of the made-up files. No output may contain it.
 SECRET = "SECRET-PARTICIPANT-TEXT"
@@ -298,7 +308,7 @@ def test_the_script_never_calls_one_of_the_notebooks_tests(built, tmp_path, monk
     for name in NOTEBOOK_TESTS:
         monkeypatch.setattr(sig, name, trap(name))
     assert _run({**built, "out": tmp_path / "out"}) == 0
-    assert "scipy" not in SCRIPT.read_text(encoding="utf-8")
+    assert not IMPORTS_SCIPY.search(SCRIPT.read_text(encoding="utf-8")), "no test library"
 
 
 def test_the_scores_are_the_ones_the_run_counted(built):
@@ -618,3 +628,236 @@ def test_masking_keeps_whether_something_was_written_and_nothing_else():
     masked = paper.mask(frame, ["answer"], rows=frame["kind"] == "describe")
     assert masked["answer"].tolist()[:2] == [paper.TEXT_MARKER, "B"]
     assert pd.isna(masked["answer"].iloc[2])
+
+
+def test_parse_reads_every_line_printed_after_the_tables(built):
+    text = (built["derived"] / "significance.txt").read_text(encoding="utf-8")
+    run = paper.parse_significance(text, sig.LABELS)
+    for name in (paper.MAIN, paper.PREREGISTERED):
+        lines = run[name]["lines"]
+        assert set(lines) == set(paper.LINES)
+        assert sum(int(n) for n in lines["cells"].values()) == run[name]["n"]
+        assert lines["tost"]["items"] == "1" and lines["tost"]["of"] == "6"
+        assert lines["rq3"]["verdict"] in ("supported", "not supported")
+
+
+# --- paper/numbers.tex ----------------------------------------------------------------------------
+DEFSTAT = re.compile(r"^\\defstat\{(?P<key>[^{}]+)\}\{(?P<value>.*)\}$")
+STAT = re.compile(r"\\stat\{([^{}]+)\}")
+
+
+def _numbers(study: dict, out: Path) -> int:
+    return numbers_script.main(
+        [
+            "--derived",
+            str(study["derived"]),
+            "--coding",
+            str(study["coding"]),
+            "--out",
+            str(out),
+        ]
+    )
+
+
+def _defined(text: str) -> dict[str, str]:
+    """numbers.tex's keys and values. Every line is a comment, the header, or one \\defstat."""
+    return {m["key"]: m["value"] for line in text.splitlines() if (m := DEFSTAT.match(line))}
+
+
+@pytest.fixture(scope="module")
+def numbered(built) -> str:
+    """numbers.tex written from the made-up study."""
+    path = built["out"].parent / "numbers.tex"
+    assert _numbers(built, path) == 0
+    return path.read_text(encoding="utf-8")
+
+
+def test_numbers_carry_the_run_as_printed(built, numbered):
+    defined = _defined(numbered)
+    text = (built["derived"] / "significance.txt").read_text(encoding="utf-8")
+    run = paper.parse_significance(text, sig.LABELS)
+    for name, p in numbers_script.PREFIX.items():
+        assert defined[f"{p}/n"] == str(run[name]["n"])
+        for outcome, row in run[name]["outcomes"].items():
+            base = f"{p}/{outcome}"
+            assert defined[f"{base}/est"] == numbers_script.tex(row["effect"].lstrip("x"))
+            ci = numbers_script.tex(f"[{row['low']}, {row['high']}]")
+            assert defined[f"{base}/ci"] == ci
+            assert defined[f"{base}/p"] == numbers_script.tex(row["p"])
+            # Holm's p only for the three main tests: no secondary can cite one.
+            assert (f"{base}/holm" in defined) == (outcome in sig.CONFIRMATORY)
+        tost = run[name]["lines"]["tost"]
+        assert defined[f"{p}/tost/verdict"] == tost["verdict"]
+        ceiling = run[name]["ceiling"]
+        assert defined[f"{p}/ceiling/interactive"] == str(ceiling["interactive"][0])
+
+
+def test_numbers_print_a_true_minus_sign():
+    assert numbers_script.tex("-0.035") == r"\textminus{}0.035"
+    assert numbers_script.tex("[-0.21, +0.88]") == r"[\textminus{}0.21, +0.88]"
+    assert numbers_script.tex("<.001") == r"\textless{}.001"
+    assert numbers_script.tex("not supported") == "not supported"
+
+
+def test_numbers_give_the_plans_sensitivity(numbered):
+    """docs/study-design.md section 7: dz 0.60 and 0.71 at n = 24, 0.61 and 0.73 at n = 23."""
+    defined = _defined(numbered)
+    assert defined["main/sensitivity/single"] == "0.60"
+    assert defined["main/sensitivity/holm"] == "0.71"
+    assert defined["pre/sensitivity/single"] == "0.61"
+    assert defined["pre/sensitivity/holm"] == "0.73"
+
+
+def test_numbers_hold_no_free_text_and_no_background_group_under_five(numbered):
+    assert SECRET not in numbered and paper.TEXT_MARKER not in numbered
+    defined = _defined(numbered)
+    summary = ("/sample/n", "/sample/age/n", "/sample/age/median", "/sample/age/min")
+    background = [k for k in defined if "/sample/" in k and not k.endswith((*summary, "age/max"))]
+    assert background, "the made-up sample has groups of five or more"
+    for key in background:
+        assert int(defined[key]) >= numbers_script.MIN_GROUP, key
+    # Every made-up participant gave "Prefer not to say" for their role: no group, no key.
+    assert "main/sample/undergrad" not in defined
+    # Described once: the background of both analyses would give participant 19's by subtraction.
+    assert [k for k in defined if k.startswith("pre/sample/")] == ["pre/sample/n"]
+    fields = [int(v) for k, v in defined.items() if k.startswith("main/sample/field/")]
+    assert sum(fields) == int(defined["main/sample/n"]), "no field group hidden in a remainder"
+
+
+def test_a_background_group_is_written_only_with_five_on_each_side():
+    numbers = numbers_script.Numbers()
+    numbers.group("main/sample/a", 22, 24)  # leaves a group of two by subtraction
+    numbers.group("main/sample/b", 19, 24)
+    numbers.group("main/sample/c", 24, 24)  # everyone: nothing left to subtract
+    numbers.group("main/sample/d", 4, 24)
+    assert numbers.values == {"main/sample/b": "19", "main/sample/c": "24"}
+
+
+def test_numbers_tex_is_one_defstat_per_line(numbered):
+    body = numbered.split(r"\newcommand{\defstat}", 1)[1].splitlines()[1:]
+    keys = []
+    for line in body:
+        if not line.strip() or line.startswith("%"):
+            continue
+        found = DEFSTAT.match(line)
+        assert found, line
+        keys.append(found["key"])
+        value = found["value"]
+        assert value.count("{") == value.count("}"), line
+        assert not set(value) & set("%&#$^_~"), line
+    assert len(keys) == len(set(keys)) == len(_defined(numbered))
+
+
+def test_numbers_never_call_one_of_the_notebooks_tests(built, tmp_path, monkeypatch):
+    """The sensitivity (min_detectable, power) reads no data; every test function is trapped."""
+
+    def trap(name):
+        def called(*args, **kwargs):
+            raise AssertionError(f"paper_numbers called the notebook's {name}()")
+
+        return called
+
+    for name in (
+        "crossover",
+        "run",
+        "permutation_p",
+        "tost",
+        "wilcoxon",
+        "holm",
+        "analyse",
+        "main",
+    ):
+        monkeypatch.setattr(sig, name, trap(name))
+    assert _numbers(built, tmp_path / "numbers.tex") == 0
+    assert not IMPORTS_SCIPY.search(NUMBERS.read_text(encoding="utf-8")), "no test library"
+
+
+def test_numbers_refuse_what_the_descriptives_refuse(built, tmp_path, capsys):
+    study = _copy(built, tmp_path)
+    path = study["derived"] / "significance.txt"
+    path.write_text(path.read_text(encoding="utf-8").replace(": n = 24", ": n = 25", 1))
+    out = tmp_path / "numbers.tex"
+    assert _numbers(study, out) == 1
+    assert "does not match significance.txt" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_every_number_the_paper_uses_is_in_numbers_tex():
+    """The committed paper: each \\stat{key} in main.tex, outline.md and deviations.md is defined
+    in numbers.tex, so no sentence can print a number the generator did not write."""
+    numbers = PAPER / "numbers.tex"
+    if not numbers.exists():
+        pytest.skip("paper/numbers.tex not generated yet")
+    defined = _defined(numbers.read_text(encoding="utf-8"))
+    for name in ("main.tex", "outline.md", "deviations.md"):
+        path = PAPER / name
+        if not path.exists():
+            continue
+        used = set(STAT.findall(path.read_text(encoding="utf-8")))
+        assert used, f"{name} cites no number"
+        assert not used - set(defined), f"{name}: {sorted(used - set(defined))}"
+
+
+# --- paper/main.tex and paper/references.bib, checked without a TeX installation ---------------
+BIB_ENTRY = re.compile(r"^@(\w+)\{([^,\s]+),", flags=re.MULTILINE)
+PROPOSAL_GROUP = "% ===== 1."
+OTHER_GROUPS = "% ===== 2."
+
+
+def _tex_body(text: str) -> str:
+    """main.tex without its comments and code listings, whose characters LaTeX does not parse."""
+    text = re.sub(r"\\begin\{lstlisting\}.*?\\end\{lstlisting\}", "", text, flags=re.DOTALL)
+    return "\n".join(re.sub(r"(?<!\\)%.*", "", line) for line in text.splitlines())
+
+
+def _paper_file(name: str) -> str:
+    path = PAPER / name
+    if not path.exists():
+        pytest.skip(f"paper/{name} not written yet")
+    return path.read_text(encoding="utf-8")
+
+
+def test_main_tex_cites_only_references_that_exist_and_every_ref_has_its_label():
+    body = _tex_body(_paper_file("main.tex"))
+    keys = {key for _kind, key in BIB_ENTRY.findall(_paper_file("references.bib"))}
+    cited = {
+        k.strip() for group in re.findall(r"\\cite\{([^}]*)\}", body) for k in group.split(",")
+    }
+    assert cited and not cited - keys, sorted(cited - keys)
+    labels = set(re.findall(r"\\label\{([^}]*)\}", body))
+    refs = set(re.findall(r"\\ref\{([^}]*)\}", body))
+    assert refs and not refs - labels, sorted(refs - labels)
+
+
+def test_main_tex_balances_its_braces_and_environments():
+    body = _tex_body(_paper_file("main.tex"))
+    depth = 0
+    for char in body.replace(r"\{", "").replace(r"\}", ""):
+        depth += {"{": 1, "}": -1}.get(char, 0)
+        assert depth >= 0, "a } closes nothing"
+    assert depth == 0, "a { is never closed"
+    opened = re.findall(r"\\begin\{([^}]*)\}", body)
+    closed = re.findall(r"\\end\{([^}]*)\}", body)
+    assert sorted(opened) == sorted(closed)
+
+
+def test_main_tex_marks_every_claude_draft_from_beginning_to_end():
+    text = _paper_file("main.tex")
+    marks = re.findall(r"^% (BEGIN|END) CLAUDE DRAFT", text, flags=re.MULTILINE)
+    assert marks and marks == ["BEGIN", "END"] * (len(marks) // 2), (
+        "drafts must not nest or overlap"
+    )
+
+
+def test_references_are_unique_balanced_and_verify_is_on_every_one_outside_the_proposal():
+    text = _paper_file("references.bib")
+    entries = BIB_ENTRY.findall(text)
+    keys = [key for _kind, key in entries]
+    assert len(keys) == len(set(keys))
+    assert text.count("{") == text.count("}")
+    proposal = text.split(PROPOSAL_GROUP, 1)[1].split(OTHER_GROUPS, 1)[0]
+    assert len(BIB_ENTRY.findall(proposal)) == 37, "the proposal cites 37 references"
+    others = text.split(OTHER_GROUPS, 1)[1]
+    for block in re.split(r"\n(?=@)", others)[1:]:
+        before = others[: others.index(block)].rstrip().splitlines()[-1]
+        assert before.startswith("% VERIFY"), f"no % VERIFY above {block.splitlines()[0]}"

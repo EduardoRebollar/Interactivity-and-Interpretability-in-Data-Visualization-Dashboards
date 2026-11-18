@@ -1,0 +1,308 @@
+% The comps paper. Built on the Oxy CS comps paper template
+% (https://github.com/justinnhli/oxy-cs-comps-paper-template): its document class, its unchanged
+% style file (oxycomps.sty) and its bibliography setup.
+%
+% Every number is written as \stat with a key defined in numbers.tex, which
+% scripts/paper_numbers.py generates; an undefined key stops the build. paper/outline.md gives each paragraph's claim, its keys and how
+% strong it can be. Passages drafted by Claude sit between "% BEGIN CLAUDE DRAFT" and
+% "% END CLAUDE DRAFT", for Eduardo to rewrite and disclose. \todo{} marks what Eduardo supplies.
+
+\documentclass[10pt,twocolumn]{article}
+
+% use the oxycomps style file
+\usepackage{oxycomps}
+
+% usage: \fixme[comments describing issue]{text to be fixed}, as the template defines it
+\newcommand{\fixme}[2][]{#2}
+\renewcommand{\fixme}[2][]{\textcolor{red}{#2}}
+
+% Visible markers, red in the PDF. \todo: something Eduardo supplies or decides. \unverified: a
+% count from the qualitative first pass, not yet spot-checked (qualitative report section 8).
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\unverified}{\textcolor{red}{[UNVERIFIED]}}
+
+% every number in the paper
+\input{numbers}
+
+% read references.bib for the bibtex data
+\bibliography{references}
+
+% include metadata in the generated pdf file
+\pdfinfo{
+    /Title (Interactivity and Interpretability in Data Visualization Dashboards)
+    /Author (Eduardo Rebollar)
+}
+
+% set the title and author information
+\title{Interactivity and Interpretability in Data Visualization Dashboards}
+\author{Eduardo Rebollar}
+\affiliation{Occidental College}
+\email{rebollar@oxy.edu}
+
+\begin{document}
+
+\maketitle
+
+% Open items: delete this box before submission.
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small
+\textbf{Open items.}
+\todo{the supervisor's answers to the nine questions in study-design section 10; any answer that changes the plan comes after the run, so it is a deviation (Table~\ref{tab:deviations}).}
+\todo{HSRRC's approval of the audio recordings: its date and how it was given.}
+\todo{the comps due dates (the length, 6--10 pages, and the template are known).}
+\todo{the qualitative spot-check; until it is done, every qualitative count is \unverified.}
+\todo{what the paper says about where the data can be found: the rubric asks for the raw data in the repository, and the IRB forms keep it out.}
+}}
+
+\begin{abstract}
+\todo{Eduardo: the abstract (paper/outline.md, Abstract). Lead with the accuracy estimate in items and its interval, then effort (not detected), then time (exploratory).}
+\end{abstract}
+
+\section{Introduction}
+
+\todo{Eduardo: paper/outline.md section 1.}
+
+\section{Technical Background}
+
+\todo{Eduardo: paper/outline.md section 2. Define every term a CS senior may not know: interaction techniques, cognitive load and the Paas scale, within-subjects designs and counterbalancing, the crossover analysis, Holm's correction, equivalence testing, dz.}
+
+\section{Prior Work}
+
+\todo{Eduardo: paper/outline.md section 3, the proposal's five themes, each ending with what it changed in this study.}
+
+\section{Methods}
+
+\subsection{Design}
+
+\todo{Eduardo: paper/outline.md 4.1.}
+
+\subsection{Participants}
+
+\todo{Eduardo: paper/outline.md 4.2. Background only from main/sample keys (groups of five or more); ``mostly undergraduates'' takes no number.}
+
+% BEGIN CLAUDE DRAFT: Apparatus
+\subsection{Apparatus}
+\label{sec:apparatus}
+
+The study ran as a web page, built with Plotly Dash~\cite{plotly2015}, that each participant opened on their own computer. Its charts showed WHO/UNICEF estimates of childhood vaccination coverage, the share of children who received a vaccine in a given year~\cite{owid2026vaccination,burton2009}. The data cover \stat{design/vaccines} vaccines, \stat{design/countries} countries and \stat{design/aggregates} regional aggregates from \stat{design/yearfirst} to \stat{design/yearlast}, and the items draw on \stat{design/vaccinesused} of the vaccines. Every chart's source line says that the values are estimates and that how reliably coverage is measured varies by country.
+
+Every chart existed in a static and an interactive version that differed in one respect: whether the chart responded to the participant. Each chart is a single figure of \stat{design/chart/width}~$\times$~\stat{design/chart/height} pixels, drawn without knowledge of the version it will appear in. The static version shows that figure as an image that responds to nothing. The interactive version shows the same figure, gives exact values in a tooltip on hover, and places a row of controls beneath it. The two versions are therefore identical in chart type, colour, scale, typeface and layout by construction rather than by care, and an automated check confirms that they produce the same figure for every item. Because the controls sit below the chart, the chart occupies the same place on the screen in both versions (Figure~\ref{fig:versions}).
+
+The controls depended on the chart. Every chart had a button for each country, to hide or show it, and a Reset view button. Line charts added a Years slider that sets the range of years shown, zooming, a Show all button, and focusing a line by clicking it, which fades the others; their tooltip also gives the change from the previous year. The bar chart and the heatmap could sort their bars or rows. On the scatter plot, the heatmap and the map, a click on a colour in the key highlighted the marks in that band. On one item the interactive version also carried \stat{design/extracontrols} controls its question does not need (Section~\ref{sec:tasks}).
+
+The charts take \stat{design/charttypes} forms: line, bar, scatter, heatmap and map. Lines, bars and dots draw on a palette of \stat{design/palette} colours, each with at least \stat{design/contrast/graphic}:1 contrast against the white background~\cite{w3c2018wcag21}, and every pair at least \stat{design/cvdfloor} apart in CIEDE2000 colour difference~\cite{sharma2005} under simulated protanopia and deuteranopia~\cite{machado2009}; its first colours are the Okabe--Ito set~\cite{okabe2008}. The heatmap colours each value by one of \stat{design/bands/heatmap} bands of blue and the map by one of \stat{design/bands/map}, read against a stepped key. Text meets \stat{design/contrast/text}:1. Every control works from the keyboard except hovering and clicking a line. The charts make no provision for screen readers.
+% END CLAUDE DRAFT
+
+% BEGIN CLAUDE DRAFT: caption (the figure itself is built once the figure list is approved)
+\begin{figure}[t]
+    \centering
+    \fbox{\parbox{.9\linewidth}{\centering\vspace{3em}\todo{Figure 1: one item, A-T6, as participants saw it in each version.}\vspace{3em}}}
+    \caption{
+        One item in both versions: the static chart (top) and the interactive one (bottom), with its controls beneath. The chart itself is the same figure in both; only the interactive version responds to the pointer.
+    }
+    \label{fig:versions}
+\end{figure}
+% END CLAUDE DRAFT
+
+% BEGIN CLAUDE DRAFT: Tasks
+\subsection{Tasks}
+\label{sec:tasks}
+
+Each participant answered \stat{design/items} scored items with each version, \stat{design/totalitems} in all, after an unscored practice item. The items come in \stat{design/forms} parallel forms, A and B, with the same item types on the same chart types in the same order but different countries and years. A participant used one form with each version and never the same form twice, so no question was answered twice. Each item pairs a chart type with the control that should make it easier, after the low-level analytic tasks of Amar et al.~\cite{amar2005}:
+
+\begin{itemize}
+    \item \textbf{T1} (line chart, \stat{design/entities/T1} countries): describe how two named countries' coverage changed between \stat{design/askedfrom} and \stat{design/yearlast}, and how their trends compare.
+    \item \textbf{T2} (bar chart, \stat{design/entities/T2} countries): which country had the \stat{design/T2/rank/A}-highest coverage (form B: the \stat{design/T2/rank/B}-highest).
+    \item \textbf{T3} (scatter plot, \stat{design/entities/T3} countries, placed by their coverage in \stat{design/askedfrom} and \stat{design/yearlast}): which country improved the most.
+    \item \textbf{T4} (heatmap, \stat{design/entities/T4} countries over \stat{design/heatmapyears} years): which country holds the single lowest cell (form B: the highest).
+    \item \textbf{T5} (map, \stat{design/entities/T5} African countries): how many had coverage below \stat{design/T5/threshold}\%.
+    \item \textbf{T6} (line chart, \stat{design/entities/T6} countries): roughly when one named country's coverage first passed another's after \stat{design/askedfrom}.
+\end{itemize}
+
+T2 to T6 offer \stat{design/options} options each, and T6's are year ranges. Static readers cannot read exact values, so no item asks for one, and every answer was checked against the data to survive the reading errors of a reader without hover: no answer turns on a difference of less than \stat{design/floor/position} percentage points on an axis or \stat{design/floor/colour} on a colour scale, and no scatter dot sits within \stat{design/floor/dots} points of another. Where such a control helps, it saves effort rather than making the question answerable.
+
+T1 differs from the rest in two ways. It is the only written item, the one that asks for an interpretation of a time series rather than a value or a relation. In the interactive version it also carried \stat{design/extracontrols} controls that its question does not need, which no instruction named: a coverage range, a reordering of the country buttons, region filters, and switches for the points and name tags. They test whether more controls than a question needs make it harder. On T1, interactivity and the extra controls cannot be told apart, so any difference on T1 belongs to the overloaded interface, not to interactivity alone.
+% END CLAUDE DRAFT
+
+% BEGIN CLAUDE DRAFT: Procedure
+\subsection{Procedure}
+\label{sec:procedure}
+
+Sessions ran in person on campus, and participants used their own computers. A session ran in this order: the consent form, a participant ID, instructions, the practice item, the first version's items and survey, a break, instructions for the other version, its items on the other form and its survey, questions about the participant's background, and a closing screen that asked them not to discuss the questions with anyone. Each participant's order of versions and forms came from a database sequence rather than a random draw, so the orders filled evenly: \stat{main/cells/int1-A}, \stat{main/cells/int1-B}, \stat{main/cells/int2-A} and \stat{main/cells/int2-B} participants met the interactive version first on form A, first on form B, second on form A and second on form B.
+
+Instructions came before both halves, so that a participant who met the interactive version second still had every control described before using it; the practice item, a line chart, taught the interface once. The instructions named every control except T1's extra ones, and the first screen asked for a full-screen window. Any question could be skipped after a confirmation. Signed consent was stored apart from the study data and could not be linked to it, and participants could withdraw their data within the period the consent form set.
+
+The protocol had the researcher say the same few things in every session, answer any other question with ``please do whatever you would do on your own'', and record nothing but the application's own log. In practice the sessions departed from it. They were audio-recorded, and participants were often asked to think aloud; the researcher's answers to questions varied; and some debriefs disclosed answers, scores or the study's purpose while collection was still running \unverified. Table~\ref{tab:deviations} lists these and every other deviation. \todo{HSRRC's approval of the recordings: its date and how it was given.}
+% END CLAUDE DRAFT
+
+% BEGIN CLAUDE DRAFT: Deviations (table and caption, from paper/deviations.md)
+\subsection{Deviations}
+\label{sec:deviations}
+
+Table~\ref{tab:deviations} lists every way the study as run departs from its pre-registration and protocol, and whether each came before or after the confirmatory tests.
+
+\begin{table*}[t]
+    \footnotesize
+    \begin{tabular}{p{0.66\textwidth}p{0.17\textwidth}p{0.1\textwidth}}
+        \toprule
+        \textbf{Deviation} & \textbf{When} & \textbf{Tests} \\
+        \midrule
+        Collection closed at \stat{main/n}, one short of the target of \stat{design/targetn}. & 10 Nov. 2026 & before \\
+        Participant 19 reinstated. Their interactive half was opened twice, leaving an empty session that the pre-registered rule counts as incomplete. The main analysis drops that session and re-runs every rule; the pre-registered analysis, without them, is reported beside it. & 10--11 Nov. 2026 & before \\
+        One grader instead of two: an AI model drafted every code from blind sheets, and the author reviewed every one. No agreement statistic exists. The review changed \stat{review/t1/changed} of \stat{review/t1/codes} rubric codes and \stat{review/rq2/changed} of \stat{review/rq2/codes} justification codes. & 11 Nov. 2026, before any answer was read & before \\
+        The uncertainty code dropped from reasoning depth. & 11 Nov. 2026, before unblinding & before \\
+        The inference plan written after looks at the data: averages from part of the sample, then a poster of averages, before any test. & 3--11 Nov. 2026 & before \\
+        The supervisor's answers to the plan's open questions. & \todo{date} & after \\
+        Sessions audio-recorded, and participants asked informally to think aloud\textsuperscript{\dag}. & during collection & before \\
+        Researcher input varied between sessions: clarifications, cues to use the controls, tools permitted\textsuperscript{\dag}. & during collection & before \\
+        Answers, scores and the design disclosed in debriefs while collection was running\textsuperscript{\dag}. & during collection & before \\
+        One joint session, two participants side by side on the same items\textsuperscript{\dag}. & during collection & before \\
+        One item (A-T6) reworded after the first participant, naming the same crossing from the other line; its key unchanged. & 14 Oct. 2026 & before \\
+        Windows smaller than the layout assumed: \stat{main/windows/compact} of \stat{main/windows/participants} were \stat{design/compactheight} pixels tall or less, so some interactive cards scrolled. & measured 11 Nov. 2026 & after \\
+        \bottomrule
+    \end{tabular}
+    \caption{
+        Deviations from the pre-registration and the protocol, in the order they arose. The confirmatory tests ran once, on 11 November 2026, and the last column says whether each deviation came before or after that run. \dag~Rests on a first, AI-assisted pass over the session recordings that has not yet been checked \unverified. Details are in \path{paper/deviations.md}.
+    }
+    \label{tab:deviations}
+\end{table*}
+% END CLAUDE DRAFT
+
+\section{Evaluation Metrics}
+
+% BEGIN CLAUDE DRAFT: Measures
+\subsection{Measures}
+\label{sec:measures}
+
+\textbf{Accuracy (RQ1).} The proportion of the \stat{design/items} items a participant answered correctly with each version, a skipped answer scoring incorrect. T2 to T6 are scored against keys derived from the data by the rule each item states. T1 is scored against a rubric of \stat{design/t1parts} parts: (a) the first country's coverage rose; (b) the other's fell and then recovered; (c) one overtook the other, or they ended close. A description is correct when it states every part and contradicts none. How many parts it states correctly is a secondary score.
+
+\textbf{Reasoning depth (RQ2).} Each justification of a T2 to T6 answer, and each T1 description, was coded for whether it cites values (levels, changes or years read from the chart, however approximate) and whether it compares countries (names a country other than the answer). A justification's depth is the number of these it does; a participant's depth is the mean over their T2 to T6 justifications in each version, and depth with T1 is a secondary. The coding was blind to version: the sheets held only an opaque identifier and the text, in shuffled order.
+
+\textbf{Mental effort (RQ3).} After each version, participants rated the effort they had invested on the Paas scale~\cite{paas1992}, from \stat{design/paasmin}, ``very, very low mental effort'', to \stat{design/paaspoints}, ``very, very high mental effort''. The survey then asked \stat{design/surveyitems} statements on a \stat{design/likertpoints}-point agreement scale, among them one that also concerns effort (a7, ``Answering the questions took a lot of mental effort''), which is reported beside the Paas rating and never in its place. After the interactive version, \stat{design/controlsitems} statements asked about the controls, one of them whether the participant had hovered to see exact values; after the second version, participants said which version helped them answer more accurately and which they preferred.
+
+\textbf{Time and the use of controls.} Time on each item came from the participant's browser clock, so that network delays and server start-up do not enter it; when a page reload reset that clock, the time was recorded as missing rather than as a wrong number. The application logged every use of a control except hovering, which it did not log.
+
+\textbf{Exclusions,} fixed before collection. A participant without two complete halves leaves every analysis, and so does an answer given in under \stat{design/fastseconds} seconds. A time the clock could not measure, or above the \stat{design/trimpercentile}th percentile of all times, leaves only the time analysis.
+% END CLAUDE DRAFT
+
+\subsection{Analysis}
+
+\todo{Eduardo: paper/outline.md 5.2: the two analyses, the crossover test, the checks, Holm across the three main tests, the equivalence bound of one item, the sensitivity, and the plan's timing.}
+
+\section{Results and Discussion}
+
+\todo{Eduardo writes this section from paper/outline.md section 6, every number a \textbackslash stat. Tables 1--5 and Figures 2--5 are added once their list (outline, end) is approved.}
+
+\subsection{Sample and Exclusions}
+
+\todo{outline 6.1.}
+
+\subsection{Accuracy (RQ1)}
+
+\todo{outline 6.2 and 6.3: lead with the estimate in items and its interval; say the data rule out an advantage of one item or more, never that accuracy did not change.}
+
+\subsection{Reasoning Depth (RQ2)}
+
+\todo{outline 6.4.}
+
+\subsection{Mental Effort (RQ3)}
+
+\todo{outline 6.5: not detected, never ``no effect''; give the interval and the design's sensitivity; a7 beside Paas.}
+
+\subsection{Time on Task (Exploratory)}
+
+\todo{outline 6.6.}
+
+\subsection{The Overloaded Item, the Controls and Hover}
+
+\todo{outline 6.7 and 6.8.}
+
+\subsection{The Survey, Preference and the Exploratory Descriptives}
+
+\todo{outline 6.9 and 6.10: the preference counts with their context.}
+
+\subsection{Qualitative Observations}
+
+\todo{outline 6.11: themes with exemplars, never prevalence; every count \unverified{} until the spot-check.}
+
+\subsection{Discussion}
+
+\todo{outline section 7.}
+
+\subsection{Limitations}
+
+\todo{outline, Limitations.}
+
+\section{Ethical Considerations}
+
+\todo{Eduardo: outline section 8, from the ethics paper~\cite{rebollar2026ethics}, updated. Include HSRRC's approval of the recordings.}
+
+\section{Conclusion}
+
+\todo{Eduardo: outline section 9.}
+
+% BEGIN CLAUDE DRAFT: Use of AI tools (factual; for Eduardo to edit)
+\section*{Use of AI Tools}
+
+Claude, Anthropic's AI model, was used through Claude Code to write and test the study's software and analysis scripts, under the constraints the repository records. \todo{Eduardo: confirm this scope, and name the models if you want them named.} Claude (Claude Opus 5.5) drafted every grading code, the T1 rubric's and the justifications', from blind sheets that carried an opaque identifier and the text alone; the author reviewed every code, and the author's decision is final. The review changed \stat{review/t1/changed} of \stat{review/t1/codes} rubric codes and \stat{review/rq2/changed} of \stat{review/rq2/codes} justification codes. The session recordings were transcribed with OpenAI's Whisper (large-v3-turbo)~\cite{radford2023}, and Claude made a first pass of qualitative coding over the de-identified transcripts and the researcher's notes, which has not yet been checked. \todo{Eduardo: whether Whisper ran on your own computer or through a service, and what Claude saw before de-identification.} Claude Code also drafted parts of this paper, each marked in its source (the apparatus, tasks, procedure and measures, the deviations table, captions, the appendices and this statement), and wrote the scripts that generate every number in it from the study's output. The questions, the analysis plan, the interpretation and the conclusions are the author's.
+% END CLAUDE DRAFT
+
+\printbibliography
+
+\appendix
+
+\clearpage
+
+\onecolumn
+
+% BEGIN CLAUDE DRAFT: Appendix A
+\section{Replication Instructions}
+\label{app:replication}
+
+The code is public at \url{https://github.com/EduardoRebollar/Interactivity-and-Interpretability-in-Data-Visualization-Dashboards}. It needs Python \stat{software/python} or later and uv (\url{https://docs.astral.sh/uv/}), which installs the exact versions recorded in \path{uv.lock}: among them Dash \stat{software/dash}, Plotly \stat{software/plotly}, pandas \stat{software/pandas}, pyarrow \stat{software/pyarrow}, psycopg \stat{software/psycopg}, pytest \stat{software/pytest} and Ruff \stat{software/ruff}. NumPy and SciPy are locked to a version for each Python release.
+
+\paragraph{The study application.} From the repository's root:
+\begin{lstlisting}[language=bash]
+uv sync                                       # install the locked environment
+uv run python scripts/download_data.py        # fetch the coverage data from Our World in Data
+uv run python -m src.data                     # clean it into the complete grid
+uv run python scripts/export_deploy_data.py   # write data/deploy/coverage.csv (also committed)
+uv run python -m src.app                      # the study at http://127.0.0.1:8050
+uv run pytest                                 # the test suite
+\end{lstlisting}
+Run locally, without a database, the application logs to files under \path{data/study_logs/} and serves \url{http://127.0.0.1:8050/preview}, which shows any item of either form in either version and records nothing. Which version a session gets follows from the participant ID, so entering different IDs reaches every order.
+
+\paragraph{The analysis.} The study's own data are not in the repository (Ethical Considerations). \todo{Eduardo: what the paper says about access to the data.} With a database of study events, or a CSV exported from it, the pipeline runs in this order:
+\begin{lstlisting}[language=bash]
+uv run python scripts/score_study.py                        # score; mark the exclusions
+uv run python scripts/code_justifications.py rubric-sheets  # blind sheets for T1 ...
+uv run python scripts/code_justifications.py sheets         # ... and for the justifications
+#   grade both sheets by docs/grading-rules.md
+uv run python scripts/code_justifications.py rubric         # T1's verdicts
+uv run python scripts/code_justifications.py depth          # reasoning depth
+uv run python scripts/score_study.py                        # score again, with T1 coded
+uv run python notebooks/significance.py                     # the confirmatory tests: once only
+uv run python scripts/paper_descriptives.py                 # the exploratory descriptives
+uv run python scripts/paper_numbers.py                      # paper/numbers.tex
+\end{lstlisting}
+The confirmatory script ran once on this study's data, on 11 November 2026, and is not to be run on them again; \texttt{notebooks/significance.py --simulate} shows its output on made-up data. Each later step checks itself against that run and refuses to write if it disagrees.
+
+\paragraph{The paper.} \path{paper/main.tex} builds with \texttt{latexmk -pdf main} from \path{paper/}, or on Overleaf, using the template's \path{oxycomps.sty} and biblatex with Biber.
+% END CLAUDE DRAFT
+
+% BEGIN CLAUDE DRAFT: Appendix B
+\section{Code Architecture Overview}
+\label{app:architecture}
+
+The repository has four parts: the study application, which participants used; the offline analysis, which never ships with it; the scripts that run each step; and this paper. Data move through them in one direction:
+
+\begin{enumerate}
+    \item \textbf{Data.} \path{scripts/download_data.py} fetches the WHO/UNICEF estimates from Our World in Data. \path{src/data.py} cleans them into a complete grid of entity, year and vaccine, in which a value that was never reported stays missing, and \path{scripts/export_deploy_data.py} writes the committed \path{data/deploy/coverage.csv}.
+    \item \textbf{The application} (\path{src/}). \path{runtime_data.py} reads that file with the standard library alone, so the deployed bundle carries no pandas. \path{figures.py} has one builder per chart type. No builder knows the version: the one switch between static and interactive is \texttt{graph\_config(interactive)}, which sets whether the browser draws the figure as an inert image, and a test checks that both versions produce identical figures for every item. \path{layout.py} draws the screens and the controls under each chart, \path{flow.py} is the session's sequence of stages, and \path{tasks.py} holds the items without their answers, since it is sent to the browser. \path{app.py} holds the callbacks, times each item in the browser, and guards Submit against double clicks. \path{logging.py} writes every event to Postgres, retrying through outages and keeping a copy in the browser until the database answers.
+    \item \textbf{Scoring} (\path{analysis/}, never deployed). \path{keys.py} derives each answer from the data by the rule the item states, checks it against the protocol, and refuses an item whose answer a reader without hover could misread. \path{reshape.py} turns events into one row per answer, per half and per participant. \path{exclusions.py} applies the pre-registered rules, marking rows rather than dropping them, and \path{coding.py} writes and reads the blind coding sheets.
+    \item \textbf{Inference and the paper.} \path{notebooks/significance.py} holds the confirmatory plan and ran once. \path{scripts/paper_descriptives.py} computes the exploratory descriptives, never a test, and \path{scripts/paper_numbers.py} writes every number in this paper into \path{paper/numbers.tex}, which the paper reads through \texttt{\textbackslash stat}.
+\end{enumerate}
+
+\paragraph{Extending it.} A new item starts in \path{docs/study-design.md}, then \path{src/tasks.py}; \path{analysis/keys.py} derives its answer and refuses it if it fails the acceptance rule. A new chart type is one more builder in \path{src/figures.py}, and the test of identical figures covers it at once. A new control needs its event in \path{src/logging.py} and a column in \path{analysis/reshape.py}, since the logs are the study's data. \path{CLAUDE.md} records the project's constraints, and \path{docs/visual-spec.md} its visual decisions.
+% END CLAUDE DRAFT
+
+\end{document}
