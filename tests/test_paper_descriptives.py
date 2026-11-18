@@ -14,6 +14,7 @@ import contextlib
 import importlib.util
 import io
 import math
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -148,6 +149,10 @@ def _participants(people: list[str]) -> pd.DataFrame:
     frame["pointer"], frame["pointer_other"] = study_tasks.OTHER, f"{SECRET} pointer"
     frame["field"], frame["field_other"] = study_tasks.OTHER, f"{SECRET} field"
     frame["confusing"], frame["feedback"] = f"{SECRET} E2", f"{SECRET} E3"
+    # Typed text pandas reads as missing by default, and one real skip.
+    frame.loc[1, "confusing"] = "N/A"
+    frame.loc[2, "feedback"] = "None"
+    frame.loc[3, "feedback"] = None
     frame[study_tasks.HEARD_KEY] = ["Yes" if p == "1" else "No" for p in people]
     return frame
 
@@ -585,6 +590,27 @@ def test_item_7_the_decision_log_from_a_fixture_and_the_real_file():
     broken = DECISION_LOG.replace("| Date | Sheet |", "| When | Sheet |")
     with pytest.raises(paper.PaperError, match="columns"):
         paper.decision_log(broken)
+
+
+def test_typed_text_that_looks_missing_still_counts_as_written(built, tmp_path):
+    """A participant who typed "N/A" or "None" wrote something; only an empty cell is a skip.
+    Found on the first run on study data, where the default reading counted four such answers
+    as skipped in E2 and E3."""
+    path = tmp_path / "frame.csv"
+    path.write_text("participant_id,note,value\n1,N/A,1.5\n2,None,\n3,,2\n", encoding="utf-8")
+    frame = paper.read_csv(path)
+    assert frame["note"].tolist()[:2] == ["N/A", "None"] and pd.isna(frame["note"].iloc[2])
+    assert frame["value"].dtype == float and pd.isna(frame["value"].iloc[1])
+    report = (built["out"] / "report_main.txt").read_text(encoding="utf-8")
+    written = {
+        found[1]: int(found[2])
+        for found in re.finditer(
+            r"^(confusing|feedback)\s+\(written; read the text in participants\.csv\)\s+(\d+)$",
+            report,
+            flags=re.MULTILINE,
+        )
+    }
+    assert written == {"confusing": 24, "feedback": 23}
 
 
 def test_masking_keeps_whether_something_was_written_and_nothing_else():

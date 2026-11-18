@@ -158,10 +158,18 @@ def load_notebook(path: Path = NOTEBOOK) -> ModuleType:
 
 # --- Reading, with the free text masked ---------------------------------------------------------
 def read_csv(path: Path) -> pd.DataFrame:
+    """A pipeline CSV. Only an empty cell is missing: by default pandas also reads typed text
+    such as "N/A" or "None" as missing, which would count a participant who wrote it as one who
+    skipped. pandas writes a missing value as an empty cell, so the numbers read the same."""
     if not path.exists():
         raise PaperError(f"{path} is missing")
     columns = pd.read_csv(path, nrows=0).columns
-    return pd.read_csv(path, dtype={c: str for c in ID_COLUMNS if c in columns})
+    return pd.read_csv(
+        path,
+        dtype={c: str for c in ID_COLUMNS if c in columns},
+        keep_default_na=False,
+        na_values=[""],
+    )
 
 
 def mask(frame: pd.DataFrame, columns, rows: pd.Series | None = None) -> pd.DataFrame:
