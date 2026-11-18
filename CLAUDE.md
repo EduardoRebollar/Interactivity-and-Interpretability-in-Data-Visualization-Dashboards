@@ -1163,9 +1163,22 @@ context cheap and the reports as long as they need to be.
     Laos 2024 MCV1, on B-T4, went from 69 to 55).
   - Following Appendix A, or this file's Reproducibility steps, would overwrite the committed
     `data/deploy/coverage.csv` with that data. Not fixed yet.
+- 2026-11-18 — **The rest of the paper drafted**, in four phases (ed854ce, de7dc32, 864c6cc; the
+  fourth uncommitted at time of writing). Every section is now a Claude draft, marked
+  `BEGIN/END CLAUDE DRAFT`, for Eduardo to rewrite. Full prose, the interpretive sections included,
+  was Eduardo's choice. About 8,700 words of prose, roughly 9.2 pages at 950 words a page against
+  the rubric's 10.
+  - Ten references were added, each checked against Crossref and its abstract, and stay
+    `% VERIFY` until he has read them.
+  - The mini-project's figures and the sensitivity's power are keys in `paper_numbers.py`
+    (`mini/`, `design/power`).
+  - Left for Eduardo:
+    - the exemplar quotes in 6.8;
+    - the TODOs in Ethics (the recordings, what the AI saw of the transcripts, data access);
+    - the AI statement's last sentence.
 - **Now: the paper.** Start with the open items in `main.tex`'s box: the supervisor's answers,
   HSRRC's approval of the recordings, the due dates, the qualitative spot-check, and what the paper
-  says about data access. Then the prose, section by section, from `paper/outline.md`.
+  says about data access. Then rewrite the drafts, section by section, against `paper/outline.md`.
   - A withdrawal request (two weeks from a session) goes through `withdraw_participant.py`, dry
     run first. One would change every number, and the tests have been run once.
 

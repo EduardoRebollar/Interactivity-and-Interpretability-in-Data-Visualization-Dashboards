@@ -47,9 +47,9 @@ the two appendices. **[TODO: the due dates.]**
 
 | Rubric area | Section | Writer | Pages |
 |---|---|---|---|
-| Problem statement | 1 Introduction | E | 0.75 |
-| Technical background | 2 | E | 0.75 |
-| Prior work | 3 | E | 1 |
+| Problem statement | 1 Introduction | C draft 2026-11-18, for E to rewrite | 0.75 |
+| Technical background | 2 | C draft 2026-11-18, for E to rewrite | 0.75 |
+| Prior work | 3 | C draft 2026-11-18, for E to rewrite | 1 |
 | Methods | 4 | C drafts 4.1–4.6 (4.1, 4.2 on 2026-11-18), for E to rewrite | 1.5 |
 | Evaluation metrics | 5 | C drafts 5.1, 5.2 (5.2 on 2026-11-18), for E to rewrite | 1 |
 | Results and discussion | 6, 7, Limitations | C drafts 6, 7 and Limitations (2026-11-18), for E to rewrite | 2.5 |
@@ -61,7 +61,7 @@ the two appendices. **[TODO: the due dates.]**
 
 That puts 5 of 8.5 pages in Methods, Evaluation and Results.
 
-## Abstract (E)
+## Abstract (C draft 2026-11-18, for E to rewrite)
 
 | Claim | Evidence | Strength |
 |---|---|---|
@@ -72,7 +72,7 @@ That puts 5 of 8.5 pages in Methods, Evaluation and Results.
 | Interactive sessions took longer (×`\stat{main/log_time/est}`; exploratory) | `main/log_time` | consistent with |
 | Participants preferred the controls, in a sample that knew the researcher | `main/c2/controls` | consistent with |
 
-## 1. Introduction (E)
+## 1. Introduction (C draft 2026-11-18, for E to rewrite)
 
 | ¶ | Claim | Evidence | Strength |
 |---|---|---|---|
@@ -82,7 +82,7 @@ That puts 5 of 8.5 pages in Methods, Evaluation and Results.
 | 4 | Preview of the findings, in §6's wording, never stronger. | §6 rows below | as in §6 |
 | 5 | Scope: one platform, `\stat{main/n}` participants from one campus, one dataset. | §1, §6.2 | — |
 
-## 2. Technical background (E)
+## 2. Technical background (C draft 2026-11-18, for E to rewrite)
 
 Definitions for a CS senior who has not taken HCI or statistics. No study results here.
 
@@ -93,7 +93,7 @@ Definitions for a CS senior who has not taken HCI or statistics. No study result
 | 3 | Within-subjects designs, order and practice effects, counterbalancing, parallel forms | Greenwald, Charness |
 | 4 | The analysis: a two-period crossover analysis, Holm's correction, equivalence by two one-sided tests at a bound (`\stat{design/boundprop}`, one item), dz, a Wilcoxon signed-rank and a permutation check, and what a 95% and a 90% interval mean | Jones and Kenward, Holm, Schuirmann, Lakens, Wilcoxon, Pratt (all VERIFY) |
 
-## 3. Prior work (E)
+## 3. Prior work (C draft 2026-11-18, for E to rewrite)
 
 The proposal's five themes (proposal §3), each ending with what it changed in this study:
 
@@ -105,8 +105,8 @@ The proposal's five themes (proposal §3), each ending with what it changed in t
 | 4 | Accessibility | Srinivasan, W3C | WCAG floors and colour-blind separation; no screen-reader support |
 | 5 | Evaluating interpretability | Amar, Lam 2012, North, Chang, Saraiya, Carpendale | Low-level task types; objective and subjective measures together |
 
-**[TODO, E: any study that compares static and interactive charts head to head goes here; mark it
-`% VERIFY` in `references.bib`.]**
+**Direct comparisons (added 2026-11-18, C):** `robertson2008`, `perin2013` and `blascheck2019`, each
+checked against Crossref and its abstract, and marked `% VERIFY` until E has read it.
 
 ## 4. Methods
 
