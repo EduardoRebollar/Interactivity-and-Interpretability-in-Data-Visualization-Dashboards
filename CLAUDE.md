@@ -1137,23 +1137,37 @@ context cheap and the reports as long as they need to be.
   - The first participant is still seq 14. To check production after the push without using a
     sequence number, ask the page callback to draw the survey, About you and finished screens
     from a made-up session state (`/_dash-update-component`, `url.pathname`); it writes nothing.
-- 2026-10-14 — **A-T6 reworded after participant 2** (uncommitted at time of writing): "The
+- 2026-10-14 — **A-T6 reworded after participant 2** (committed as 3bd573e): "The
   Central African Republic's coverage became lower than Ethiopia's …", key unchanged. Schema v23;
   participant 2's v22 data kept and pooled as declared (`study-design.md` §10). 1483 tests.
   Headless Chrome, `/preview`, A-T6 and B-T6 in both conditions at 1440 × 790 and 1366 × 768: the
   new wording on one line, every Submit where the committed version has it, no console errors.
   `irb/questionnaire.pdf` re-exported (38 pages). Not yet put to HSRRC.
-- **Now: data collection** (n ≥ 25), in person (request form 5B), with the researcher script in
-  `study-design.md` §8.
-  - After each session: `archive_consents.py` moves the signed form to the Drive and out of Neon.
-  - Withdrawal requests (two weeks): `withdraw_participant.py`, dry run first.
-  - `view_data.py` against Neon (`--env-file .env.local`): the Health tab shows cell balance,
-    incomplete sessions, outages and the manipulation check as sessions come in.
-- After collection: the checks in `study-design.md` §10, read from the data: static accuracy on
-  T2, T4 and T5 (margins sit at the floor), T1, B-T3 and T6 form equivalence, T6 strict against
-  adjacent-band, whether T4 sits at ceiling in the interactive condition, whether the chips, the
-  bar and heatmap sorts and the key's colours are found at all, and whether T1's four extra
-  controls are found and what they cost in time.
+- 2026-10-13 to 2026-11-10 — **Data collection, closed at 24** (6 per cell, one short of 25).
+  Sessions were audio-recorded, and think-aloud was asked for informally: a deviation
+  (`paper/deviations.md`). Participant 19 is reinstated in the main analysis, with the
+  pre-registered analysis without them reported beside it (`study-design.md` §10).
+- 2026-11-11 — **Graded, planned, tested once.** Grading by one grader, the inference plan, the
+  single run of the §7 tests and §10's after-collection checks are all under Decisions made.
+- 2026-11-17 to 18 — **The paper's scaffolding** (`paper/`, through 4f72bd3). It covers the
+  outline, the deviations, the exploratory descriptives, every number as a `\stat` in
+  `numbers.tex`, and the tables and figures, all generated. It builds with TeX Live to 10 pages.
+  Claude's drafts are marked; none of Eduardo's prose sections is written yet.
+- 2026-11-18 — **References checked** (uncommitted at time of writing). All 30 `% VERIFY`
+  entries were checked against Crossref or DataCite, or the source's own page. Each fix is noted
+  at its entry, and every marker stays until Eduardo checks it. Fixes: moses2017's DOI (it
+  resolved nowhere), the data entry (WUENIC 2025 release, fetched 2026-09-08), and WCAG 2.1's date.
+  Plotly's citation is still unconfirmed.
+  - **Found: the data can no longer be re-fetched as the study used it.** Our World in Data now
+    serves WUENIC's 2026 release, where 524 of the study's 10,880 values differ (377 from 2000 on;
+    Laos 2024 MCV1, on B-T4, went from 69 to 55).
+  - Following Appendix A, or this file's Reproducibility steps, would overwrite the committed
+    `data/deploy/coverage.csv` with that data. Not fixed yet.
+- **Now: the paper.** Start with the open items in `main.tex`'s box: the supervisor's answers,
+  HSRRC's approval of the recordings, the due dates, the qualitative spot-check, and what the paper
+  says about data access. Then the prose, section by section, from `paper/outline.md`.
+  - A withdrawal request (two weeks from a session) goes through `withdraw_participant.py`, dry
+    run first. One would change every number, and the tests have been run once.
 
 ## Decisions made
 
