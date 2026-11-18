@@ -72,26 +72,42 @@
 \end{abstract}
 
 \section{Introduction}
+\label{sec:intro}
 
 \todo{Eduardo: paper/outline.md section 1.}
 
 \section{Technical Background}
+\label{sec:background}
 
 \todo{Eduardo: paper/outline.md section 2. Define every term a CS senior may not know: interaction techniques, cognitive load and the Paas scale, within-subjects designs and counterbalancing, the crossover analysis, Holm's correction, equivalence testing, dz.}
 
 \section{Prior Work}
+\label{sec:prior}
 
 \todo{Eduardo: paper/outline.md section 3, the proposal's five themes, each ending with what it changed in this study.}
 
 \section{Methods}
+\label{sec:methods}
 
 \subsection{Design}
+\label{sec:design}
 
-\todo{Eduardo: paper/outline.md 4.1.}
+% BEGIN CLAUDE DRAFT: Design
+The study compared the two versions within subjects: every participant answered questions with both, so each served as their own control. The mini-project had compared them between subjects, with \stat{mini/static/n} participants on the static version and \stat{mini/interactive/n} on the interactive one~\cite{rebollar2026mini}, which left almost no power to find a difference. A within-subjects design reaches the same precision with fewer people, at the price of order and practice effects that the design must control~\cite{greenwald1976,charness2012}.
+
+The two versions were crossed with \stat{design/forms} parallel forms of the items and fully counterbalanced, so that every participant used both versions and both forms, and never the same form twice. Asking the same questions twice would let the second answers come from memory, and counterbalancing the order only spreads such an effect over both versions; it does not remove it. Practice with the interface itself remains, so the analysis adjusts every estimate for the half and the form (Section~\ref{sec:analysis}). Orders were assigned from a database sequence rather than drawn at random, so that each order filled evenly (Section~\ref{sec:procedure}).
+
+Two of the proposal's plans were dropped before collection. A second build of every chart in Tableau Public, meant to show whether the findings depend on the platform, was cut: its visual parity with this build could never be guaranteed, and the alternative, Our World in Data's own published charts, could not record what participants did with them. The study therefore makes no claim beyond one platform. The proposal's change indicators became the year-over-year change in the interactive version's tooltip, because an indicator drawn on the chart would have made the two versions' figures differ. Holding everything but interactivity constant follows the case that the effect of an interaction cannot be judged apart from the design around it~\cite{lam2012,dimara2019}.
+% END CLAUDE DRAFT
 
 \subsection{Participants}
+\label{sec:participants}
 
-\todo{Eduardo: paper/outline.md 4.2. Background only from main/sample keys (groups of five or more); ``mostly undergraduates'' takes no number.}
+% BEGIN CLAUDE DRAFT: Participants
+The participants were \stat{main/sample/n} adults, each run in a single session, in person. Recruitment followed the approved protocol: the researcher's own contacts first, then word of mouth and social media. No one was paid. Many participants were the researcher's friends or co-workers \unverified, and all knew that the researcher had built the system they were using. Collection closed at \stat{main/n}, one short of the target of \stat{design/targetn}.
+
+Most participants were undergraduates; the rest form groups too small to report, since any background group of fewer than five is merged or withheld so that no one can be singled out. The median age was \stat{main/sample/age/median} (range \stat{main/sample/age/min}--\stat{main/sample/age/max}). By primary field, \stat{main/sample/field/cs} were in computer science, mathematics or statistics, \stat{main/sample/field/natural} in the natural or physical sciences, \stat{main/sample/field/health} in health or the life sciences, and \stat{main/sample/field/other} in other fields, the smaller groups merged. Of the \stat{main/n}, \stat{main/sample/readcharts/weekly} read charts or dashboards about weekly or more often, \stat{main/sample/makecharts/monthly} made them about monthly or more often, and \stat{main/sample/health/yes} had studied or worked in public health, medicine, nursing or epidemiology. A small sample from one community is common in HCI research, and it limits whom the results describe~\cite{caine2016,linxen2021}.
+% END CLAUDE DRAFT
 
 % BEGIN CLAUDE DRAFT: Apparatus
 \subsection{Apparatus}
@@ -182,6 +198,7 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \section{Evaluation Metrics}
+\label{sec:evaluation}
 
 % BEGIN CLAUDE DRAFT: Measures
 \subsection{Measures}
@@ -199,14 +216,31 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \subsection{Analysis}
+\label{sec:analysis}
 
-\todo{Eduardo: paper/outline.md 5.2: the two analyses, the crossover test, the checks, Holm across the three main tests, the equivalence bound of one item, the sensitivity, and the plan's timing.}
+% BEGIN CLAUDE DRAFT: Analysis
+\textbf{Two analyses.} Participant 19's interactive half was opened twice within a second, which left an empty extra session, so the pre-registered rule for incomplete sessions, as written, removes all of this participant's answers. The main analysis drops the empty session and applies every rule unchanged ($n = \stat{main/n}$). The analysis as pre-registered ($n = \stat{pre/n}$) is reported beside it, and where a conclusion differs between the two, the paper says so.
+
+\textbf{The main tests.} Each research question has one score per participant and version: the proportion correct over the \stat{design/items} items (RQ1), the mean depth of the T2 to T6 justifications (RQ2), and the Paas rating (RQ3). Each is tested on the participants' differences, interactive minus static, with the two-period crossover analysis of Section~\ref{sec:background}: the difference is regressed on the half in which the participant used the interactive version and on the form it showed, and the intercept estimates the effect of interactivity adjusted for both. Each estimate is reported with its 95\% confidence interval, $t$, its degrees of freedom, $p$ and $d_z$. Two checks do not assume normally distributed differences: a Wilcoxon signed-rank test for all three, and, for accuracy, which takes few values and is often equal in both versions, a permutation test that re-deals each participant's order \stat{design/permutations} times.
+
+\textbf{Three tests and an equivalence bound.} Holm's correction holds the \stat{design/family} main tests together to a familywise error rate of $\alpha = \stat{design/alpha}$, so the smallest $p$ must clear \stat{design/holmfirst}. Only these tests may be called significant. A non-significant test of accuracy cannot show that accuracy was unaffected, so accuracy is also tested for equivalence, against a bound of \stat{design/bounditems} item of \stat{design/items} ($\pm\stat{design/boundprop}$ in proportion correct): it is equivalent when its 90\% confidence interval lies inside the bound. The proposal's question, whether interactivity reduces effort rather than improving accuracy, is answered yes only if the Paas rating falls significantly and accuracy is equivalent.
+
+\textbf{Secondary outcomes} are estimated with the same model and never tested: time per item, as a ratio of geometric means; accuracy over answered items only; accuracy without the participants who had heard details of the study beforehand; T1's parts score; reasoning depth with T1; and how often justifications cited values or compared countries. Results by item and the survey are described, not tested, since no chart type carries enough items to be tested on its own.
+
+\textbf{What this sample can detect.} With $n = \stat{main/n}$ and \stat{design/power}\% power, a main test detects an effect of $d_z = \stat{main/sensitivity/single}$ at $\alpha = \stat{design/alpha}$, and of $d_z = \stat{main/sensitivity/holm}$ at Holm's first step, so only large effects were likely to be found. A non-significant result is therefore reported as not detected, never as no effect~\cite{altman1995}.
+
+\textbf{When the plan was written.} The measures and the exclusion rules were fixed before collection; the inference plan was not. It was drafted on 3 November 2026, after a look at the distributions and averages of the participants run by then, and written into the protocol on 11 November, after a poster of averages and before any test. The tests then ran once, that day. A plan fixed in advance is what keeps a test from being chosen for its result~\cite{cockburn2018}; this one was fixed before the tests but after those looks, and Table~\ref{tab:deviations} records it.
+
+\textbf{Measures considered and not used.} NASA-TLX~\cite{hart1988} rates workload on several subscales, but with only two versions per participant the extra scales would have cost time without adding resolution, so the single Paas item measured effort. Eye tracking would show where participants looked, but collecting biometric data raises consent and privacy concerns beyond this study's scope. Insight-based evaluation~\cite{north2006,saraiya2006} counts the insights participants report, but a fixed rubric gives more reproducible scores. A formal think-aloud protocol~\cite{ericsson1993,carpendale2008} would show reasoning as it happens, but could not be run consistently across sessions in the time available; informal think-aloud entered the sessions anyway (Section~\ref{sec:procedure}). Agreement between two coders, measured by Cohen's $\kappa$~\cite{cohen1960}, was planned; with one grader it could not be computed.
+% END CLAUDE DRAFT
 
 \section{Results and Discussion}
+\label{sec:results}
 
 \todo{Eduardo writes this section from paper/outline.md section 6, every number a \textbackslash stat. The tables and figures are generated by scripts/paper\_figures.py; their captions are Claude's drafts.}
 
 \subsection{Sample and Exclusions}
+\label{sec:sample}
 
 \todo{outline 6.1.}
 
@@ -223,6 +257,7 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \subsection{Accuracy (RQ1)}
+\label{sec:accuracy}
 
 \todo{outline 6.2 and 6.3: lead with the estimate in items and its interval; say the data rule out an advantage of one item or more, never that accuracy did not change.}
 
@@ -273,10 +308,12 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \subsection{Reasoning Depth (RQ2)}
+\label{sec:depth}
 
 \todo{outline 6.4.}
 
 \subsection{Mental Effort (RQ3)}
+\label{sec:effort}
 
 \todo{outline 6.5: not detected, never ``no effect''; give the interval and the design's sensitivity; a7 beside Paas.}
 
@@ -292,6 +329,7 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \subsection{Time on Task (Exploratory)}
+\label{sec:time}
 
 \todo{outline 6.6.}
 
@@ -319,10 +357,12 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \subsection{The Overloaded Item, the Controls and Hover}
+\label{sec:overload}
 
 \todo{outline 6.7 and 6.8.}
 
 \subsection{The Survey, Preference and the Exploratory Descriptives}
+\label{sec:survey}
 
 \todo{outline 6.9 and 6.10: the preference counts with their context.}
 
@@ -339,22 +379,27 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 % END CLAUDE DRAFT
 
 \subsection{Qualitative Observations}
+\label{sec:qualitative}
 
 \todo{outline 6.11: themes with exemplars, never prevalence; every count \unverified{} until the spot-check.}
 
 \subsection{Discussion}
+\label{sec:discussion}
 
 \todo{outline section 7.}
 
 \subsection{Limitations}
+\label{sec:limitations}
 
 \todo{outline, Limitations.}
 
 \section{Ethical Considerations}
+\label{sec:ethics}
 
 \todo{Eduardo: outline section 8, from the ethics paper~\cite{rebollar2026ethics}, updated. Include HSRRC's approval of the recordings.}
 
 \section{Conclusion}
+\label{sec:conclusion}
 
 \todo{Eduardo: outline section 9.}
 

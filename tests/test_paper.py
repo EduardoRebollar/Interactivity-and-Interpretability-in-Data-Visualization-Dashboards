@@ -715,6 +715,18 @@ def test_numbers_give_the_plans_sensitivity(numbered):
     assert defined["main/sensitivity/holm"] == "0.71"
     assert defined["pre/sensitivity/single"] == "0.61"
     assert defined["pre/sensitivity/holm"] == "0.73"
+    assert defined["design/power"] == "80", "the power those smallest effects assume"
+
+
+def test_numbers_carry_the_mini_project_as_the_proposal_reports_it(numbered):
+    """The proposal's section 6: six participants (two static, four interactive), drops of 2.75
+    and 2.50 points and a rise of 1.50 on a 7-point scale, 6:37 against 8:40."""
+    defined = _defined(numbered)
+    mini = {k: v for k, v in defined.items() if k.startswith("mini/")}
+    assert mini == numbers_script.MINI_PROJECT
+    assert int(mini["mini/static/n"]) + int(mini["mini/interactive/n"]) == int(mini["mini/n"])
+    assert mini["mini/time/static"] == "6 min 37 s"
+    assert mini["mini/time/interactive"] == "8 min 40 s"
 
 
 def test_numbers_hold_no_free_text_and_no_background_group_under_five(numbered):

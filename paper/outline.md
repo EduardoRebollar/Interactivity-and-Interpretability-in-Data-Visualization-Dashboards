@@ -50,8 +50,8 @@ the two appendices. **[TODO: the due dates.]**
 | Problem statement | 1 Introduction | E | 0.75 |
 | Technical background | 2 | E | 0.75 |
 | Prior work | 3 | E | 1 |
-| Methods | 4 | E; C drafts 4.3–4.6 | 1.5 |
-| Evaluation metrics | 5 | E; C drafts 5.1 | 1 |
+| Methods | 4 | C drafts 4.1–4.6 (4.1, 4.2 on 2026-11-18), for E to rewrite | 1.5 |
+| Evaluation metrics | 5 | C drafts 5.1, 5.2 (5.2 on 2026-11-18), for E to rewrite | 1 |
 | Results and discussion | 6, 7, Limitations | E | 2.5 |
 | Ethical considerations | 8 | E | 0.75 |
 | Conclusion | 9 | E | 0.25 |
@@ -112,9 +112,9 @@ The proposal's five themes (proposal §3), each ending with what it changed in t
 
 | § | ¶ | Claim | Evidence | Strength | Writer |
 |---|---|---|---|---|---|
-| 4.1 Design | 1 | Within subjects, 2 conditions × 2 forms, counterbalanced by database sequence; each participant saw both conditions and both forms, never a form twice; `\stat{design/items}` scored items per condition plus a practice | §2; cells `\stat{main/cells/int1-A}`, `\stat{main/cells/int1-B}`, `\stat{main/cells/int2-A}`, `\stat{main/cells/int2-B}` | shows | E |
-| 4.2 Participants | 1 | `\stat{main/sample/n}` people, recruited and run in person on campus, many of them friends or co-workers of the researcher; collection closed one short of `\stat{design/targetn}` | §10; qualitative report §1.7 [UNVERIFIED] | shows | E |
-| | 2 | Mostly undergraduates (no count: the rest are fewer than five); age median `\stat{main/sample/age/median}`, range `\stat{main/sample/age/min}`–`\stat{main/sample/age/max}`; fields: CS, math or statistics `\stat{main/sample/field/cs}`, health `\stat{main/sample/field/health}`, natural sciences `\stat{main/sample/field/natural}`, other `\stat{main/sample/field/other}`; read charts weekly or more `\stat{main/sample/readcharts/weekly}` | `numbers.tex` (groups of five or more only, main analysis only) | shows | E |
+| 4.1 Design | 1 | Within subjects, 2 conditions × 2 forms, counterbalanced by database sequence; each participant saw both conditions and both forms, never a form twice; `\stat{design/items}` scored items per condition plus a practice | §2; cells `\stat{main/cells/int1-A}`, `\stat{main/cells/int1-B}`, `\stat{main/cells/int2-A}`, `\stat{main/cells/int2-B}` | shows | C draft 2026-11-18 |
+| 4.2 Participants | 1 | `\stat{main/sample/n}` people, recruited and run in person on campus, many of them friends or co-workers of the researcher; collection closed one short of `\stat{design/targetn}` | §10; qualitative report §1.7 [UNVERIFIED] | shows | C draft 2026-11-18 |
+| | 2 | Mostly undergraduates (no count: the rest are fewer than five); age median `\stat{main/sample/age/median}`, range `\stat{main/sample/age/min}`–`\stat{main/sample/age/max}`; fields: CS, math or statistics `\stat{main/sample/field/cs}`, health `\stat{main/sample/field/health}`, natural sciences `\stat{main/sample/field/natural}`, other `\stat{main/sample/field/other}`; read charts weekly or more `\stat{main/sample/readcharts/weekly}` | `numbers.tex` (groups of five or more only, main analysis only) | shows | C draft 2026-11-18 |
 | 4.3 Apparatus | 1–4 | The two versions draw the same figure; the only difference is interactivity (an image, or hover and the controls under the chart). Five chart types, one dataset, one palette checked for contrast and colour-blind separation. | visual-spec §1, §4, §7; `\stat{design/charttypes}`, `\stat{design/palette}`, `\stat{design/cvdfloor}` | shows (by construction, tested) | C |
 | 4.4 Tasks | 1–3 | Six items per form, each pairing a chart type with an affordance; two parallel forms; every key survives a reader without hover (the acceptance rule) | §4; `\stat{design/floor/position}`, `\stat{design/floor/colour}`, `\stat{design/floor/dots}` | shows (design) | C |
 | 4.5 Procedure | 1–3 | The session sequence, instructions before both halves, one practice, the full-screen request, the researcher script, and how it differed in practice | §8; `paper/deviations.md` | shows | C |
@@ -129,11 +129,11 @@ The proposal's five themes (proposal §3), each ending with what it changed in t
 | | 3 | RQ3: Paas mental effort (1–`\stat{design/paaspoints}`), after each half; a7 beside it | §6.1 | shows | C |
 | | 4 | Secondaries: time (browser clock), the survey, control use from the logs, hover by self-report (b4) | §6.1, §7 | shows | C |
 | | 5 | Exclusions, fixed in advance | §7; `\stat{design/fastseconds}` s, top `\stat{design/trimpercentile}`th percentile | shows | C |
-| 5.2 Analysis | 1 | Two analyses: participant 19 reinstated (main), and as pre-registered beside it | §7 Inference | shows | E |
-| | 2 | Crossover t (difference regressed on half and form); Wilcoxon; a permutation check on accuracy; Holm across the `\stat{design/family}` tests at α `\stat{design/alpha}`; an equivalence test at one item | §7 Inference | shows | E |
-| | 3 | What 24 can detect: dz `\stat{main/sensitivity/single}` alone, `\stat{main/sensitivity/holm}` at Holm's first step (80% power) | `main/sensitivity` | shows | E |
-| | 4 | The plan was written after looks at the data (2026-11-03, the poster), before any test; the tests ran once | §10 | shows | E |
-| | 5 | Metrics considered and not used: NASA-TLX, eye tracking, insight-based evaluation, a full think-aloud | §6.1; proposal §4.2, §5 | — | E |
+| 5.2 Analysis | 1 | Two analyses: participant 19 reinstated (main), and as pre-registered beside it | §7 Inference | shows | C draft 2026-11-18 |
+| | 2 | Crossover t (difference regressed on half and form); Wilcoxon; a permutation check on accuracy; Holm across the `\stat{design/family}` tests at α `\stat{design/alpha}`; an equivalence test at one item | §7 Inference | shows | C draft 2026-11-18 |
+| | 3 | What 24 can detect: dz `\stat{main/sensitivity/single}` alone, `\stat{main/sensitivity/holm}` at Holm's first step (80% power) | `main/sensitivity` | shows | C draft 2026-11-18 |
+| | 4 | The plan was written after looks at the data (2026-11-03, the poster), before any test; the tests ran once | §10 | shows | C draft 2026-11-18 |
+| | 5 | Metrics considered and not used: NASA-TLX, eye tracking, insight-based evaluation, a full think-aloud | §6.1; proposal §4.2, §5 | — | C draft 2026-11-18 |
 
 ## 6. Results (E)
 

@@ -3,7 +3,8 @@
 % Every quantity in the paper is \stat{key}; a key not defined here stops the build. The numbers
 % come from data/study_logs/derived/significance.txt (the confirmatory run of 2026-11-11, read as
 % printed), the descriptives of scripts/paper_descriptives.py (paper/exploratory.md), the study's
-% own code, and the notebook's min_detectable() (no data). Keys start with the analysis: main
+% own code, the notebook's min_detectable() (no data), and the mini-project's figures as the
+% proposal reports them (mini/, typed once in the script). Keys start with the analysis: main
 % (participant 19 reinstated) or pre (as pre-registered). Background counts exist only for groups
 % of five or more (docs/study-design.md section 6.2).
 \providecommand{\textminus}{\ensuremath{-}}
@@ -61,6 +62,7 @@
 \defstat{design/paaspoints}{9}
 \defstat{design/palette}{8}
 \defstat{design/permutations}{10,000}
+\defstat{design/power}{80}
 \defstat{design/stopn}{24}
 \defstat{design/surveyitems}{9}
 \defstat{design/t1parts}{3}
@@ -868,6 +870,20 @@
 \defstat{main/windows/height/min}{554}
 \defstat{main/windows/participants}{24}
 \defstat{main/windows/width/median}{1440}
+
+% --- mini
+\defstat{mini/confidence/interactive}{5.75}
+\defstat{mini/confidence/static}{6.50}
+\defstat{mini/ease}{1.50}
+\defstat{mini/interactive/n}{4}
+\defstat{mini/likertpoints}{7}
+\defstat{mini/n}{6}
+\defstat{mini/overwhelming}{2.75}
+\defstat{mini/rank/pct}{50}
+\defstat{mini/static/n}{2}
+\defstat{mini/time/interactive}{8 min 40 s}
+\defstat{mini/time/static}{6 min 37 s}
+\defstat{mini/tracking}{2.50}
 
 % --- pre
 \defstat{pre/accuracy/ci}{[\textminus{}0.008, +0.160]}
