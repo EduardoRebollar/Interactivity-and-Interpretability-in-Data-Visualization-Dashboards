@@ -424,7 +424,15 @@ The sessions were audio-recorded and transcribed with Whisper~\cite{radford2023}
 \subsection{Discussion}
 \label{sec:discussion}
 
-\todo{outline section 7.}
+% BEGIN CLAUDE DRAFT: Discussion
+Interactivity changed how the charts felt far more than how well they were read. Accuracy is settled to within one item: the data rule out a difference of one item or more for either version, though a smaller advantage, more likely for the interactive one, remains possible. Whether interactivity lowered the effort participants invested is unclear, since the Paas estimate pointed down but its interval included no change. The interactive version took longer, an exploratory estimate, and participants preferred it, in a sample inclined to prefer it.
+
+The mini-project~\cite{rebollar2026mini}, with \stat{mini/n} participants split between the versions, found comparable accuracy, longer times with interaction (\stat{mini/time/interactive} against \stat{mini/time/static}) and lower reported load: agreement that the dashboard felt overwhelming fell by \stat{mini/overwhelming} points on a \stat{mini/likertpoints}-point scale. With a within-subjects design, parallel forms and times from the browser, accuracy and time behaved here as they did there. Lower load did not survive as a tested result, although the survey's own effort statement, a7, fell from \stat{main/survey/a7/static/mean} to \stat{main/survey/a7/interactive/mean}. One result reversed. The mini-project's static users were slightly more confident (\stat{mini/confidence/static} against \stat{mini/confidence/interactive}); here confidence rose with the controls, from \stat{main/survey/a1/static/mean} to \stat{main/survey/a1/interactive/mean}, while accuracy changed by less than one item. Confidence outrunning accuracy is the outcome the proposal worried about. These data are consistent with it, though no test addressed it.
+
+Several things kept accuracy from moving, and none explains the result alone. The first is the design itself: every item passed a rule that kept its answer readable without hover, so the controls could make an answerable question easier but never make an unanswerable one answerable. The second is the items: T5 was at ceiling and T2 and T4 near it, so a difference could show easily only on T3 and T6. The third is discovery. Controls beneath the chart were widely used, but the clickable key, built into the chart, was used on T3 by \stat{main/controls/T3/key} of \stat{main/controls/T3/n} participants, consistent with the key being read as a reference rather than a control (Section~\ref{sec:qualitative}) and with what studies of how people discover interactivity lead one to expect~\cite{blascheck2019}. The fourth is hover, which was not logged, so on T3 and T6, where it might have mattered most, its use is unknown. Finally, interaction has costs of its own, in deciding what to do and in doing it~\cite{lam2008}. The extra time may have bought confidence rather than accuracy, much as an animated display once bought enjoyment rather than accuracy~\cite{robertson2008}.
+
+For designers, three cautions follow, within this sample and this platform. A control needs a visible signifier to be used: those under the chart were found, and the one inside it mostly was not. Interactivity should not be expected to save time; here it cost time. And a reader's preference or confidence is weak evidence of how accurately a chart is read~\cite{hornbaek2007}, so a dashboard is better judged by what its readers get right. T1 suggests a fourth, weaker one. Its unneeded controls drew a minority of participants and did not visibly harm accuracy, but T1 sat near the floor with both versions, so it says little about the cost of an overloaded interface.
+% END CLAUDE DRAFT
 
 \subsection{Limitations}
 \label{sec:limitations}
@@ -446,12 +454,30 @@ The sessions were audio-recorded and transcribed with Whisper~\cite{radford2023}
 \section{Ethical Considerations}
 \label{sec:ethics}
 
-\todo{Eduardo: outline section 8, from the ethics paper~\cite{rebollar2026ethics}, updated. Include HSRRC's approval of the recordings.}
+% BEGIN CLAUDE DRAFT: Ethical considerations
+Visualizations shape how data inform decisions, and those who design and study them share responsibility for what readers come away believing~\cite{correll2019}. This study's charts showed childhood vaccination coverage, a domain where misreading a chart can feed decisions and arguments about public health. The ethics paper that preceded this one~\cite{rebollar2026ethics} set out the concerns; this section reports how the study met them and where it fell short.
+
+\textbf{Who took part, and whose readings count.} The sample is small, young, mostly undergraduate and drawn largely from the researcher's own circle, as samples in HCI research often are~\cite{linxen2021,caine2016}. It leaves out the older, less formally educated and non-native-English readers who also use public dashboards, and the results say nothing about them. Scoring raises a quieter bias, because a rubric decides whose interpretation counts as correct~\cite{quadri2024}. T1's rubric credits three features of a pattern and, by rule, judges the pattern rather than the precision of its values, so a reader without exact values is not penalised for lacking them. A description built on context the rubric did not anticipate, such as a war or vaccine hesitancy, could still earn nothing for it.
+
+\textbf{The researcher as builder.} The researcher built the system, recruited the participants and ran every session, and many participants knew the researcher personally. Participants tend to favour what they believe the researcher made~\cite{dell2012}, so the survey and preference results are reported as how the versions felt, and the tests rest on answers that could be checked against the data.
+
+\textbf{Unequal data.} The WHO/UNICEF estimates combine countries' administrative reports with household surveys~\cite{burton2009}, and countries with weaker statistical systems are measured less reliably. Every chart's source line says that the values are estimates whose reliability varies by country. The items also drew heavily on low-coverage countries in Africa and Asia, because that is where the differences a reading task needs are found. Shown without context to readers far from those places, such charts risk a deficit framing of the countries they show. No item asks why coverage is low, and the paper draws no conclusion about any country.
+
+\textbf{Accessibility.} The palette meets the contrast floors of WCAG 2.1~\cite{w3c2018wcag21} and keeps every pair of series colours apart under simulated colour blindness, and every control works from the keyboard except hovering and clicking a line. The study did not ask about colour vision, however, and made no provision for screen readers. Accessible dashboards have to be designed with blind and low-vision users from the start~\cite{srinivasan2023,costanzachock2020}. This study could not do that, so its results describe sighted users only.
+
+\textbf{Consent, privacy and AI tools.} Consent was signed in the application and stored apart from the study data, without a participant identifier, so the two cannot be linked, and participants could withdraw their data within the period the consent form set. The sessions were audio-recorded, which the approved protocol said would not happen. \todo{HSRRC's approval of the recordings: its date and how it was given.} AI tools handled participant text in two places: grading, on sheets that carried an opaque identifier and the text alone, and the first pass over the session transcripts. \todo{Eduardo: say whether the AI saw the transcripts only after names and places were removed.} Neither approved form mentions AI tools; both restrict identifying data, and the grading sheets carried none. Participants' words appear in this paper only as short excerpts, never beside a background that could identify them, and the free text of the closing questions is never quoted.
+
+\textbf{Where the data are.} \todo{what the paper says about where the data can be found: the rubric asks for the raw data in the repository, and the IRB forms keep it out.}
+% END CLAUDE DRAFT
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-\todo{Eduardo: outline section 9.}
+% BEGIN CLAUDE DRAFT: Conclusion
+This study asked whether interactivity helps people interpret charts of a time series or only makes interpretation feel easier. Given two versions of the same charts that differed only in whether they responded, \stat{main/n} participants were about as accurate with either: the data rule out a difference of one item of \stat{design/items} in either direction. Whether interactivity lowered the effort they invested remains open. The tested measure did not detect a change, while the survey's effort statement and participants' preferences favoured the controls strongly, and the interactive version took longer. The proposal's expectation, that interactivity reduces perceived load rather than improving accuracy, is therefore neither confirmed nor refuted: its half about accuracy held, and its half about effort did not reach the bar the plan set.
+
+A next study should change what this one could not. It should log hover; give controls built into a chart a visible signifier; set items away from the ceiling; grade with a second, independent coder; fix the analysis plan before any data are seen; recruit beyond one campus and one circle of acquaintance; and repeat the comparison on a second platform. What this study already offers is a way to make the two versions identical by construction, so that whatever difference such a study finds can be laid at interactivity's door.
+% END CLAUDE DRAFT
 
 % BEGIN CLAUDE DRAFT: Use of AI tools (factual; for Eduardo to edit)
 \section*{Use of AI Tools}

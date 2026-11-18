@@ -52,9 +52,9 @@ the two appendices. **[TODO: the due dates.]**
 | Prior work | 3 | E | 1 |
 | Methods | 4 | C drafts 4.1–4.6 (4.1, 4.2 on 2026-11-18), for E to rewrite | 1.5 |
 | Evaluation metrics | 5 | C drafts 5.1, 5.2 (5.2 on 2026-11-18), for E to rewrite | 1 |
-| Results and discussion | 6, 7, Limitations | C drafts 6 and Limitations (2026-11-18), 7 to come; for E to rewrite | 2.5 |
-| Ethical considerations | 8 | E | 0.75 |
-| Conclusion | 9 | E | 0.25 |
+| Results and discussion | 6, 7, Limitations | C drafts 6, 7 and Limitations (2026-11-18), for E to rewrite | 2.5 |
+| Ethical considerations | 8 | C draft 2026-11-18, for E to rewrite | 0.75 |
+| Conclusion | 9 | C draft 2026-11-18, for E to rewrite | 0.25 |
 | Replication instructions | Appendix A | C | not counted |
 | Code architecture overview | Appendix B | C | not counted |
 | Use of AI tools | after 9 | C | |
@@ -159,7 +159,7 @@ beside it, as pre-registered.
 | | The grading review changed `\stat{review/t1/changed}` of `\stat{review/t1/codes}` T1 rubric codes (`\stat{review/t1/changed/interactive}` of them on interactive answers) and `\stat{review/rq2/changed}` of `\stat{review/rq2/codes}` RQ2 codes; the decision log gained `\stat{rules/all}` rules. Not an agreement statistic. | `review`, `rules` | shows (counts) |
 | 6.11 Qualitative | Themes, each with an exemplar (`paper/private/quotes.md`), never with prevalence: filtering clutter on the line charts; the key read as a reference, not a control; exact values changing the method on T3; item wording behind errors. Counts of talk, one AI-assisted coder not blind to version: [UNVERIFIED] until the spot-check. | `data/study_logs/qual/` | consistent with |
 
-## 7. Discussion (E)
+## 7. Discussion (C draft 2026-11-18, for E to rewrite)
 
 | ¶ | Claim | Strength |
 |---|---|---|
@@ -187,7 +187,7 @@ Each with its source:
   disclosures in debriefs, a joint session (`paper/deviations.md`);
 - the qualitative material is unverified.
 
-## 8. Ethical considerations (E)
+## 8. Ethical considerations (C draft 2026-11-18, for E to rewrite)
 
 From the ethics paper (`paper/sources/`), updated:
 - consent stored apart from the data;
@@ -200,7 +200,7 @@ From the ethics paper (`paper/sources/`), updated:
 - a sensitive domain;
 - the researcher as the builder of what is evaluated.
 
-## 9. Conclusion (E)
+## 9. Conclusion (C draft 2026-11-18, for E to rewrite)
 
 The question, what the data settle and what they leave open, and what the next study would change.
 
