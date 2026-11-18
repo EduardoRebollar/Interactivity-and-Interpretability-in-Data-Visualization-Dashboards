@@ -12,6 +12,11 @@
 % use the oxycomps style file
 \usepackage{oxycomps}
 
+% let a long URL (the repository's) break after a hyphen as well as a slash
+\makeatletter
+\g@addto@macro\UrlBreaks{\do\-}
+\makeatother
+
 % usage: \fixme[comments describing issue]{text to be fixed}, as the template defines it
 \newcommand{\fixme}[2][]{#2}
 \renewcommand{\fixme}[2][]{\textcolor{red}{#2}}
@@ -52,6 +57,7 @@
 \todo{the qualitative spot-check; until it is done, every qualitative count is \unverified.}
 \todo{what the paper says about where the data can be found: the rubric asks for the raw data in the repository, and the IRB forms keep it out.}
 }}
+\medskip
 
 \begin{abstract}
 \todo{Eduardo: the abstract (paper/outline.md, Abstract). Lead with the accuracy estimate in items and its interval, then effort (not detected), then time (exploratory).}
@@ -127,7 +133,7 @@ T1 differs from the rest in two ways. It is the only written item, the one that 
 \subsection{Procedure}
 \label{sec:procedure}
 
-Sessions ran in person on campus, and participants used their own computers. A session ran in this order: the consent form, a participant ID, instructions, the practice item, the first version's items and survey, a break, instructions for the other version, its items on the other form and its survey, questions about the participant's background, and a closing screen that asked them not to discuss the questions with anyone. Each participant's order of versions and forms came from a database sequence rather than a random draw, so the orders filled evenly: \stat{main/cells/int1-A}, \stat{main/cells/int1-B}, \stat{main/cells/int2-A} and \stat{main/cells/int2-B} participants met the interactive version first on form A, first on form B, second on form A and second on form B.
+Sessions ran in person on campus, and participants used their own computers. A session ran in this order: the consent form, a participant ID, instructions, the practice item, the first version's items and survey, a break, instructions for the other version, its items on the other form and its survey, questions about the participant's background, and a closing screen that asked them not to discuss the questions with anyone. Each participant's order of versions and forms came from a database sequence rather than a random draw, so the orders filled evenly: \stat{main/cells/int1-A} participants met the interactive version first on form A, \stat{main/cells/int1-B} first on form B, \stat{main/cells/int2-A} second on form A and \stat{main/cells/int2-B} second on form B.
 
 Instructions came before both halves, so that a participant who met the interactive version second still had every control described before using it; the practice item, a line chart, taught the interface once. The instructions named every control except T1's extra ones, and the first screen asked for a full-screen window. Any question could be skipped after a confirmation. Signed consent was stored apart from the study data and could not be linked to it, and participants could withdraw their data within the period the consent form set.
 
@@ -142,7 +148,7 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
 
 \begin{table*}[t]
     \footnotesize
-    \begin{tabular}{p{0.66\textwidth}p{0.17\textwidth}p{0.1\textwidth}}
+    \begin{tabular}{p{0.65\textwidth}p{0.17\textwidth}p{0.1\textwidth}}
         \toprule
         \textbf{Deviation} & \textbf{When} & \textbf{Tests} \\
         \midrule
@@ -161,7 +167,7 @@ Table~\ref{tab:deviations} lists every way the study as run departs from its pre
         \bottomrule
     \end{tabular}
     \caption{
-        Deviations from the pre-registration and the protocol, in the order they arose. The confirmatory tests ran once, on 11 November 2026, and the last column says whether each deviation came before or after that run. \dag~Rests on a first, AI-assisted pass over the session recordings that has not yet been checked \unverified. Details are in \path{paper/deviations.md}.
+        Deviations from the pre-registration and the protocol, in the order they arose. The confirmatory tests ran once, on 11 November 2026, and the last column says whether each deviation came before or after that run. \dag~Rests on a first, AI-assisted pass over the session recordings that has not yet been checked \unverified. Details are in \texttt{paper/deviations.md}.
     }
     \label{tab:deviations}
 \end{table*}
@@ -258,7 +264,11 @@ Claude, Anthropic's AI model, was used through Claude Code to write and test the
 \section{Replication Instructions}
 \label{app:replication}
 
-The code is public at \url{https://github.com/EduardoRebollar/Interactivity-and-Interpretability-in-Data-Visualization-Dashboards}. It needs Python \stat{software/python} or later and uv (\url{https://docs.astral.sh/uv/}), which installs the exact versions recorded in \path{uv.lock}: among them Dash \stat{software/dash}, Plotly \stat{software/plotly}, pandas \stat{software/pandas}, pyarrow \stat{software/pyarrow}, psycopg \stat{software/psycopg}, pytest \stat{software/pytest} and Ruff \stat{software/ruff}. NumPy and SciPy are locked to a version for each Python release.
+The code is public at
+\begin{center}
+\url{https://github.com/EduardoRebollar/Interactivity-and-Interpretability-in-Data-Visualization-Dashboards}
+\end{center}
+It needs Python \stat{software/python} or later and uv (\url{https://docs.astral.sh/uv/}), which installs the exact versions recorded in \path{uv.lock}: among them Dash \stat{software/dash}, Plotly \stat{software/plotly}, pandas \stat{software/pandas}, pyarrow \stat{software/pyarrow}, psycopg \stat{software/psycopg}, pytest \stat{software/pytest} and Ruff \stat{software/ruff}. NumPy and SciPy are locked to a version for each Python release.
 
 \paragraph{The study application.} From the repository's root:
 \begin{lstlisting}[language=bash]
