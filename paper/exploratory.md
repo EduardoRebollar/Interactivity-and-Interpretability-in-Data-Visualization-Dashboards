@@ -4,8 +4,10 @@
 **Status:** every item is post hoc and descriptive. Nothing here is a test, and nothing here can be
 called significant. Only the three Holm-family tests in `significance.txt` can
 (`docs/study-design.md` §7, Inference).
-**Computed by:** `scripts/paper_descriptives.py` (not yet written). Its outputs go to
+**Computed by:** `scripts/paper_descriptives.py`, written after this list. Its outputs go to
 `data/study_logs/derived/paper/`, which is gitignored.
+**Decided 2026-11-17, before any item was computed:** item 8 computes nothing (Eduardo). Eduardo
+left 3b, 7b and item 4's thresholds to Claude, which kept all three as first proposed.
 
 Commit this file before the script runs. The commit date is the record that these definitions,
 thresholds included, came before their numbers, as `docs/grading-rules.md`'s did for grading.
@@ -41,13 +43,13 @@ No participant-level table in items 2 to 7 has been computed yet.
 - **Checked against the run.** For each analysis, the script's n for each outcome and its ceiling
   counts must equal those in `significance.txt`, and the exclusion flags it re-derives must equal
   those in `tasks.csv`. If any differs, it writes nothing.
-- **Nobody is excluded and no confirmatory estimate is redone.** The one exception is item 8,
-  whose re-estimates are labelled as sensitivity analyses. The effect estimates the paper quotes
-  come from `significance.txt`, never from a mean computed here.
-- **No free text.** T1 descriptions, justifications, c3, E2, E3 and "Other" text are dropped as
-  the files are read. Participant IDs appear only in the gitignored outputs, and nothing joins a
-  setting (workplace, outdoors, home) to an ID. Background tables are printed in full there, and
-  the paper merges any group smaller than five (§6.2).
+- **Nobody is excluded and no confirmatory estimate is redone.** The effect estimates the paper
+  quotes come from `significance.txt`, never from a mean computed here.
+- **No free text.** As the files are read, T1 descriptions, justifications, c3, E2, E3 and
+  "Other" text are each replaced by a marker. Only whether something was written survives, which
+  the report needs for its "how many wrote something" counts. Participant IDs appear only in the
+  gitignored outputs, and nothing joins a setting (workplace, outdoors, home) to an ID. Background
+  tables are printed in full there, and the paper merges any group smaller than five (§6.2).
 - **An accuracy difference in items** is the interactive proportion correct minus the static one,
   times 6.
 
@@ -88,9 +90,8 @@ answer with a usable time in one condition, so they leave the time outcome only.
   task. A skipped description counts as credited with no part and contradicting none, as the
   parts score counts it.
 - **Check:** for every answer, a + b + c must equal `t1_parts` in `tasks.csv`, or the script stops.
-- **3b, proposed (strike if unwanted):** the same table by form. Section 10 asks whether a part
-  fails for nearly everyone, and T1's forms differ in size (Ukraine's collapse in A, Brazil's
-  smaller fall in B).
+- **3b, by form (kept):** the same table by form. Section 10 asks whether a part fails for nearly
+  everyone, and T1's forms differ in size (Ukraine's collapse in A, Brazil's smaller fall in B).
 
 ## 4. Paas against a7
 
@@ -116,6 +117,9 @@ answer with a usable time in one condition, so they leave the time outcome only.
     two scales move in opposite directions between conditions.
   - Each such participant is listed with their four ratings in the gitignored output. The paper
     gives only counts.
+  - Why these cut-offs: every a7 point is labelled, so 5 or more is agreement and 3 or less is
+    disagreement. Paas has words only at its ends, so a rating must sit at least two points from
+    its middle (5) to count as low or high.
 - **Report only.** Nobody is excluded on this, and RQ3 is not re-estimated without anyone.
 
 ## 5. Paas and a7 by order
@@ -156,16 +160,15 @@ answer with a usable time in one condition, so they leave the time outcome only.
 - **The decision log:** the rows of `docs/grading-rules.md` §8, counted by sheet, with how many were
   amended in review and how many are moot. The file is read, never edited.
 - **Not an agreement statistic.** The review started from the draft (§1, item 4).
-- **7b, proposed (strike if unwanted):** the changes by condition, from the key files. The grader
-  knew the hypotheses, so this shows whether the review moved one condition's codes more than the
-  other's.
+- **7b, by condition (kept):** the changes by condition, from the key files. The grader knew the
+  hypotheses, so this shows whether the review moved one condition's codes more than the other's.
 
 ## 8. Sensitivity re-estimates from the qualitative report
 
-**[TO FILL IN: Eduardo lists which. None is computed until it is listed here.]**
+**None (Eduardo, 2026-11-17).** No re-estimate is computed, and the paper reports none.
 
-The candidates the report proposes (`data/study_logs/qual/qualitative_report.md`), named by
-section, not by participant:
+The report (`data/study_logs/qual/qualitative_report.md`) proposed four, considered and not
+taken. They are named here by section, not by participant:
 
 - §1.2: the main results without the two participants in the joint session;
 - §1.3: T3 without the participants who were run after an answer was first disclosed, on the items
@@ -174,12 +177,4 @@ section, not by participant:
   instruction;
 - §1.5: time without the task answers the recordings show were interrupted.
 
-Its §4.6 view by order is item 5. Each candidate rests on the first-pass coding, which has not yet
-been spot-checked (report §8), so its figures carry [UNVERIFIED] until it is.
-
-**How a listed re-estimate is computed:** item 1's per-participant scores, with the named
-participants or answers removed. For each outcome, in its own units (time as a ratio): the n, the
-mean per-participant difference, and the mean of the four counterbalancing cells' mean differences.
-Removing people unbalances the cells, so the plain mean is no longer the main analysis's estimate.
-Each re-estimate sits beside the main estimate from `significance.txt`, with no standard error,
-interval or p-value.
+The report's §4.6 suggestion, a view by order, is item 5.

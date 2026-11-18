@@ -520,6 +520,9 @@ analysis/               # offline scoring — NEVER ships; pandas allowed except
   viewer_app.py         # the data viewer's Dash layout; localhost only, justifications masked
 notebooks/              # NEVER ships (vercel.json); reads the scored frames, never the database
   significance.py       # the significance plan: crossover t, Wilcoxon, permutation, Holm, TOST; with and without 19
+paper/                  # the comps paper (2026-11-17); every number in it comes from a generated file
+  exploratory.md        # the post hoc descriptives, listed and defined before any was computed
+  sources/              # the proposal, the ethics paper and the comps rubric (PDFs)
 scripts/
   download_data.py      # fetches from Our World in Data
   export_deploy_data.py # parquet -> data/deploy/coverage.csv
@@ -537,6 +540,7 @@ scripts/
   bridge_stylesheet.py  # study.css -> src/assets/zz-bridge.css, for Dash 4's option-list markup
   score_study.py        # accuracy, Paas, timing, exclusions -> data/study_logs/derived/
   code_justifications.py # blind sheets, T1 verdicts, depth by code -> data/study_logs/coding/; 19's own sheets
+  paper_descriptives.py # paper/exploratory.md items 1-7 -> data/study_logs/derived/paper/; runs no test
   view_data.py          # local data viewer on 127.0.0.1:8051; read-only
   check_contrast.py     # WCAG contrast and colour-blind separation report for the palette
   check_bundle.py       # serves the app from requirements.txt alone, in a throwaway venv
@@ -556,6 +560,7 @@ tests/
   test_analysis.py      # real app sessions scored end to end; exclusions; coding harness; kappa
   test_viewer.py        # each health check trips on its fault; masking; download re-scores
   test_significance.py  # error rates, power, the mixed-model match, the plan's refusals, reinstating 19
+  test_paper_descriptives.py # each item on planted cases; its refusals; the notebook's tests trapped; no free text
   test_app.py           # callbacks called directly, a DB outage, clientside JS run under Node
   test_consent.py       # the pinned consent text, the signed record, export and withdrawal scripts
   test_questionnaire.py # the IRB questionnaire: every question and option, the app's styles, no key
