@@ -201,6 +201,7 @@ def design(numbers: Numbers, sig: ModuleType) -> None:
     put("design/surveyitems", whole(len(study_tasks.LIKERT_ITEMS)))
     put("design/controlsitems", whole(len(study_tasks.CONTROLS_ITEMS)))
     put("design/t1parts", whole(len(coding.RUBRIC_PARTS)))
+    put("design/depthmax", whole(len(coding.CODES)))
     put("design/maxtext", f"{study_tasks.MAX_TEXT:,}")
     put("design/fastseconds", whole(exclusions.MIN_TASK_MS / 1000))
     put("design/trimpercentile", whole(round(exclusions.TOP_TRIM_QUANTILE * 100)))
@@ -300,6 +301,8 @@ def significance(numbers: Numbers, run: dict[str, dict], sig: ModuleType) -> Non
         for field in ("low", "high", "p", "verdict"):
             put(f"{p}/tost/{field}", tost[field])
         put(f"{p}/tost/ci", f"[{tost['low']}, {tost['high']}]")
+        # The verdict up to its explanation ("equivalent"), short enough for a table cell.
+        put(f"{p}/tost/short", tost["verdict"].split(":", 1)[0])
         items = lines["items"]
         for field in ("est", "low", "high"):
             put(f"{p}/accuracy/items/{field}", items[field])
@@ -610,14 +613,27 @@ def sample(numbers: Numbers, p: str, people: pd.DataFrame) -> None:
 
 
 # --- Assembling and writing -----------------------------------------------------------------------
-def build_numbers(inputs, sig: ModuleType, pdesc: ModuleType) -> Numbers:
-    """Every key, after every check scripts/paper_descriptives.py makes against the run."""
+def build_numbers(
+    inputs,
+    sig: ModuleType,
+    pdesc: ModuleType,
+    outputs: dict[str, object] | None = None,
+    analyses: dict | None = None,
+) -> Numbers:
+    """Every key, after every check scripts/paper_descriptives.py makes against the run.
+
+    `outputs` and `analyses` are `pdesc.build()` and `pdesc.build_analyses()` on these inputs, for
+    a caller that has them already (scripts/paper_figures.py); otherwise they are built here."""
     numbers = Numbers()
     design(numbers, sig)
     software(numbers)
     significance(numbers, inputs.significance, sig)
-    exploratory(numbers, pdesc.build(inputs, sig), sig.ITEMS_PER_CONDITION)
-    report_tables(numbers, pdesc.build_analyses(inputs, sig), inputs.participants)
+    if outputs is None:
+        outputs = pdesc.build(inputs, sig)
+    exploratory(numbers, outputs, sig.ITEMS_PER_CONDITION)
+    if analyses is None:
+        analyses = pdesc.build_analyses(inputs, sig)
+    report_tables(numbers, analyses, inputs.participants)
     return numbers
 
 
