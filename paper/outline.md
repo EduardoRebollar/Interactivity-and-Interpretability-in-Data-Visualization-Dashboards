@@ -52,7 +52,7 @@ the two appendices. **[TODO: the due dates.]**
 | Prior work | 3 | E | 1 |
 | Methods | 4 | C drafts 4.1–4.6 (4.1, 4.2 on 2026-11-18), for E to rewrite | 1.5 |
 | Evaluation metrics | 5 | C drafts 5.1, 5.2 (5.2 on 2026-11-18), for E to rewrite | 1 |
-| Results and discussion | 6, 7, Limitations | E | 2.5 |
+| Results and discussion | 6, 7, Limitations | C drafts 6 and Limitations (2026-11-18), 7 to come; for E to rewrite | 2.5 |
 | Ethical considerations | 8 | E | 0.75 |
 | Conclusion | 9 | E | 0.25 |
 | Replication instructions | Appendix A | C | not counted |
@@ -135,7 +135,7 @@ The proposal's five themes (proposal §3), each ending with what it changed in t
 | | 4 | The plan was written after looks at the data (2026-11-03, the poster), before any test; the tests ran once | §10 | shows | C draft 2026-11-18 |
 | | 5 | Metrics considered and not used: NASA-TLX, eye tracking, insight-based evaluation, a full think-aloud | §6.1; proposal §4.2, §5 | — | C draft 2026-11-18 |
 
-## 6. Results (E)
+## 6. Results (C draft 2026-11-18, for E to rewrite)
 
 Tables and figures are generated (list at the end). Every row is given for the main analysis and,
 beside it, as pre-registered.
@@ -168,7 +168,7 @@ beside it, as pre-registered.
 | 3 | Why accuracy might not move: items at ceiling and floor, the key left undiscovered, hover unlogged. Each limits what could be detected; none on its own explains the result. | consistent with |
 | 4 | What a designer can take from it, without generalising beyond the sample or the platform. | consistent with |
 
-## Limitations (E)
+## Limitations (C draft 2026-11-18, for E to rewrite)
 
 Each with its source:
 - a convenience sample of `\stat{main/n}`, mostly undergraduates, many of them friends or
