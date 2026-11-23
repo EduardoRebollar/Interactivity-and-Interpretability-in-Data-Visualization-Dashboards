@@ -72,7 +72,7 @@ COLOURS = {
     "interactivecolour": config.SERIES_COLORS[0],  # blue, 5.19:1
     "inkcolour": config.TEXT_PRIMARY,
     "axiscolour": config.AXIS_COLOR,
-    "gridcolour": config.GRIDLINE_COLOR,  # gridlines and a shaded band only; exempt as in the app
+    "gridcolour": config.GRIDLINE_COLOR,  # gridlines and Figure 1's frame; exempt as in the app
 }
 
 # Figure 1: one item, as participants saw it.
@@ -225,11 +225,11 @@ def _outcomes(run: dict[str, dict], sig: ModuleType) -> list[str]:
 
 
 def tests_table(cite: Cite, run: dict[str, dict], sig: ModuleType, prefix: dict) -> str:
-    """Table: the three main tests and the equivalence test, both analyses."""
+    """Table: the three main tests, both analyses."""
     labels = _test_labels(cite)
     _outcomes(run, sig)
     lines = [
-        header("The three main tests (Holm family) and the equivalence test, both analyses."),
+        header("The three main tests (Holm family), both analyses."),
         r"\begin{tabular}{@{}lrlrrrrr@{}}",
         r"\toprule",
         _row(
@@ -274,16 +274,6 @@ def tests_table(cite: Cite, run: dict[str, dict], sig: ModuleType, prefix: dict)
                         "",
                         "",
                         "",
-                    )
-                )
-                lines.append(
-                    _row(
-                        rf"\quad equivalence at $\pm${cite('design/boundprop')}: 90\% CI, TOST $p$",
-                        "",
-                        cite(f"{p}/tost/ci"),
-                        "",
-                        cite(f"{p}/tost/p"),
-                        rf"\multicolumn{{3}}{{l}}{{{cite(f'{p}/tost/short')}}}",
                     )
                 )
     lines += [r"\bottomrule", r"\end{tabular}"]
@@ -470,12 +460,11 @@ def survey_table(cite: Cite, p: str, what: str) -> str:
 # --- Figures 2 to 5 -------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Estimate:
-    """One row under a dot plot: an estimate, its 95% CI and, for accuracy, its 90% CI."""
+    """One row under a dot plot: an estimate and its 95% CI."""
 
     label: str
     est: float
     ci95: tuple[float, float]
-    ci90: tuple[float, float] | None = None
 
 
 def style_tex() -> str:
@@ -535,26 +524,21 @@ def stacked(values: pd.Series, what: str) -> dict[int, int]:
     return {int(v): int(n) for v, n in rounded.value_counts().sort_index().items()}
 
 
-def _ci(row: dict, scale: float = 1.0) -> tuple[float, float]:
-    return float(row["low"]) * scale, float(row["high"]) * scale
+def _ci(row: dict) -> tuple[float, float]:
+    return float(row["low"]), float(row["high"])
 
 
 def dot_plot(
     counts: dict[int, int],
     estimates: list[Estimate],
     xlabel: str,
-    band: float | None = None,
     unit_pt: float = 4.5,
     reach: float = 0,
 ) -> str:
-    """Stacked dots, one per participant, and under them each estimate's interval: 95% thin, 90%
-    thick, the estimate a white dot. `band`: a shaded equivalence band from -band to +band.
-    `reach`: draw at least this far either side of zero (to line up plots drawn together)."""
-    reach = max(
-        [abs(v) for v in counts]
-        + [abs(x) for e in estimates for x in (*e.ci95, *(e.ci90 or ()))]
-        + [band or 0, 1, reach]
-    )
+    """Stacked dots, one per participant, and under them each estimate's 95% interval, the
+    estimate a white dot. `reach`: draw at least this far either side of zero (to line up plots
+    drawn together)."""
+    reach = max([abs(v) for v in counts] + [abs(x) for e in estimates for x in e.ci95] + [1, reach])
     xmax = math.ceil(reach) + 0.5
     top = max(counts.values()) + 0.8
     rows = _rows(len(estimates), unit_pt)
@@ -570,17 +554,6 @@ def dot_plot(
         f"  xlabel={{{xlabel}}},",
         "]",
     ]
-    if band:
-        lines += [
-            r"\fill[gridcolour, fill opacity=0.3]"
-            rf" (axis cs:{coordinate(-band)},{coordinate(bottom)})"
-            rf" rectangle (axis cs:{coordinate(band)},{coordinate(top)});",
-            *(
-                rf"\draw[axiscolour, densely dashed] (axis cs:{coordinate(x)},{coordinate(bottom)})"
-                rf" -- (axis cs:{coordinate(x)},{coordinate(top)});"
-                for x in (-band, band)
-            ),
-        ]
     lines.append(
         rf"\draw[axiscolour] (axis cs:0,{coordinate(bottom)}) -- (axis cs:0,{coordinate(top)});"
     )
@@ -612,12 +585,6 @@ def _estimate_rows(
                 rf"\draw[inkcolour] (axis cs:{x},{coordinate(y - whisker)})"
                 rf" -- (axis cs:{x},{coordinate(y + whisker)});"
             )
-        if e.ci90:
-            low90, high90 = (coordinate(x) for x in e.ci90)
-            lines.append(
-                rf"\draw[inkcolour, line width=2.4pt] (axis cs:{low90},{at})"
-                rf" -- (axis cs:{high90},{at});"
-            )
         lines.append(
             r"\addplot[only marks, mark=*, mark size=2.2pt, inkcolour, mark options={fill=white,"
             r" line width=0.8pt}] coordinates {(" + coordinate(e.est) + f",{at})}};"
@@ -631,7 +598,7 @@ def _row_label(name: str, n: str) -> str:
 
 def accuracy_figure(outputs: dict, run: dict[str, dict], sig: ModuleType) -> str:
     """Figure: each participant's accuracy difference in items (main analysis), with each
-    analysis's estimate, its 95% and 90% CIs, and the band of one item either way."""
+    analysis's estimate and its 95% CI."""
     items = sig.ITEMS_PER_CONDITION
     diffs = outputs["differences_by_participant.csv"]
     mine = diffs[(diffs["analysis"] == "main") & (diffs["outcome"] == "accuracy")]
@@ -641,20 +608,13 @@ def accuracy_figure(outputs: dict, run: dict[str, dict], sig: ModuleType) -> str
             _row_label(name, block["outcomes"]["accuracy"]["n"]),
             float(block["lines"]["items"]["est"]),
             _ci(block["lines"]["items"]),
-            _ci(block["lines"]["tost"], items),
         )
         for name, block in run.items()
     ]
-    bound = sig.EQUIVALENCE_BOUND * items
     return header(
         "Each participant's accuracy difference in items (main analysis), as a count per value;"
-        " each analysis's estimate with its 95% (thin) and 90% (thick) CIs."
-    ) + dot_plot(
-        counts,
-        estimates,
-        f"Items correct, interactive minus static (of {items})",
-        band=bound,
-    )
+        " each analysis's estimate with its 95% CI."
+    ) + dot_plot(counts, estimates, f"Items correct, interactive minus static (of {items})")
 
 
 def effort_figure(outputs: dict, run: dict[str, dict]) -> str:

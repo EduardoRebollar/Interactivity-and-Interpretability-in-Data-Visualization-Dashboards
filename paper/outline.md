@@ -67,7 +67,7 @@ That puts 5 of 8.5 pages in Methods, Evaluation and Results.
 |---|---|---|
 | The question: does interactivity improve interpretation, or make it feel easier? | §1 | — |
 | What was done: `\stat{main/n}` participants, both versions, `\stat{design/totalitems}` items on `\stat{design/charttypes}` chart types, the two versions identical except for interactivity, one platform | §2, §4 | shows |
-| Accuracy differed by `\stat{main/accuracy/items/est}` items of `\stat{design/items}` (95% CI `\stat{main/accuracy/items/ci}`), ruling out an advantage of one item or more | `main/accuracy/items`, `main/tost` | shows |
+| A difference in accuracy was not detected: `\stat{main/accuracy/items/est}` items of `\stat{design/items}` (95% CI `\stat{main/accuracy/items/ci}`) | `main/accuracy/items` | cannot say |
 | A difference in mental effort was not detected (`\stat{main/paas/est}`, CI `\stat{main/paas/ci}`) | `main/paas` | cannot say |
 | Interactive sessions took longer (×`\stat{main/log_time/est}`; exploratory) | `main/log_time` | consistent with |
 | Participants preferred the controls, in a sample that knew the researcher | `main/c2/controls` | consistent with |
@@ -91,7 +91,7 @@ Definitions for a CS senior who has not taken HCI or statistics. No study result
 | 1 | Interaction techniques: filtering, sorting, focusing a line, details on demand (hover), zooming | Yi, Munzner 2014 |
 | 2 | Interpretability against usability; cognitive load; mental effort, and the Paas scale | Ware, Castro-Alonso, Paas 1992 (VERIFY) |
 | 3 | Within-subjects designs, order and practice effects, counterbalancing, parallel forms | Greenwald, Charness |
-| 4 | The analysis: a two-period crossover analysis, Holm's correction, equivalence by two one-sided tests at a bound (`\stat{design/boundprop}`, one item), dz, a Wilcoxon signed-rank and a permutation check, and what a 95% and a 90% interval mean | Jones and Kenward, Holm, Schuirmann, Lakens, Wilcoxon, Pratt (all VERIFY) |
+| 4 | The analysis: a two-period crossover analysis, Holm's correction, dz, a Wilcoxon signed-rank and a permutation check, what a 95% interval means, and why a non-significant test is not no effect | Jones and Kenward, Holm, Wilcoxon, Pratt, Altman (all VERIFY) |
 
 ## 3. Prior work (C draft 2026-11-18, for E to rewrite)
 
@@ -130,7 +130,7 @@ checked against Crossref and its abstract, and marked `% VERIFY` until E has rea
 | | 4 | Secondaries: time (browser clock), the survey, control use from the logs, hover by self-report (b4) | §6.1, §7 | shows | C |
 | | 5 | Exclusions, fixed in advance | §7; `\stat{design/fastseconds}` s, top `\stat{design/trimpercentile}`th percentile | shows | C |
 | 5.2 Analysis | 1 | Two analyses: participant 19 reinstated (main), and as pre-registered beside it | §7 Inference | shows | C draft 2026-11-18 |
-| | 2 | Crossover t (difference regressed on half and form); Wilcoxon; a permutation check on accuracy; Holm across the `\stat{design/family}` tests at α `\stat{design/alpha}`; an equivalence test at one item | §7 Inference | shows | C draft 2026-11-18 |
+| | 2 | Crossover t (difference regressed on half and form); Wilcoxon; a permutation check on accuracy; Holm across the `\stat{design/family}` tests at α `\stat{design/alpha}` | §7 Inference | shows | C draft 2026-11-18 |
 | | 3 | What 24 can detect: dz `\stat{main/sensitivity/single}` alone, `\stat{main/sensitivity/holm}` at Holm's first step (80% power) | `main/sensitivity` | shows | C draft 2026-11-18 |
 | | 4 | The plan was written after looks at the data (2026-11-03, the poster), before any test; the tests ran once | §10 | shows | C draft 2026-11-18 |
 | | 5 | Metrics considered and not used: NASA-TLX, eye tracking, insight-based evaluation, a full think-aloud | §6.1; proposal §4.2, §5 | — | C draft 2026-11-18 |
@@ -143,11 +143,10 @@ beside it, as pre-registered.
 | § | Claim | Evidence | Strength |
 |---|---|---|---|
 | 6.1 Sample, exclusions | `\stat{main/n}` analysed; as pre-registered `\stat{pre/n}`, the empty duplicate session taking out `\stat{pre/excl/incomplete_session/rows}` answers. `\stat{main/excl/invalid_timing/rows}` times lost to page reloads (`\stat{main/timing/invalidparticipants}` participants) and `\stat{main/excl/top_one_percent/rows}` trimmed, so time has n = `\stat{main/log_time/n}`. No degraded sessions (`\stat{main/degraded}`). | `main/excl`, `main/timing` | shows |
-| 6.2 RQ1 | Interactivity changed accuracy by `\stat{main/accuracy/items/est}` items of `\stat{design/items}` (95% CI `\stat{main/accuracy/items/ci}`; proportion `\stat{main/accuracy/est}`, CI `\stat{main/accuracy/ci}`, Holm p `\stat{main/accuracy/holm}`). | `main/accuracy` | cannot say (a difference smaller than one item) |
-| | Its 90% CI, `\stat{main/tost/ci}`, lies inside ±`\stat{design/boundprop}`: the data rule out an advantage of one item or more (`\stat{main/tost/verdict}`). Never "accuracy did not change". | `main/tost` | shows |
+| 6.2 RQ1 | Interactivity changed accuracy by `\stat{main/accuracy/items/est}` items of `\stat{design/items}` (95% CI `\stat{main/accuracy/items/ci}`; proportion `\stat{main/accuracy/est}`, CI `\stat{main/accuracy/ci}`, Holm p `\stat{main/accuracy/holm}`). | `main/accuracy` | cannot say |
 | | Checks agree: Wilcoxon p `\stat{main/accuracy/wilcoxon}`, permutation p `\stat{main/accuracy/permutation}`. Every item right: static `\stat{main/ceiling/static}`, interactive `\stat{main/ceiling/interactive}` of `\stat{main/ceiling/of}`. | `main/accuracy`, `main/ceiling` | shows |
-| | As pre-registered: `\stat{pre/accuracy/items/est}` items (CI `\stat{pre/accuracy/items/ci}`), Holm p `\stat{pre/accuracy/holm}`, also equivalent (`\stat{pre/tost/ci}`). The conclusion does not differ. | `pre/...` | shows |
-| | §7's fallback sentence ("the effect on accuracy is unclear") does not fit: accuracy is the settled part, effort the unclear one. Say what happened. | — | — |
+| | As pre-registered: `\stat{pre/accuracy/items/est}` items (CI `\stat{pre/accuracy/items/ci}`), Holm p `\stat{pre/accuracy/holm}`. The conclusion does not differ. | `pre/...` | shows |
+| | Not detected, never "accuracy did not change". §7's sentence for RQ3's unsupported case ("the effect on accuracy is unclear") is the one to use. §7's equivalence test ran but is not reported (`deviations.md` item 13); it is future work (§9). | — | — |
 | 6.3 By item | T5 at ceiling in both conditions (`\stat{main/item/T5/static/pct}`%, `\stat{main/item/T5/interactive/pct}`%); T2 and T4 near it (`\stat{main/item/T2/static/pct}`%, `\stat{main/item/T4/static/pct}`% static); T1 near the floor (`\stat{main/item/T1/static/pct}`%, `\stat{main/item/T1/interactive/pct}`%). Most of the accuracy contrast rides on T3 and T6 (`\stat{main/item/T3/static/pct}`% against `\stat{main/item/T3/interactive/pct}`%; `\stat{main/item/T6/static/pct}`% against `\stat{main/item/T6/interactive/pct}`%). A limitation on what the test could detect, not on its own an explanation of the result. No test per item. | `main/item` | consistent with |
 | 6.4 RQ2 | Depth: `\stat{main/depth/est}` (CI `\stat{main/depth/ci}`, Holm p `\stat{main/depth/holm}`): not detected. Secondaries are estimates: with T1 `\stat{main/depth_with_t1/est}`; `cites_values` `\stat{main/cites_values/est}` (CI `\stat{main/cites_values/ci}`); `compares_series` `\stat{main/compares_series/est}`. As pre-registered, `cites_values`' interval excludes zero; do not highlight it, since it moves with one participant. | `main/depth`, `main/cites_values` | cannot say |
 | 6.5 RQ3 | Paas: `\stat{main/paas/est}` (CI `\stat{main/paas/ci}`, Holm p `\stat{main/paas/holm}`, dz `\stat{main/paas/dz}`): not detected, never "no effect". The design could detect dz `\stat{main/sensitivity/holm}` at Holm's first step. a7, beside it and never in its place: static `\stat{main/survey/a7/static/mean}`, interactive `\stat{main/survey/a7/interactive/mean}` (descriptive). RQ3's "rather than": `\stat{main/rq3/verdict}`. | `main/paas`, `main/survey/a7` | cannot say |
@@ -163,7 +162,7 @@ beside it, as pre-registered.
 
 | ¶ | Claim | Strength |
 |---|---|---|
-| 1 | Accuracy is settled within one item; effort is unclear; interactive work took longer (exploratory); the controls were preferred, in a sample primed to like them. | as in §6 |
+| 1 | A difference in accuracy was not detected; effort is unclear; interactive work took longer (exploratory); the controls were preferred, in a sample primed to like them. | as in §6 |
 | 2 | Set against the mini-project: comparable accuracy and longer time again; its lower load was not detected with Paas, though a7 moved further (descriptive). | consistent with |
 | 3 | Why accuracy might not move: items at ceiling and floor, the key left undiscovered, hover unlogged. Each limits what could be detected; none on its own explains the result. | consistent with |
 | 4 | What a designer can take from it, without generalising beyond the sample or the platform. | consistent with |
@@ -202,7 +201,7 @@ From the ethics paper (`paper/sources/`), updated:
 
 ## 9. Conclusion (C draft 2026-11-18, for E to rewrite)
 
-The question, what the data settle and what they leave open, and what the next study would change.
+The question, what the data settle and what they leave open, and what the next study would change, an equivalence test of accuracy against a bound fixed before collection among it.
 
 ## Appendices and statements (C)
 
@@ -237,14 +236,14 @@ so the deviations table is Table 1 in the PDF and the rest follow from there.
 
 | | Shows | From |
 |---|---|---|
-| Table 1 | The three main tests and the equivalence test, both analyses: n, estimate (95% CI), t (df), p, Holm p, dz; the 90% CI and the verdict | `significance.txt` |
+| Table 1 | The three main tests, both analyses: n, estimate (95% CI), t (df), p, Holm p, Wilcoxon p, dz | `significance.txt` |
 | Table 2 | The secondaries, both analyses: estimate (95% CI), p, no Holm column; headed "exploratory" | `significance.txt` |
 | Table 3 | Exclusions by rule, both analyses | `paper_descriptives` report tables |
 | Table 4 | Accuracy (% correct) and median time by item and condition, main analysis (as pre-registered in Appendix C) | `report_main.txt` tables |
 | Table 5 | The survey: a1–a9 by condition, b1–b4, c1 and c2 counts | report tables |
 | Table 6 | The deviations (hand-written from `paper/deviations.md`, not generated) | `deviations.md` |
 | Figure 1 | One item in both versions, as participants saw it (a screenshot of A-T6 from `/preview` in headless Chrome) | the app |
-| Figure 2 | Each participant's accuracy difference in items, with the estimate, its 95% and 90% CIs, and the ±1-item band | `differences_by_participant.csv`, `significance.txt` |
+| Figure 2 | Each participant's accuracy difference in items, with the estimate and its 95% CI | `differences_by_participant.csv`, `significance.txt` |
 | Figure 3 | Paas and a7 per participant, static against interactive, with Paas's estimate and CI | `scores.csv`, `paas_a7_pairs.csv` |
 | Figure 4 | Accuracy by item and condition, as dots | report tables |
 | Figure 5 | Each participant's time ratio on a log scale, with the estimate and CI, marked exploratory | `differences_by_participant.csv` |
