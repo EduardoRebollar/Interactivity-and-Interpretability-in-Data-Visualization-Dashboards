@@ -695,8 +695,7 @@ def test_numbers_carry_the_run_as_printed(built, numbered):
             assert defined[f"{base}/p"] == numbers_script.tex(row["p"])
             # Holm's p only for the three main tests: no secondary can cite one.
             assert (f"{base}/holm" in defined) == (outcome in sig.CONFIRMATORY)
-        tost = run[name]["lines"]["tost"]
-        assert defined[f"{p}/tost/verdict"] == tost["verdict"]
+        assert defined[f"{p}/rq3/verdict"] == run[name]["lines"]["rq3"]["verdict"]
         ceiling = run[name]["ceiling"]
         assert defined[f"{p}/ceiling/interactive"] == str(ceiling["interactive"][0])
 
@@ -767,6 +766,19 @@ def test_numbers_tex_is_one_defstat_per_line(numbered):
         assert value.count("{") == value.count("}"), line
         assert not set(value) & set("%&#$^_~"), line
     assert len(keys) == len(set(keys)) == len(_defined(numbered))
+
+
+def test_numbers_carry_nothing_of_the_unreported_equivalence_test(built, numbered):
+    """The notebook still prints the TOST as it ran, but the paper does not report it
+    (paper/deviations.md item 13), so no key can cite its interval, p, bound or verdict."""
+    text = (built["derived"] / "significance.txt").read_text(encoding="utf-8")
+    assert "Accuracy equivalence (TOST" in text, "the notebook's output is unchanged"
+    unreported = [
+        key
+        for key in _defined(numbered)
+        if "/tost/" in key or key.startswith("design/bound") or key.endswith("/rq3/equivalent")
+    ]
+    assert unreported == []
 
 
 def test_numbers_never_call_one_of_the_notebooks_tests(built, tmp_path, monkeypatch):

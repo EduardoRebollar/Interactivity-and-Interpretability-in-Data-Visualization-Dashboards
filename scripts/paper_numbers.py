@@ -212,8 +212,6 @@ def design(numbers: Numbers, sig: ModuleType) -> None:
     put("design/alpha", fixed(sig.ALPHA, 2).lstrip("0"))
     put("design/holmfirst", fixed(sig.ALPHA / len(sig.CONFIRMATORY), 3).lstrip("0"))
     put("design/family", whole(len(sig.CONFIRMATORY)))
-    put("design/bounditems", whole(round(sig.EQUIVALENCE_BOUND * sig.ITEMS_PER_CONDITION)))
-    put("design/boundprop", fixed(sig.EQUIVALENCE_BOUND, 3))
     put("design/permutations", f"{sig.PERMUTATION_REPS:,}")
     # The power the sensitivity keys assume: min_detectable()'s own default, in percent.
     power = inspect.signature(sig.min_detectable).parameters["target"].default
@@ -326,17 +324,11 @@ def significance(numbers: Numbers, run: dict[str, dict], sig: ModuleType) -> Non
                 ):
                     put(f"{base}/{field}", whole(round((float(value) - 1) * 100)))
         lines = block["lines"]
-        missing = {"tost", "items", "permutation", "cells", "effects", "rq3", "degraded"} - set(
-            lines
-        )
+        # The TOST's line is read with the rest but never written: the paper does not report the
+        # equivalence test (paper/deviations.md item 13), so no key can cite it.
+        missing = {"items", "permutation", "cells", "effects", "rq3", "degraded"} - set(lines)
         if missing:
             raise NumbersError(f"significance.txt ({name}) does not print {sorted(missing)}")
-        tost = lines["tost"]
-        for field in ("low", "high", "p", "verdict"):
-            put(f"{p}/tost/{field}", tost[field])
-        put(f"{p}/tost/ci", f"[{tost['low']}, {tost['high']}]")
-        # The verdict up to its explanation ("equivalent"), short enough for a table cell.
-        put(f"{p}/tost/short", tost["verdict"].split(":", 1)[0])
         items = lines["items"]
         for field in ("est", "low", "high"):
             put(f"{p}/accuracy/items/{field}", items[field])
@@ -346,7 +338,8 @@ def significance(numbers: Numbers, run: dict[str, dict], sig: ModuleType) -> Non
             put(f"{p}/cells/{cell}", count)
         put(f"{p}/accuracy/half", lines["effects"]["half"])
         put(f"{p}/accuracy/form", lines["effects"]["form"])
-        for field in ("falls", "equivalent", "verdict"):
+        # RQ3's verdict and its Paas half; not its "accuracy equivalent" half, the TOST's.
+        for field in ("falls", "verdict"):
             put(f"{p}/rq3/{field}", lines["rq3"][field])
         put(f"{p}/degraded", lines["degraded"]["n"])
         for condition, (right, _of) in block["ceiling"].items():

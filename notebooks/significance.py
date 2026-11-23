@@ -22,6 +22,9 @@ minus static, and that difference regressed on which half and which form the int
 condition got (the two-period crossover analysis). The intercept is the effect of interactivity.
 A Wilcoxon signed-rank test on the raw differences is the check, and accuracy also gets a
 permutation test. Holm across the three main tests; a TOST on accuracy for RQ3's "rather than".
+The paper does not report the TOST (2026-11-22, `paper/deviations.md` item 13) and leaves it to
+future work. It still runs and prints as it did on the study data, so this file stays the record
+of what ran.
 
 Usage:
     uv run python notebooks/significance.py                 # the study data
@@ -64,7 +67,8 @@ STOP_N = 24
 # every rule re-run. Reported beside it: the rules as pre-registered, without participant 19.
 REINSTATED = ("19",)
 # RQ3's "rather than": the accuracy effect is negligible if its 90% CI sits inside this bound,
-# in proportion correct. 1/6 = one item of six.
+# in proportion correct. 1/6 = one item of six. Kept as it ran; the paper does not report the TOST
+# (paper/deviations.md item 13).
 EQUIVALENCE_BOUND = 1 / 6
 ITEMS_PER_CONDITION = 6
 # The Holm family: the three confirmatory tests, one per research question. Fixed by the plan, so
@@ -551,6 +555,8 @@ def render(
 
     if "accuracy" in results:
         acc = results["accuracy"]
+        # The TOST and the RQ3 line below print as they did on the study data. The paper reports
+        # neither the TOST nor the "accuracy equivalent" half (paper/deviations.md item 13).
         inside, p_tost = tost(acc, EQUIVALENCE_BOUND)
         # Accuracy is one of the three main tests, so "significant" is its Holm p, never the raw
         # one. With Holm withheld (a main outcome missing) the verdict says it used the raw p.

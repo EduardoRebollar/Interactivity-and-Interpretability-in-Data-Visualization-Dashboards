@@ -1428,6 +1428,9 @@ context cheap and the reports as long as they need to be.
   Submit. `tasks.csv` gains `n_chips`, `n_key`, `n_show_all`, `n_zoom`, `n_years`,
   `years_from_2000` and `zoom_from_2000`. Output: `data/study_logs/derived/report_section10.txt`.
   14 of 24 windows were 800 px tall or less (median 753, min 554), despite the full-screen ask.
+- 2026-11-22 — **The paper does not report the equivalence test** (Eduardo): accuracy is a
+  difference not detected, and the TOST is future work. The notebook and §7 keep it as it ran,
+  annotated. It is deviation 13 (`paper/deviations.md`, §10), and `numbers.tex` carries no key of it.
 
 ## Open questions
 

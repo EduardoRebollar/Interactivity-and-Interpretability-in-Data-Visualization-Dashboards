@@ -1409,6 +1409,12 @@ than a non-significant accuracy result.
 RQ3's "rather than" is supported only if Paas falls (Holm-significant, interactive lower) **and**
 accuracy is equivalent. Otherwise the write-up says the effect on accuracy is unclear.
 
+The paper does not report this test (2026-11-22, Eduardo). It ran with the main tests, and
+`notebooks/significance.py` still prints it as it ran. The paper leaves it to future work, as a
+test against a bound fixed before collection (`paper/deviations.md` item 13), and reports
+accuracy only as a difference detected or not. RQ3's verdict is unchanged: it failed on Paas,
+which did not fall. The planned text above is kept as it was (§10).
+
 **Secondary, estimated by the same model, never tested:**
 
 - time on task, the geometric mean of seconds over the rows `use_timing` keeps, as a ratio;
@@ -1919,6 +1925,18 @@ export, the Drive — must be regenerated or deleted by hand; the script lists w
 
   §7 records the plan as drafted. An answer that changes it before the run changes §7 first. One
   that comes after the run is a deviation.
+- **The equivalence test is not reported in the paper (2026-11-22, Eduardo).** A deviation, after
+  the run.
+  - §7's TOST on accuracy (bound ±1/6) ran once with the main tests, on 2026-11-11. Its output
+    stays in `significance.txt`, and the notebook still prints it.
+  - The paper drops it. Its conclusion names an equivalence test against a bound fixed before
+    collection as future work.
+  - Accuracy is reported as a difference not detected, never as equivalent. RQ3's "rather than"
+    stays "not supported", since Paas did not fall, and the write-up uses §7's sentence for that
+    case: the effect on accuracy is unclear.
+  - The supervisor's question on the bound (one item of six) no longer bears on the paper.
+  - §7 keeps the planned text. The deviation is in `paper/deviations.md` (item 13) and the paper's
+    deviations table.
 - **Checks for the 2026-09-23 bank, as redesigned 2026-09-25** (read from the study data, above):
   - **Static accuracy on T2, T4 and T5.** Their margins sit at the floor on purpose (5, 10 and 10
     points), so they are the hardest static reads. Near-chance static accuracy (one in six) would
